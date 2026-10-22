@@ -44,5 +44,12 @@ export function serializeOrbitContext(context: OrbitContext | null) {
     nutritionTotals,
     todayTasks: context.tasks?.today ?? [],
     todayWorkout: context.workouts?.today ?? [],
+    // Historical records based on the temporal filter applied in the engine.
+    historical: {
+      meals: context.meals?.today ?? [],
+      workouts: context.workouts?.today ?? [],
+      tasks: context.tasks?.today ?? [],
+      habits: context.habits?.today ?? [],
+    },
   };
 }

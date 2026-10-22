@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { onSnapshot, doc } from "firebase/firestore";
@@ -10,42 +11,99 @@ import type { NotificationPrefs } from "@/types";
 import { todayString } from "@/lib/utils";
 
 export default function NotificationScheduler() {
-  const { data: session } = useSession();
-  const userId = (session?.user as any)?.id ?? session?.user?.email ?? "";
+  const { data: session, status } = useSession();
 
-  const [prefs, setPrefs]               = useState<NotificationPrefs>(DEFAULT_NOTIFICATION_PREFS);
+  const userId =
+    (session?.user as { id?: string } | undefined)?.id ??
+    session?.user?.email ??
+    "";
+
+  const [prefs, setPrefs] =
+    useState<NotificationPrefs>(DEFAULT_NOTIFICATION_PREFS);
   const [lastWorkoutAt, setLastWorkout] = useState<number | null>(null);
   const [pendingTasks, setPendingTasks] = useState(0);
 
-  // Live-sync prefs from Firestore — re-schedules timers immediately when Settings are saved
+  // Live-sync notification preferences from Firestore.
   useEffect(() => {
-    if (!userId) return;
-    const unsub = onSnapshot(doc(db, "notificationPrefs", userId), snap => {
-      if (snap.exists()) setPrefs(snap.data() as NotificationPrefs);
-      else setPrefs(DEFAULT_NOTIFICATION_PREFS);
-    });
+    if (status !== "authenticated" || !userId) return;
+
+    console.info("[NotificationScheduler] Starting preferences listener.");
+
+    const prefsRef = doc(db, "notificationPrefs", userId);
+
+    const unsub = onSnapshot(
+      prefsRef,
+      (snap) => {
+        if (snap.exists()) {
+          setPrefs(snap.data() as NotificationPrefs);
+        } else {
+          setPrefs(DEFAULT_NOTIFICATION_PREFS);
+        }
+      },
+      (error) => {
+        console.error(
+          "[NotificationScheduler] Preferences listener failed:",
+          {
+            code: error.code,
+            message: error.message,
+          }
+        );
+      }
+    );
+
     return unsub;
-  }, [userId]);
+  }, [status, userId]);
 
-  // Load workout + task data once on mount
+  // Load workout and task data once authentication is ready.
   useEffect(() => {
-    if (!userId) return;
-    const today = todayString();
-    Promise.all([
-      getWorkoutSessions(userId),
-      getAllTasks(userId),
-    ]).then(([sessions, tasks]) => {
-      const latest = sessions[0];
-      if (latest) setLastWorkout(latest.createdAt);
+    if (status !== "authenticated" || !userId) return;
 
-      const pending = tasks.filter(
-        t => t.status === "pending" && (!t.dueDate || t.dueDate <= today)
-      );
-      setPendingTasks(pending.length);
-    });
-  }, [userId]);
+    let cancelled = false;
 
-  useNotifications({ userId, prefs, lastWorkoutAt, pendingTasksCount: pendingTasks });
+    async function loadData() {
+      try {
+        const today = todayString();
+
+        const [sessions, tasks] = await Promise.all([
+          getWorkoutSessions(userId),
+          getAllTasks(userId),
+        ]);
+
+        if (cancelled) return;
+
+        const latest = sessions[0];
+        if (latest) setLastWorkout(latest.createdAt);
+
+        const pending = tasks.filter(
+          (task) =>
+            task.status === "pending" &&
+            (!task.dueDate || task.dueDate <= today)
+        );
+
+        setPendingTasks(pending.length);
+      } catch (error) {
+        if (cancelled) return;
+
+        console.error(
+          "[NotificationScheduler] Failed to load workout/task data:",
+          error
+        );
+      }
+    }
+
+    void loadData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [status, userId]);
+
+  useNotifications({
+    userId,
+    prefs,
+    lastWorkoutAt,
+    pendingTasksCount: pendingTasks,
+  });
 
   return null;
 }
