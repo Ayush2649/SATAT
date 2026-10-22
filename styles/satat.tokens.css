@@ -130,6 +130,12 @@
   --glass-bg: rgba(18, 22, 26, 0.75);
   --glass-border: rgba(255, 255, 255, 0.08);
 
+  /* Navigation Header Surface */
+  --satat-nav-bg: rgba(11, 14, 17, 0.85);
+  --satat-nav-bg-scrolled: rgba(11, 14, 17, 0.95);
+  --nav-bg: var(--satat-nav-bg);
+  --nav-bg-scrolled: var(--satat-nav-bg-scrolled);
+
   /* Typography Scale */
   --font-display: var(--font-plus-jakarta), sans-serif;
   --font-sans: var(--font-inter), sans-serif;
@@ -312,6 +318,12 @@
 
   --glass-bg: rgba(255, 255, 255, 0.85);
   --glass-border: rgba(229, 231, 235, 0.9);
+
+  /* Navigation Header Surface */
+  --satat-nav-bg: rgba(255, 255, 255, 0.85);
+  --satat-nav-bg-scrolled: rgba(255, 255, 255, 0.95);
+  --nav-bg: var(--satat-nav-bg);
+  --nav-bg-scrolled: var(--satat-nav-bg-scrolled);
 
   /* Motion & Animation Scale */
   --duration-instant: 100ms;
