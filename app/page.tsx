@@ -17,26 +17,29 @@ export default function ProductionLandingPage() {
       {/* 1. Header Navigation */}
       <LandingNav />
 
-      {/* 2. Editorial Hero & Living Product Visualization */}
-      <Hero />
+      {/* Main Content Landmark for WCAG 2.2 Accessibility */}
+      <main id="main-content" tabIndex={-1} className="outline-none">
+        {/* 2. Editorial Hero & Living Product Visualization */}
+        <Hero />
 
-      {/* 3. The Problem — The Fragmentation Trap */}
-      <ProblemSection />
+        {/* 3. The Problem — The Fragmentation Trap */}
+        <ProblemSection />
 
-      {/* 4. One Connected System — The Continuous Loop */}
-      <ConnectedSystem />
+        {/* 4. One Connected System — The Continuous Loop */}
+        <ConnectedSystem />
 
-      {/* 5. Dynamic Adaptation — Plan Rebalancing */}
-      <AdaptationSection />
+        {/* 5. Dynamic Adaptation — Plan Rebalancing */}
+        <AdaptationSection />
 
-      {/* 6. Orbit — Contextual Personal Intelligence */}
-      <OrbitSection />
+        {/* 6. Orbit — Contextual Personal Intelligence */}
+        <OrbitSection />
 
-      {/* 7. Visible Progress — Compounding Momentum */}
-      <ProgressSection />
+        {/* 7. Visible Progress — Compounding Momentum */}
+        <ProgressSection />
 
-      {/* 8. Final Call to Action */}
-      <FinalCTA />
+        {/* 8. Final Call to Action */}
+        <FinalCTA />
+      </main>
 
       {/* 9. Minimal Premium Footer */}
       <Footer />

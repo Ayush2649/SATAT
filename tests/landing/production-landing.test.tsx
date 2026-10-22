@@ -131,5 +131,31 @@ describe("Production SATAT Marketing Landing Page (Phase 2)", () => {
     expect(html).toContain("href=\"#orbit\"");
     expect(html).toContain("href=\"/signin\"");
   });
+
+  it("verifies UX overhaul: tightened vertical spacing and WCAG 2.2 accessibility landmarks", () => {
+    const html = renderToStaticMarkup(React.createElement(ProductionLandingPage));
+
+    // WCAG 2.2 Landmark & Skip-to-content
+    expect(html).toContain("<main id=\"main-content\"");
+    expect(html).toContain("href=\"#main-content\"");
+    expect(html).toContain("Skip to main content");
+    expect(html).toContain("aria-label=\"Main Navigation\"");
+    expect(html).toContain("role=\"contentinfo\"");
+
+    // Vertical whitespace reduction: ensure the excessive padding classes are gone
+    expect(html).not.toContain("py-32 sm:py-44");
+    expect(html).not.toContain("py-24 sm:py-32");
+
+    // Connected System accessibility
+    expect(html).toContain("role=\"button\"");
+    expect(html).toContain("aria-pressed=");
+
+    // Orbit live region for accessibility
+    expect(html).toContain("aria-live=\"polite\"");
+
+    // Consistency ring accessibility
+    expect(html).toContain("role=\"img\"");
+    expect(html).toContain("87% rolling 28-day adherence score");
+  });
 });
 
