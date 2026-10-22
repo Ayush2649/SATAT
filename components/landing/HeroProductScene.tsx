@@ -1,15 +1,28 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useGSAP } from "@gsap/react";
+import { useReducedMotion } from "@/lib/useReducedMotion";
+
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger, useGSAP);
+}
 
 const ROTATING_NAMES = ["Ayush", "Riya", "Arjun", "Sana"];
 
 export default function HeroProductScene() {
   const [nameIndex, setNameIndex] = useState(0);
   const [animPhase, setAnimPhase] = useState<"idle" | "exit" | "enter">("idle");
+  const sceneRef = useRef<HTMLDivElement>(null);
+  const phoneRef = useRef<HTMLDivElement>(null);
+  const glowRef = useRef<HTMLDivElement>(null);
+  const ringRef = useRef<SVGPathElement>(null);
+  const prefersReduced = useReducedMotion();
 
+  // Rotating greeting names cycle
   useEffect(() => {
-    // Respect user's motion preferences
     if (typeof window === "undefined") return;
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     if (mediaQuery.matches) return;
@@ -17,17 +30,13 @@ export default function HeroProductScene() {
     let exitTimer: NodeJS.Timeout;
     let enterTimer: NodeJS.Timeout;
 
-    // Cycle every 2.8 seconds
     const interval = setInterval(() => {
-      // 1. Subtle slide + opacity exit (350ms)
       setAnimPhase("exit");
 
       exitTimer = setTimeout(() => {
         setNameIndex((prev) => (prev + 1) % ROTATING_NAMES.length);
-        // 2. Position new name below resting point
         setAnimPhase("enter");
 
-        // 3. Smooth slide + opacity enter into resting position
         enterTimer = setTimeout(() => {
           setAnimPhase("idle");
         }, 40);
@@ -40,6 +49,116 @@ export default function HeroProductScene() {
       clearTimeout(enterTimer);
     };
   }, []);
+
+  // GSAP Entrance & Ambient Animations
+  useGSAP(
+    () => {
+      if (prefersReduced) return;
+
+      // Phone entrance float
+      if (phoneRef.current) {
+        gsap.from(phoneRef.current, {
+          y: 45,
+          opacity: 0.7,
+          scale: 0.97,
+          duration: 1.1,
+          ease: "power3.out",
+          delay: 0.3,
+        });
+      }
+
+      // Consistency ring draw-in animation
+      if (ringRef.current) {
+        gsap.fromTo(
+          ringRef.current,
+          { strokeDashoffset: 100 },
+          {
+            strokeDashoffset: 0,
+            duration: 1.4,
+            ease: "power2.out",
+            delay: 0.6,
+          }
+        );
+      }
+
+      // Ambient radial glow breathing — paused when offscreen to preserve GPU cycles
+      if (glowRef.current && sceneRef.current) {
+        const glowTween = gsap.to(glowRef.current, {
+          scale: 1.08,
+          opacity: 0.45,
+          duration: 4,
+          repeat: -1,
+          yoyo: true,
+          ease: "sine.inOut",
+        });
+
+        ScrollTrigger.create({
+          trigger: sceneRef.current,
+          start: "top bottom",
+          end: "bottom top",
+          onLeave: () => glowTween.pause(),
+          onEnterBack: () => glowTween.play(),
+          onLeaveBack: () => glowTween.pause(),
+          onEnter: () => glowTween.play(),
+        });
+      }
+    },
+    { scope: sceneRef, dependencies: [prefersReduced] }
+  );
+
+  // 3D Pointer Micro-Tilt Parallax
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (prefersReduced || !phoneRef.current || !sceneRef.current) return;
+    if (typeof window !== "undefined" && !window.matchMedia("(pointer: fine)").matches) {
+      return; // Skip on coarse/touch screens
+    }
+
+    const rect = sceneRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5; // -0.5 to 0.5
+    const y = (e.clientY - rect.top) / rect.height - 0.5; // -0.5 to 0.5
+
+    gsap.to(phoneRef.current, {
+      rotateY: x * 7,
+      rotateX: -y * 7,
+      transformPerspective: 1200,
+      transformOrigin: "center center",
+      duration: 0.4,
+      ease: "power2.out",
+      overwrite: "auto",
+    });
+
+    if (glowRef.current) {
+      gsap.to(glowRef.current, {
+        x: x * 25,
+        y: y * 25,
+        duration: 0.5,
+        ease: "power2.out",
+        overwrite: "auto",
+      });
+    }
+  };
+
+  const handlePointerLeave = () => {
+    if (prefersReduced || !phoneRef.current) return;
+
+    gsap.to(phoneRef.current, {
+      rotateY: 0,
+      rotateX: 0,
+      duration: 0.8,
+      ease: "power3.out",
+      overwrite: "auto",
+    });
+
+    if (glowRef.current) {
+      gsap.to(glowRef.current, {
+        x: 0,
+        y: 0,
+        duration: 0.8,
+        ease: "power3.out",
+        overwrite: "auto",
+      });
+    }
+  };
 
   const getGreetingStyle = (): React.CSSProperties => {
     if (animPhase === "exit") {
@@ -64,21 +183,29 @@ export default function HeroProductScene() {
   };
 
   return (
-    <div className="relative w-full max-w-4xl mx-auto mt-12 sm:mt-16 flex items-center justify-center">
-      {/* Soft Ambient Radial Behind Phone */}
+    <div
+      ref={sceneRef}
+      onPointerMove={handlePointerMove}
+      onPointerLeave={handlePointerLeave}
+      aria-hidden="true"
+      className="relative w-full max-w-4xl mx-auto mt-10 sm:mt-14 flex items-center justify-center [perspective:1200px]"
+    >
+      {/* Soft Ambient Radial Behind Phone — restrained to phone silhouette */}
       <div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[520px] rounded-full pointer-events-none opacity-35 blur-3xl"
+        ref={glowRef}
+        className="absolute top-[52%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] h-[420px] rounded-full pointer-events-none opacity-25 blur-2xl"
         style={{
           background: "radial-gradient(circle, var(--accent-soft) 0%, transparent 65%)",
         }}
       />
 
       {/* ── Modern Smartphone Frame (~19.5:9 Aspect Ratio) ── */}
-      <div className="relative z-10 w-[310px] sm:w-[340px] aspect-[9/19.2] max-h-[710px] rounded-[48px] sm:rounded-[54px] bg-[#1C201E] p-2.5 sm:p-3 shadow-[0_28px_65px_-15px_rgba(23,61,50,0.22),_0_12px_28px_-6px_rgba(23,26,23,0.12)] border border-[#2D3330] ring-1 ring-white/10 select-none">
-        
+      <div
+        ref={phoneRef}
+        className="relative z-10 w-[310px] sm:w-[340px] aspect-[9/19.2] max-h-[710px] rounded-[48px] sm:rounded-[54px] bg-[#1C201E] p-2.5 sm:p-3 shadow-[0_28px_65px_-15px_rgba(23,61,50,0.22),_0_12px_28px_-6px_rgba(23,26,23,0.12)] border border-[#2D3330] ring-1 ring-white/10 select-none"
+      >
         {/* Inner Device Screen */}
         <div className="relative w-full h-full rounded-[38px] sm:rounded-[44px] bg-[var(--background)] overflow-hidden flex flex-col justify-between border border-[var(--border)] text-left">
-          
           {/* Top Hardware Bezel: Dynamic Island & Status Bar */}
           <div className="relative w-full pt-3 px-5 sm:px-6 pb-1.5 shrink-0 flex items-center justify-between text-[11px] font-mono text-[var(--text-muted)] select-none">
             {/* Left: Time */}
@@ -108,7 +235,6 @@ export default function HeroProductScene() {
 
           {/* Phone Screen Content (Continuous & Clipped Naturally Near Tab Bar) */}
           <div className="px-3.5 sm:px-4 py-1.5 space-y-2 flex-1 overflow-hidden">
-            
             {/* 1. Compact Editorial Greeting with Animated Name */}
             <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-1.5">
               <div className="flex items-center gap-1.5 min-w-0">
@@ -142,6 +268,7 @@ export default function HeroProductScene() {
                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                   />
                   <path
+                    ref={ringRef}
                     className="text-[var(--brand)]"
                     strokeDasharray="87, 100"
                     strokeWidth="3.5"
@@ -323,7 +450,6 @@ export default function HeroProductScene() {
                 </div>
               </div>
             </div>
-
           </div>
 
           {/* Minimal Bottom Tab Capsule & Home Indicator */}
@@ -340,9 +466,7 @@ export default function HeroProductScene() {
             {/* iOS Home Bar */}
             <div className="w-24 h-1 bg-[var(--text-muted)]/40 rounded-full mx-auto mt-2" />
           </div>
-
         </div>
-
       </div>
     </div>
   );

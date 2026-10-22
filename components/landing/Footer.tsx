@@ -2,12 +2,15 @@
 
 import React from "react";
 import Link from "next/link";
-import { OrbitMark } from "@/components/orbit/OrbitMark";
 import Logo from "@/components/Logo";
 
 export default function Footer() {
   return (
-    <footer className="border-t border-[var(--border)] py-14 px-5 sm:px-6 bg-[var(--surface-subtle)] text-xs text-[var(--text-muted)]">
+    <footer
+      role="contentinfo"
+      aria-label="Site Footer"
+      className="border-t border-[var(--border)] py-10 sm:py-12 px-5 sm:px-6 bg-[var(--surface-subtle)] text-xs text-[var(--text-muted)]"
+    >
       <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
         {/* Brand & Core Positioning */}
         <div className="flex items-center gap-3">
@@ -15,7 +18,7 @@ export default function Footer() {
           <span className="font-display font-bold text-sm tracking-tight text-[var(--text-primary)]">
             SATAT
           </span>
-          <span className="text-[var(--border-strong)]">·</span>
+          <span className="text-[var(--border-strong)]" aria-hidden="true">·</span>
           <span className="text-xs text-[var(--text-secondary)]">
             Progress, made continuous.
           </span>
@@ -23,16 +26,16 @@ export default function Footer() {
 
         {/* Minimal Meaningful Public Links */}
         <div className="flex items-center gap-6 text-xs text-[var(--text-secondary)]">
-          <a href="#system" className="hover:text-[var(--text-primary)] transition-colors">
+          <a href="#system" className="hover:text-[var(--text-primary)] transition-colors focus-visible:rounded py-1">
             System
           </a>
-          <a href="#adaptation" className="hover:text-[var(--text-primary)] transition-colors">
+          <a href="#adaptation" className="hover:text-[var(--text-primary)] transition-colors focus-visible:rounded py-1">
             Adaptation
           </a>
-          <a href="#orbit" className="hover:text-[var(--text-primary)] transition-colors">
+          <a href="#orbit" className="hover:text-[var(--text-primary)] transition-colors focus-visible:rounded py-1">
             Orbit
           </a>
-          <Link href="/signin" className="hover:text-[var(--text-primary)] transition-colors">
+          <Link href="/signin" className="hover:text-[var(--text-primary)] transition-colors focus-visible:rounded py-1">
             Sign In
           </Link>
         </div>
