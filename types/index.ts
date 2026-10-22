@@ -241,3 +241,34 @@ export interface UserProfileDocument {
   createdAt: number;
   updatedAt: number;
 }
+
+/**
+ * OrbitContext aggregates read‑only data for the AI chat system.
+ * It combines user profile, nutrition goals, preferences, tasks, meals,
+ * workouts, and body‑weight entries.
+ */
+
+export interface OrbitContext {
+  profile?: UserProfileDocument;
+  macroGoals?: MacroGoals;
+  preferences?: NotificationPrefs;
+  tasks: {
+    all: any[];
+    today: any[];
+  };
+  meals: {
+    all: MealEntry[];
+    today: MealEntry[];
+    recent: MealEntry[];
+  };
+  workouts: {
+    all: WorkoutSession[];
+    today: WorkoutSession[];
+  };
+  bodyWeightEntries: BodyWeightEntry[];
+  habits: {
+    all: any[];
+    today: any[];
+  };
+}
+

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { callTextWithFallback } from "@/lib/ai/groq";
+import { buildOrbitContext } from "@/lib/orbit/contextEngine";
+import { inferContextRequirements } from "@/lib/orbit/contextRequirement";
+import { serializeOrbitContext } from "@/lib/orbit/contextSerializer";
 import { TEXT_FALLBACK, MAX_TOKENS } from "@/lib/ai/models";
 
 export const maxDuration = 30;
@@ -11,14 +14,53 @@ export async function POST(req: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const userName = session.user?.name?.split(" ")[0] ?? "there";
-  const { messages, mode, dietContext, workoutContext, taskContext } = await req.json();
+  const { messages, mode } = await req.json();
+
+  // Determine required context based on user messages (never assistant responses)
+  const userMessages = (messages || []).filter((m: any) => m.role === "user");
+  const latestUserMessage = userMessages[userMessages.length - 1]?.content || "";
+
+  // Infer requirements primarily from the latest user message
+  const latestReq = inferContextRequirements(latestUserMessage);
+
+  // For domain detection on follow-up questions (e.g. "what about protein?"),
+  // inspect prior user messages without allowing assistant replies to pollute temporal keywords
+  const allUserText = userMessages.map((m: any) => m.content).join(" ");
+  const allUserReq = inferContextRequirements(allUserText);
+
+  // Merge inferred domains, add mode‑specific defaults, and resolve temporal scope
+  const mergedDomains = new Set([...latestReq.domains, ...allUserReq.domains]);
+  if (mode === "workout") mergedDomains.add("workouts");
+  if (mode === "diet") { mergedDomains.add("meals"); mergedDomains.add("nutrition"); }
+  if (mode === "tasks") mergedDomains.add("tasks");
+
+  const requirements = {
+    domains: Array.from(mergedDomains),
+    temporalScope: latestReq.temporalScope ?? allUserReq.temporalScope,
+  };
+  const orbitContext = await buildOrbitContext(requirements);
+  const rawTz = orbitContext?.preferences?.timezone || "Asia/Kolkata";
+  let userTimezone = "Asia/Kolkata";
+  try {
+    new Intl.DateTimeFormat("en-IN", { timeZone: rawTz });
+    userTimezone = rawTz;
+  } catch {
+    userTimezone = "Asia/Kolkata";
+  }
 
   const now = new Date();
   const dateStr = now.toLocaleDateString("en-IN", {
-    weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "Asia/Kolkata",
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    timeZone: userTimezone,
   });
   const timeStr = now.toLocaleTimeString("en-IN", {
-    hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: userTimezone,
   });
 
   let system = `You are Orbit — the personal AI coach built into SATAT.
@@ -33,6 +75,9 @@ You are deeply knowledgeable about:
 
 Personality: You are direct, specific, encouraging, and practical — like a coach who actually knows the user's data.
 Never give vague generic advice. Always reference the user's REAL data when available.
+• If the requested information exists in the retrieved context, answer using that concrete data.
+• If the information is not present, explicitly say that the record is unavailable (e.g., "I don't see a meal logged for yesterday night.").
+• Do not fabricate meals, calories, workouts, tasks, habits, goals, or preferences. Do not mention Firebase, embeddings, RAG, or internal IDs.
 Format: use **bold** for key points and - for bullet lists. Keep responses under 200 words unless the user asks for more detail.
 You are deeply familiar with Indian food, Indian lifestyle, Indian portion sizes, and Indian fitness culture.
 NEVER say you don't know today's date — you always know it.`;
@@ -41,24 +86,28 @@ NEVER say you don't know today's date — you always know it.`;
     system += `\n\n[MODE: WORKOUT COACH]
 Focus on exercise programming, form, sets/reps, progressive overload, muscle groups, recovery, and splits.`;
 
-    if (workoutContext) {
-      const { bodyWeightKg, recentSessions } = workoutContext;
-      if (bodyWeightKg) {
-        system += `\n\n=== ${userName.toUpperCase()}'S PROFILE ===\nBody weight: ${bodyWeightKg} kg`;
+    // Workout mode – use orbitContext.workouts and bodyWeightEntries
+    if (orbitContext?.workouts) {
+      const workouts = orbitContext.workouts.today; // filtered list based on temporalScope
+      const profileWeight = orbitContext.bodyWeightEntries?.slice(-1)[0]?.weightKg;
+      if (profileWeight) {
+        system += `\n\n=== ${userName.toUpperCase()}'S PROFILE ===\nBody weight: ${profileWeight} kg`;
       }
-      if (recentSessions?.length > 0) {
-        system += `\n\n=== RECENT WORKOUT HISTORY (last ${recentSessions.length} sessions) ===`;
-        recentSessions.slice(0, 5).forEach((s: any, i: number) => {
-          system += `\n\n[Session ${i + 1} — ${s.date}] ${s.durationMinutes > 0 ? `${s.durationMinutes} min` : ""}`;
+      if (workouts.length > 0) {
+        system += `\n\n=== RECENT WORKOUT HISTORY (last ${workouts.length} sessions) ===`;
+        workouts.slice(0, 5).forEach((s: any, i: number) => {
+          system += `\n\n[Session ${i + 1} — ${s.date}] ${s.durationMinutes > 0 ? `${s.durationMinutes} min` : ''}`;
           if (s.exercises?.length > 0) {
-            system += `\nStrength: ` + s.exercises.map((e: any) =>
-              `${e.name} (${e.sets} sets${e.topWeight ? `, up to ${e.topWeight}${e.unit ?? "kg"}` : ""})`
-            ).join(", ");
+            system += `\nStrength: ` + s.exercises.map((e: any) => {
+              const setsStr = e.sets.map((set: any) => {
+                const weightPart = set.weight !== undefined ? `${set.weight}${set.unit}` : '';
+                return `${set.reps}${weightPart ? `×${weightPart}` : ''}`;
+              }).join(', ');
+              return `${e.name} (${setsStr})`;
+            }).join(', ');
           }
-          if (s.cardio?.length > 0) {
-            system += `\nCardio: ` + s.cardio.map((c: any) =>
-              `${c.activity} ${c.durationMinutes}min${c.distanceKm ? ` / ${c.distanceKm}km` : ""}${c.caloriesBurned ? ` / ${c.caloriesBurned}kcal` : ""}`
-            ).join(", ");
+          if (s.cardioLogs?.length > 0) {
+            system += `\nCardio: ` + s.cardioLogs.map((c: any) => `${c.activity} ${c.durationMinutes}min${c.distanceKm ? ` / ${c.distanceKm}km` : ''}${c.caloriesBurned ? ` / ${c.caloriesBurned}kcal` : ''}`).join(', ');
           }
           if (s.summary) system += `\nCoach note: ${s.summary.slice(0, 120)}...`;
         });
@@ -67,14 +116,24 @@ Focus on exercise programming, form, sets/reps, progressive overload, muscle gro
         system += `\n\n[No workout history yet — give general programming advice and encourage them to start logging.]`;
       }
     }
-  }
+// Legacy workoutContext block fully removed
+    }
 
   else if (mode === "diet") {
     system += `\n\n[MODE: NUTRITION COACH]
 Focus on macros, Indian meal recommendations, calorie targets, protein sources, and meal timing.`;
 
-    if (dietContext) {
-      const { date, meals, totals, goals } = dietContext;
+    if (orbitContext?.meals) {
+      const date = new Date().toLocaleDateString('en-CA');
+const meals = orbitContext.meals.today;
+const goals: any = orbitContext.macroGoals ?? { calories:0, proteinG:0, carbsG:0, fatG:0, fiberG:0 };
+    const totals: any = meals.reduce((acc: any, m: any) => ({
+      calories: acc.calories + (m.macros?.calories ?? 0),
+      proteinG: acc.proteinG + (m.macros?.proteinG ?? 0),
+      carbsG: acc.carbsG + (m.macros?.carbsG ?? 0),
+      fatG: acc.fatG + (m.macros?.fatG ?? 0),
+      fiberG: acc.fiberG + (m.macros?.fiberG ?? 0),
+    }), {calories:0,proteinG:0,carbsG:0,fatG:0,fiberG:0});
       const remaining = {
         calories: Math.max(0, goals.calories - totals.calories),
         proteinG: Math.max(0, goals.proteinG - totals.proteinG),
@@ -82,7 +141,7 @@ Focus on macros, Indian meal recommendations, calorie targets, protein sources, 
         fatG:     Math.max(0, goals.fatG     - totals.fatG),
       };
       const mealLines = meals.length > 0
-        ? meals.map((m: any) => `  • ${m.name}: ${m.calories} kcal | ${m.proteinG}g P | ${m.carbsG}g C | ${m.fatG}g F${m.fiberG ? ` | ${m.fiberG}g fiber` : ""}`).join("\n")
+        ? meals.map((m: any) => `  • ${m.name}: ${m.macros?.calories ?? 0} kcal | ${m.macros?.proteinG ?? 0}g P | ${m.macros?.carbsG ?? 0}g C | ${m.macros?.fatG ?? 0}g F${m.macros?.fiberG ? ` | ${m.macros?.fiberG}g fiber` : ""}`).join("\n")
         : "  (nothing logged yet today)";
 
       system += `\n\n=== ${userName.toUpperCase()}'S NUTRITION — ${date} ===
@@ -102,8 +161,12 @@ Always reference these exact numbers when answering diet questions. Give specifi
     system += `\n\n[MODE: PRODUCTIVITY COACH]
 Focus on task prioritization, habit building, focus strategies, breaking down goals, and overcoming procrastination.`;
 
-    if (taskContext) {
-      const { todayDate, pendingToday, completedToday, overdue, totalPending } = taskContext;
+    if (orbitContext?.tasks) {
+      const todayDate = new Date().toLocaleDateString('en-CA');
+const pendingToday = orbitContext.tasks.today.filter(t => t.status === 'pending');
+const completedToday = orbitContext.tasks.today.filter(t => t.status === 'completed');
+const overdue = orbitContext.tasks.today.filter(t => t.dueDate && new Date(t.dueDate) < new Date());
+const totalPending = pendingToday.length + overdue.length;
       system += `\n\n=== ${userName.toUpperCase()}'S TASKS — ${todayDate} ===`;
       if (overdue.length > 0) {
         system += `\nOVERDUE (${overdue.length}): ` + overdue.map((t: any) =>
@@ -128,11 +191,12 @@ Focus on task prioritization, habit building, focus strategies, breaking down go
     system += `\n\n[MODE: GENERAL]
 The user has opened Orbit without selecting a specific mode. Give helpful, grounded advice across fitness, nutrition, and productivity. Suggest they type /workout, /diet, or /tasks for more focused coaching.`;
   }
-
   try {
+    const serializedContext = serializeOrbitContext(orbitContext);
     const result = await callTextWithFallback(TEXT_FALLBACK, {
       messages: [
         { role: "system", content: system },
+        { role: "system", content: JSON.stringify(serializedContext) },
         ...messages.map((m: { role: string; content: string }) => ({
           role: m.role as "user" | "assistant",
           content: m.content,
