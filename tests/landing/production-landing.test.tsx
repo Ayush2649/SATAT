@@ -157,5 +157,21 @@ describe("Production SATAT Marketing Landing Page (Phase 2)", () => {
     expect(html).toContain("role=\"img\"");
     expect(html).toContain("87% rolling 28-day adherence score");
   });
+
+  it("verifies theme-aware navigation header in light and dark mode conventions", () => {
+    const html = renderToStaticMarkup(React.createElement(ProductionLandingPage));
+
+    // Confirm navbar uses theme-aware light and dark background classes instead of hardcoded dark-only colors
+    expect(html).toContain("bg-white/85");
+    expect(html).toContain("dark:bg-[#0B0E11]/85");
+
+    // Accessible focus rings
+    expect(html).toContain("focus-visible:ring-2");
+    expect(html).toContain("focus-visible:ring-[var(--brand)]");
+
+    // Semantic text colors for contrast adaptation
+    expect(html).toContain("text-[var(--text-secondary)]");
+    expect(html).toContain("hover:text-[var(--text-primary)]");
+  });
 });
 

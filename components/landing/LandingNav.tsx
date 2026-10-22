@@ -57,10 +57,10 @@ export default function LandingNav() {
 
       <nav
         aria-label="Main Navigation"
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-200 ${
+        className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-200 ${
           scrolled || mobileMenuOpen
-            ? "bg-[#0B0E11]/95 backdrop-blur-sm border-b border-[var(--border)]"
-            : "bg-[#0B0E11]/85 backdrop-blur-sm border-b border-[var(--border-subtle)]"
+            ? "bg-white/95 dark:bg-[#0B0E11]/95 backdrop-blur-sm border-b border-[var(--border)] shadow-xs"
+            : "bg-white/85 dark:bg-[#0B0E11]/85 backdrop-blur-sm border-b border-[var(--border-subtle)]"
         }`}
       >
         <div className="max-w-6xl mx-auto px-5 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
@@ -68,7 +68,7 @@ export default function LandingNav() {
           <Link
             href="/"
             aria-label="SATAT Home"
-            className="flex items-center gap-2.5 group focus-visible:rounded-lg"
+            className="flex items-center gap-2.5 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:rounded-lg"
           >
             <Logo size={28} className="rounded-lg transition-transform duration-200 group-hover:scale-105" priority />
             <span className="font-display font-extrabold text-xl sm:text-2xl tracking-tight text-[var(--text-primary)]">
@@ -76,14 +76,14 @@ export default function LandingNav() {
             </span>
           </Link>
 
-          {/* Desktop Navigation Links — Crisp, high-contrast, zero blur smear */}
+          {/* Desktop Navigation Links — Crisp, high-contrast, theme-aware */}
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-[var(--text-secondary)]">
             {NAV_ITEMS.map((item) => (
               <a
                 key={item.href}
                 href={item.href}
                 aria-current={activeSection === item.href ? "page" : undefined}
-                className={`transition-colors duration-150 py-1 focus-visible:rounded text-sm ${
+                className={`transition-colors duration-150 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:rounded-md text-sm ${
                   activeSection === item.href
                     ? "text-[var(--brand)] font-semibold"
                     : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
@@ -99,7 +99,7 @@ export default function LandingNav() {
             {session ? (
               <Link
                 href="/dashboard"
-                className="btn-primary rounded-full px-5 py-2.5 text-xs sm:text-sm font-medium shadow-sm hover:shadow-md transition-all flex items-center gap-2 cursor-pointer"
+                className="btn-primary rounded-full px-5 py-2.5 text-xs sm:text-sm font-medium shadow-sm hover:shadow-md transition-all flex items-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]"
               >
                 <span>Dashboard</span>
                 <span aria-hidden="true">→</span>
@@ -109,14 +109,14 @@ export default function LandingNav() {
                 <button
                   type="button"
                   onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-                  className="hidden sm:inline-flex text-xs sm:text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors px-3 py-2 cursor-pointer rounded-lg"
+                  className="hidden sm:inline-flex text-xs sm:text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors px-3 py-2 cursor-pointer rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
                 >
                   Sign in
                 </button>
                 <button
                   type="button"
                   onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-                  className="btn-primary rounded-full px-4 sm:px-6 py-2.5 text-xs sm:text-sm font-medium shadow-sm hover:shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+                  className="btn-primary rounded-full px-4 sm:px-6 py-2.5 text-xs sm:text-sm font-medium shadow-sm hover:shadow-md transition-all flex items-center gap-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]"
                 >
                   <span>Start building consistency</span>
                   <span aria-hidden="true" className="text-sm">→</span>
@@ -131,7 +131,7 @@ export default function LandingNav() {
               aria-expanded={mobileMenuOpen}
               aria-controls="mobile-navigation"
               aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
-              className="md:hidden inline-flex items-center justify-center w-9 h-9 rounded-full bg-[var(--surface-subtle)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
+              className="md:hidden inline-flex items-center justify-center w-9 h-9 rounded-full bg-[var(--surface-subtle)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
             >
               {mobileMenuOpen ? (
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -150,14 +150,14 @@ export default function LandingNav() {
         {mobileMenuOpen && (
           <div
             id="mobile-navigation"
-            className="md:hidden border-t border-[var(--border)] bg-[var(--surface)] px-5 py-4 space-y-2 animate-slide-down"
+            className="md:hidden border-t border-[var(--border)] bg-white/95 dark:bg-[var(--surface)] backdrop-blur-md px-5 py-4 space-y-2 animate-slide-down shadow-md"
           >
             {NAV_ITEMS.map((item) => (
               <a
                 key={item.href}
                 href={item.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] ${
                   activeSection === item.href
                     ? "bg-[var(--brand-subtle)] text-[var(--brand)] font-semibold"
                     : "text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)] hover:text-[var(--text-primary)]"
@@ -174,7 +174,7 @@ export default function LandingNav() {
                     setMobileMenuOpen(false);
                     signIn("google", { callbackUrl: "/dashboard" });
                   }}
-                  className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)] hover:text-[var(--text-primary)] transition-colors"
+                  className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)] hover:text-[var(--text-primary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
                 >
                   Sign in
                 </button>

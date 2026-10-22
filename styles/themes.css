@@ -95,6 +95,8 @@ html[class*="theme-"] {
   --border-default: color-mix(in srgb, var(--color-muted) 22%, transparent);
   --border-subtle: color-mix(in srgb, var(--color-muted) 12%, transparent);
   --border: var(--border-default);
+  --nav-bg: color-mix(in srgb, var(--color-surface) 85%, transparent);
+  --nav-bg-scrolled: color-mix(in srgb, var(--color-surface) 95%, transparent);
   --text-primary: var(--color-text);
   --text-secondary: color-mix(in srgb, var(--color-text) 78%, var(--color-background));
   --text-muted: var(--color-muted);
