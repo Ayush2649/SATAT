@@ -1,7 +1,7 @@
 // lib/orbit/contextSerializer.ts
 /**
  * Serialize OrbitContext into a concise, structured object for LLM consumption.
- * Only includes the fields required for Phase 1 and omits raw Firebase data.
+ * Only includes the fields required for coaching and omits raw database internals.
  */
 import type { OrbitContext } from '@/types';
 
@@ -26,23 +26,114 @@ function computeNutritionTotals(meals: any[]) {
   return totals;
 }
 
-/** Build a minimal context object from the full OrbitContext. */
+/** Sanitize a meal to essential fields for token efficiency */
+function sanitizeMeal(m: any) {
+  if (!m) return null;
+  return {
+    id: m.id,
+    name: m.name,
+    date: m.date,
+    macros: {
+      calories: m.macros?.calories ?? 0,
+      proteinG: m.macros?.proteinG ?? 0,
+      carbsG: m.macros?.carbsG ?? 0,
+      fatG: m.macros?.fatG ?? 0,
+      ...(m.macros?.fiberG !== undefined ? { fiberG: m.macros.fiberG } : {}),
+    },
+  };
+}
+
+/** Sanitize a workout session to essential fields for token efficiency */
+function sanitizeWorkout(w: any) {
+  if (!w) return null;
+  return {
+    id: w.id,
+    date: w.date,
+    durationMinutes: w.durationMinutes || 0,
+    exercises: (w.exercises || []).map((e: any) => ({
+      name: e.name,
+      sets: Array.isArray(e.sets)
+        ? e.sets.map((s: any) => {
+            if (typeof s === "string") return s;
+            const wt = s.weight !== undefined ? `x${s.weight}${s.unit || 'kg'}` : '';
+            return `${s.reps}${wt}`;
+          }).join(', ')
+        : (e.sets || []),
+    })),
+    ...(w.cardioLogs?.length
+      ? {
+          cardio: w.cardioLogs.map(
+            (c: any) => `${c.activity} ${c.durationMinutes}m${c.distanceKm ? ` ${c.distanceKm}km` : ''}`
+          ),
+        }
+      : {}),
+    ...(w.summary ? { summary: w.summary.slice(0, 120) } : {}),
+  };
+}
+
+/** Sanitize a task to essential fields */
+function sanitizeTask(t: any) {
+  if (!t) return null;
+  return {
+    id: t.id,
+    title: t.title,
+    status: t.status,
+    ...(t.dueDate ? { dueDate: t.dueDate } : {}),
+    ...(t.priority ? { priority: t.priority } : {}),
+  };
+}
+
+/** Sanitize a habit to essential fields */
+function sanitizeHabit(h: any) {
+  if (!h) return null;
+  return {
+    id: h.id,
+    name: h.name,
+    date: h.date,
+    ...(h.completed !== undefined ? { completed: h.completed } : {}),
+  };
+}
+
+/** Build a minimal, token-efficient context object from the full OrbitContext. */
 export function serializeOrbitContext(context: OrbitContext | null) {
   if (!context) {
     return null;
   }
-  const todayMeals = context.meals?.today ?? [];
-  const recentMeals = context.meals?.recent ?? [];
-  const nutritionTotals = computeNutritionTotals(todayMeals);
+  const todayDate = new Date().toLocaleDateString('en-CA');
+  const allMeals = (context.meals?.today ?? []).map(sanitizeMeal).filter(Boolean);
+  const allWorkouts = (context.workouts?.today ?? []).map(sanitizeWorkout).filter(Boolean);
+  const allTasks = (context.tasks?.today ?? []).map(sanitizeTask).filter(Boolean);
+  const allHabits = (context.habits?.today ?? []).map(sanitizeHabit).filter(Boolean);
+  const historicalBodyWeight = (context.bodyWeightEntries ?? [])
+    .slice(0, 5)
+    .map((b: any) => ({
+      date: b.date,
+      weightKg: b.weightKg,
+    }));
+
+  // Deduplicate: todayX contains only records matching today to avoid doubling payload size
+  const todayMeals = allMeals.filter((m: any) => m.date === todayDate);
+  const todayWorkout = allWorkouts.filter((w: any) => w.date === todayDate);
+  const todayTasks = allTasks.filter((t: any) => t.dueDate === todayDate || t.status === 'pending');
+  const recentMeals = (context.meals?.recent ?? []).slice(0, 3).map(sanitizeMeal).filter(Boolean);
+  const nutritionTotals = computeNutritionTotals(context.meals?.today ?? []);
 
   return {
-    profile: context.profile ?? null,
+    profile: context.profile ? { weightKg: context.bodyWeightEntries?.[0]?.weightKg } : null,
     macroGoals: context.macroGoals ?? null,
     preferences: context.preferences ?? null,
     todayMeals,
     recentMeals,
     nutritionTotals,
-    todayTasks: context.tasks?.today ?? [],
-    todayWorkout: context.workouts?.today ?? [],
+    todayTasks,
+    todayWorkout,
+    // Historical records based on the temporal filter applied in the engine.
+    historical: {
+      meals: allMeals,
+      workouts: allWorkouts,
+      tasks: allTasks,
+      habits: allHabits,
+      bodyWeight: historicalBodyWeight,
+    },
   };
 }

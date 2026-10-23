@@ -4,13 +4,20 @@ import { authOptions } from "@/lib/auth";
 import { callTextWithFallback } from "@/lib/ai/groq";
 import { buildOrbitContext } from "@/lib/orbit/contextEngine";
 import { inferContextRequirements } from "@/lib/orbit/contextRequirement";
+import { resolveTemporalReference } from "@/lib/orbit/temporalResolver";
 import { serializeOrbitContext } from "@/lib/orbit/contextSerializer";
 import { TEXT_FALLBACK, MAX_TOKENS } from "@/lib/ai/models";
+import {
+  classifyOrbitIntentDetailed,
+  getSimpleConversationReply,
+} from "@/lib/orbit/intentClassifier";
 
 export const maxDuration = 30;
 
 export async function POST(req: NextRequest) {
+  const t0 = Date.now();
   const session = await getServerSession(authOptions);
+  const tAuth = Date.now();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const userName = session.user?.name?.split(" ")[0] ?? "there";
@@ -20,7 +27,28 @@ export async function POST(req: NextRequest) {
   const userMessages = (messages || []).filter((m: any) => m.role === "user");
   const latestUserMessage = userMessages[userMessages.length - 1]?.content || "";
 
-  // Infer requirements primarily from the latest user message
+  // 1. Fast-path: Deterministic classification for simple greetings & pleasantries.
+  // Bypasses expensive historical Firestore context retrieval, returning in <5ms.
+  const classifiedIntent = classifyOrbitIntentDetailed(latestUserMessage);
+  const tIntent = Date.now();
+
+  if (classifiedIntent.intent === "SIMPLE_CONVERSATION") {
+    const greetingType = classifiedIntent.greetingType ?? "general";
+    const reply = getSimpleConversationReply(greetingType, userName);
+    console.info(
+      JSON.stringify({
+        type: "aria_timing",
+        intent: "SIMPLE_CONVERSATION",
+        greetingType,
+        authMs: tAuth - t0,
+        intentMs: tIntent - tAuth,
+        totalMs: Date.now() - t0,
+      })
+    );
+    return NextResponse.json({ reply });
+  }
+
+  // 2. Infer requirements primarily from the latest user message
   const latestReq = inferContextRequirements(latestUserMessage);
 
   // For domain detection on follow-up questions (e.g. "what about protein?"),
@@ -38,7 +66,19 @@ export async function POST(req: NextRequest) {
     domains: Array.from(mergedDomains),
     temporalScope: latestReq.temporalScope ?? allUserReq.temporalScope,
   };
+  const tTemporal = Date.now();
+
+  // 3. Category context retrieval
+  const tContextStart = Date.now();
   const orbitContext = await buildOrbitContext(requirements);
+  const tContextEnd = Date.now();
+
+  // 4. Assembly & serialization
+  const tAssemblyStart = Date.now();
+  const serializedContext = serializeOrbitContext(orbitContext);
+  const contextJson = JSON.stringify(serializedContext);
+  const tAssemblyEnd = Date.now();
+
   const rawTz = orbitContext?.preferences?.timezone || "Asia/Kolkata";
   let userTimezone = "Asia/Kolkata";
   try {
@@ -82,6 +122,111 @@ Format: use **bold** for key points and - for bullet lists. Keep responses under
 You are deeply familiar with Indian food, Indian lifestyle, Indian portion sizes, and Indian fitness culture.
 NEVER say you don't know today's date — you always know it.`;
 
+  if (classifiedIntent.intent === "HISTORICAL_ANALYSIS") {
+    // 1. Resolve exact date range for historical period
+    const temporalScope = requirements.temporalScope || "last7Days";
+    const range = resolveTemporalReference(temporalScope, userTimezone, now);
+    const startStr = range.start.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: userTimezone });
+    // range.end is exclusive midnight of the next day; calculate last included calendar day
+    const lastIncludedDate = new Date(range.end.getTime() - 86400000);
+    const endStr = lastIncludedDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: userTimezone });
+
+    // 2. Extract and pre-aggregate actual retrieved metrics from orbitContext
+    const workouts = orbitContext?.workouts?.today ?? [];
+    const meals = orbitContext?.meals?.today ?? [];
+    const tasks = orbitContext?.tasks?.today ?? [];
+    const habits = orbitContext?.habits?.today ?? [];
+    const bodyWeight = orbitContext?.bodyWeightEntries ?? [];
+    const goals = orbitContext?.macroGoals;
+
+    // Workout stats
+    const workoutCount = workouts.length;
+    const totalWorkoutMinutes = workouts.reduce((acc: number, w: any) => acc + (w.durationMinutes || 0), 0);
+    const workoutDates = Array.from(new Set(workouts.map((w: any) => w.date).filter(Boolean)));
+
+    // Nutrition stats
+    const mealCount = meals.length;
+    const mealDates = Array.from(new Set(meals.map((m: any) => m.date).filter(Boolean)));
+    const totalCaloriesLogged = meals.reduce((acc: number, m: any) => acc + (m.macros?.calories || 0), 0);
+    const totalProteinLogged = meals.reduce((acc: number, m: any) => acc + (m.macros?.proteinG || 0), 0);
+    const avgCaloriesPerLoggedDay = mealDates.length > 0 ? Math.round(totalCaloriesLogged / mealDates.length) : 0;
+    const avgProteinPerLoggedDay = mealDates.length > 0 ? Math.round(totalProteinLogged / mealDates.length) : 0;
+
+    // Task stats
+    const completedTasks = tasks.filter((t: any) => t.status === "completed");
+    const pendingTasks = tasks.filter((t: any) => t.status === "pending");
+
+    // Body weight stats
+    const latestWeight = bodyWeight[0]?.weightKg;
+    const prevWeight = bodyWeight.length > 1 ? bodyWeight[1]?.weightKg : undefined;
+    const weightDelta = (latestWeight !== undefined && prevWeight !== undefined) ? Number((latestWeight - prevWeight).toFixed(2)) : undefined;
+
+    // Check if user is asking for overall weekly assessment vs domain-specific question
+    const lowerLatest = latestUserMessage.toLowerCase();
+    const isCategorySpecific = (
+      /\b(workouts?|training|gym|exercises?)\b/i.test(lowerLatest) &&
+      !/\b(all|overall|everything|momentum|consistency|review|summary|assessment|rate|score|nutrition|meals?|tasks?|habits?)\b/i.test(lowerLatest)
+    ) || (
+      /\b(meals?|nutrition|diet|calories|food)\b/i.test(lowerLatest) &&
+      !/\b(all|overall|everything|momentum|consistency|review|summary|assessment|rate|score|workouts?|tasks?|habits?)\b/i.test(lowerLatest)
+    ) || (
+      /\b(tasks?|todos?)\b/i.test(lowerLatest) &&
+      !/\b(all|overall|everything|momentum|consistency|review|summary|assessment|rate|score|workouts?|meals?|habits?)\b/i.test(lowerLatest)
+    );
+
+    system += `\n\n[MODE: HISTORICAL PERFORMANCE & WEEKLY ANALYSIS]
+You are conducting a performance and consistency review for ${userName}.
+Analysis Period: ${startStr} – ${endStr}
+
+=== VERIFIED RETRIEVED DATA FOR THIS PERIOD ===
+• Workouts logged: ${workoutCount} session(s)${workoutCount > 0 ? ` (${totalWorkoutMinutes} min total on dates: ${workoutDates.join(', ')})` : ' (No workout sessions logged in this period)'}
+${workouts.slice(0, 5).map((w: any, idx: number) => `  - Session ${idx + 1} (${w.date}): ${w.durationMinutes || 0}m, Exercises: ${(w.exercises || []).map((e: any) => e.name).join(', ') || 'General session'}`).join('\n')}
+• Meals logged: ${mealCount} meal(s) across ${mealDates.length} day(s)${mealCount > 0 ? ` (Logged days avg: ${avgCaloriesPerLoggedDay} kcal/day, ${avgProteinPerLoggedDay}g protein/day)` : ' (No meals logged in this period)'}
+${goals ? `• Macro targets: ${goals.calories} kcal, ${goals.proteinG}g protein, ${goals.carbsG}g carbs, ${goals.fatG}g fat` : ''}
+• Tasks: ${completedTasks.length} completed, ${pendingTasks.length} pending
+• Body weight: ${latestWeight !== undefined ? `${latestWeight} kg${weightDelta !== undefined ? ` (${weightDelta > 0 ? `+${weightDelta}` : weightDelta} kg since previous log)` : ''}` : 'No weigh-ins in this period'}
+• Habits: ${habits.length > 0 ? `${habits.filter((h: any) => h.completed).length}/${habits.length} habits completed` : 'No daily habits tracked in this period'}
+
+=== INSTRUCTIONS & FORMATTING REQUIREMENTS ===
+1. Use SHORT paragraphs, concise bullets, and clean Markdown. Avoid fluff, filler text, or excessive blank lines.
+2. Ground all numbers strictly in the verified data above. Never repeat user profile targets as measured results.
+3. Distinguish clearly between "No records logged" vs "Zero adherence" vs "Incomplete tracking".
+4. If records exist for only some categories, analyze the logged categories and state that the remaining categories were untracked.
+5. If there is genuinely NO data across all categories, state so briefly and honestly in 2-3 sentences. Do NOT output a lengthy generic tutorial.`;
+
+    if (!isCategorySpecific) {
+      system += `\n\nFor this overall weekly assessment, strictly format your response using this structure:
+### Weekly Review
+**Period**: ${startStr} – ${endStr}
+
+#### Overall Assessment
+[Concise 2-3 sentence personalized summary of adherence and momentum based on actual logs]
+
+#### Key Metrics
+- **Workouts**: ${workoutCount} session(s) (${totalWorkoutMinutes} min total)
+- **Nutrition**: ${mealCount > 0 ? `${mealCount} meals across ${mealDates.length} days (avg ${avgCaloriesPerLoggedDay} kcal, ${avgProteinPerLoggedDay}g P/day)` : 'No meals logged'}
+- **Tasks**: ${completedTasks.length} completed, ${pendingTasks.length} pending
+- **Body Weight**: ${latestWeight !== undefined ? `${latestWeight} kg` : 'Not logged'}
+
+#### What Went Well
+- [Specific evidence-backed observation from their actual logs]
+- [Another evidence-backed strength, e.g. consistency or macro adherence]
+
+#### What Needs Improvement
+- [Specific gap or inconsistency supported by available data, or mention untracked areas]
+
+#### Your Score
+**X/10** — [Explain score: award points for completed workouts, nutrition adherence on logged days, and task completion. Deduct for missed tracking or gaps. If data is insufficient (<2 days of data across all categories), explicitly state that data is insufficient for a reliable score rather than guessing.]
+
+#### Priorities for Next Week
+1. [Actionable priority 1]
+2. [Actionable priority 2]
+3. [Actionable priority 3]`;
+    } else {
+      system += `\n\nThe user asked a category-specific question. Provide a direct, focused analysis for that category with concise bullets and clear data. Do NOT force the 6-part weekly report template.`;
+    }
+  }
+
   if (mode === "workout") {
     system += `\n\n[MODE: WORKOUT COACH]
 Focus on exercise programming, form, sets/reps, progressive overload, muscle groups, recovery, and splits.`;
@@ -89,7 +234,7 @@ Focus on exercise programming, form, sets/reps, progressive overload, muscle gro
     // Workout mode – use orbitContext.workouts and bodyWeightEntries
     if (orbitContext?.workouts) {
       const workouts = orbitContext.workouts.today; // filtered list based on temporalScope
-      const profileWeight = orbitContext.bodyWeightEntries?.slice(-1)[0]?.weightKg;
+      const profileWeight = orbitContext.bodyWeightEntries?.[0]?.weightKg;
       if (profileWeight) {
         system += `\n\n=== ${userName.toUpperCase()}'S PROFILE ===\nBody weight: ${profileWeight} kg`;
       }
@@ -116,8 +261,7 @@ Focus on exercise programming, form, sets/reps, progressive overload, muscle gro
         system += `\n\n[No workout history yet — give general programming advice and encourage them to start logging.]`;
       }
     }
-// Legacy workoutContext block fully removed
-    }
+  }
 
   else if (mode === "diet") {
     system += `\n\n[MODE: NUTRITION COACH]
@@ -125,15 +269,15 @@ Focus on macros, Indian meal recommendations, calorie targets, protein sources, 
 
     if (orbitContext?.meals) {
       const date = new Date().toLocaleDateString('en-CA');
-const meals = orbitContext.meals.today;
-const goals: any = orbitContext.macroGoals ?? { calories:0, proteinG:0, carbsG:0, fatG:0, fiberG:0 };
-    const totals: any = meals.reduce((acc: any, m: any) => ({
-      calories: acc.calories + (m.macros?.calories ?? 0),
-      proteinG: acc.proteinG + (m.macros?.proteinG ?? 0),
-      carbsG: acc.carbsG + (m.macros?.carbsG ?? 0),
-      fatG: acc.fatG + (m.macros?.fatG ?? 0),
-      fiberG: acc.fiberG + (m.macros?.fiberG ?? 0),
-    }), {calories:0,proteinG:0,carbsG:0,fatG:0,fiberG:0});
+      const meals = orbitContext.meals.today;
+      const goals: any = orbitContext.macroGoals ?? { calories:0, proteinG:0, carbsG:0, fatG:0, fiberG:0 };
+      const totals: any = meals.reduce((acc: any, m: any) => ({
+        calories: acc.calories + (m.macros?.calories ?? 0),
+        proteinG: acc.proteinG + (m.macros?.proteinG ?? 0),
+        carbsG: acc.carbsG + (m.macros?.carbsG ?? 0),
+        fatG: acc.fatG + (m.macros?.fatG ?? 0),
+        fiberG: acc.fiberG + (m.macros?.fiberG ?? 0),
+      }), {calories:0,proteinG:0,carbsG:0,fatG:0,fiberG:0});
       const remaining = {
         calories: Math.max(0, goals.calories - totals.calories),
         proteinG: Math.max(0, goals.proteinG - totals.proteinG),
@@ -163,10 +307,10 @@ Focus on task prioritization, habit building, focus strategies, breaking down go
 
     if (orbitContext?.tasks) {
       const todayDate = new Date().toLocaleDateString('en-CA');
-const pendingToday = orbitContext.tasks.today.filter(t => t.status === 'pending');
-const completedToday = orbitContext.tasks.today.filter(t => t.status === 'completed');
-const overdue = orbitContext.tasks.today.filter(t => t.dueDate && new Date(t.dueDate) < new Date());
-const totalPending = pendingToday.length + overdue.length;
+      const pendingToday = orbitContext.tasks.today.filter(t => t.status === 'pending');
+      const completedToday = orbitContext.tasks.today.filter(t => t.status === 'completed');
+      const overdue = orbitContext.tasks.today.filter(t => t.dueDate && new Date(t.dueDate) < new Date());
+      const totalPending = pendingToday.length + overdue.length;
       system += `\n\n=== ${userName.toUpperCase()}'S TASKS — ${todayDate} ===`;
       if (overdue.length > 0) {
         system += `\nOVERDUE (${overdue.length}): ` + overdue.map((t: any) =>
@@ -187,16 +331,18 @@ const totalPending = pendingToday.length + overdue.length;
     }
   }
 
-  else {
+  else if (classifiedIntent.intent !== "HISTORICAL_ANALYSIS") {
     system += `\n\n[MODE: GENERAL]
 The user has opened Orbit without selecting a specific mode. Give helpful, grounded advice across fitness, nutrition, and productivity. Suggest they type /workout, /diet, or /tasks for more focused coaching.`;
   }
+
+  // 5. AI model invocation
+  const tAiStart = Date.now();
   try {
-    const serializedContext = serializeOrbitContext(orbitContext);
     const result = await callTextWithFallback(TEXT_FALLBACK, {
       messages: [
         { role: "system", content: system },
-        { role: "system", content: JSON.stringify(serializedContext) },
+        { role: "system", content: contextJson },
         ...messages.map((m: { role: string; content: string }) => ({
           role: m.role as "user" | "assistant",
           content: m.content,
@@ -206,11 +352,46 @@ The user has opened Orbit without selecting a specific mode. Give helpful, groun
       temperature: 0.65,
       feature: "aria",
     });
+    const tAiEnd = Date.now();
+
+    console.info(
+      JSON.stringify({
+        type: "aria_timing",
+        intent: classifiedIntent.intent,
+        temporalScope: requirements.temporalScope,
+        domains: requirements.domains,
+        payloadChars: contextJson.length,
+        timings: {
+          authMs: tAuth - t0,
+          intentMs: tIntent - tAuth,
+          temporalMs: tTemporal - tIntent,
+          contextFetchMs: tContextEnd - tContextStart,
+          contextAssemblyMs: tAssemblyEnd - tAssemblyStart,
+          aiGenerationMs: tAiEnd - tAiStart,
+          totalMs: tAiEnd - t0,
+        },
+      })
+    );
 
     return NextResponse.json({ reply: result.data });
   } catch (err: any) {
+    const tAiEnd = Date.now();
     console.error("[aria] AI error:", err?.code, err?.message);
+    console.info(
+      JSON.stringify({
+        type: "aria_timing",
+        intent: classifiedIntent.intent,
+        temporalScope: requirements.temporalScope,
+        domains: requirements.domains,
+        status: "error",
+        errorCode: err?.code ?? "UNKNOWN",
+        timings: {
+          contextFetchMs: tContextEnd - tContextStart,
+          aiGenerationMs: tAiEnd - tAiStart,
+          totalMs: tAiEnd - t0,
+        },
+      })
+    );
     return NextResponse.json({ error: err.message || "AI response failed" }, { status: 500 });
   }
 }
-

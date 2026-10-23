@@ -12,7 +12,7 @@ export interface TemporalRange {
 }
 
 /** Helper: extract Y/M/D components of a Date in a given timezone. */
-function getYMD(date: Date, tz: string) {
+export function getYMD(date: Date, tz: string) {
   const fmt = new Intl.DateTimeFormat('en-US', {
     year: 'numeric', month: 'numeric', day: 'numeric', timeZone: tz,
   });
@@ -27,14 +27,14 @@ function getYMD(date: Date, tz: string) {
 }
 
 /** Add a number of days to a YMD tuple, returning a new YMD. */
-function addDays(ymd: { year: number; month: number; day: number }, delta: number) {
+export function addDays(ymd: { year: number; month: number; day: number }, delta: number) {
   const d = new Date(Date.UTC(ymd.year, ymd.month - 1, ymd.day));
   d.setUTCDate(d.getUTCDate() + delta);
   return { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate() };
 }
 
 /** Create a full‑day range (midnight‑to‑midnight) for a given YMD in UTC. */
-function dayRange(ymd: { year: number; month: number; day: number }) {
+export function dayRange(ymd: { year: number; month: number; day: number }) {
   const start = new Date(Date.UTC(ymd.year, ymd.month - 1, ymd.day, 0, 0, 0));
   const end = new Date(Date.UTC(ymd.year, ymd.month - 1, ymd.day, 24, 0, 0));
   return { start, end };
@@ -111,8 +111,8 @@ export function resolveTemporalReference(
   }
 
   // this week (ISO week starting Monday)
-  if (lower === 'this week') {
-// Compute ISO weekday (Monday=1 .. Sunday=7) for the given timezone
+  if (lower === 'this week' || lower === 'thisweek') {
+    // Compute ISO weekday (Monday=1 .. Sunday=7) for the given timezone
     const utcMidnight = Date.UTC(year, month - 1, day);
     const weekdayUtc = new Date(utcMidnight).getUTCDay(); // 0=Sun
     const isoWeekday = ((weekdayUtc + 6) % 7) + 1; // Monday=1
@@ -125,7 +125,7 @@ export function resolveTemporalReference(
   }
 
   // last week
-  if (lower === 'last week') {
+  if (lower === 'last week' || lower === 'lastweek') {
     // Compute ISO weekday (Monday=1 .. Sunday=7) for the given timezone
     const utcMidnight = Date.UTC(year, month - 1, day);
     const weekdayUtc = new Date(utcMidnight).getUTCDay(); // 0=Sun
@@ -139,13 +139,22 @@ export function resolveTemporalReference(
   }
 
   // two days ago (full day)
-  if (lower === 'two days ago') {
+  if (lower === 'two days ago' || lower === 'twodaysago') {
     const ymd = addDays({ year, month, day }, -2);
     const { start, end } = dayRange(ymd);
     return { label: 'two days ago', start, end, timezone: tz };
   }
-  // last 7 days (rolling window)
-  if (lower === 'last 7 days' || lower === 'last seven days' || lower === 'past 7 days') {
+
+  // last 7 days (rolling window: today + 6 previous days = 7 calendar days)
+  if (
+    lower === 'last 7 days' ||
+    lower === 'last seven days' ||
+    lower === 'past 7 days' ||
+    lower === 'past seven days' ||
+    lower === 'last7days' ||
+    lower === 'past7days' ||
+    lower === '7 days'
+  ) {
     const startYmd = addDays({ year, month, day }, -6); // include today + 6 previous days
     const { start } = dayRange(startYmd);
     const { end } = dayRange({ year, month, day }); // exclusive end (midnight of next day)
@@ -153,7 +162,7 @@ export function resolveTemporalReference(
   }
 
   // two weeks ago (full day)
-  if (lower === 'two weeks ago') {
+  if (lower === 'two weeks ago' || lower === 'twoweeksago') {
     const ymd = addDays({ year, month, day }, -14);
     const { start, end } = dayRange(ymd);
     return { label: 'two weeks ago', start, end, timezone: tz };
@@ -181,7 +190,7 @@ export function resolveTemporalReference(
   if (rangeMatch) {
     const monthMap: Record<string, number> = {
       january: 1, february: 2, march: 3, april: 4, may: 5, june: 6,
-      july: 7, august: 8, september: 9, october: 10, November: 11, december: 12,
+      july: 7, august: 8, september: 9, october: 10, november: 11, december: 12,
     };
     const parse = (text: string, defaultYear: number) => {
       const parts = text.trim().split(/\s+/);
@@ -211,4 +220,5 @@ export function resolveTemporalReference(
 
   // fallback – today range
   const { start, end } = dayRange({ year, month, day });
-  return { label: lower || 'today', start, end, timezone: tz };}
+  return { label: lower || 'today', start, end, timezone: tz };
+}

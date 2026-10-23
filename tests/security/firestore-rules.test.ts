@@ -361,6 +361,36 @@ describe("Firestore Security Rules Verification", { timeout: 30000 }, () => {
       expect(projSnap.docs.length).toBe(2);
     });
 
+    it("allows historical queries (meals, workouts, bodyweight) filtered by userId == request.auth.uid", async () => {
+      const dbA = testEnv.authenticatedContext(USER_A).firestore();
+      const qMeals = query(collection(dbA, "meals"), where("userId", "==", USER_A));
+      const mealSnap = await assertSucceeds(getDocs(qMeals));
+      expect(mealSnap.docs.length).toBe(1);
+
+      const qWorkouts = query(collection(dbA, "workouts"), where("userId", "==", USER_A));
+      const workoutSnap = await assertSucceeds(getDocs(qWorkouts));
+      expect(workoutSnap.docs.length).toBe(1);
+
+      const qBw = query(collection(dbA, "bodyweight"), where("userId", "==", USER_A));
+      const bwSnap = await assertSucceeds(getDocs(qBw));
+      expect(bwSnap.docs.length).toBe(1);
+    });
+
+    it("denies unauthenticated client queries on historical collections", async () => {
+      const unauthDb = testEnv.unauthenticatedContext().firestore();
+      await assertFails(getDocs(query(collection(unauthDb, "meals"), where("userId", "==", USER_A))));
+      await assertFails(getDocs(query(collection(unauthDb, "workouts"), where("userId", "==", USER_A))));
+      await assertFails(getDocs(query(collection(unauthDb, "tasks"), where("userId", "==", USER_A))));
+      await assertFails(getDocs(query(collection(unauthDb, "bodyweight"), where("userId", "==", USER_A))));
+    });
+
+    it("denies client access to habits collection (enforced by catch-all deny)", async () => {
+      const dbA = testEnv.authenticatedContext(USER_A).firestore();
+      await assertFails(getDoc(doc(dbA, "habits", "habit_1")));
+      await assertFails(getDocs(query(collection(dbA, "habits"), where("userId", "==", USER_A))));
+      await assertFails(addDoc(collection(dbA, "habits"), { userId: USER_A, name: "Drink water" }));
+    });
+
     it("denies queries without userId filter or querying for another user", async () => {
       const dbA = testEnv.authenticatedContext(USER_A).firestore();
 

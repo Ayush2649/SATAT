@@ -72,7 +72,7 @@ function groqClient(): Groq {
 const CALL_TIMEOUT_MS = 25_000;
 const MAX_RETRY_AFTER_MS = 3_000;
 
-function classifyError(err: unknown): AiError {
+function classifyError(err: unknown, timeoutMs = CALL_TIMEOUT_MS): AiError {
   if (err instanceof AiError) return err;
 
   const e = err as Record<string, unknown>;
@@ -91,16 +91,19 @@ function classifyError(err: unknown): AiError {
 
   if (
     status === 404 ||
+    status === 502 ||
+    status === 503 ||
     msg.includes("model_not_found") ||
     msg.includes("model_decommissioned") ||
-    msg.includes("does not exist")
+    msg.includes("does not exist") ||
+    msg.includes("Service Unavailable")
   ) {
     return new AiError("MODEL_UNAVAILABLE", `Model unavailable: ${msg}`);
   }
 
   const isAbort = err instanceof Error && (err.name === "AbortError" || err.message.includes("aborted"));
   if (isAbort) {
-    return new AiError("TIMEOUT", `Request timed out after ${CALL_TIMEOUT_MS}ms`);
+    return new AiError("TIMEOUT", `Request timed out after ${timeoutMs}ms`);
   }
 
   return new AiError("UNKNOWN", msg);
@@ -129,6 +132,7 @@ interface CoreCallOptions {
   maxTokens: number;
   temperature?: number;
   jsonMode?: boolean;
+  timeoutMs?: number;
 }
 
 interface CoreResult {
@@ -140,8 +144,9 @@ interface CoreResult {
 }
 
 async function coreCall(opts: CoreCallOptions): Promise<CoreResult> {
+  const timeoutMs = opts.timeoutMs ?? CALL_TIMEOUT_MS;
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), CALL_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const hasJsonWord = opts.messages.some(
@@ -215,6 +220,7 @@ export interface TextCallOptions {
   messages: ChatMessage[];
   maxTokens: number;
   temperature?: number;
+  timeoutMs?: number;
 }
 
 export async function callText(opts: TextCallOptions): Promise<AiResult<string>> {
@@ -226,7 +232,7 @@ export async function callText(opts: TextCallOptions): Promise<AiResult<string>>
 
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const res = await coreCall({ ...opts, maxTokens: currentMaxTokens });
+      const res = await coreCall({ ...opts, maxTokens: currentMaxTokens, timeoutMs: opts.timeoutMs });
 
       if (res.finishReason === "length") {
         console.warn(
@@ -259,7 +265,7 @@ export async function callText(opts: TextCallOptions): Promise<AiResult<string>>
         },
       };
     } catch (err) {
-      const ae = classifyError(err);
+      const ae = classifyError(err, opts.timeoutMs);
       lastErr = ae;
       if (ae.code === "RATE_LIMITED" && attempt === 0) {
         await new Promise((r) => setTimeout(r, ae.retryAfterMs ?? MAX_RETRY_AFTER_MS));
@@ -282,6 +288,7 @@ export interface JsonCallOptions<T> {
   temperature?: number;
   schema: ZodType<T>;
   schemaName: string;
+  timeoutMs?: number;
 }
 
 export async function callJsonStrict<T>(opts: JsonCallOptions<T>): Promise<AiResult<T>> {
@@ -299,6 +306,7 @@ export async function callJsonStrict<T>(opts: JsonCallOptions<T>): Promise<AiRes
         maxTokens: currentMaxTokens,
         temperature: opts.temperature ?? 0,
         jsonMode: true,
+        timeoutMs: opts.timeoutMs,
       });
 
       if (res.finishReason === "length") {
@@ -401,14 +409,26 @@ export async function callTextWithFallback(
   opts: Omit<TextCallOptions, "model">,
 ): Promise<AiResult<string>> {
   let lastErr: AiError | null = null;
-  for (const model of modelChain) {
+  const totalModels = modelChain.length;
+
+  for (let i = 0; i < totalModels; i++) {
+    const model = modelChain[i];
+    const isPrimaryWithFallback = i === 0 && totalModels > 1;
+    // Primary model gets 14s when fallback exists so fallback completes within 30s route budget
+    const timeoutMs = isPrimaryWithFallback ? 14_000 : (opts.timeoutMs ?? CALL_TIMEOUT_MS);
+
     try {
-      return await callText({ ...opts, model });
+      return await callText({ ...opts, model, timeoutMs });
     } catch (err) {
-      const ae = classifyError(err);
-      if (ae.code === "MODEL_UNAVAILABLE") {
-        console.warn(`[ai/groq] model ${model} unavailable, trying next`);
-        lastErr = ae;
+      const ae = classifyError(err, timeoutMs);
+      lastErr = ae;
+      if (
+        i < totalModels - 1 &&
+        (ae.code === "MODEL_UNAVAILABLE" || ae.code === "TIMEOUT" || ae.code === "RATE_LIMITED")
+      ) {
+        console.warn(
+          `[ai/groq] Model ${model} failed (${ae.code}: ${ae.message}). Falling back to ${modelChain[i + 1]}...`
+        );
         continue;
       }
       throw ae;
@@ -422,14 +442,25 @@ export async function callJsonStrictWithFallback<T>(
   opts: Omit<JsonCallOptions<T>, "model">,
 ): Promise<AiResult<T>> {
   let lastErr: AiError | null = null;
-  for (const model of modelChain) {
+  const totalModels = modelChain.length;
+
+  for (let i = 0; i < totalModels; i++) {
+    const model = modelChain[i];
+    const isPrimaryWithFallback = i === 0 && totalModels > 1;
+    const timeoutMs = isPrimaryWithFallback ? 14_000 : (opts.timeoutMs ?? CALL_TIMEOUT_MS);
+
     try {
-      return await callJsonStrict({ ...opts, model });
+      return await callJsonStrict({ ...opts, model, timeoutMs });
     } catch (err) {
-      const ae = classifyError(err);
-      if (ae.code === "MODEL_UNAVAILABLE") {
-        console.warn(`[ai/groq] model ${model} unavailable, trying next`);
-        lastErr = ae;
+      const ae = classifyError(err, timeoutMs);
+      lastErr = ae;
+      if (
+        i < totalModels - 1 &&
+        (ae.code === "MODEL_UNAVAILABLE" || ae.code === "TIMEOUT" || ae.code === "RATE_LIMITED")
+      ) {
+        console.warn(
+          `[ai/groq] Model ${model} failed (${ae.code}: ${ae.message}). Falling back to ${modelChain[i + 1]}...`
+        );
         continue;
       }
       throw ae;

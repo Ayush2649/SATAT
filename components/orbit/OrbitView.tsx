@@ -13,6 +13,7 @@ import { MarkdownText } from "@/components/ui/MarkdownText";
 import { OrbitRecommendationCard, OrbitInsightCard } from "@/components/orbit/OrbitActionCard";
 import { getDietContext, getWorkoutContext, getTaskContext } from "@/lib/orbitContext";
 import type { OrbitMessage, OrbitFocusMode, OrbitAction } from "@/types/orbit";
+import { classifyOrbitIntent, type OrbitIntent } from "@/lib/orbit/intentClassifier";
 
 interface OrbitViewProps {
   isOverlay?: boolean;
@@ -38,10 +39,12 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
   const [error, setError] = useState<string | null>(null);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
   const [orbitState, setOrbitState] = useState<OrbitState>("idle");
+  const [pendingIntent, setPendingIntent] = useState<OrbitIntent>("GENERAL_COACHING");
 
   const transitionTimerRef = useRef<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const lastFailedMessageRef = useRef<string | null>(null);
 
   // Clean up any pending state transition timers on unmount
   useEffect(() => {
@@ -170,9 +173,11 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
       const nextMessages = [...messages, userMsg];
       setMessages(nextMessages);
       persistMessages(nextMessages);
+      lastFailedMessageRef.current = text;
       setInput("");
       setLoading(true);
       setOrbitState("thinking");
+      setPendingIntent(classifyOrbitIntent(text));
       if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
 
       // Reset textarea height
@@ -218,6 +223,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
         const updated = [...nextMessages, assistantMsg];
         setMessages(updated);
         persistMessages(updated);
+        lastFailedMessageRef.current = null;
 
         // Trigger one gentle glow pulse on response completion, then return to idle
         setOrbitState("success");
@@ -234,8 +240,102 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
     [input, loading, messages, focusMode]
   );
 
+  // Retry sending the last user message without duplicating it in the message list
+  const handleRetry = useCallback(async () => {
+    if (loading) return;
+
+    // Find the latest user message in the current conversation
+    const lastUserIndex = messages.map((m) => m.role).lastIndexOf("user");
+    if (lastUserIndex === -1 && !lastFailedMessageRef.current) {
+      return;
+    }
+
+    let payloadMessages: Array<{ role: string; content: string }>;
+    let baseMessages = messages;
+    let intentText = "";
+
+    if (lastUserIndex !== -1) {
+      payloadMessages = messages.map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
+      intentText = messages[lastUserIndex].content;
+    } else {
+      const text = lastFailedMessageRef.current!;
+      intentText = text;
+      const userMsg: OrbitMessage = {
+        id: `user-${Date.now()}`,
+        role: "user",
+        content: text,
+        timestamp: Date.now(),
+        type: "text",
+      };
+      baseMessages = [...messages, userMsg];
+      setMessages(baseMessages);
+      persistMessages(baseMessages);
+      payloadMessages = baseMessages.map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
+    }
+
+    setError(null);
+    setLoading(true);
+    setOrbitState("thinking");
+    setPendingIntent(classifyOrbitIntent(intentText));
+    if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
+
+    try {
+      const dietContext = getDietContext();
+      const workoutContext = getWorkoutContext();
+      const taskContext = getTaskContext();
+
+      const res = await fetch("/api/aria", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: payloadMessages,
+          mode: focusMode === "all" ? null : focusMode,
+          dietContext,
+          workoutContext,
+          taskContext,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Orbit response error (${res.status})`);
+      }
+
+      const data = await res.json();
+      const assistantMsg: OrbitMessage = {
+        id: `assistant-${Date.now()}`,
+        role: "assistant",
+        content: data.reply || "I encountered an issue processing your request.",
+        timestamp: Date.now(),
+        type: "markdown",
+      };
+
+      const updated = [...baseMessages, assistantMsg];
+      setMessages(updated);
+      persistMessages(updated);
+      lastFailedMessageRef.current = null;
+
+      // Trigger one gentle glow pulse on response completion, then return to idle
+      setOrbitState("success");
+      transitionTimerRef.current = setTimeout(() => {
+        setOrbitState("idle");
+      }, 900);
+    } catch (err: any) {
+      setError("Orbit couldn't connect right now. Please try again.");
+      setOrbitState("error");
+    } finally {
+      setLoading(false);
+    }
+  }, [loading, messages, focusMode]);
+
   // Clear conversation
   const handleReset = () => {
+    lastFailedMessageRef.current = null;
     if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
     setMessages([]);
     setError(null);
@@ -297,7 +397,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
   return (
     <div
       className={cn(
-        "orbit-view-root flex flex-col h-full w-full max-w-3xl mx-auto select-none bg-surface overflow-hidden",
+        "orbit-view-root flex flex-col h-full w-full max-w-3xl mx-auto select-none bg-surface overflow-hidden min-w-0",
         className
       )}
     >
@@ -367,7 +467,11 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
             </div>
             <p className="text-[11px] font-medium leading-none mt-1 transition-colors duration-200" style={{ color: "var(--text-secondary)" }}>
               {orbitState === "thinking"
-                ? "Analyzing context..."
+                ? pendingIntent === "SIMPLE_CONVERSATION"
+                  ? "Thinking..."
+                  : pendingIntent === "HISTORICAL_ANALYSIS"
+                  ? "Analyzing weekly records..."
+                  : "Analyzing context..."
                 : orbitState === "responding"
                 ? "Generating response..."
                 : orbitState === "error"
@@ -477,7 +581,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
       </div>
 
       {/* ── 3. CONVERSATION VIEWPORT / MESSAGES SCROLL AREA ── */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4 space-y-4 scrollbar-none">
+      <div className="flex-1 min-h-0 min-w-0 w-full overflow-y-auto overflow-x-hidden px-4 sm:px-6 py-4 space-y-4 scrollbar-none">
         {/* EMPTY STATE */}
         {messages.length === 0 && (
           <div className="flex flex-col items-center text-center py-6 sm:py-8 max-w-lg mx-auto animate-fade-in">
@@ -608,7 +712,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
         {messages.map((m) => (
           <div
             key={m.id}
-            className={cn("flex flex-col", m.role === "user" ? "items-end" : "items-start")}
+            className={cn("flex flex-col w-full min-w-0", m.role === "user" ? "items-end" : "items-start")}
           >
             {/* Assistant Header Badge */}
             {m.role === "assistant" && (
@@ -634,10 +738,10 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
             {/* Message Body */}
             <div
               className={cn(
-                "rounded-2xl transition-all leading-relaxed",
+                "rounded-2xl transition-all leading-relaxed break-words [overflow-wrap:anywhere]",
                 m.role === "user"
                   ? "max-w-[85%] px-4 py-2.5 rounded-br-sm text-sm"
-                  : "w-full px-4 py-3 rounded-bl-sm text-sm"
+                  : "w-full max-w-full min-w-0 px-4 py-3 rounded-bl-sm text-sm"
               )}
               style={
                 m.role === "user"
@@ -656,7 +760,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
               {m.role === "assistant" ? (
                 <MarkdownText text={m.content} />
               ) : (
-                <p className="whitespace-pre-wrap">{m.content}</p>
+                <p className="whitespace-pre-wrap break-words">{m.content}</p>
               )}
 
               {/* Future-Ready Recommendation Card Attachment */}
@@ -714,7 +818,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                 <OrbitIcon size={16} state={orbitState === "responding" ? "responding" : "thinking"} />
               </div>
               <span className="text-xs text-muted">
-                {orbitState === "responding" ? "Formulating recommendation..." : "Analyzing context..."}
+                {orbitState === "responding" ? "Formulating recommendation..." : pendingIntent === "SIMPLE_CONVERSATION" ? "Thinking..." : pendingIntent === "HISTORICAL_ANALYSIS" ? "Analyzing weekly records..." : "Analyzing context..."}
               </span>
             </div>
           </div>
@@ -744,7 +848,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
             </div>
             <button
               type="button"
-              onClick={() => handleSend()}
+              onClick={handleRetry}
               className="px-2.5 py-1 rounded-md font-semibold text-xs border hover:bg-white/5 flex items-center gap-1"
               style={{ borderColor: "rgba(243, 165, 131, 0.3)" }}
             >
@@ -754,6 +858,8 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
           </div>
         )}
 
+        {/* Spacer to guarantee the final line is never obscured by composer */}
+        <div className="h-4 shrink-0" aria-hidden="true" />
         <div ref={messagesEndRef} />
       </div>
 
