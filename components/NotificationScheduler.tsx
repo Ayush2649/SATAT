@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { onSnapshot, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { useFirebaseAuth } from "@/components/FirebaseAuthProvider";
 import { useNotifications } from "@/hooks/useNotifications";
 import { getWorkoutSessions, getAllTasks } from "@/lib/firestore";
 import { DEFAULT_NOTIFICATION_PREFS } from "@/types";
@@ -11,9 +12,11 @@ import type { NotificationPrefs } from "@/types";
 import { todayString } from "@/lib/utils";
 
 export default function NotificationScheduler() {
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
+  const { isReady, firebaseUser } = useFirebaseAuth();
 
   const userId =
+    firebaseUser?.uid ??
     (session?.user as { id?: string } | undefined)?.id ??
     session?.user?.email ??
     "";
@@ -25,9 +28,7 @@ export default function NotificationScheduler() {
 
   // Live-sync notification preferences from Firestore.
   useEffect(() => {
-    if (status !== "authenticated" || !userId) return;
-
-    console.info("[NotificationScheduler] Starting preferences listener.");
+    if (!userId || !isReady || !firebaseUser) return;
 
     const prefsRef = doc(db, "notificationPrefs", userId);
 
@@ -41,22 +42,19 @@ export default function NotificationScheduler() {
         }
       },
       (error) => {
-        console.error(
-          "[NotificationScheduler] Preferences listener failed:",
-          {
-            code: error.code,
-            message: error.message,
-          }
-        );
+        console.error("[NotificationScheduler] Preferences listener failed:", {
+          code: error.code,
+          message: error.message,
+        });
       }
     );
 
     return unsub;
-  }, [status, userId]);
+  }, [userId, isReady, firebaseUser]);
 
   // Load workout and task data once authentication is ready.
   useEffect(() => {
-    if (status !== "authenticated" || !userId) return;
+    if (!userId || !isReady || !firebaseUser) return;
 
     let cancelled = false;
 
@@ -96,7 +94,7 @@ export default function NotificationScheduler() {
     return () => {
       cancelled = true;
     };
-  }, [status, userId]);
+  }, [userId, isReady, firebaseUser]);
 
   useNotifications({
     userId,

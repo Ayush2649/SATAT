@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
 import { useSession } from "next-auth/react";
+import { useFirebaseAuth } from "@/components/FirebaseAuthProvider";
 import {
   Plus, Minus, Utensils, Camera, Trash2, X, Loader2, Settings,
   ChevronLeft, ChevronRight, Sparkles, CheckCircle2, AlertCircle,
@@ -46,7 +47,8 @@ function MacroProgress({ label, value, goal, unit, color }: {
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function DietPage() {
   const { data: session } = useSession();
-  const userId = (session?.user as any)?.id ?? session?.user?.email ?? "";
+  const { firebaseUser, isReady } = useFirebaseAuth();
+  const userId = firebaseUser?.uid ?? (session?.user as any)?.id ?? session?.user?.email ?? "";
 
   const [date, setDate] = useState(todayString());
   const [meals, setMeals] = useState<MealEntry[]>([]);
@@ -63,7 +65,7 @@ export default function DietPage() {
 
   // Load the selected day's meals, goals, and saved meal templates.
   useEffect(() => {
-    if (!userId) {
+    if (!userId || !firebaseUser || !isReady) {
       setMeals([]);
       return;
     }
@@ -100,7 +102,7 @@ export default function DietPage() {
     return () => {
       cancelled = true;
     };
-  }, [userId, date]);
+  }, [userId, date, firebaseUser, isReady]);
 
   const totals = meals.reduce<MealMacros>(
     (acc, meal) => ({
@@ -1346,7 +1348,7 @@ function MealScannerModal({
         </div>
       )}
       <p className="text-[11px] text-gray-400 dark:text-gray-500 text-center pt-2">
-        Photos are processed by Google Gemini for nutritional identification.
+        Photos are analyzed by AI to identify foods and estimate portions.
       </p>
     </Modal>
   );

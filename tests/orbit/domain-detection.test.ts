@@ -1,16 +1,15 @@
 // tests/orbit/domain-detection.test.ts
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { inferContextRequirements } from "@/lib/orbit/contextRequirement";
-import type { ContextRequirements } from "@/lib/orbit/contextRequirement";
+import { inferContextRequirements, type ContextRequirements } from "@/lib/orbit/contextRequirement";
 import { buildOrbitContext } from "@/lib/orbit/contextEngine";
-import * as firestore from "@/lib/firestore";
+import * as serverContext from "@/lib/orbit/serverContext";
 import * as nextAuth from "next-auth";
 
 vi.mock("next-auth", () => ({
   getServerSession: vi.fn(),
 }));
 
-vi.mock("@/lib/firestore", () => ({
+vi.mock("@/lib/orbit/serverContext", () => ({
   getAllMeals: vi.fn(),
   getAllTasks: vi.fn(),
   getWorkoutSessions: vi.fn(),
@@ -99,7 +98,7 @@ describe("Orbit context retrieval respects mode injection", () => {
       date: new Date().toLocaleDateString("en-CA"),
       macros: { calories: 300, proteinG: 20, carbsG: 30, fatG: 10 },
     }];
-    (firestore.getAllMeals as any).mockResolvedValue(mockMeals);
+    (serverContext.getAllMeals as any).mockResolvedValue(mockMeals);
     const requirements: ContextRequirements = { domains: ["meals", "nutrition"], temporalScope: undefined };
     const ctx = await buildOrbitContext(requirements);
     expect(ctx?.meals?.today?.length).toBeGreaterThan(0);

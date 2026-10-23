@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { useFirebaseAuth } from "@/components/FirebaseAuthProvider";
 import { Utensils, Dumbbell, CheckSquare, Scale, X, Loader2, Check } from "lucide-react";
 import { logBodyWeight } from "@/lib/firestore";
 import { useToast } from "@/components/ui/Toast";
@@ -15,7 +16,8 @@ interface TrackSheetProps {
 export default function TrackSheet({ isOpen, onClose }: TrackSheetProps) {
   const router = useRouter();
   const { data: session } = useSession();
-  const userId = (session?.user as any)?.id ?? session?.user?.email ?? "";
+  const { firebaseUser } = useFirebaseAuth();
+  const userId = firebaseUser?.uid ?? (session?.user as any)?.id ?? session?.user?.email ?? "";
   const { toast } = useToast();
 
   const [weightKg, setWeightKg] = useState("");
@@ -72,9 +74,9 @@ export default function TrackSheet({ isOpen, onClose }: TrackSheetProps) {
       <div
         className="relative w-full lg:max-w-md rounded-t-2xl lg:rounded-2xl p-5 z-10 transition-transform animate-slide-up"
         style={{
-          background: "var(--satat-surface, #0D0F11)",
-          border: "1px solid var(--satat-border, rgba(255,255,255,0.08))",
-          boxShadow: "0 24px 48px rgba(0,0,0,0.8)",
+          background: "var(--surface)",
+          border: "1px solid var(--border)",
+          boxShadow: "var(--shadow-dialog)",
         }}
         role="dialog"
         aria-label="Quick Track Actions"
@@ -82,7 +84,7 @@ export default function TrackSheet({ isOpen, onClose }: TrackSheetProps) {
         {/* Mobile handle indicator */}
         <div
           className="w-10 h-1 rounded-full mx-auto mb-4 lg:hidden"
-          style={{ background: "var(--satat-border-strong)" }}
+          style={{ background: "var(--border-strong)" }}
         />
 
         <div className="flex items-center justify-between mb-4">
@@ -109,15 +111,15 @@ export default function TrackSheet({ isOpen, onClose }: TrackSheetProps) {
           <div className="grid grid-cols-2 gap-2.5">
             <button
               onClick={() => handleAction("/dashboard/diet")}
-              className="flex flex-col items-start p-3.5 rounded-xl text-left transition-all hover:border-white/15"
+              className="flex flex-col items-start p-3.5 rounded-xl text-left transition-all hover:border-[var(--brand)] active:scale-[0.98]"
               style={{
-                background: "var(--satat-surface-elevated, #121519)",
-                border: "1px solid var(--satat-border-subtle, rgba(255,255,255,0.05))",
+                background: "var(--surface-elevated)",
+                border: "1px solid var(--border-subtle)",
               }}
             >
               <div
                 className="w-8 h-8 rounded-lg flex items-center justify-center mb-2"
-                style={{ background: "rgba(110, 139, 255, 0.12)", color: "var(--satat-brand, #6E8BFF)" }}
+                style={{ background: "var(--brand-subtle)", color: "var(--brand)" }}
               >
                 <Utensils className="w-4 h-4" />
               </div>
@@ -131,15 +133,15 @@ export default function TrackSheet({ isOpen, onClose }: TrackSheetProps) {
 
             <button
               onClick={() => handleAction("/dashboard/workout")}
-              className="flex flex-col items-start p-3.5 rounded-xl text-left transition-all hover:border-white/15"
+              className="flex flex-col items-start p-3.5 rounded-xl text-left transition-all hover:border-[var(--brand)] active:scale-[0.98]"
               style={{
-                background: "var(--satat-surface-elevated, #121519)",
-                border: "1px solid var(--satat-border-subtle, rgba(255,255,255,0.05))",
+                background: "var(--surface-elevated)",
+                border: "1px solid var(--border-subtle)",
               }}
             >
               <div
                 className="w-8 h-8 rounded-lg flex items-center justify-center mb-2"
-                style={{ background: "rgba(99, 210, 184, 0.12)", color: "var(--satat-mint, #63D2B8)" }}
+                style={{ background: "rgba(34, 197, 94, 0.12)", color: "var(--success)" }}
               >
                 <Dumbbell className="w-4 h-4" />
               </div>
@@ -153,15 +155,15 @@ export default function TrackSheet({ isOpen, onClose }: TrackSheetProps) {
 
             <button
               onClick={() => handleAction("/dashboard/tasks")}
-              className="flex flex-col items-start p-3.5 rounded-xl text-left transition-all hover:border-white/15"
+              className="flex flex-col items-start p-3.5 rounded-xl text-left transition-all hover:border-[var(--brand)] active:scale-[0.98]"
               style={{
-                background: "var(--satat-surface-elevated, #121519)",
-                border: "1px solid var(--satat-border-subtle, rgba(255,255,255,0.05))",
+                background: "var(--surface-elevated)",
+                border: "1px solid var(--border-subtle)",
               }}
             >
               <div
                 className="w-8 h-8 rounded-lg flex items-center justify-center mb-2"
-                style={{ background: "rgba(242, 160, 128, 0.12)", color: "var(--satat-peach, #F2A080)" }}
+                style={{ background: "rgba(245, 158, 11, 0.12)", color: "var(--warning)" }}
               >
                 <CheckSquare className="w-4 h-4" />
               </div>
@@ -175,10 +177,10 @@ export default function TrackSheet({ isOpen, onClose }: TrackSheetProps) {
 
             <button
               onClick={() => setShowWeightInput(true)}
-              className="flex flex-col items-start p-3.5 rounded-xl text-left transition-all hover:border-white/15"
+              className="flex flex-col items-start p-3.5 rounded-xl text-left transition-all hover:border-[var(--brand)] active:scale-[0.98]"
               style={{
-                background: "var(--satat-surface-elevated, #121519)",
-                border: "1px solid var(--satat-border-subtle, rgba(255,255,255,0.05))",
+                background: "var(--surface-elevated)",
+                border: "1px solid var(--border-subtle)",
               }}
             >
               <div
@@ -202,7 +204,7 @@ export default function TrackSheet({ isOpen, onClose }: TrackSheetProps) {
                 type="button"
                 onClick={() => setShowWeightInput(false)}
                 className="text-xs font-medium hover:underline"
-                style={{ color: "var(--satat-brand, #6E8BFF)" }}
+                style={{ color: "var(--brand)" }}
               >
                 ← Back
               </button>
@@ -223,8 +225,8 @@ export default function TrackSheet({ isOpen, onClose }: TrackSheetProps) {
                 onChange={(e) => setWeightKg(e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl text-sm font-semibold focus:outline-none focus:ring-1 focus:ring-brand"
                 style={{
-                  background: "var(--satat-surface-high, #181C21)",
-                  border: "1px solid var(--satat-border, rgba(255,255,255,0.08))",
+                  background: "var(--surface-high)",
+                  border: "1px solid var(--border)",
                   color: "var(--text-primary)",
                 }}
               />
@@ -239,9 +241,9 @@ export default function TrackSheet({ isOpen, onClose }: TrackSheetProps) {
                 onClick={() => setShowWeightInput(false)}
                 className="flex-1 py-2 rounded-xl text-xs font-semibold"
                 style={{
-                  background: "var(--satat-surface-elevated, #121519)",
+                  background: "var(--surface-elevated)",
                   color: "var(--text-secondary)",
-                  border: "1px solid var(--satat-border-subtle, rgba(255,255,255,0.05))",
+                  border: "1px solid var(--border-subtle)",
                 }}
               >
                 Cancel
@@ -251,8 +253,8 @@ export default function TrackSheet({ isOpen, onClose }: TrackSheetProps) {
                 disabled={!weightKg || loggingWeight || weightSuccess}
                 className="flex-1 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
                 style={{
-                  background: "var(--satat-brand, #6E8BFF)",
-                  color: "var(--brand-text, #08090A)",
+                  background: "var(--brand)",
+                  color: "var(--brand-text)",
                 }}
               >
                 {loggingWeight ? (
