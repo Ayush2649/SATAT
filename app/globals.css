@@ -892,6 +892,7 @@ button:disabled { cursor: not-allowed; }
   height: 100%;
   padding: 0;
   overflow: hidden;
+  min-width: 0;
 }
 
 @media (min-width: 640px) {

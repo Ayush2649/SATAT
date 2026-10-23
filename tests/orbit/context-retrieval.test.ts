@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { inferContextRequirements } from "@/lib/orbit/contextRequirement";
 import { buildOrbitContext } from "@/lib/orbit/contextEngine";
-import * as firestore from "@/lib/firestore";
+import { serializeOrbitContext } from "@/lib/orbit/contextSerializer";
+import * as serverContext from "@/lib/orbit/serverContext";
 import * as domainUser from "@/lib/domain/user";
 import * as nextAuth from "next-auth";
 
@@ -9,7 +10,7 @@ vi.mock("next-auth", () => ({
   getServerSession: vi.fn(),
 }));
 
-vi.mock("@/lib/firestore", () => ({
+vi.mock("@/lib/orbit/serverContext", () => ({
   getAllTasks: vi.fn(),
   getAllMeals: vi.fn(),
   getWorkoutSessions: vi.fn(),
@@ -37,9 +38,9 @@ describe("Orbit Context Retrieval & Temporal Scope Fixes", () => {
     (domainUser.getUserProfile as any).mockResolvedValue({ id: mockUserId });
     (domainUser.getUserMacroGoals as any).mockResolvedValue({ calories: 2000, proteinG: 150 });
     (domainUser.getUserPreferences as any).mockResolvedValue({ timezone: "Asia/Kolkata" });
-    (firestore.getBodyWeightEntries as any).mockResolvedValue([]);
-    (firestore.getWorkoutSessions as any).mockResolvedValue([]);
-    (firestore.getAllHabits as any).mockResolvedValue([]);
+    (serverContext.getBodyWeightEntries as any).mockResolvedValue([]);
+    (serverContext.getWorkoutSessions as any).mockResolvedValue([]);
+    (serverContext.getAllHabits as any).mockResolvedValue([]);
   });
 
   it('1. "What did I eat?" retrieves the appropriate existing meal records on the first request', async () => {
@@ -47,7 +48,7 @@ describe("Orbit Context Retrieval & Temporal Scope Fixes", () => {
       { id: "m1", name: "Eggs & Toast", date: todayStr, macros: { calories: 350, proteinG: 20, carbsG: 30, fatG: 12 } },
       { id: "m2", name: "Dal Rice", date: yesterdayStr, macros: { calories: 500, proteinG: 15, carbsG: 80, fatG: 10 } },
     ];
-    (firestore.getAllMeals as any).mockResolvedValue(mockMeals);
+    (serverContext.getAllMeals as any).mockResolvedValue(mockMeals);
 
     // Initial query with no temporal scope keyword
     const req = inferContextRequirements("What did I eat?");
@@ -66,7 +67,7 @@ describe("Orbit Context Retrieval & Temporal Scope Fixes", () => {
       { id: "t1", title: "Review Pull Request", dueDate: todayStr, status: "pending", priority: "high" },
       { id: "t2", title: "Completed Yesterday", dueDate: yesterdayStr, status: "completed" },
     ];
-    (firestore.getAllTasks as any).mockResolvedValue(mockTasks);
+    (serverContext.getAllTasks as any).mockResolvedValue(mockTasks);
 
     const req = inferContextRequirements("What tasks do I have?");
     expect(req.domains).toContain("tasks");
@@ -85,8 +86,8 @@ describe("Orbit Context Retrieval & Temporal Scope Fixes", () => {
     const mockTasks = [
       { id: "t-today", title: "Daily Workout", dueDate: todayStr, status: "pending" },
     ];
-    (firestore.getAllMeals as any).mockResolvedValue(mockMeals);
-    (firestore.getAllTasks as any).mockResolvedValue(mockTasks);
+    (serverContext.getAllMeals as any).mockResolvedValue(mockMeals);
+    (serverContext.getAllTasks as any).mockResolvedValue(mockTasks);
 
     // Explicitly pass undefined temporalScope
     const context = await buildOrbitContext({
@@ -140,7 +141,7 @@ describe("Orbit Context Retrieval & Temporal Scope Fixes", () => {
       { id: "m-today", name: "Breakfast Today", date: todayStr, macros: { calories: 300, proteinG: 15, carbsG: 30, fatG: 10 } },
       { id: "m-yesterday", name: "Dinner Yesterday", date: yesterdayStr, macros: { calories: 600, proteinG: 35, carbsG: 50, fatG: 18 } },
     ];
-    (firestore.getAllMeals as any).mockResolvedValue(mockMeals);
+    (serverContext.getAllMeals as any).mockResolvedValue(mockMeals);
 
     // Query 1: Explicit today
     const reqToday = inferContextRequirements("What did I eat today?");
@@ -182,8 +183,8 @@ describe("Orbit Context Retrieval & Temporal Scope Fixes", () => {
 
   it("7. Missing records are still reported honestly, without fabricated data", async () => {
     // Empty Firestore collections
-    (firestore.getAllMeals as any).mockResolvedValue([]);
-    (firestore.getAllTasks as any).mockResolvedValue([]);
+    (serverContext.getAllMeals as any).mockResolvedValue([]);
+    (serverContext.getAllTasks as any).mockResolvedValue([]);
 
     const req = inferContextRequirements("What did I eat and what tasks do I have?");
     const context = await buildOrbitContext(req);
@@ -193,5 +194,131 @@ describe("Orbit Context Retrieval & Temporal Scope Fixes", () => {
     expect(context?.meals.all).toEqual([]);
     expect(context?.tasks.today).toEqual([]);
     expect(context?.tasks.all).toEqual([]);
+  });
+
+  it("8. Demand-driven inference: 'Summarize my workouts from the last seven days' targets only workouts", () => {
+    const req = inferContextRequirements("Summarize my workouts from the last seven days.");
+    expect(req.domains).toContain("workouts");
+    expect(req.domains).not.toContain("meals");
+    expect(req.domains).not.toContain("tasks");
+    expect(req.domains).not.toContain("habits");
+    expect(req.temporalScope).toBe("last7Days");
+  });
+
+  it("9. Demand-driven inference: 'Analyze my meals from the last seven days' targets only meals and nutrition", () => {
+    const req = inferContextRequirements("Analyze my meals from the last seven days.");
+    expect(req.domains).toContain("meals");
+    expect(req.domains).toContain("nutrition");
+    expect(req.domains).not.toContain("workouts");
+    expect(req.domains).not.toContain("tasks");
+    expect(req.domains).not.toContain("habits");
+    expect(req.temporalScope).toBe("last7Days");
+  });
+
+  it("10. Demand-driven inference: 'How was my workout this week?' targets only workouts and profile", () => {
+    const req = inferContextRequirements("How was my workout this week?");
+    expect(req.domains).toContain("workouts");
+    expect(req.domains).not.toContain("meals");
+    expect(req.domains).not.toContain("tasks");
+    expect(req.temporalScope).toBe("thisWeek");
+  });
+
+  it("11. Compact serialization does not duplicate historical records into todayX and strips bloat", () => {
+    const days = ["2026-10-16", "2026-10-17", "2026-10-18", "2026-10-19", "2026-10-20", "2026-10-21"];
+    const pastMeals = days.flatMap((d, i) => [
+      { id: `m-${i}-1`, name: `Breakfast ${d}`, date: d, macros: { calories: 400, proteinG: 20, carbsG: 40, fatG: 10 }, photoUrl: "https://bucket/photo.jpg", rawOcr: "eggs milk toast" },
+      { id: `m-${i}-2`, name: `Lunch ${d}`, date: d, macros: { calories: 700, proteinG: 40, carbsG: 60, fatG: 20 }, photoUrl: "https://bucket/photo.jpg", rawOcr: "chicken rice curry" },
+      { id: `m-${i}-3`, name: `Dinner ${d}`, date: d, macros: { calories: 600, proteinG: 30, carbsG: 50, fatG: 18 }, photoUrl: "https://bucket/photo.jpg", rawOcr: "dal roti salad" },
+    ]);
+    const todayMeal = {
+      id: "m-today",
+      name: "Today Lunch",
+      date: todayStr,
+      macros: { calories: 650, proteinG: 35, carbsG: 55, fatG: 15 },
+      photoUrl: "https://bucket/photo.jpg",
+    };
+
+    const mockContext: any = {
+      profile: { id: "p1", heightCm: 178 },
+      macroGoals: { calories: 2200, proteinG: 160 },
+      preferences: { timezone: "Asia/Kolkata" },
+      meals: {
+        today: [...pastMeals, todayMeal],
+        all: [...pastMeals, todayMeal],
+        recent: [todayMeal],
+      },
+      workouts: {
+        today: [
+          {
+            id: "w1",
+            date: "2026-10-18",
+            durationMinutes: 50,
+            exercises: [{ name: "Bench Press", sets: [{ reps: 10, weight: 80, unit: "kg" }] }],
+            summary: "Good chest push session",
+          },
+        ],
+        all: [],
+      },
+      tasks: { today: [], all: [] },
+      habits: { today: [], all: [] },
+      bodyWeightEntries: [{ weightKg: 78.5, date: todayStr }],
+    };
+
+    const serialized = serializeOrbitContext(mockContext);
+    expect(serialized).not.toBeNull();
+    if (!serialized) throw new Error("Expected serialized context");
+
+    // todayMeals must ONLY contain today's meal, not the 18 past meals
+    expect(serialized!.todayMeals.length).toBe(1);
+    expect(serialized.todayMeals[0]?.name).toBe("Today Lunch");
+
+    // historical.meals contains all meals, but without heavy photoUrl or rawOcr bloat
+    expect(serialized!.historical.meals.length).toBe(19);
+    expect((serialized!.historical.meals[0] as any).photoUrl).toBeUndefined();
+    expect((serialized!.historical.meals[0] as any).rawOcr).toBeUndefined();
+
+    // Workouts have compacted sets
+    expect(serialized.historical.workouts[0]?.exercises[0]?.sets).toBe("10x80kg");
+
+    // Historical body weight is preserved for trend analysis
+    expect(serialized.historical.bodyWeight).toBeDefined();
+    expect(serialized.historical.bodyWeight[0]?.weightKg).toBe(78.5);
+
+    // Check payload size is compact
+    const jsonStr = JSON.stringify(serialized);
+    expect(jsonStr.length).toBeLessThan(4000);
+  });
+  it("12. Comprehensive review: 'Give me an honest assessment of my weekly consistency and momentum' retrieves all 7 domains", () => {
+    const req = inferContextRequirements("Give me an honest assessment of my weekly consistency and momentum.");
+    expect(req.domains).toEqual(
+      expect.arrayContaining(["workouts", "meals", "nutrition", "tasks", "habits", "profile", "goals"])
+    );
+    expect(req.temporalScope).toBe("last7Days");
+  });
+
+  it("13. Comprehensive rating: 'Rate my overall progress out of 10 based on my workouts, nutrition, habits, and tasks' retrieves all 7 domains", () => {
+    const req = inferContextRequirements("Rate my overall progress out of 10 based on my workouts, nutrition, habits, and tasks.");
+    expect(req.domains).toEqual(
+      expect.arrayContaining(["workouts", "meals", "nutrition", "tasks", "habits", "profile", "goals"])
+    );
+    expect(req.temporalScope).toBe("last7Days");
+  });
+
+  it("14. Category consistency: 'How consistent was I with my meals?' retrieves meals, nutrition, and goals over last 7 days", () => {
+    const req = inferContextRequirements("How consistent was I with my meals?");
+    expect(req.domains).toContain("meals");
+    expect(req.domains).toContain("nutrition");
+    expect(req.domains).toContain("goals");
+    expect(req.domains).not.toContain("workouts");
+    expect(req.domains).not.toContain("tasks");
+    expect(req.temporalScope).toBe("last7Days");
+  });
+
+  it("15. Task inquiry: 'How many tasks did I complete this week?' targets only tasks over thisWeek", () => {
+    const req = inferContextRequirements("How many tasks did I complete this week?");
+    expect(req.domains).toContain("tasks");
+    expect(req.domains).not.toContain("workouts");
+    expect(req.domains).not.toContain("meals");
+    expect(req.temporalScope).toBe("thisWeek");
   });
 });
