@@ -98,17 +98,19 @@ const config: Config = {
           danger: "var(--error)",
           info: "var(--info)",
         },
+        // Inside tailwind.config.ts -> theme.extend.colors:
         primary: {
-          50: "#f0f9ff",
-          100: "#e0f2fe",
-          200: "#bae6fd",
-          300: "#7dd3fc",
-          400: "#38bdf8",
-          500: "#0ea5e9",
-          600: "#0284c7",
-          700: "#0369a1",
-          800: "#075985",
-          900: "#0c4a6e",
+          50: "#EEF2FF",
+          100: "#E0E7FF",
+          200: "#C7D2FE",
+          300: "#A5B4FC",
+          400: "#7C93FF",
+          500: "#4F6BFF", // SATAT Dark Brand Cobalt
+          600: "#3B54D4", // SATAT Light Brand Cobalt
+          700: "#2F44B0",
+          800: "#263794",
+          900: "#1E2B75",
+          950: "#111842",
         },
       },
       spacing: {
