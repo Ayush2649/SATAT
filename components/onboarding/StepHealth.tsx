@@ -1,6 +1,7 @@
+// components/onboarding/StepHealth.tsx
 "use client";
 
-import { AlertTriangle, Shield, HeartPulse, ChevronRight, ChevronLeft, Info } from "lucide-react";
+import { Shield, HeartPulse, ChevronRight, ChevronLeft, Info, Check, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { HealthCondition } from "@/lib/onboarding/validation";
 
@@ -36,12 +37,10 @@ export function StepHealth({
 }: StepHealthProps) {
   const handleToggle = (id: HealthCondition) => {
     if (id === "none") {
-      // Selecting none clears all others
       setHealthConditions(["none"]);
       return;
     }
 
-    // Selecting a specific condition removes "none"
     const next = healthConditions.filter((c) => c !== "none");
     if (next.includes(id)) {
       setHealthConditions(next.filter((c) => c !== id));
@@ -58,40 +57,68 @@ export function StepHealth({
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="text-center space-y-2">
-        <div className="inline-flex p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 mb-2">
-          <HeartPulse className="w-8 h-8" />
+      <div className="text-center space-y-2.5">
+        <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-[var(--warning-subtle)] border border-[var(--border)] text-[var(--warning)] mb-1">
+          <HeartPulse className="w-6 h-6" />
         </div>
-        <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">
-          Do you have any conditions requiring gentle, supervised guidance?
-        </h1>
-        <p className="text-sm font-medium text-gray-500 dark:text-gray-400 max-w-md mx-auto">
-          Held strictly in memory for safety checks and immediately discarded. Never saved to drafts or logged.
-        </p>
+        <div>
+          <span className="type-eyebrow text-[var(--brand)] block mb-1">
+            CLINICAL SAFEGUARDS
+          </span>
+          <h1 className="text-2xl sm:text-3xl font-bold font-display text-[var(--text-primary)] tracking-tight">
+            Do you have any conditions requiring gentle, supervised guidance?
+          </h1>
+        </div>
+
+        {/* Ephemeral Privacy Guarantee Pill */}
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--surface-subtle)] border border-[var(--border)] text-[11px] font-mono text-[var(--text-secondary)]">
+          <Lock className="w-3 h-3 text-[var(--brand)] shrink-0" />
+          <span>Held strictly in RAM · Never saved to database drafts or logs</span>
+        </div>
       </div>
 
-      <div className="space-y-3 max-w-md mx-auto pt-2">
+      <div className="space-y-2.5 max-w-md mx-auto pt-1">
         {HEALTH_OPTIONS.map((opt) => {
           const isChecked = healthConditions.includes(opt.id);
+          const isNoneOption = opt.id === "none";
           return (
             <label
               key={opt.id}
               className={cn(
-                "flex items-start gap-3 p-3.5 rounded-xl border transition-all cursor-pointer",
+                "flex items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer pressable",
+                isNoneOption && "mt-2",
                 isChecked
-                  ? "border-primary-600 bg-primary-50/60 dark:bg-primary-950/30 ring-2 ring-primary-500"
-                  : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600"
+                  ? "border-[var(--brand)] bg-[var(--brand-subtle)] ring-1 ring-[var(--brand)] shadow-xs"
+                  : "border-[var(--border)] bg-[var(--surface-subtle)] hover:border-[var(--border-strong)] hover:bg-[var(--surface)]"
               )}
             >
-              <input
-                type="checkbox"
-                checked={isChecked}
-                onChange={() => handleToggle(opt.id)}
-                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
-              />
-              <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                {opt.label}
-              </span>
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => handleToggle(opt.id)}
+                  className="sr-only"
+                />
+                <div
+                  className={cn(
+                    "w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-all",
+                    isChecked
+                      ? "bg-[var(--brand)] border-[var(--brand)] text-white"
+                      : "border-[var(--border-strong)] bg-[var(--surface)]"
+                  )}
+                >
+                  {isChecked && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                </div>
+                <span className="text-sm font-medium text-[var(--text-primary)]">
+                  {opt.label}
+                </span>
+              </div>
+
+              {opt.isClinical && (
+                <span className="font-mono text-[10px] uppercase tracking-wider px-2 py-0.5 rounded bg-[var(--surface)] text-[var(--text-muted)] border border-[var(--border-subtle)] shrink-0">
+                  Adaptive Safe Mode
+                </span>
+              )}
             </label>
           );
         })}
@@ -99,34 +126,53 @@ export function StepHealth({
 
       {/* Dynamic guidance notices */}
       {hasClinicalCondition && (
-        <div className="max-w-md mx-auto p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 flex items-start gap-3 animate-fade-in">
-          <Shield className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-          <p className="text-xs text-amber-900 dark:text-amber-200 font-medium leading-relaxed">
-            Satat prioritizes your safety. Single-point calorie targets and intensive deficit paces will be withheld, pivoting to mindful habit tracking and whole-food nourishment.
+        <div
+          className="max-w-md mx-auto p-4 rounded-2xl border flex items-start gap-3 animate-fade-in"
+          style={{
+            backgroundColor: "var(--warning-subtle)",
+            borderColor: "color-mix(in srgb, var(--warning) 30%, transparent)",
+          }}
+        >
+          <Shield className="w-5 h-5 text-[var(--warning)] shrink-0 mt-0.5" />
+          <p className="text-xs text-[var(--text-primary)] leading-relaxed">
+            SATAT prioritizes your safety. Single-point calorie targets and intensive deficit paces will be withheld, pivoting to mindful habit tracking and whole-food nourishment.
           </p>
         </div>
       )}
 
       {hasPhysicalInjury && !hasClinicalCondition && (
-        <div className="max-w-md mx-auto p-4 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 flex items-start gap-3 animate-fade-in">
-          <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
-          <p className="text-xs text-blue-900 dark:text-blue-200 font-medium leading-relaxed">
+        <div
+          className="max-w-md mx-auto p-4 rounded-2xl border flex items-start gap-3 animate-fade-in"
+          style={{
+            backgroundColor: "var(--brand-subtle)",
+            borderColor: "color-mix(in srgb, var(--brand) 30%, transparent)",
+          }}
+        >
+          <Info className="w-5 h-5 text-[var(--brand)] shrink-0 mt-0.5" />
+          <p className="text-xs text-[var(--text-primary)] leading-relaxed">
             Automated starter workout routines will be withheld to protect your recovery. Please consult your physiotherapist for rehabilitation exercises. Daily nutrition tracking remains active.
           </p>
         </div>
       )}
 
       {error && (
-        <div className="max-w-md mx-auto p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-xs text-red-600 dark:text-red-300 font-medium text-center">
+        <div
+          className="max-w-md mx-auto p-3.5 rounded-xl border text-xs font-medium text-center"
+          style={{
+            backgroundColor: "var(--error-subtle)",
+            borderColor: "color-mix(in srgb, var(--error) 30%, transparent)",
+            color: "var(--error)",
+          }}
+        >
           {error}
         </div>
       )}
 
-      <div className="pt-4 flex items-center justify-between gap-3">
+      <div className="pt-4 border-t border-[var(--border-subtle)] flex items-center justify-between gap-3">
         <button
           type="button"
           onClick={onBack}
-          className="px-4 py-2 rounded-xl text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white flex items-center gap-1.5 transition-colors"
+          className="btn-ghost px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-1.5"
         >
           <ChevronLeft className="w-4 h-4" />
           <span>Back</span>
@@ -134,9 +180,9 @@ export function StepHealth({
 
         <button
           type="button"
-          onClick={onNext}
+          onClick={() => onNext()}
           disabled={!hasSelection || isSaving}
-          className="px-6 py-2.5 rounded-xl bg-primary-600 text-white font-bold text-sm shadow-md hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+          className="btn-primary px-6 py-2.5 rounded-xl font-semibold text-sm shadow-sm flex items-center gap-2"
         >
           <span>{isSaving ? "Completing Setup..." : "Generate System Baseline"}</span>
           <ChevronRight className="w-4 h-4" />

@@ -1,6 +1,7 @@
+// components/onboarding/StepActivity.tsx
 "use client";
 
-import { Armchair, Footprints, Briefcase, Zap, ChevronRight, ChevronLeft } from "lucide-react";
+import { Armchair, Footprints, Briefcase, Zap, ChevronRight, ChevronLeft, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ActivityLevel } from "@/lib/onboarding/validation";
 import type { OnboardingFormValues } from "./types";
@@ -18,6 +19,7 @@ const ACTIVITY_OPTIONS: {
   id: ActivityLevel;
   title: string;
   subtitle: string;
+  multiplier: string;
   description: string;
   icon: typeof Armchair;
 }[] = [
@@ -25,6 +27,7 @@ const ACTIVITY_OPTIONS: {
     id: "sedentary",
     title: "Mostly Seated",
     subtitle: "Desk job, remote work, driving, reading",
+    multiplier: "1.20× BMR",
     description: "Typical daily movement is minimal outside intentional exercise sessions.",
     icon: Armchair,
   },
@@ -32,6 +35,7 @@ const ACTIVITY_OPTIONS: {
     id: "lightly_active",
     title: "On Your Feet Part-Time",
     subtitle: "5,000 – 8,000 steps / day",
+    multiplier: "1.375× BMR",
     description: "Teaching, retail, light household activities, walking errands.",
     icon: Footprints,
   },
@@ -39,6 +43,7 @@ const ACTIVITY_OPTIONS: {
     id: "moderately_active",
     title: "Constantly Moving",
     subtitle: "10,000+ steps / day",
+    multiplier: "1.55× BMR",
     description: "Active commute, hospitality, busy childcare, trades, regular standing.",
     icon: Briefcase,
   },
@@ -46,6 +51,7 @@ const ACTIVITY_OPTIONS: {
     id: "very_active",
     title: "Physically Demanding",
     subtitle: "Heavy physical labor / high exertion",
+    multiplier: "1.725× BMR",
     description: "Construction, agriculture, manual labor, or multi-hour daily athletic work.",
     icon: Zap,
   },
@@ -64,15 +70,18 @@ export function StepActivity({
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="text-center space-y-2">
-        <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--brand-subtle)] border border-[var(--border)]">
+          <span className="type-eyebrow text-[var(--brand)]">NON-EXERCISE EXPENDITURE (NEAT)</span>
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-bold font-display text-[var(--text-primary)] tracking-tight">
           How does your body move during a typical day?
         </h1>
-        <p className="text-sm font-medium text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+        <p className="text-sm text-[var(--text-secondary)] max-w-md mx-auto">
           Your daily work and commuting routine accounts for far more energy burn than a 45-minute workout.
         </p>
       </div>
 
-      <div className="space-y-3 max-w-xl mx-auto pt-2">
+      <div className="space-y-3 max-w-xl mx-auto pt-1">
         {ACTIVITY_OPTIONS.map((opt) => {
           const Icon = opt.icon;
           const isSelected = selected === opt.id;
@@ -82,45 +91,62 @@ export function StepActivity({
               type="button"
               onClick={() => updateFormField("activityLevel", opt.id)}
               className={cn(
-                "w-full p-4 rounded-2xl border text-left transition-all duration-200 flex items-start gap-4",
+                "w-full p-4 rounded-2xl border text-left transition-all duration-200 flex items-start gap-4 pressable",
                 isSelected
-                  ? "border-primary-600 bg-primary-50/60 dark:bg-primary-950/30 ring-2 ring-primary-500 shadow-xs"
-                  : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600"
+                  ? "border-[var(--brand)] bg-[var(--brand-subtle)] ring-1 ring-[var(--brand)] shadow-xs"
+                  : "border-[var(--border)] bg-[var(--surface-subtle)] hover:border-[var(--border-strong)] hover:bg-[var(--surface)]"
               )}
             >
               <div
                 className={cn(
-                  "p-2.5 rounded-xl border shrink-0 mt-0.5",
+                  "p-2.5 rounded-xl border shrink-0 mt-0.5 transition-colors",
                   isSelected
-                    ? "bg-primary-100 dark:bg-primary-900/60 text-primary-600 dark:text-primary-300 border-primary-200"
-                    : "bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600"
+                    ? "bg-[var(--brand)] text-white border-[var(--brand)]"
+                    : "bg-[var(--surface)] text-[var(--text-muted)] border-[var(--border)]"
                 )}
               >
                 <Icon className="w-5 h-5" />
               </div>
+
               <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-bold text-gray-900 dark:text-white text-base">
-                    {opt.title}
-                  </span>
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
-                    {opt.subtitle}
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-display font-bold text-[var(--text-primary)] text-sm sm:text-base">
+                      {opt.title}
+                    </span>
+                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-[var(--surface)] border border-[var(--border-subtle)] text-[var(--text-secondary)]">
+                      {opt.subtitle}
+                    </span>
+                  </div>
+                  <span className="font-mono text-[11px] font-bold text-[var(--brand)]">
+                    {opt.multiplier}
                   </span>
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 font-medium">
+                <p className="text-xs text-[var(--text-secondary)] mt-1 leading-relaxed">
                   {opt.description}
                 </p>
+              </div>
+
+              <div
+                className={cn(
+                  "w-5 h-5 rounded-full flex items-center justify-center border shrink-0 mt-1 transition-all",
+                  isSelected
+                    ? "bg-[var(--brand)] border-[var(--brand)] text-white"
+                    : "border-[var(--border-strong)] bg-transparent text-transparent"
+                )}
+              >
+                <Check className="w-3 h-3 stroke-[3]" />
               </div>
             </button>
           );
         })}
       </div>
 
-      <div className="pt-4 flex items-center justify-between gap-3">
+      <div className="pt-4 border-t border-[var(--border-subtle)] flex items-center justify-between gap-3">
         <button
           type="button"
           onClick={onBack}
-          className="px-4 py-2 rounded-xl text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white flex items-center gap-1.5 transition-colors"
+          className="btn-ghost px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-1.5"
         >
           <ChevronLeft className="w-4 h-4" />
           <span>Back</span>
@@ -130,16 +156,16 @@ export function StepActivity({
           <button
             type="button"
             onClick={onSkip}
-            className="text-xs font-bold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 underline underline-offset-2"
+            className="text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] underline underline-offset-4 px-2 py-1"
           >
             Skip for now
           </button>
 
           <button
             type="button"
-            onClick={onNext}
+            onClick={() => onNext()}
             disabled={isSaving}
-            className="px-6 py-2.5 rounded-xl bg-primary-600 text-white font-bold text-sm shadow-md hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+            className="btn-primary px-6 py-2.5 rounded-xl font-semibold text-sm shadow-sm flex items-center gap-2"
           >
             <span>{isSaving ? "Saving..." : "Continue"}</span>
             <ChevronRight className="w-4 h-4" />
@@ -149,4 +175,3 @@ export function StepActivity({
     </div>
   );
 }
-

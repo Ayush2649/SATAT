@@ -1,3 +1,4 @@
+// components/onboarding/StepDiet.tsx
 "use client";
 
 import { Salad, Egg, Beef, Leaf, Utensils, ChevronRight, ChevronLeft, Check } from "lucide-react";
@@ -18,36 +19,42 @@ const DIET_OPTIONS: {
   id: DietaryPattern;
   title: string;
   desc: string;
+  proteinSources: string;
   icon: typeof Salad;
 }[] = [
   {
     id: "vegetarian",
     title: "Vegetarian",
     desc: "Dairy included, plant-forward. No meat or eggs.",
+    proteinSources: "Paneer · Curd/Yogurt · Dal · Whey · Soy",
     icon: Salad,
   },
   {
     id: "eggetarian",
     title: "Eggetarian",
     desc: "Eggs and dairy included alongside plants. No meat.",
+    proteinSources: "Whole Eggs · Egg Whites · Paneer · Dairy",
     icon: Egg,
   },
   {
     id: "non_vegetarian",
     title: "Non-Vegetarian",
     desc: "Includes poultry, fish, meat, dairy, and plants.",
+    proteinSources: "Chicken · Fish · Eggs · Dairy · Legumes",
     icon: Beef,
   },
   {
     id: "vegan",
     title: "Vegan",
     desc: "100% plant-based. No meat, dairy, eggs, or animal products.",
+    proteinSources: "Tofu · Tempeh · Edamame · Lentils · Plant Isolate",
     icon: Leaf,
   },
   {
     id: "anything",
     title: "No Specific Restriction",
     desc: "Open to all cuisines, recipes, and ingredients.",
+    proteinSources: "Full-spectrum omnivore protein rotation",
     icon: Utensils,
   },
 ];
@@ -85,52 +92,63 @@ export function StepDiet({
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="text-center space-y-2">
-        <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--brand-subtle)] border border-[var(--border)]">
+          <span className="type-eyebrow text-[var(--brand)]">NUTRITIONAL ARCHITECTURE</span>
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-bold font-display text-[var(--text-primary)] tracking-tight">
           What is your everyday eating style?
         </h1>
-        <p className="text-sm font-medium text-gray-500 dark:text-gray-400 max-w-md mx-auto">
-          Helps Satat balance your protein sources and calibrate personalized meal suggestions.
+        <p className="text-sm text-[var(--text-secondary)] max-w-md mx-auto">
+          Helps SATAT balance your protein sources and calibrate Orbit&apos;s meal suggestions.
         </p>
       </div>
 
       <div className="space-y-5 max-w-xl mx-auto">
-        {/* Dietary Pattern */}
-        <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300 mb-2">
+        {/* Dietary Pattern Grid */}
+        <div className="space-y-2">
+          <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-[var(--text-muted)]">
             Everyday Diet
           </label>
-          <div className="space-y-2">
-            {DIET_OPTIONS.map((opt) => {
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {DIET_OPTIONS.map((opt, idx) => {
               const Icon = opt.icon;
               const isSelected = selectedPattern === opt.id;
+              const isLastOdd = idx === DIET_OPTIONS.length - 1;
               return (
                 <button
                   key={opt.id}
                   type="button"
                   onClick={() => updateFormField("dietaryPattern", opt.id)}
                   className={cn(
-                    "w-full p-3.5 rounded-xl border text-left transition-all flex items-center gap-3.5",
+                    "p-3.5 rounded-2xl border text-left transition-all flex items-start gap-3 pressable",
+                    isLastOdd && "sm:col-span-2",
                     isSelected
-                      ? "border-primary-600 bg-primary-50/60 dark:bg-primary-950/30 ring-2 ring-primary-500 shadow-xs"
-                      : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600"
+                      ? "border-[var(--brand)] bg-[var(--brand-subtle)] ring-1 ring-[var(--brand)] shadow-xs"
+                      : "border-[var(--border)] bg-[var(--surface-subtle)] hover:border-[var(--border-strong)] hover:bg-[var(--surface)]"
                   )}
                 >
                   <div
                     className={cn(
-                      "p-2 rounded-lg shrink-0",
+                      "p-2.5 rounded-xl shrink-0 mt-0.5 transition-colors",
                       isSelected
-                        ? "bg-primary-100 dark:bg-primary-900/60 text-primary-600 dark:text-primary-300"
-                        : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
+                        ? "bg-[var(--brand)] text-white"
+                        : "bg-[var(--surface)] text-[var(--text-muted)] border border-[var(--border)]"
                     )}
                   >
                     <Icon className="w-4 h-4" />
                   </div>
-                  <div>
-                    <div className="font-bold text-sm text-gray-900 dark:text-white">
-                      {opt.title}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-display font-bold text-sm text-[var(--text-primary)]">
+                        {opt.title}
+                      </span>
+                      {isSelected && <Check className="w-3.5 h-3.5 text-[var(--brand)] stroke-[3] shrink-0" />}
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    <div className="text-xs text-[var(--text-secondary)] mt-0.5 leading-snug">
                       {opt.desc}
+                    </div>
+                    <div className="font-mono text-[10px] text-[var(--brand)] mt-1.5 truncate">
+                      {opt.proteinSources}
                     </div>
                   </div>
                 </button>
@@ -140,10 +158,13 @@ export function StepDiet({
         </div>
 
         {/* Food Avoidances */}
-        <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-300 mb-2">
-            Common Food Avoidances (Optional)
-          </label>
+        <div className="space-y-2 pt-1">
+          <div className="flex items-center justify-between">
+            <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-[var(--text-muted)]">
+              Common Food Avoidances (Optional)
+            </label>
+            <span className="text-[11px] text-[var(--text-muted)]">Excluded from Orbit suggestions</span>
+          </div>
           <div className="flex flex-wrap gap-2">
             {COMMON_AVOIDANCES.map((tag) => {
               const isChecked = currentAvoidances.includes(tag);
@@ -153,13 +174,13 @@ export function StepDiet({
                   type="button"
                   onClick={() => handleToggleAvoidance(tag)}
                   className={cn(
-                    "px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5",
+                    "px-3.5 py-2 rounded-xl border text-xs font-semibold transition-all flex items-center gap-1.5 pressable",
                     isChecked
-                      ? "border-primary-600 bg-primary-500 text-white shadow-xs"
-                      : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600"
+                      ? "border-[var(--brand)] bg-[var(--brand)] text-white shadow-xs"
+                      : "border-[var(--border)] bg-[var(--surface-subtle)] text-[var(--text-secondary)] hover:border-[var(--border-strong)] hover:text-[var(--text-primary)]"
                   )}
                 >
-                  {isChecked && <Check className="w-3.5 h-3.5" />}
+                  {isChecked && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                   <span>{tag}</span>
                 </button>
               );
@@ -168,11 +189,11 @@ export function StepDiet({
         </div>
       </div>
 
-      <div className="pt-4 flex items-center justify-between gap-3">
+      <div className="pt-4 border-t border-[var(--border-subtle)] flex items-center justify-between gap-3">
         <button
           type="button"
           onClick={onBack}
-          className="px-4 py-2 rounded-xl text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white flex items-center gap-1.5 transition-colors"
+          className="btn-ghost px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-1.5"
         >
           <ChevronLeft className="w-4 h-4" />
           <span>Back</span>
@@ -182,16 +203,16 @@ export function StepDiet({
           <button
             type="button"
             onClick={onSkip}
-            className="text-xs font-bold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 underline underline-offset-2"
+            className="text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] underline underline-offset-4 px-2 py-1"
           >
             Skip for now
           </button>
 
           <button
             type="button"
-            onClick={onNext}
+            onClick={() => onNext()}
             disabled={isSaving}
-            className="px-6 py-2.5 rounded-xl bg-primary-600 text-white font-bold text-sm shadow-md hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+            className="btn-primary px-6 py-2.5 rounded-xl font-semibold text-sm shadow-sm flex items-center gap-2"
           >
             <span>{isSaving ? "Saving..." : "Continue"}</span>
             <ChevronRight className="w-4 h-4" />
@@ -201,4 +222,3 @@ export function StepDiet({
     </div>
   );
 }
-

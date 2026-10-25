@@ -1,6 +1,7 @@
+// components/onboarding/StepFocus.tsx
 "use client";
 
-import { Flame, Dumbbell, Heart, CalendarCheck, ChevronRight, ChevronLeft } from "lucide-react";
+import { Flame, Dumbbell, Heart, CalendarCheck, ChevronRight, ChevronLeft, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { FocusGoal } from "@/lib/onboarding/validation";
 import type { OnboardingFormValues } from "./types";
@@ -16,37 +17,47 @@ interface StepFocusProps {
 const FOCUS_OPTIONS: {
   id: FocusGoal;
   title: string;
+  tag: string;
   description: string;
   icon: typeof Flame;
-  color: string;
+  accentColor: string;
+  accentBg: string;
 }[] = [
   {
     id: "fat_loss",
     title: "Build a Leaner Body",
-    description: "Reduce body fat sustainably while protecting energy and muscle.",
+    tag: "Caloric Deficit + Muscle Preservation",
+    description: "Reduce body fat sustainably while protecting daily energy and lean mass.",
     icon: Flame,
-    color: "text-amber-500 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/40",
+    accentColor: "#F59E0B",
+    accentBg: "rgba(245, 158, 11, 0.12)",
   },
   {
     id: "muscle_gain",
     title: "Build Strength & Muscle",
-    description: "Fuel training performance and progressive overload.",
+    tag: "Hypertrophy + Progressive Overload",
+    description: "Fuel compound training performance and structured lean tissue growth.",
     icon: Dumbbell,
-    color: "text-blue-500 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800/40",
+    accentColor: "var(--brand)",
+    accentBg: "var(--brand-subtle)",
   },
   {
     id: "vitality_health",
     title: "Boost Daily Energy & Health",
-    description: "Maintain a steady weight, eat cleaner, and move consistently.",
+    tag: "Metabolic Equilibrium",
+    description: "Maintain a steady weight, eat cleaner, and move consistently every day.",
     icon: Heart,
-    color: "text-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/40",
+    accentColor: "#22C55E",
+    accentBg: "rgba(34, 197, 94, 0.12)",
   },
   {
     id: "habit_routine",
     title: "Build Consistent Habits",
-    description: "Establish a structured daily rhythm for meals, workouts, and sleep.",
+    tag: "Behavioral Continuity",
+    description: "Establish an unbroken daily rhythm for meals, workouts, and recovery.",
     icon: CalendarCheck,
-    color: "text-purple-500 bg-purple-50 dark:bg-purple-950/40 border-purple-200 dark:border-purple-800/40",
+    accentColor: "#8B5CF6",
+    accentBg: "rgba(139, 92, 246, 0.12)",
   },
 ];
 
@@ -60,17 +71,20 @@ export function StepFocus({
   const selected = formValues.focusGoal;
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="text-center space-y-2">
-        <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">
+    <div className="space-y-7 animate-fade-in">
+      <div className="text-center space-y-2.5">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--brand-subtle)] border border-[var(--border)]">
+          <span className="type-eyebrow text-[var(--brand)]">PRIMARY 12-WEEK VECTOR</span>
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-bold font-display text-[var(--text-primary)] tracking-tight">
           What is your main focus for the next 12 weeks?
         </h1>
-        <p className="text-sm font-medium text-gray-500 dark:text-gray-400 max-w-md mx-auto">
-          This helps Satat shape your starting routine and daily energy estimates.
+        <p className="text-sm text-[var(--text-secondary)] max-w-md mx-auto leading-relaxed">
+          This helps SATAT shape your starting routine, protein targets, and daily energy baseline.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
         {FOCUS_OPTIONS.map((opt) => {
           const Icon = opt.icon;
           const isSelected = selected === opt.id;
@@ -80,21 +94,47 @@ export function StepFocus({
               type="button"
               onClick={() => updateFormField("focusGoal", opt.id)}
               className={cn(
-                "p-4 rounded-2xl border text-left transition-all duration-200 flex flex-col justify-between gap-3",
+                "group relative p-5 rounded-2xl border text-left transition-all duration-200 flex flex-col justify-between gap-4 pressable",
                 isSelected
-                  ? "border-primary-600 bg-primary-50/60 dark:bg-primary-950/30 ring-2 ring-primary-500 shadow-sm"
-                  : "border-gray-200 dark:border-gray-700/80 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-xs"
+                  ? "border-[var(--brand)] bg-[var(--brand-subtle)] ring-1 ring-[var(--brand)] shadow-sm"
+                  : "border-[var(--border)] bg-[var(--surface-subtle)] hover:border-[var(--border-strong)] hover:bg-[var(--surface)]"
               )}
             >
-              <div className="flex items-center gap-3">
-                <div className={cn("p-2.5 rounded-xl border", opt.color)}>
-                  <Icon className="w-5 h-5" />
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-105"
+                    style={{
+                      backgroundColor: isSelected ? "var(--brand)" : opt.accentBg,
+                      color: isSelected ? "#FFFFFF" : opt.accentColor,
+                    }}
+                  >
+                    <Icon className="w-5 h-5" />
+                  </div>
+
+                  <div
+                    className={cn(
+                      "w-5 h-5 rounded-full flex items-center justify-center border transition-all",
+                      isSelected
+                        ? "bg-[var(--brand)] border-[var(--brand)] text-white scale-100"
+                        : "border-[var(--border-strong)] bg-transparent text-transparent"
+                    )}
+                  >
+                    <Check className="w-3 h-3 stroke-[3]" />
+                  </div>
                 </div>
-                <div className="font-bold text-gray-900 dark:text-white text-base">
-                  {opt.title}
+
+                <div>
+                  <div className="font-display font-bold text-base text-[var(--text-primary)]">
+                    {opt.title}
+                  </div>
+                  <div className="font-mono text-[10px] uppercase tracking-wider text-[var(--brand)] font-semibold mt-0.5">
+                    {opt.tag}
+                  </div>
                 </div>
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 font-medium leading-relaxed">
+
+              <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
                 {opt.description}
               </p>
             </button>
@@ -102,11 +142,11 @@ export function StepFocus({
         })}
       </div>
 
-      <div className="pt-4 flex items-center justify-between gap-3">
+      <div className="pt-4 border-t border-[var(--border-subtle)] flex items-center justify-between gap-3">
         <button
           type="button"
           onClick={onBack}
-          className="px-4 py-2 rounded-xl text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white flex items-center gap-1.5 transition-colors"
+          className="btn-ghost px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-1.5"
         >
           <ChevronLeft className="w-4 h-4" />
           <span>Back</span>
@@ -114,9 +154,9 @@ export function StepFocus({
 
         <button
           type="button"
-          onClick={onNext}
+          onClick={() => onNext()}
           disabled={!selected || isSaving}
-          className="px-6 py-2.5 rounded-xl bg-primary-600 text-white font-bold text-sm shadow-md hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+          className="btn-primary px-6 py-2.5 rounded-xl font-semibold text-sm shadow-sm flex items-center gap-2"
         >
           <span>{isSaving ? "Saving..." : "Continue"}</span>
           <ChevronRight className="w-4 h-4" />
@@ -125,4 +165,3 @@ export function StepFocus({
     </div>
   );
 }
-
