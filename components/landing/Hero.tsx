@@ -2,55 +2,8 @@
 
 import React from "react";
 import HeroProductScene from "./HeroProductScene";
-import { useReducedMotion } from "@/lib/useReducedMotion";
-
-if (typeof window !== "undefined") {
-  gsap.registerPlugin(useGSAP);
-}
 
 export default function Hero() {
-  const containerRef = useRef<HTMLElement>(null);
-  const prefersReduced = useReducedMotion();
-
-  useGSAP(
-    () => {
-      if (prefersReduced) return;
-
-      const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
-
-      tl.fromTo(
-        ".hero-badge",
-        { opacity: 0.3, y: 12, scale: 0.98 },
-        { opacity: 1, y: 0, scale: 1, duration: 0.5, clearProps: "all" }
-      )
-        .fromTo(
-          ".hero-headline",
-          { opacity: 0.3, y: 18 },
-          { opacity: 1, y: 0, duration: 0.6, clearProps: "all" },
-          "-=0.3"
-        )
-        .fromTo(
-          ".hero-subcopy",
-          { opacity: 0.3, y: 14 },
-          { opacity: 1, y: 0, duration: 0.5, clearProps: "all" },
-          "-=0.3"
-        )
-        .fromTo(
-          ".hero-cta",
-          { opacity: 0.3, y: 12 },
-          { opacity: 1, y: 0, stagger: 0.08, duration: 0.5, clearProps: "all" },
-          "-=0.3"
-        )
-        .fromTo(
-          ".hero-reassurance",
-          { opacity: 0.3, y: 8 },
-          { opacity: 1, y: 0, stagger: 0.05, duration: 0.4, clearProps: "all" },
-          "-=0.2"
-        );
-    },
-    { scope: containerRef, dependencies: [prefersReduced] }
-  );
-
   return (
     <section className="relative pt-24 sm:pt-32 pb-8 sm:pb-12 px-4 sm:px-6 overflow-hidden">
       <div className="max-w-md mx-auto text-left">
