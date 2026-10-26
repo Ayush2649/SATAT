@@ -2,6 +2,7 @@
 
 import React, { useId } from "react";
 import { cn } from "@/lib/utils";
+import { OrbitLivingOrb } from "./OrbitLivingOrb";
 
 export type OrbitState = "idle" | "thinking" | "responding" | "success" | "error";
 
@@ -13,13 +14,14 @@ export interface OrbitIconProps extends React.SVGProps<SVGSVGElement> {
 }
 
 /**
- * OrbitMark / OrbitIcon — The proprietary celestial visual identity for SATAT Orbit.
+ * OrbitMark / OrbitIcon — The proprietary visual identity for SATAT Orbit.
  * 
- * Geometry:
- * - A precise, 28° inclined celestial elliptical ring (9.4 × 4.6 rx/ry)
- * - A luminous central planetary core with spherical depth lighting (r=3.5)
- * - A small satellite traveling along the orbital ring (r=1.45 at [20.18, 10.41])
- * - Restrained SATAT cobalt & violet celestial gradients
+ * Scaled Architecture:
+ * - At larger scale (size >= 32): Transitions to the living sensory orb (OrbitLivingOrb)
+ *   with breathing sage/peach radial sphere, rotating inner dashed ring, and botanical lotus icon.
+ * - At compact scale (size < 32): Renders the precise celestial vector mark
+ *   with 28° inclined celestial elliptical ring (9.4 × 4.6 rx/ry), luminous core (r=3.5),
+ *   and satellite traveling along the orbital ring (r=1.45 at [20.18, 10.41]).
  */
 export function OrbitIcon({
   size = 24,
@@ -32,6 +34,19 @@ export function OrbitIcon({
   const reactId = useId();
   // Sanitize id for SVG url references (React useId produces colons like ":r1:")
   const id = `orbit-${reactId.replace(/:/g, "")}`;
+
+  // When size >= 32, render the breathing living orb
+  if (size >= 32) {
+    return (
+      <OrbitLivingOrb
+        size={size}
+        className={className}
+        state={activeState}
+        animated={animated}
+        {...props}
+      />
+    );
+  }
 
   return (
     <svg
@@ -52,31 +67,31 @@ export function OrbitIcon({
       <defs>
         {/* Soft atmospheric ambient glow */}
         <radialGradient id={`${id}-aura`} cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="var(--satat-brand, #4F6BFF)" stopOpacity="0.32" />
-          <stop offset="70%" stopColor="#7C3AED" stopOpacity="0.10" />
-          <stop offset="100%" stopColor="var(--satat-brand, #4F6BFF)" stopOpacity="0" />
+          <stop offset="0%" stopColor="var(--satat-brand, #E05A47)" stopOpacity="0.32" />
+          <stop offset="70%" stopColor="var(--satat-sage, #2D6A4F)" stopOpacity="0.10" />
+          <stop offset="100%" stopColor="var(--satat-brand, #E05A47)" stopOpacity="0" />
         </radialGradient>
 
         {/* Luminous central core: celestial sphere lighting */}
         <radialGradient id={`${id}-core`} cx="36%" cy="30%" r="70%">
           <stop offset="0%" stopColor="#FFFFFF" />
-          <stop offset="28%" stopColor="#C7D2FE" />
-          <stop offset="68%" stopColor="var(--satat-brand, #4F6BFF)" />
-          <stop offset="100%" stopColor="#3730A3" />
+          <stop offset="28%" stopColor="#FDE5E2" />
+          <stop offset="68%" stopColor="var(--satat-brand, #E05A47)" />
+          <stop offset="100%" stopColor="#2D6A4F" />
         </radialGradient>
 
         {/* Elliptical ring: directional celestial lighting */}
         <linearGradient id={`${id}-ring`} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#A5B4FC" />
-          <stop offset="45%" stopColor="var(--satat-brand-hover, #637DFF)" />
-          <stop offset="85%" stopColor="#4338CA" />
-          <stop offset="100%" stopColor="#312E81" />
+          <stop offset="0%" stopColor="#F7A89D" />
+          <stop offset="45%" stopColor="var(--satat-brand-hover, #C94A38)" />
+          <stop offset="85%" stopColor="#2D6A4F" />
+          <stop offset="100%" stopColor="#1B4332" />
         </linearGradient>
 
         {/* Satellite subtle corona */}
         <radialGradient id={`${id}-sat-aura`} cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#A5B4FC" stopOpacity="0.6" />
-          <stop offset="100%" stopColor="var(--satat-brand, #4F6BFF)" stopOpacity="0" />
+          <stop offset="0%" stopColor="#F7A89D" stopOpacity="0.6" />
+          <stop offset="100%" stopColor="var(--satat-brand, #E05A47)" stopOpacity="0" />
         </radialGradient>
       </defs>
 
@@ -127,7 +142,7 @@ export function OrbitIcon({
           cy="10.41"
           r="1.45"
           fill="#FFFFFF"
-          stroke="#4338CA"
+          stroke="#2D6A4F"
           strokeWidth="0.5"
           className="orbit-satellite"
         />
@@ -136,6 +151,7 @@ export function OrbitIcon({
   );
 }
 
-// Canonical export and backwards compatibility aliases
+// Canonical exports and aliases
+export { OrbitLivingOrb };
 export const OrbitMark = OrbitIcon;
 export default OrbitIcon;

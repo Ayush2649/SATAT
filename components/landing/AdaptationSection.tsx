@@ -6,25 +6,28 @@ export default function AdaptationSection() {
   const [adapted, setAdapted] = useState<boolean>(true);
 
   return (
-    <section id="adaptation" className="py-24 sm:py-32 px-5 sm:px-6 border-t border-[var(--border)] bg-[var(--surface-subtle)]">
+    <section id="adaptation" className="py-24 sm:py-32 px-5 sm:px-6 border-t border-[rgba(28,25,23,0.07)] bg-[#F6F3EC]">
       <div className="max-w-5xl mx-auto">
         {/* Section Header */}
         <div className="max-w-3xl mx-auto text-center mb-16 sm:mb-20">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--surface)] border border-[var(--border)] mb-4">
-            <span className="type-eyebrow text-[var(--brand)]">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#FCFBF9] border border-[rgba(28,25,23,0.07)] mb-4 shadow-xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#E05A47]" />
+            <span className="font-mono text-xs font-semibold tracking-wider text-[#E05A47] uppercase">
               DYNAMIC REBALANCING
             </span>
           </div>
 
-          <h2 className="type-display-l text-[var(--text-primary)]">
+          <h2 className="text-3xl sm:text-5xl font-display font-bold text-[#1C1917] tracking-tight leading-tight">
             Life changes.
             <br />
-            <span className="text-[var(--brand)]">Your plan should too.</span>
+            <span className="font-serif italic font-normal text-[#E05A47]">
+              Your plan should too.
+            </span>
           </h2>
 
-          <p className="type-body-lg text-[var(--text-secondary)] mt-5 max-w-xl mx-auto">
-            Traditional fitness apps make you feel guilty when life gets in the way. 
-            SATAT detects disruptions and quietly recalculates so your weekly momentum stays unbroken.
+          <p className="text-base sm:text-lg text-[#57534E] mt-5 max-w-xl mx-auto leading-relaxed">
+            Traditional fitness apps make you feel guilty when meetings run late.
+            SATAT detects real-world disruptions and quietly recalculates so your weekly momentum stays unbroken.
           </p>
         </div>
 
@@ -32,107 +35,124 @@ export default function AdaptationSection() {
         <div className="max-w-4xl mx-auto">
           {/* Toggle Control */}
           <div className="flex justify-center mb-8">
-            <div className="p-1.5 rounded-full bg-[var(--surface)] border border-[var(--border)] shadow-xs flex items-center gap-2">
+            <div className="p-1.5 rounded-full bg-[#FCFBF9] border border-[rgba(28,25,23,0.08)] shadow-xs flex items-center gap-2">
               <button
+                type="button"
                 onClick={() => setAdapted(false)}
-                className={`px-4 py-2 rounded-full text-xs font-semibold transition-all ${
+                className={`px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                   !adapted
-                    ? "bg-[var(--surface-subtle)] text-[var(--text-primary)] shadow-xs"
-                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                    ? "bg-[#EFECE4] text-[#1C1917] shadow-xs"
+                    : "text-[#8C857B] hover:text-[#1C1917]"
                 }`}
               >
                 1. Disruption Occurs
               </button>
               <button
+                type="button"
                 onClick={() => setAdapted(true)}
-                className={`px-4 py-2 rounded-full text-xs font-semibold transition-all ${
+                className={`px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                   adapted
-                    ? "bg-[var(--brand)] text-white shadow-xs"
-                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                    ? "bg-[#E05A47] text-white shadow-xs"
+                    : "text-[#8C857B] hover:text-[#1C1917]"
                 }`}
               >
-                2. SATAT Adapts in Real Time ✨
+                2. SATAT Adapts Quietly ✨
               </button>
             </div>
           </div>
 
           {/* Morphing Scenario Surface */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {/* Stage 1: The Original Plan */}
-            <div className="p-6 rounded-[24px] bg-[var(--surface)] border border-[var(--border)] shadow-xs flex flex-col justify-between">
+            {/* Stage 1: The Schedule */}
+            <div className="p-6 rounded-[26px] bg-[#FCFBF9] border border-[rgba(28,25,23,0.07)] shadow-[0_14px_34px_-12px_rgba(28,25,23,0.06)] flex flex-col justify-between">
               <div>
-                <span className="font-mono text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
-                  Step 01 · The Schedule
+                <span className="font-mono text-[10px] uppercase tracking-wider text-[#8C857B]">
+                  Step 01 · Intent
                 </span>
-                <h3 className="text-lg font-bold text-[var(--text-primary)] mt-1 mb-2">
+                <h3 className="text-lg font-display font-bold text-[#1C1917] mt-1 mb-2">
                   Planned Session
                 </h3>
-                <div className="p-3.5 rounded-xl bg-[var(--surface-subtle)] border border-[var(--border-subtle)] space-y-1.5 text-xs">
-                  <div className="font-semibold text-[var(--text-primary)]">Upper Body A · 45 min</div>
-                  <div className="text-[var(--text-secondary)]">Scheduled for 18:30</div>
-                  <div className="text-[var(--text-muted)]">Target: 3 compounds + 2 accessories</div>
+                <div className="p-4 rounded-xl bg-[#EFECE4] border border-[rgba(28,25,23,0.06)] space-y-1.5 text-xs">
+                  <div className="font-semibold text-[#1C1917]">Upper Body A · 45 min</div>
+                  <div className="text-[#57534E]">Scheduled for 18:30</div>
+                  <div className="text-[#8C857B]">Target: 3 compound lifts + 2 stability sets</div>
                 </div>
               </div>
-              <div className="mt-5 pt-3 border-t border-[var(--border-subtle)] text-[11px] font-mono text-[var(--text-muted)]">
-                Initial baseline target
+              <div className="mt-5 pt-3 border-t border-[rgba(28,25,23,0.06)] text-[11px] font-mono text-[#8C857B]">
+                Baseline cadence target
               </div>
             </div>
 
-            {/* Stage 2: The Reality */}
-            <div className="p-6 rounded-[24px] bg-[var(--surface)] border border-[var(--border)] shadow-xs flex flex-col justify-between">
+            {/* Stage 2: Reality */}
+            <div className="p-6 rounded-[26px] bg-[#FCFBF9] border border-[rgba(28,25,23,0.07)] shadow-[0_14px_34px_-12px_rgba(28,25,23,0.06)] flex flex-col justify-between">
               <div>
-                <span className="font-mono text-[10px] uppercase tracking-wider text-[var(--warning)]">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-[#D97706] font-semibold">
                   Step 02 · Reality
                 </span>
-                <h3 className="text-lg font-bold text-[var(--text-primary)] mt-1 mb-2">
+                <h3 className="text-lg font-display font-bold text-[#1C1917] mt-1 mb-2">
                   Unplanned Disruption
                 </h3>
-                <div className="p-3.5 rounded-xl bg-[var(--surface-subtle)] border border-[var(--border-subtle)] space-y-1.5 text-xs">
-                  <div className="font-semibold text-[var(--warning)]">Urgent 3-hour client sprint</div>
-                  <div className="text-[var(--text-secondary)]">Workout missed at 18:30</div>
-                  <div className="text-[var(--text-muted)]">Energy drained · Sleep window preserved</div>
+                <div className="p-4 rounded-xl bg-[#FEF3C7]/40 border border-[#D97706]/20 space-y-1.5 text-xs">
+                  <div className="font-semibold text-[#92400E]">Urgent 3-hour team deadline</div>
+                  <div className="text-[#57534E]">Workout missed at 18:30</div>
+                  <div className="text-[#8C857B]">Mental fatigue high · Sleep window preserved</div>
                 </div>
               </div>
-              <div className="mt-5 pt-3 border-t border-[var(--border-subtle)] text-[11px] font-mono text-[var(--warning)] flex items-center justify-between">
+              <div className="mt-5 pt-3 border-t border-[rgba(28,25,23,0.06)] text-[11px] font-mono text-[#D97706] flex items-center justify-between">
                 <span>Workout Skipped</span>
-                <span>⚡ Disruption</span>
+                <span>⚡ Real Life</span>
               </div>
             </div>
 
-            {/* Stage 3: The System Adaptation */}
-            <div className={`p-6 rounded-[24px] border transition-all duration-300 flex flex-col justify-between ${
-              adapted
-                ? "bg-[var(--surface)] border-[var(--brand)] shadow-[var(--shadow-md)] ring-1 ring-[var(--brand)]"
-                : "bg-[var(--surface-subtle)] border-[var(--border)] opacity-60"
-            }`}>
+            {/* Stage 3: Deep Botanical Espresso Active Card */}
+            <div
+              className={`p-6 rounded-[26px] transition-all duration-300 flex flex-col justify-between ${
+                adapted
+                  ? "bg-[#191D1A] text-white border border-[#191D1A] shadow-[0_20px_45px_-10px_rgba(25,29,26,0.35)]"
+                  : "bg-[#FCFBF9] border border-[rgba(28,25,23,0.07)] opacity-60"
+              }`}
+            >
               <div>
-                <span className="font-mono text-[10px] uppercase tracking-wider text-[var(--brand)] font-semibold">
-                  Step 03 · Autonomous Response
+                <span
+                  className={`font-mono text-[10px] uppercase tracking-wider font-semibold ${
+                    adapted ? "text-[#E05A47]" : "text-[#8C857B]"
+                  }`}
+                >
+                  Step 03 · Restoration
                 </span>
-                <h3 className="text-lg font-bold text-[var(--text-primary)] mt-1 mb-2 flex items-center justify-between">
+                <h3
+                  className={`text-lg font-display font-bold mt-1 mb-2 flex items-center justify-between ${
+                    adapted ? "text-[#FCFBF9]" : "text-[#1C1917]"
+                  }`}
+                >
                   <span>SATAT Dynamic Pivot</span>
-                  {adapted && <span className="w-2 h-2 rounded-full bg-[var(--brand)] animate-ping" />}
+                  {adapted && <span className="w-2 h-2 rounded-full bg-[#E05A47] animate-ping" />}
                 </h3>
 
                 {adapted ? (
-                  <div className="p-3.5 rounded-xl bg-[var(--brand-subtle)] border border-[var(--brand)]/20 space-y-2 text-xs animate-fade-in">
-                    <div className="font-semibold text-[var(--brand)]">
-                      ✓ Tomorrow&apos;s routine rebalanced
+                  <div className="p-4 rounded-xl bg-white/10 border border-white/15 space-y-2 text-xs animate-fade-in">
+                    <div className="font-semibold text-[#E05A47] flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#2D6A4F]" />
+                      <span>Tomorrow&apos;s routine rebalanced</span>
                     </div>
-                    <div className="text-[var(--text-primary)] leading-relaxed">
-                      Upper Body volume safely merged into Thursday&apos;s pull workout. Tonight&apos;s calorie goal tapered by 350 kcal to protect recovery.
+                    <div className="text-[#EFECE4]/90 leading-relaxed">
+                      Upper Body volume safely merged into Thursday&apos;s pull workout. Tonight&apos;s fueling goal automatically tapered to support sound, restful sleep.
                     </div>
                   </div>
                 ) : (
-                  <div className="p-3.5 rounded-xl bg-[var(--surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-muted)]">
-                    Toggle &quot;SATAT Adapts&quot; above to inspect the dynamic rebalancing algorithm.
+                  <div className="p-4 rounded-xl bg-[#EFECE4] text-xs text-[#8C857B]">
+                    Toggle &quot;SATAT Adapts Quietly&quot; above to preview automatic rebalancing.
                   </div>
                 )}
               </div>
 
-              <div className="mt-5 pt-3 border-t border-[var(--border-subtle)] text-[11px] font-mono text-[var(--brand)] flex items-center justify-between">
-                <span>Streak Protected</span>
-                <span>Zero Guilt</span>
+              <div
+                className={`mt-5 pt-3 border-t text-[11px] font-mono flex items-center justify-between ${
+                  adapted ? "border-white/10 text-[#2D6A4F] font-semibold" : "border-[rgba(28,25,23,0.06)] text-[#8C857B]"
+                }`}
+              >
+                <span className="text-[#40916C]">Streak Protected</span>
+                <span className="text-[#FCFBF9]/70 font-normal">Zero Guilt</span>
               </div>
             </div>
           </div>
@@ -141,4 +161,3 @@ export default function AdaptationSection() {
     </section>
   );
 }
-

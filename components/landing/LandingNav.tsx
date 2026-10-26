@@ -1,104 +1,71 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import Link from "next/link";
 import { useSession, signIn } from "next-auth/react";
-import { OrbitMark } from "@/components/orbit/OrbitMark";
 import Logo from "@/components/Logo";
 
 export default function LandingNav() {
   const { data: session } = useSession();
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 16);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   return (
-    <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled
-          ? "bg-[var(--surface)]/90 backdrop-blur-md border-b border-[var(--border)] shadow-xs"
-          : "bg-transparent"
-      }`}
-    >
-      <div className="max-w-6xl mx-auto px-5 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
-        {/* Brand identity */}
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <Logo size={28} className="rounded-lg transition-transform duration-200 group-hover:scale-105" priority />
-          <span className="font-display font-extrabold text-xl sm:text-2xl tracking-tight text-[var(--text-primary)]">
-            SATAT
+    <header className="fixed top-3 inset-x-4 z-50 max-w-md md:max-w-4xl mx-auto pointer-events-none transition-all duration-300">
+      <nav
+        aria-label="Main Navigation"
+        className="pointer-events-auto bg-[#FCFBF9]/85 backdrop-blur-md border border-[#1C1917]/[0.08] rounded-full px-4 py-2.5 shadow-sm flex items-center justify-between"
+      >
+        {/* Left: Brand identity with Logo and font-serif satat. wordmark */}
+        <Link href="/" className="flex items-center gap-2 group shrink-0">
+          <Logo size={22} className="rounded-md transition-transform duration-200 group-hover:scale-105" priority />
+          <span className="font-serif text-xl tracking-tight text-[#1C1917]">
+            satat.
           </span>
         </Link>
 
-        {/* Quiet Navigation Links */}
-        <div className="hidden md:flex items-center gap-8 text-sm font-medium text-[var(--text-secondary)]">
-          <a
-            href="#problem"
-            className="hover:text-[var(--text-primary)] transition-colors"
-          >
-            The Problem
+        {/* Center: Desktop anchor links */}
+        <div className="hidden md:flex items-center gap-6 text-xs font-medium text-[#57534E]">
+          <a href="#problem" className="hover:text-[#1C1917] transition-colors py-1">
+            Rhythm
           </a>
-          <a
-            href="#system"
-            className="hover:text-[var(--text-primary)] transition-colors"
-          >
-            The System
-          </a>
-          <a
-            href="#adaptation"
-            className="hover:text-[var(--text-primary)] transition-colors"
-          >
-            Adaptation
-          </a>
-          <a
-            href="#orbit"
-            className="hover:text-[var(--text-primary)] transition-colors"
-          >
+          <a href="#orbit" className="hover:text-[#1C1917] transition-colors py-1">
             Orbit
           </a>
-          <a
-            href="#progress"
-            className="hover:text-[var(--text-primary)] transition-colors"
-          >
-            Progress
+          <a href="#progress" className="hover:text-[#1C1917] transition-colors py-1">
+            Proof
           </a>
         </div>
 
-        {/* Primary Action Button */}
-        <div className="flex items-center gap-3">
+        {/* Right: Actions */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
           {session ? (
             <Link
               href="/dashboard"
-              className="btn-primary rounded-full px-5 py-2.5 text-xs sm:text-sm font-medium shadow-sm hover:shadow-md transition-all flex items-center gap-2"
+              className="bg-[#191D1A] hover:bg-[#2A302C] text-white rounded-full px-4 py-1.5 text-xs font-semibold shadow-sm transition-all flex items-center gap-1 active:scale-95"
             >
               <span>Dashboard</span>
-              <span>→</span>
+              <span className="text-xs">→</span>
             </Link>
           ) : (
             <>
               <button
+                type="button"
                 onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-                className="hidden sm:inline-flex text-xs sm:text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors px-3 py-2"
+                className="text-xs font-medium text-[#57534E] hover:text-[#1C1917] px-2.5 py-1 transition-colors rounded-full"
               >
                 Sign in
               </button>
               <button
+                type="button"
                 onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-                className="btn-primary rounded-full px-4 sm:px-6 py-2.5 text-xs sm:text-sm font-medium shadow-sm hover:shadow-md transition-all flex items-center gap-1.5"
+                className="bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full px-4 py-1.5 text-xs font-semibold shadow-sm hover:shadow-md transition-all active:scale-95 flex items-center gap-1"
               >
-                <span>Start building consistency</span>
-                <span className="text-sm">→</span>
+                <span>Start free</span>
+                <span className="text-xs">→</span>
               </button>
             </>
           )}
         </div>
-      </div>
-    </nav>
+      </nav>
+    </header>
   );
 }
-
