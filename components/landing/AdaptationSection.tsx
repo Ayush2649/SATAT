@@ -1,9 +1,68 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useGSAP } from "@gsap/react";
+import { useReducedMotion } from "@/lib/useReducedMotion";
+
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger, useGSAP);
+}
 
 export default function AdaptationSection() {
   const [adapted, setAdapted] = useState<boolean>(true);
+  const sectionRef = useRef<HTMLElement>(null);
+  const stagesRef = useRef<HTMLDivElement>(null);
+  const step3Ref = useRef<HTMLDivElement>(null);
+  const prefersReduced = useReducedMotion();
+
+  useGSAP(
+    () => {
+      if (prefersReduced) return;
+
+      // Safe progressive entrance: content is visible by default in CSS.
+      // clearProps: "all" guarantees no lingering opacity or transform inline styles.
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: "top 90%",
+          once: true,
+        },
+        defaults: { ease: "power2.out" },
+      });
+
+      tl.fromTo(
+        ".adaptation-header",
+        { opacity: 0.3, y: 16 },
+        { opacity: 1, y: 0, duration: 0.5, clearProps: "all" }
+      )
+        .fromTo(
+          ".adaptation-toggle",
+          { opacity: 0.3, y: 12 },
+          { opacity: 1, y: 0, duration: 0.4, clearProps: "all" },
+          "-=0.2"
+        )
+        .fromTo(
+          ".adaptation-stage",
+          { opacity: 0.3, y: 16 },
+          { opacity: 1, y: 0, stagger: 0.08, duration: 0.5, clearProps: "all" },
+          "-=0.2"
+        );
+    },
+    { scope: sectionRef, dependencies: [prefersReduced] }
+  );
+
+  const handleToggle = (state: boolean) => {
+    setAdapted(state);
+    if (!prefersReduced && step3Ref.current) {
+      gsap.fromTo(
+        step3Ref.current,
+        { scale: 0.98 },
+        { scale: 1, duration: 0.3, ease: "power2.out", clearProps: "scale" }
+      );
+    }
+  };
 
   return (
     <section id="adaptation" className="py-24 sm:py-32 px-5 sm:px-6 border-t border-[rgba(28,25,23,0.07)] bg-[#F6F3EC]">

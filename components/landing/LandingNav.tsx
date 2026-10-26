@@ -5,6 +5,14 @@ import Link from "next/link";
 import { useSession, signIn } from "next-auth/react";
 import Logo from "@/components/Logo";
 
+const NAV_ITEMS = [
+  { href: "#problem", label: "The Problem" },
+  { href: "#system", label: "The System" },
+  { href: "#adaptation", label: "Adaptation" },
+  { href: "#orbit", label: "Orbit" },
+  { href: "#progress", label: "Progress" },
+];
+
 export default function LandingNav() {
   const { data: session } = useSession();
 

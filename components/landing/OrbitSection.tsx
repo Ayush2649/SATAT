@@ -6,6 +6,39 @@ import { OrbitLivingOrb } from "@/components/orbit/OrbitLivingOrb";
 export default function OrbitSection() {
   const [status, setStatus] = useState<"idle" | "accepted" | "deferred">("idle");
   const [loading, setLoading] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const dialogueRef = useRef<HTMLDivElement>(null);
+  const prefersReduced = useReducedMotion();
+
+  useGSAP(
+    () => {
+      if (prefersReduced) return;
+
+      // Safe progressive entrance: content is visible by default in CSS.
+      // clearProps: "all" ensures clean DOM for interactive state changes.
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: "top 90%",
+          once: true,
+        },
+        defaults: { ease: "power2.out" },
+      });
+
+      tl.fromTo(
+        ".orbit-header",
+        { opacity: 0.3, y: 16 },
+        { opacity: 1, y: 0, duration: 0.5, clearProps: "all" }
+      ).fromTo(
+        cardRef.current,
+        { opacity: 0.3, y: 16, scale: 0.98 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.6, clearProps: "all" },
+        "-=0.2"
+      );
+    },
+    { scope: sectionRef, dependencies: [prefersReduced] }
+  );
 
   const handleAction = (type: "accept" | "defer") => {
     setLoading(true);

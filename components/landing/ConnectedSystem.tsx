@@ -1,6 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useGSAP } from "@gsap/react";
+import { useReducedMotion } from "@/lib/useReducedMotion";
+
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger, useGSAP);
+}
 
 interface SystemPhase {
   id: string;
@@ -105,6 +113,35 @@ export default function ConnectedSystem() {
           </p>
         </div>
 
+        {/* Continuity Flow Visualization Bar — Positioned directly above cards for continuous visual connection */}
+        <div
+          role="navigation"
+          aria-label="System loop navigation"
+          className="continuity-flow-bar mb-8 p-3.5 sm:p-4 rounded-[20px] bg-[var(--surface)] border border-[var(--border)] flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs font-mono text-[var(--text-secondary)] shadow-xs"
+        >
+          {PHASES.map((p, idx) => (
+            <React.Fragment key={p.id}>
+              <button
+                type="button"
+                onClick={() => setActivePhase(p.id)}
+                className={`cursor-pointer px-3.5 py-1.5 rounded-full transition-all duration-200 text-xs font-mono focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] ${
+                  activePhase === p.id
+                    ? "bg-[var(--brand)] text-white font-bold shadow-xs scale-105"
+                    : "hover:bg-[var(--surface-subtle)] text-[var(--text-primary)]"
+                }`}
+              >
+                {p.title}
+              </button>
+              {idx < PHASES.length - 1 && (
+                <span className="text-[var(--brand)] select-none" aria-hidden="true">→</span>
+              )}
+            </React.Fragment>
+          ))}
+          <span className="text-[var(--brand)] select-none font-semibold ml-1" aria-label="Cycle repeats continuously">
+            ↺ repeat
+          </span>
+        </div>
+
         {/* 6 Connected Phases Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
           {PHASES.map((phase) => {
@@ -113,6 +150,9 @@ export default function ConnectedSystem() {
             return (
               <div
                 key={phase.id}
+                role="button"
+                tabIndex={0}
+                aria-pressed={isActive}
                 onClick={() => setActivePhase(phase.id)}
                 className={`group p-6 sm:p-7 rounded-[26px] transition-all duration-300 cursor-pointer flex flex-col justify-between select-none ${
                   isActive
