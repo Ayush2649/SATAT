@@ -132,15 +132,61 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - In `Year` view, renders 52 weeks × 7 days matrix where only days with actual logged activity light up; unlogged days render truthfully as warm stone rest (`#EFECE4`).
   - Dynamic summary pills calculate exact streak, adherence, and active days for both Month and Year views.
 
+### ✅ Sprint 4.4: 1:1 Stitch Training Studio Overhaul (`WorkoutPage.tsx`)
+- **Shared Top Header & 3-Tab Segmented Switcher**:
+  - Editorial headline `Training Studio` in Instrument Serif with subtitle `Move with steady, progressive form.`.
+  - Tactile interactive Body Weight Pill (`⚖️ {latestBodyWeight} kg`) with quick log modal.
+  - 3-tab segmented pill switcher (`Log Workout`, `Templates`, `History`).
+- **View 1A: Active Logging State (`image_7939bf.jpg`)**:
+  - Assigned Split Hero Launcher Card (`bg-[#191D1A]`) with lifestyle photo thumbnail, assigned routine badge (`ASSIGNED SPLIT · {days} DAYS / WK`), primary `Load {session} →` CTA, and horizontal other-sessions strip.
+  - 2-Column Bento row for Session Date (calendar picker) & Duration (tactile `-` / `+` 5m stepper buttons).
+  - Strength Movements section with Alabaster exercise cards, `SET | PREV | KG | REPS | DONE` grid, and `⊕ Add Set` / Voice logging triggers.
+  - Cardio & Zone 2 card + full-width Terracotta `Complete & Analyze Session ✓` CTA with reassurance micro-copy.
+- **View 1B: Completed Session & "Session Intelligence" State (`image_793942.jpg`)**:
+  - Completed Session Hero Card (`bg-[#191D1A]`) with dynamic split title (e.g. `Push Day — Upper Body`, never generic `"Workout logged today"`), muscle pills, `Edit Session` toggle, and 4-column telemetry strip (`DURATION`, `ENERGY` with dynamic calories, `VOLUME`, `SETS`).
+  - Movement Breakdown card with top sets and volume PR badges.
+  - Orbit Biomechanical Synthesis card parsing AI coach reports into 3 structured sub-cards (Mint Sage Highlight, Warm Stone Progression, Deep Botanical Espresso Next Session Tip) stripped of markdown asterisks.
+- **View 2: Templates Tab (`image_7938fd.jpg`)**:
+  - Section 1 (Assigned Architecture): Photo thumbnail cards with dark overlay labels (`CHEST/BACK`, `QUADS/HINGE`), `ASSIGNED` pill, full titles (zero truncation), `Load →` CTA, and expandable scheduled movement drawers.
+  - Section 2 (Curated Splits): 2×2 photo masonry grid for preset routines with movement count pills and instant load triggers.
+  - Section 3 (Personal Workout Templates): Custom splits list and `Create Your Own Split` invitation card with `+ Build New Split Template` modal.
+- **View 3: History Tab (`image_7938a1.png`)**:
+  - Monthly Archive Summary Banner with sessions completed, total volume, and average calorie burn.
+  - Interactive Muscle Category Filter Strip (`All Sessions`, `Upper Body`, `Lower Body`, `Push / Pull`, `Cardio`).
+  - Chronological session cards with split title in Instrument Serif, category badge, telemetry pills, and expandable set breakdown.
+- **Dynamic Calorie Extraction & Classification Engine (`lib/workouts/workoutMeta.ts`)**:
+  - Resolved `— Kcal` bug: extracts calories from `caloriesBurned` or coach report regex, falling back to physiological MET calculation (`duration * 6.8 + sets * 4`) so completed sessions never show `0 kcal`.
+  - Deterministic `inferWorkoutSplitMeta` helper maps exercises and templates to rich titles and muscle groups.
+  - 100% test coverage in `tests/workouts/workoutMeta.test.ts`.
+
+### ✅ Sprint 4.5: Workout Studio UX Refinements & Layout Polish (`WorkoutPage.tsx`)
+- **Post-Completion "Edit Session" Trap Solved**:
+  - Tab navigation away from `"Log Workout"` automatically resets `isEditingSession` so returning to the tab displays the Completed Session summary.
+  - When editing today's session, hid the Assigned Split launcher card and rendered an editorial status bar (`✎ Editing Today's Session` + `← Back to Summary`).
+  - Added primary button `"Save Session Changes ✓"` and secondary ghost action `"Cancel & Return to Summary"`.
+  - Added `+ Cardio` quick-action pill in the Completed Session hero row with instant persistence to Firestore.
+  - Rendered dedicated cardio breakdown card for logged cardio activities in today's completed session.
+- **Single-Letter Wrapping Fixed in Templates Tab**:
+  - Applied `text-[15px] sm:text-lg whitespace-nowrap truncate` to template titles and reduced container padding (`p-3.5 gap-3`, button `px-3 py-1.5 text-[11px]`), preventing orphaned letters (`Compound Upper A`, `Compound Lower A`, etc.).
+- **Scannable Session Intelligence Sub-Cards**:
+  - Clamped `VOLUME HIGHLIGHT` and `LOAD PROGRESSION` text to `line-clamp-3` by default with an interactive `"Show full analysis ⌄"` / `"Show less ⌃"` toggle button.
+- **History Filter Pill Scroll Fixed**:
+  - Added `overflow-x-auto no-scrollbar pb-1 -mx-1 px-1` to the filter pill container with `shrink-0 whitespace-nowrap` on all 5 chips, allowing smooth scrolling to the 5th `Cardio` pill.
+- **Eliminated Bottom Margin Gap**:
+  - Reduced outer wrapper padding from `pb-16` to `pb-6`, aligning the bottom-most card 16px–24px above the floating dock.
+- **Single-Line Horizontal Capsule Hardening**:
+  - Resolved vertical pill distortion in Completed Session hero card where `+ Cardio` and `Edit Session` wrapped into tall two-line shapes (`+` over `Cardio`, `Edit` over `Session`).
+  - Standardized the action buttons with `h-7 px-3 inline-flex items-center justify-center whitespace-nowrap shrink-0 leading-none`, locking in horizontal pill geometry.
+  - Streamlined the mobile badge to `✓ COMPLETED` (`hidden sm:inline` for `SESSION `) and wrapped buttons in `shrink-0 whitespace-nowrap`, guaranteeing that the left badge, `+ Cardio`, and `Edit Session` sit side-by-side on a single row without wrapping or distortion.
+  - Applied `whitespace-nowrap shrink-0` across movement breakdown badges, set chips, and history telemetry pills.
+
 ---
 
 ## 3. Pending / Upcoming Sprints
 
-### ⏳ Sprint 4.2+: Core Dashboard Alignment (1:1 Stitch Experience)
+### ⏳ Sprint 4.6: Core Dashboard Alignment (1:1 Stitch Experience)
 - **Fuel / Diet View** (`components/diet/DietPage.tsx` + `MealScannerModal.tsx`):
   - Refine macro wheel, recent meals bento, and camera/voice nutrition scanner with Warm Sunlit Stone aesthetic.
-- **Train / Workout View** (`components/workout/WorkoutPage.tsx`):
-  - Progressive overload tracking, exercise set logger, and recovery gauges.
 - **Orbit AI Companion** (`components/orbit/OrbitView.tsx`):
   - Natural conversation interface, context cards, and prompt suggestions.
 - **Tasks & Settings** (`TaskBoard.tsx`, `Settings`):
@@ -155,7 +201,8 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 32 static/dynamic routes compiled).
-- **Vitest Suite**: `516 passed | 26 skipped` across all 39 test suites.
+- **Vitest Suite**: `522 passed | 26 skipped` across all 40 test suites.
+- **Workout Tests**: `42/42 passed` across `tests/workouts/*`.
 - **Onboarding Tests**: `78/78 passed` across `tests/onboarding/*`.
 - **Landing Tests**: `3/3 passed` across `tests/landing/*`.
 
