@@ -192,22 +192,26 @@ describe("Firebase Custom Token API Route (/api/auth/firebase-token)", () => {
     expect(res.headers.get("Retry-After")).toBeDefined();
   });
 
-  it("supports GET method identically to POST", async () => {
-    vi.mocked(getServerSession).mockResolvedValueOnce({
-      user: { id: "get_user_uid" },
-    } as any);
-
-    mockCreateCustomToken.mockResolvedValueOnce("get_token");
-
-    const req = new NextRequest("http://localhost/api/auth/firebase-token", {
-      method: "GET",
-    });
-
-    const res = await GET(req);
-    expect(res.status).toBe(200);
+  it("rejects GET method with 405 Method Not Allowed and sets Allow: POST header (BUG-04)", async () => {
+    const res = await GET();
+    expect(res.status).toBe(405);
     const body = await res.json();
-    expect(body).toEqual({ token: "get_token" });
-    expect(mockCreateCustomToken).toHaveBeenCalledWith("get_user_uid");
+    expect(body).toEqual({ error: "Method not allowed. Use POST." });
+    expect(res.headers.get("Allow")).toBe("POST");
+    expect(res.headers.get("Cache-Control")).toContain("no-store");
+  });
+
+  it("sets no-cache and no-store headers on token responses and errors to prevent caching (BUG-04)", async () => {
+    vi.mocked(getServerSession).mockResolvedValueOnce({
+      user: { id: "cache_test_user" },
+    } as any);
+    mockCreateCustomToken.mockResolvedValueOnce("mock_token_cache");
+
+    const req = new NextRequest("http://localhost/api/auth/firebase-token", { method: "POST" });
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Cache-Control")).toContain("no-store");
+    expect(res.headers.get("Pragma")).toBe("no-cache");
   });
 });
 

@@ -104,7 +104,11 @@ export function useOnboardingWizard({ isUpdateMode = false }: { isUpdateMode?: b
         const res = await fetch("/api/onboarding/status");
         if (!res.ok) {
           if (res.status === 401) {
-            router.replace("/login");
+            const callbackUrl = isUpdateMode ? "/onboarding?mode=update" : "/onboarding";
+            router.replace(`/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+            if (isMounted) {
+              setState((prev) => ({ ...prev, isLoading: false }));
+            }
             return;
           }
           throw new Error("Failed to load onboarding status");

@@ -167,7 +167,7 @@ function Step1({ onNext, onBack, onDismiss }: { onNext: () => void; onBack: () =
   ];
   return (
     <div className="overflow-hidden" style={{ background: "var(--surface-0)" }}>
-      <button onClick={onDismiss} className="absolute top-4 right-4 p-1.5 rounded-xl text-gray-300 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all z-10">
+      <button onClick={onDismiss} className="absolute top-4 right-4 btn-ghost z-10" aria-label="Close introduction">
         <X className="w-4 h-4" />
       </button>
 
@@ -188,18 +188,25 @@ function Step1({ onNext, onBack, onDismiss }: { onNext: () => void; onBack: () =
                 borderColor: t.done ? "var(--accent-glow)" : "var(--border)",
                 background: t.done ? "var(--accent-soft)" : "var(--surface-0)",
               }}
-              // Note: ProductTour uses inline styles for its demo cards (intentionally not dark-mode themed as they are mock UI)
               >
               <div className="w-4 h-4 rounded-full flex-shrink-0 border-2 flex items-center justify-center"
                 style={t.done ? { background: "var(--accent)", borderColor: "var(--accent)" } : { borderColor: "var(--border)" }}>
                 {t.done && <svg className="w-2.5 h-2.5" viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5 3.5-4" stroke="white" strokeWidth="1.5" strokeLinecap="round"/></svg>}
               </div>
-              <span className={cn("text-xs font-semibold", t.done ? "line-through text-gray-300" : "text-gray-800")}>{t.text}</span>
+              <span
+                className="text-xs font-semibold"
+                style={{
+                  color: t.done ? "var(--text-3)" : "var(--text-1)",
+                  textDecoration: t.done ? "line-through" : "none",
+                }}
+              >
+                {t.text}
+              </span>
             </div>
           ))}
           {/* Progress bar */}
           <div className="mt-3 pt-2 border-t" style={{ borderColor: "var(--border)" }}>
-            <div className="flex justify-between text-[10px] font-bold text-gray-400 mb-1.5">
+            <div className="flex justify-between text-[10px] font-bold mb-1.5" style={{ color: "var(--text-3)" }}>
               <span>Progress</span><span style={{ color: "var(--accent)" }}>2/4 done</span>
             </div>
             <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--surface-3)" }}>
@@ -235,7 +242,7 @@ function Step2({ onNext, onBack, onDismiss }: { onNext: () => void; onBack: () =
   ];
   return (
     <div className="overflow-hidden" style={{ background: "var(--surface-0)" }}>
-      <button onClick={onDismiss} className="absolute top-4 right-4 p-1.5 rounded-xl text-white/30 hover:text-white hover:bg-white/10 transition-all z-10">
+      <button onClick={onDismiss} className="absolute top-4 right-4 btn-ghost z-10" aria-label="Close introduction">
         <X className="w-4 h-4" />
       </button>
 
@@ -303,7 +310,7 @@ function Step3({ onNext, onBack, onDismiss }: { onNext: () => void; onBack: () =
 
   return (
     <div className="overflow-hidden" style={{ background: "var(--surface-0)" }}>
-      <button onClick={onDismiss} className="absolute top-4 right-4 p-1.5 rounded-xl text-gray-300 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all z-10">
+      <button onClick={onDismiss} className="absolute top-4 right-4 btn-ghost z-10" aria-label="Close introduction">
         <X className="w-4 h-4" />
       </button>
 
