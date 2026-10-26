@@ -13,7 +13,7 @@ import { saveWorkoutSession, getWorkoutSessions, getBodyWeightEntries, logBodyWe
 import { WORKOUT_PRESETS } from "@/lib/workoutPresets";
 import { partitionWorkoutTemplates } from "@/lib/workouts/classification";
 import { normalizeTemplateToExercises, normalizeExercisesToTemplateExercises } from "@/lib/workouts/normalization";
-import { setWorkoutContext } from "@/lib/orbitContext";
+import { setWorkoutContext, getWorkoutContext } from "@/lib/orbitContext";
 import { useToast } from "@/components/ui/Toast";
 import { MarkdownText } from "@/components/ui/MarkdownText";
 import VoiceLogModal from "@/components/workout/VoiceLogModal";
@@ -106,8 +106,9 @@ export default function WorkoutPage() {
     getWorkoutSessions(userId).then((sessions) => {
       setPastSessions(sessions);
       // Write to Orbit context so chatbot knows workout history
+      const current = getWorkoutContext();
       setWorkoutContext({
-        bodyWeightKg: bodyWeightEntries[0]?.weightKg,
+        bodyWeightKg: current?.bodyWeightKg ?? bodyWeightEntries[0]?.weightKg,
         recentSessions: sessions.slice(0, 5).map((s) => ({
           date: s.date,
           durationMinutes: s.durationMinutes,
@@ -143,10 +144,11 @@ export default function WorkoutPage() {
       setBodyWeightEntries(entries);
       if (entries.length > 0) {
         setBodyWeight(String(entries[0].weightKg));
-        // Update context with body weight
+        // Update context with body weight while preserving existing recentSessions
+        const current = getWorkoutContext();
         setWorkoutContext({
           bodyWeightKg: entries[0].weightKg,
-          recentSessions: [],
+          recentSessions: current?.recentSessions ?? [],
         });
       }
     }).catch((err) => {
@@ -322,6 +324,11 @@ export default function WorkoutPage() {
     const entry = await logBodyWeight({ userId, date: todayString(), weightKg: parseFloat(newBodyWeight), createdAt: Date.now() });
     setBodyWeightEntries((prev) => [entry, ...prev]);
     setBodyWeight(newBodyWeight); setNewBodyWeight(""); setShowBodyWeightModal(false);
+    const current = getWorkoutContext();
+    setWorkoutContext({
+      bodyWeightKg: entry.weightKg,
+      recentSessions: current?.recentSessions ?? [],
+    });
     toast(`Body weight logged: ${entry.weightKg} kg`, "success");
   };
 

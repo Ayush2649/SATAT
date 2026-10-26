@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
+import NextImage from "next/image";
 import { useSession } from "next-auth/react";
 import { useFirebaseAuth } from "@/components/FirebaseAuthProvider";
 import {
@@ -1091,15 +1092,17 @@ function MealScannerModal({
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="relative">
-            <img
+          <div className="relative w-full h-44 rounded-xl overflow-hidden">
+            <NextImage
               src={preview}
-              alt="meal"
-              className="w-full h-44 object-cover rounded-xl"
+              alt="Meal preview"
+              fill
+              unoptimized
+              className="object-cover"
               onError={() => setError("Image preview not supported. Please select a JPG or PNG.")}
             />
             {(scanning || reestimating) && (
-              <div className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center gap-2 text-white">
+              <div className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center gap-2 text-white z-10">
                 <Loader2 className="w-5 h-5 animate-spin" />
                 <span className="text-sm font-semibold">
                   {scanning ? scanStage : "Recalculating macros..."}

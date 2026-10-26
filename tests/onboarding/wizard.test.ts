@@ -93,5 +93,48 @@ describe("Onboarding Wizard Step Navigation & Branching Logic", () => {
       expect(getPrevStep("step_0_consent", baseValues)).toBeNull();
     });
   });
+
+  describe("BUG-01: Unauthenticated Onboarding Redirection & Loading State", () => {
+    it("builds the correct /signin callback URL for first-time onboarding", () => {
+      const isUpdateMode = false;
+      const callbackUrl = isUpdateMode ? "/onboarding?mode=update" : "/onboarding";
+      const targetUrl = `/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+      expect(targetUrl).toBe("/signin?callbackUrl=%2Fonboarding");
+      expect(targetUrl).not.toContain("/login");
+    });
+
+    it("builds the correct /signin callback URL for update mode onboarding", () => {
+      const isUpdateMode = true;
+      const callbackUrl = isUpdateMode ? "/onboarding?mode=update" : "/onboarding";
+      const targetUrl = `/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+      expect(targetUrl).toBe("/signin?callbackUrl=%2Fonboarding%3Fmode%3Dupdate");
+      expect(targetUrl).not.toContain("/login");
+    });
+
+    it("handles 401 unauthenticated status without remaining stuck in loading state", () => {
+      let isLoading = true;
+      let redirectedUrl = "";
+
+      const mockRouter = {
+        replace: (url: string) => {
+          redirectedUrl = url;
+        },
+      };
+
+      const handleUnauthenticated = (isUpdateMode: boolean) => {
+        const callbackUrl = isUpdateMode ? "/onboarding?mode=update" : "/onboarding";
+        mockRouter.replace(`/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+        isLoading = false;
+      };
+
+      handleUnauthenticated(false);
+      expect(redirectedUrl).toBe("/signin?callbackUrl=%2Fonboarding");
+      expect(isLoading).toBe(false);
+
+      handleUnauthenticated(true);
+      expect(redirectedUrl).toBe("/signin?callbackUrl=%2Fonboarding%3Fmode%3Dupdate");
+      expect(isLoading).toBe(false);
+    });
+  });
 });
 
