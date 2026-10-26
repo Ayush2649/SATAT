@@ -26,9 +26,9 @@ describe("Stitch Editorial Landing Page with Header, Footer & Continuous Proof",
     expect(html).toContain("Workouts, meals, and daily plans that quietly adjust to real life.");
     expect(html).toContain("Upper Body");
     expect(html).toContain("moved to 6PM · Sleep was light");
-    expect(html).toContain("Athlete training in warm morning sunlight");
-    expect(html).toContain("Warm protein oatmeal bowl with berries and nuts");
-    expect(html).toContain("rounded-l-full rounded-r-[24px]");
+    expect(html).toContain("Upper body dumbbell strength training session");
+    expect(html).toContain("Warm protein oatmeal bowl");
+    expect(html).toContain("rounded-l-[92px]");
     expect(html).toContain("Oatmeal &amp; Whey");
     expect(html).toContain("420 kcal · 34g P");
 
@@ -112,7 +112,7 @@ describe("Stitch Editorial Landing Page with Header, Footer & Continuous Proof",
 
     // Physical collage styling (Stitch semi-circle arch layer)
     expect(html).toContain("-rotate-2");
-    expect(html).toContain("rounded-l-full rounded-r-[24px]");
+    expect(html).toContain("rounded-l-[92px]");
 
     // Final CTA dark botanical card styling
     expect(html).toContain("bg-[#191D1A]");

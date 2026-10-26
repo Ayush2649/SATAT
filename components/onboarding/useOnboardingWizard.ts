@@ -88,7 +88,7 @@ export function useOnboardingWizard({ isUpdateMode = false }: { isUpdateMode?: b
   const [state, setState] = useState<OnboardingWizardState>({
     currentStep: "step_0_consent",
     formValues: initialFormValues,
-    healthConditions: [],
+    healthConditions: ["none"],
     isLoading: true,
     isSaving: false,
     error: null,

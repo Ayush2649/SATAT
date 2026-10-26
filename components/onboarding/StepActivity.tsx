@@ -1,8 +1,7 @@
 // components/onboarding/StepActivity.tsx
 "use client";
 
-import { Armchair, Footprints, Briefcase, Zap, ChevronRight, ChevronLeft, Check } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Armchair, Footprints, Briefcase, Zap, ArrowRight, Check } from "lucide-react";
 import type { ActivityLevel } from "@/lib/onboarding/validation";
 import type { OnboardingFormValues } from "./types";
 
@@ -61,116 +60,118 @@ export function StepActivity({
   formValues,
   updateFormField,
   onNext,
-  onBack,
-  onSkip,
   isSaving,
 }: StepActivityProps) {
-  const selected = formValues.activityLevel;
+  const selected = formValues.activityLevel || "lightly_active";
+
+  const handleSelect = (id: ActivityLevel) => {
+    updateFormField("activityLevel", id);
+  };
+
+  const activeOption = ACTIVITY_OPTIONS.find((o) => o.id === selected) || ACTIVITY_OPTIONS[1];
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="text-center space-y-2">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--brand-subtle)] border border-[var(--border)]">
-          <span className="type-eyebrow text-[var(--brand)]">NON-EXERCISE EXPENDITURE (NEAT)</span>
+    <div className="flex flex-col justify-between flex-1 py-1 animate-fade-in">
+      <div>
+        {/* Eyebrow */}
+        <div className="flex items-center gap-2 text-[11px] font-bold tracking-[0.14em] uppercase text-[#2D6A4F]">
+          <span className="w-2 h-2 rounded-full bg-[#2D6A4F]" />
+          <span>STEP 04 · DAILY MOVEMENT</span>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-bold font-display text-[var(--text-primary)] tracking-tight">
-          How does your body move during a typical day?
+
+        {/* Headline */}
+        <h1 className="font-serif font-normal text-[2.15rem] leading-[1.12] tracking-tight text-[#1C1917] mt-2">
+          How does your body <span className="italic text-[#E05A47]">move</span> during a typical day?
         </h1>
-        <p className="text-sm text-[var(--text-secondary)] max-w-md mx-auto">
+        <p className="text-xs sm:text-sm text-[#57534E] mt-2 leading-relaxed">
           Your daily work and commuting routine accounts for far more energy burn than a 45-minute workout.
         </p>
-      </div>
 
-      <div className="space-y-3 max-w-xl mx-auto pt-1">
-        {ACTIVITY_OPTIONS.map((opt) => {
-          const Icon = opt.icon;
-          const isSelected = selected === opt.id;
-          return (
-            <button
-              key={opt.id}
-              type="button"
-              onClick={() => updateFormField("activityLevel", opt.id)}
-              className={cn(
-                "w-full p-4 rounded-2xl border text-left transition-all duration-200 flex items-start gap-4 pressable",
-                isSelected
-                  ? "border-[var(--brand)] bg-[var(--brand-subtle)] ring-1 ring-[var(--brand)] shadow-xs"
-                  : "border-[var(--border)] bg-[var(--surface-subtle)] hover:border-[var(--border-strong)] hover:bg-[var(--surface)]"
-              )}
-            >
-              <div
-                className={cn(
-                  "p-2.5 rounded-xl border shrink-0 mt-0.5 transition-colors",
+        {/* Activity Selection Cards */}
+        <div className="space-y-3 mt-5">
+          {ACTIVITY_OPTIONS.map((opt) => {
+            const Icon = opt.icon;
+            const isSelected = selected === opt.id;
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => handleSelect(opt.id)}
+                className={`w-full text-left rounded-[24px] p-4 transition-all flex items-start gap-4 relative cursor-pointer active:scale-[0.99] ${
                   isSelected
-                    ? "bg-[var(--brand)] text-white border-[var(--brand)]"
-                    : "bg-[var(--surface)] text-[var(--text-muted)] border-[var(--border)]"
-                )}
+                    ? "bg-[#191D1A] text-[#FCFBF9] shadow-md border-2 border-[#E05A47]"
+                    : "bg-[#FCFBF9] text-[#1C1917] border border-[#1C1917]/[0.06] shadow-xs hover:border-stone-300"
+                }`}
               >
-                <Icon className="w-5 h-5" />
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-display font-bold text-[var(--text-primary)] text-sm sm:text-base">
-                      {opt.title}
-                    </span>
-                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-[var(--surface)] border border-[var(--border-subtle)] text-[var(--text-secondary)]">
-                      {opt.subtitle}
-                    </span>
-                  </div>
-                  <span className="font-mono text-[11px] font-bold text-[var(--brand)]">
-                    {opt.multiplier}
-                  </span>
+                <div
+                  className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                    isSelected ? "bg-[#2D6A4F]/30 text-[#6EE7B7]" : "bg-[#EFECE4] text-[#1C1917]"
+                  }`}
+                >
+                  <Icon className="w-5 h-5" />
                 </div>
-                <p className="text-xs text-[var(--text-secondary)] mt-1 leading-relaxed">
-                  {opt.description}
-                </p>
-              </div>
 
-              <div
-                className={cn(
-                  "w-5 h-5 rounded-full flex items-center justify-center border shrink-0 mt-1 transition-all",
-                  isSelected
-                    ? "bg-[var(--brand)] border-[var(--brand)] text-white"
-                    : "border-[var(--border-strong)] bg-transparent text-transparent"
-                )}
-              >
-                <Check className="w-3 h-3 stroke-[3]" />
-              </div>
-            </button>
-          );
-        })}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3
+                      className={`font-sans font-bold text-sm sm:text-base leading-snug truncate sm:whitespace-normal ${
+                        isSelected ? "text-white" : "text-[#1C1917]"
+                      }`}
+                    >
+                      {opt.title}
+                    </h3>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span
+                        className={`inline-flex items-center justify-center whitespace-nowrap shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-mono font-semibold leading-none ${
+                          isSelected
+                            ? "bg-white/12 text-[#6EE7B7] border border-white/10"
+                            : "bg-[#EFECE4] text-[#57534E]"
+                        }`}
+                      >
+                        {opt.multiplier}
+                      </span>
+                      {isSelected && (
+                        <div className="w-5 h-5 rounded-full bg-[#E05A47] text-white flex items-center justify-center shadow-xs shrink-0">
+                          <Check className="w-3 h-3 stroke-[2.5]" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <p
+                    className={`text-xs mt-1.5 leading-relaxed ${
+                      isSelected ? "text-stone-300" : "text-[#57534E]"
+                    }`}
+                  >
+                    {opt.description}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      <div className="pt-4 border-t border-[var(--border-subtle)] flex items-center justify-between gap-3">
+      {/* Bottom Floating Capsule Bar */}
+      <div className="bg-[#FCFBF9] rounded-full p-2.5 pl-5 shadow-[0_14px_34px_rgba(28,25,23,0.08)] border border-[#1C1917]/[0.05] flex items-center justify-between mt-6">
+        <div>
+          <span className="text-[9px] font-mono font-bold tracking-wider uppercase text-[#8C857B] block">
+            DAILY EXPENDITURE
+          </span>
+          <span className="text-xs font-bold text-[#1C1917]">
+            {activeOption.multiplier} Baseline Active
+          </span>
+        </div>
+
         <button
           type="button"
-          onClick={onBack}
-          className="btn-ghost px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-1.5"
+          onClick={() => onNext()}
+          disabled={isSaving}
+          aria-label="Continue"
+          className="bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full px-6 py-3.5 text-xs font-semibold shadow-sm hover:shadow-md transition-all active:scale-95 flex items-center gap-2 cursor-pointer shrink-0"
         >
-          <ChevronLeft className="w-4 h-4" />
-          <span>Back</span>
+          <span>Continue</span>
+          <ArrowRight className="w-4 h-4" />
         </button>
-
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={onSkip}
-            className="text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] underline underline-offset-4 px-2 py-1"
-          >
-            Skip for now
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onNext()}
-            disabled={isSaving}
-            className="btn-primary px-6 py-2.5 rounded-xl font-semibold text-sm shadow-sm flex items-center gap-2"
-          >
-            <span>{isSaving ? "Saving..." : "Continue"}</span>
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
       </div>
     </div>
   );

@@ -1,8 +1,7 @@
 // components/onboarding/StepDiet.tsx
 "use client";
 
-import { Salad, Egg, Beef, Leaf, Utensils, ChevronRight, ChevronLeft, Check } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Salad, Egg, Beef, Leaf, Utensils, ArrowRight, Check } from "lucide-react";
 import type { DietaryPattern } from "@/lib/onboarding/validation";
 import type { OnboardingFormValues } from "./types";
 
@@ -21,20 +20,23 @@ const DIET_OPTIONS: {
   desc: string;
   proteinSources: string;
   icon: typeof Salad;
+  image: string;
 }[] = [
   {
     id: "vegetarian",
     title: "Vegetarian",
     desc: "Dairy included, plant-forward. No meat or eggs.",
-    proteinSources: "Paneer · Curd/Yogurt · Dal · Whey · Soy",
+    proteinSources: "Paneer · Curd · Dal · Whey · Soy",
     icon: Salad,
+    image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=500&q=75",
   },
   {
     id: "eggetarian",
     title: "Eggetarian",
     desc: "Eggs and dairy included alongside plants. No meat.",
-    proteinSources: "Whole Eggs · Egg Whites · Paneer · Dairy",
+    proteinSources: "Eggs · Egg Whites · Paneer · Dairy",
     icon: Egg,
+    image: "https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=500&q=75",
   },
   {
     id: "non_vegetarian",
@@ -42,13 +44,15 @@ const DIET_OPTIONS: {
     desc: "Includes poultry, fish, meat, dairy, and plants.",
     proteinSources: "Chicken · Fish · Eggs · Dairy · Legumes",
     icon: Beef,
+    image: "https://images.unsplash.com/photo-1532550907401-a500c9a57435?auto=format&fit=crop&w=500&q=75",
   },
   {
     id: "vegan",
     title: "Vegan",
     desc: "100% plant-based. No meat, dairy, eggs, or animal products.",
-    proteinSources: "Tofu · Tempeh · Edamame · Lentils · Plant Isolate",
+    proteinSources: "Tofu · Tempeh · Edamame · Lentils",
     icon: Leaf,
+    image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=500&q=75",
   },
   {
     id: "anything",
@@ -56,6 +60,7 @@ const DIET_OPTIONS: {
     desc: "Open to all cuisines, recipes, and ingredients.",
     proteinSources: "Full-spectrum omnivore protein rotation",
     icon: Utensils,
+    image: "https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=500&q=75",
   },
 ];
 
@@ -71,12 +76,14 @@ export function StepDiet({
   formValues,
   updateFormField,
   onNext,
-  onBack,
-  onSkip,
   isSaving,
 }: StepDietProps) {
-  const selectedPattern = formValues.dietaryPattern;
+  const selectedPattern = formValues.dietaryPattern || "anything";
   const currentAvoidances = formValues.foodAvoidances || [];
+
+  const handleSelectPattern = (id: DietaryPattern) => {
+    updateFormField("dietaryPattern", id);
+  };
 
   const handleToggleAvoidance = (tag: string) => {
     if (currentAvoidances.includes(tag)) {
@@ -89,83 +96,117 @@ export function StepDiet({
     }
   };
 
+  const activeOption = DIET_OPTIONS.find((o) => o.id === selectedPattern) || DIET_OPTIONS[4];
+
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="text-center space-y-2">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--brand-subtle)] border border-[var(--border)]">
-          <span className="type-eyebrow text-[var(--brand)]">NUTRITIONAL ARCHITECTURE</span>
+    <div className="flex flex-col justify-between flex-1 py-1 animate-fade-in">
+      <div>
+        {/* Eyebrow */}
+        <div className="flex items-center gap-2 text-[11px] font-bold tracking-[0.14em] uppercase text-[#2D6A4F]">
+          <span className="w-2 h-2 rounded-full bg-[#2D6A4F]" />
+          <span>STEP 07 · DAILY NOURISHMENT</span>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-bold font-display text-[var(--text-primary)] tracking-tight">
-          What is your everyday eating style?
+
+        {/* Headline */}
+        <h1 className="font-serif font-normal text-[2.15rem] leading-[1.12] tracking-tight text-[#1C1917] mt-2">
+          What is your everyday <span className="italic text-[#2D6A4F]">eating style?</span>
         </h1>
-        <p className="text-sm text-[var(--text-secondary)] max-w-md mx-auto">
-          Helps SATAT balance your protein sources and calibrate Orbit&apos;s meal suggestions.
+        <p className="text-xs sm:text-sm text-[#57534E] mt-2 leading-relaxed">
+          Satat works with your culture and preferences. We never prescribe dogmatic meal plans.
         </p>
-      </div>
 
-      <div className="space-y-5 max-w-xl mx-auto">
-        {/* Dietary Pattern Grid */}
-        <div className="space-y-2">
-          <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-[var(--text-muted)]">
-            Everyday Diet
-          </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            {DIET_OPTIONS.map((opt, idx) => {
-              const Icon = opt.icon;
-              const isSelected = selectedPattern === opt.id;
-              const isLastOdd = idx === DIET_OPTIONS.length - 1;
-              return (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => updateFormField("dietaryPattern", opt.id)}
-                  className={cn(
-                    "p-3.5 rounded-2xl border text-left transition-all flex items-start gap-3 pressable",
-                    isLastOdd && "sm:col-span-2",
+        {/* Dietary Pattern Cards */}
+        <div className="space-y-2.5 mt-5">
+          {DIET_OPTIONS.map((opt) => {
+            const Icon = opt.icon;
+            const isSelected = selectedPattern === opt.id;
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => handleSelectPattern(opt.id)}
+                className={`w-full text-left rounded-[24px] p-3 sm:p-3.5 transition-all flex items-center gap-3.5 relative overflow-hidden cursor-pointer active:scale-[0.99] ${
+                  isSelected
+                    ? "bg-[#191D1A] text-[#FCFBF9] shadow-md border-2 border-[#E05A47]"
+                    : "bg-[#FCFBF9] text-[#1C1917] border border-[#1C1917]/[0.06] shadow-xs hover:border-stone-300"
+                }`}
+              >
+                {/* Background culinary image */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={opt.image}
+                  alt={opt.title}
+                  className={`absolute inset-0 w-full h-full object-cover pointer-events-none transition-opacity duration-300 ${
+                    isSelected ? "opacity-35" : "opacity-25"
+                  }`}
+                  loading="lazy"
+                />
+                <div
+                  className={`absolute inset-0 pointer-events-none ${
                     isSelected
-                      ? "border-[var(--brand)] bg-[var(--brand-subtle)] ring-1 ring-[var(--brand)] shadow-xs"
-                      : "border-[var(--border)] bg-[var(--surface-subtle)] hover:border-[var(--border-strong)] hover:bg-[var(--surface)]"
-                  )}
-                >
+                      ? "bg-gradient-to-r from-[#191D1A]/95 via-[#191D1A]/90 to-[#191D1A]/70"
+                      : "bg-gradient-to-r from-[#FCFBF9]/95 via-[#FCFBF9]/90 to-[#FCFBF9]/75"
+                  }`}
+                />
+
+                {/* Left dish thumbnail */}
+                <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 border border-white/20 shadow-xs relative z-10 bg-[#EFECE4]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={opt.image}
+                    alt={opt.title}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
                   <div
-                    className={cn(
-                      "p-2.5 rounded-xl shrink-0 mt-0.5 transition-colors",
-                      isSelected
-                        ? "bg-[var(--brand)] text-white"
-                        : "bg-[var(--surface)] text-[var(--text-muted)] border border-[var(--border)]"
-                    )}
+                    className={`w-5 h-5 rounded-full flex items-center justify-center absolute bottom-1 right-1 shadow-xs ${
+                      isSelected ? "bg-[#191D1A] text-[#6EE7B7]" : "bg-white text-[#1C1917]"
+                    }`}
                   >
-                    <Icon className="w-4 h-4" />
+                    <Icon className="w-3 h-3" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-display font-bold text-sm text-[var(--text-primary)]">
-                        {opt.title}
-                      </span>
-                      {isSelected && <Check className="w-3.5 h-3.5 text-[var(--brand)] stroke-[3] shrink-0" />}
-                    </div>
-                    <div className="text-xs text-[var(--text-secondary)] mt-0.5 leading-snug">
-                      {opt.desc}
-                    </div>
-                    <div className="font-mono text-[10px] text-[var(--brand)] mt-1.5 truncate">
-                      {opt.proteinSources}
-                    </div>
+                </div>
+
+                <div className="flex-1 pr-6 relative z-10">
+                  <h3
+                    className={`font-sans font-bold text-sm sm:text-base leading-snug ${
+                      isSelected ? "text-white" : "text-[#1C1917]"
+                    }`}
+                  >
+                    {opt.title}
+                  </h3>
+                  <p
+                    className={`text-[11px] sm:text-xs mt-0.5 leading-relaxed ${
+                      isSelected ? "text-stone-300" : "text-[#57534E]"
+                    }`}
+                  >
+                    {opt.desc}
+                  </p>
+                  <span
+                    className={`text-[10px] font-mono block mt-0.5 ${
+                      isSelected ? "text-[#6EE7B7]" : "text-[#2D6A4F]"
+                    }`}
+                  >
+                    {opt.proteinSources}
+                  </span>
+                </div>
+
+                {isSelected && (
+                  <div className="w-6 h-6 rounded-full bg-[#E05A47] text-white flex items-center justify-center absolute top-3.5 right-3.5 shadow-xs relative z-10">
+                    <Check className="w-3.5 h-3.5 stroke-[2.5]" />
                   </div>
-                </button>
-              );
-            })}
-          </div>
+                )}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Food Avoidances */}
-        <div className="space-y-2 pt-1">
-          <div className="flex items-center justify-between">
-            <label className="text-[11px] font-mono font-bold uppercase tracking-wider text-[var(--text-muted)]">
-              Common Food Avoidances (Optional)
-            </label>
-            <span className="text-[11px] text-[var(--text-muted)]">Excluded from Orbit suggestions</span>
-          </div>
-          <div className="flex flex-wrap gap-2">
+        {/* Common Sensitivities / Avoidances */}
+        <div className="mt-5">
+          <span className="text-[10px] font-bold tracking-wider uppercase text-[#57534E] block mb-2">
+            ANY FOODS OR INGREDIENTS YOU AVOID?
+          </span>
+          <div className="flex flex-wrap gap-1.5">
             {COMMON_AVOIDANCES.map((tag) => {
               const isChecked = currentAvoidances.includes(tag);
               return (
@@ -173,15 +214,13 @@ export function StepDiet({
                   key={tag}
                   type="button"
                   onClick={() => handleToggleAvoidance(tag)}
-                  className={cn(
-                    "px-3.5 py-2 rounded-xl border text-xs font-semibold transition-all flex items-center gap-1.5 pressable",
+                  className={`px-3 py-1.5 rounded-full text-xs transition-all cursor-pointer ${
                     isChecked
-                      ? "border-[var(--brand)] bg-[var(--brand)] text-white shadow-xs"
-                      : "border-[var(--border)] bg-[var(--surface-subtle)] text-[var(--text-secondary)] hover:border-[var(--border-strong)] hover:text-[var(--text-primary)]"
-                  )}
+                      ? "bg-[#2D6A4F] text-white font-semibold shadow-xs"
+                      : "bg-[#FCFBF9] text-[#57534E] border border-stone-200/70 hover:border-stone-300"
+                  }`}
                 >
-                  {isChecked && <Check className="w-3.5 h-3.5 stroke-[3]" />}
-                  <span>{tag}</span>
+                  {isChecked ? `✓ ${tag}` : `+ ${tag}`}
                 </button>
               );
             })}
@@ -189,35 +228,27 @@ export function StepDiet({
         </div>
       </div>
 
-      <div className="pt-4 border-t border-[var(--border-subtle)] flex items-center justify-between gap-3">
+      {/* Bottom Floating Capsule Bar */}
+      <div className="bg-[#FCFBF9] rounded-full p-2.5 pl-5 shadow-[0_14px_34px_rgba(28,25,23,0.08)] border border-[#1C1917]/[0.05] flex items-center justify-between mt-6">
+        <div>
+          <span className="text-[9px] font-mono font-bold tracking-wider uppercase text-[#8C857B] block">
+            DIETARY ANCHOR
+          </span>
+          <span className="text-xs font-bold text-[#1C1917]">
+            {activeOption.title}
+          </span>
+        </div>
+
         <button
           type="button"
-          onClick={onBack}
-          className="btn-ghost px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-1.5"
+          onClick={() => onNext()}
+          disabled={isSaving}
+          aria-label="Continue"
+          className="bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full px-6 py-3.5 text-xs font-semibold shadow-sm hover:shadow-md transition-all active:scale-95 flex items-center gap-2 cursor-pointer shrink-0"
         >
-          <ChevronLeft className="w-4 h-4" />
-          <span>Back</span>
+          <span>Continue</span>
+          <ArrowRight className="w-4 h-4" />
         </button>
-
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={onSkip}
-            className="text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] underline underline-offset-4 px-2 py-1"
-          >
-            Skip for now
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onNext()}
-            disabled={isSaving}
-            className="btn-primary px-6 py-2.5 rounded-xl font-semibold text-sm shadow-sm flex items-center gap-2"
-          >
-            <span>{isSaving ? "Saving..." : "Continue"}</span>
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
       </div>
     </div>
   );
