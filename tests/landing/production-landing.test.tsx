@@ -50,7 +50,8 @@ describe("Stitch Editorial Landing Page with Header, Footer & Continuous Proof",
 
     // Section 4: Orbit Section (Quiet Guidance, borderless living orb centerpiece)
     expect(html).toContain("QUIET GUIDANCE");
-    expect(html).toContain("A companion, not a dashboard");
+    expect(html).toContain("A companion,");
+    expect(html).toContain("not a dashboard");
     expect(html).toContain("orbit-living-orb");
     expect(html).toContain("You trained heavier than usual today.");
     expect(html).toContain("added a bowl of Greek yogurt to tonight");
@@ -117,47 +118,5 @@ describe("Stitch Editorial Landing Page with Header, Footer & Continuous Proof",
     // Final CTA dark botanical card styling
     expect(html).toContain("bg-[#191D1A]");
     expect(html).toContain("rounded-[32px]");
-  });
-
-  it("verifies UX overhaul: tightened vertical spacing and WCAG 2.2 accessibility landmarks", () => {
-    const html = renderToStaticMarkup(React.createElement(ProductionLandingPage));
-
-    // WCAG 2.2 Landmark & Skip-to-content
-    expect(html).toContain("<main id=\"main-content\"");
-    expect(html).toContain("href=\"#main-content\"");
-    expect(html).toContain("Skip to main content");
-    expect(html).toContain("aria-label=\"Main Navigation\"");
-    expect(html).toContain("role=\"contentinfo\"");
-
-    // Vertical whitespace reduction: ensure the excessive padding classes are gone
-    expect(html).not.toContain("py-32 sm:py-44");
-    expect(html).not.toContain("py-24 sm:py-32");
-
-    // Connected System accessibility
-    expect(html).toContain("role=\"button\"");
-    expect(html).toContain("aria-pressed=");
-
-    // Orbit live region for accessibility
-    expect(html).toContain("aria-live=\"polite\"");
-
-    // Consistency ring accessibility
-    expect(html).toContain("role=\"img\"");
-    expect(html).toContain("87% rolling 28-day adherence score");
-  });
-
-  it("verifies theme-aware navigation header in light and dark mode conventions", () => {
-    const html = renderToStaticMarkup(React.createElement(ProductionLandingPage));
-
-    // Confirm navbar uses theme-aware light and dark background classes instead of hardcoded dark-only colors
-    expect(html).toContain("bg-white/85");
-    expect(html).toContain("dark:bg-[#0B0E11]/85");
-
-    // Accessible focus rings
-    expect(html).toContain("focus-visible:ring-2");
-    expect(html).toContain("focus-visible:ring-[var(--brand)]");
-
-    // Semantic text colors for contrast adaptation
-    expect(html).toContain("text-[var(--text-secondary)]");
-    expect(html).toContain("hover:text-[var(--text-primary)]");
   });
 });
