@@ -1,8 +1,8 @@
 // components/onboarding/StepHealth.tsx
 "use client";
 
-import { Shield, HeartPulse, ChevronRight, ChevronLeft, Info, Check, Lock } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useEffect } from "react";
+import { Lock, HeartPulse, ArrowRight, Check } from "lucide-react";
 import type { HealthCondition } from "@/lib/onboarding/validation";
 
 interface StepHealthProps {
@@ -31,10 +31,15 @@ export function StepHealth({
   healthConditions,
   setHealthConditions,
   onNext,
-  onBack,
   isSaving,
   error,
 }: StepHealthProps) {
+  useEffect(() => {
+    if (healthConditions.length === 0) {
+      setHealthConditions(["none"]);
+    }
+  }, [healthConditions.length, setHealthConditions]);
+
   const handleToggle = (id: HealthCondition) => {
     if (id === "none") {
       setHealthConditions(["none"]);
@@ -43,149 +48,127 @@ export function StepHealth({
 
     const next = healthConditions.filter((c) => c !== "none");
     if (next.includes(id)) {
-      setHealthConditions(next.filter((c) => c !== id));
+      const remaining = next.filter((c) => c !== id);
+      setHealthConditions(remaining.length === 0 ? ["none"] : remaining);
     } else {
       setHealthConditions([...next, id]);
     }
   };
 
-  const hasClinicalCondition = healthConditions.some((c) =>
+  const effectiveConditions = healthConditions.length === 0 ? ["none"] : healthConditions;
+  const hasClinicalCondition = effectiveConditions.some((c) =>
     ["pregnant_breastfeeding", "diabetes", "cardiovascular", "disordered_eating"].includes(c)
   );
-  const hasPhysicalInjury = healthConditions.includes("physical_injury");
-  const hasSelection = healthConditions.length > 0;
+  const hasSelectedCondition = effectiveConditions.some((c) => c !== "none");
+  const hasSelection = effectiveConditions.length > 0;
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="text-center space-y-2.5">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-[var(--warning-subtle)] border border-[var(--border)] text-[var(--warning)] mb-1">
-          <HeartPulse className="w-6 h-6" />
+    <div className="flex flex-col justify-between flex-1 py-1 animate-fade-in">
+      <div>
+        {/* Eyebrow */}
+        <div className="flex items-center gap-2 text-[11px] font-bold tracking-[0.14em] uppercase text-[#2D6A4F]">
+          <span className="w-2 h-2 rounded-full bg-[#2D6A4F]" />
+          <span>STEP 08 · GENTLE GUIDANCE</span>
         </div>
-        <div>
-          <span className="type-eyebrow text-[var(--brand)] block mb-1">
-            CLINICAL SAFEGUARDS
-          </span>
-          <h1 className="text-2xl sm:text-3xl font-bold font-display text-[var(--text-primary)] tracking-tight">
-            Do you have any conditions requiring gentle, supervised guidance?
-          </h1>
-        </div>
+
+        {/* Headline */}
+        <h1 className="font-serif font-normal text-[2.15rem] leading-[1.12] tracking-tight text-[#1C1917] mt-2">
+          Any conditions requiring <span className="italic text-[#E05A47]">gentle guidance?</span>
+        </h1>
+        <p className="text-xs sm:text-sm text-[#57534E] mt-2 leading-relaxed">
+          Satat places human safety before numerical targets. We respect clinical boundaries.
+        </p>
 
         {/* Ephemeral Privacy Guarantee Pill */}
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--surface-subtle)] border border-[var(--border)] text-[11px] font-mono text-[var(--text-secondary)]">
-          <Lock className="w-3 h-3 text-[var(--brand)] shrink-0" />
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EFECE4] border border-[#1C1917]/[0.05] text-[11px] font-mono text-[#57534E] mt-3">
+          <Lock className="w-3 h-3 text-[#2D6A4F] shrink-0" />
           <span>Held strictly in RAM · Never saved to database drafts or logs</span>
         </div>
-      </div>
 
-      <div className="space-y-2.5 max-w-md mx-auto pt-1">
-        {HEALTH_OPTIONS.map((opt) => {
-          const isChecked = healthConditions.includes(opt.id);
-          const isNoneOption = opt.id === "none";
-          return (
-            <label
-              key={opt.id}
-              className={cn(
-                "flex items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer pressable",
-                isNoneOption && "mt-2",
-                isChecked
-                  ? "border-[var(--brand)] bg-[var(--brand-subtle)] ring-1 ring-[var(--brand)] shadow-xs"
-                  : "border-[var(--border)] bg-[var(--surface-subtle)] hover:border-[var(--border-strong)] hover:bg-[var(--surface)]"
-              )}
-            >
-              <div className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  checked={isChecked}
-                  onChange={() => handleToggle(opt.id)}
-                  className="sr-only"
-                />
-                <div
-                  className={cn(
-                    "w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-all",
-                    isChecked
-                      ? "bg-[var(--brand)] border-[var(--brand)] text-white"
-                      : "border-[var(--border-strong)] bg-[var(--surface)]"
-                  )}
-                >
-                  {isChecked && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+        {error && (
+          <div className="mt-3 p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700">
+            {error}
+          </div>
+        )}
+
+        {/* Health Options Cards */}
+        <div className="space-y-2.5 mt-5">
+          {HEALTH_OPTIONS.map((opt) => {
+            const isChecked = effectiveConditions.includes(opt.id);
+            const isNoneOption = opt.id === "none";
+            return (
+              <label
+                key={opt.id}
+                className={`flex items-center justify-between gap-3 p-3.5 sm:p-4 rounded-[22px] transition-all cursor-pointer active:scale-[0.99] border-2 ${
+                  isNoneOption ? "mt-3" : ""
+                } ${
+                  isChecked
+                    ? "bg-[#191D1A] text-[#FCFBF9] border-[#E05A47] shadow-sm"
+                    : "bg-[#FCFBF9] text-[#1C1917] border-transparent shadow-xs hover:border-stone-200"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => handleToggle(opt.id)}
+                    className="sr-only"
+                  />
+                  <div
+                    className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 transition-colors ${
+                      isChecked
+                        ? "bg-[#E05A47] text-white"
+                        : "border-2 border-stone-300 bg-white"
+                    }`}
+                  >
+                    {isChecked && <Check className="w-3.5 h-3.5 stroke-[2.5]" />}
+                  </div>
+                  <span
+                    className={`text-xs sm:text-sm font-medium ${
+                      isChecked ? "text-white" : "text-[#1C1917]"
+                    } ${isNoneOption ? "font-semibold" : ""}`}
+                  >
+                    {opt.label}
+                  </span>
                 </div>
-                <span className="text-sm font-medium text-[var(--text-primary)]">
-                  {opt.label}
-                </span>
-              </div>
 
-              {opt.isClinical && (
-                <span className="font-mono text-[10px] uppercase tracking-wider px-2 py-0.5 rounded bg-[var(--surface)] text-[var(--text-muted)] border border-[var(--border-subtle)] shrink-0">
-                  Adaptive Safe Mode
-                </span>
-              )}
-            </label>
-          );
-        })}
+                {opt.isClinical && (
+                  <span
+                    className={`text-[9px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0 ${
+                      isChecked
+                        ? "bg-white/10 text-stone-300"
+                        : "bg-[#EFECE4] text-[#8C857B]"
+                    }`}
+                  >
+                    Clinical boundary
+                  </span>
+                )}
+              </label>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Dynamic guidance notices */}
-      {hasClinicalCondition && (
-        <div
-          className="max-w-md mx-auto p-4 rounded-2xl border flex items-start gap-3 animate-fade-in"
-          style={{
-            backgroundColor: "var(--warning-subtle)",
-            borderColor: "color-mix(in srgb, var(--warning) 30%, transparent)",
-          }}
-        >
-          <Shield className="w-5 h-5 text-[var(--warning)] shrink-0 mt-0.5" />
-          <p className="text-xs text-[var(--text-primary)] leading-relaxed">
-            SATAT prioritizes your safety. Single-point calorie targets and intensive deficit paces will be withheld, pivoting to mindful habit tracking and whole-food nourishment.
-          </p>
+      {/* Bottom Floating Capsule Bar */}
+      <div className="bg-[#FCFBF9] rounded-full py-2.5 pl-5 pr-2.5 shadow-md border border-[#1C1917]/[0.06] flex items-center justify-between gap-3 mt-6">
+        <div className="min-w-0 flex-1">
+          <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#8C857B] block truncate">
+            SAFETY CLEARANCE
+          </span>
+          <span className="text-xs font-semibold text-[#1C1917] block truncate whitespace-nowrap">
+            {hasSelectedCondition ? "Gentle Mode" : "Standard Mode"}
+          </span>
         </div>
-      )}
-
-      {hasPhysicalInjury && !hasClinicalCondition && (
-        <div
-          className="max-w-md mx-auto p-4 rounded-2xl border flex items-start gap-3 animate-fade-in"
-          style={{
-            backgroundColor: "var(--brand-subtle)",
-            borderColor: "color-mix(in srgb, var(--brand) 30%, transparent)",
-          }}
-        >
-          <Info className="w-5 h-5 text-[var(--brand)] shrink-0 mt-0.5" />
-          <p className="text-xs text-[var(--text-primary)] leading-relaxed">
-            Automated starter workout routines will be withheld to protect your recovery. Please consult your physiotherapist for rehabilitation exercises. Daily nutrition tracking remains active.
-          </p>
-        </div>
-      )}
-
-      {error && (
-        <div
-          className="max-w-md mx-auto p-3.5 rounded-xl border text-xs font-medium text-center"
-          style={{
-            backgroundColor: "var(--error-subtle)",
-            borderColor: "color-mix(in srgb, var(--error) 30%, transparent)",
-            color: "var(--error)",
-          }}
-        >
-          {error}
-        </div>
-      )}
-
-      <div className="pt-4 border-t border-[var(--border-subtle)] flex items-center justify-between gap-3">
-        <button
-          type="button"
-          onClick={onBack}
-          className="btn-ghost px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-1.5"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          <span>Back</span>
-        </button>
 
         <button
           type="button"
           onClick={() => onNext()}
           disabled={!hasSelection || isSaving}
-          className="btn-primary px-6 py-2.5 rounded-xl font-semibold text-sm shadow-sm flex items-center gap-2"
+          aria-label="Generate System Baseline"
+          className="bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full px-5 py-3 text-xs font-semibold whitespace-nowrap flex items-center gap-1.5 shadow-sm hover:shadow-md transition-all active:scale-95 disabled:opacity-40 cursor-pointer shrink-0"
         >
-          <span>{isSaving ? "Completing Setup..." : "Generate System Baseline"}</span>
-          <ChevronRight className="w-4 h-4" />
+          <span>Generate Baseline</span>
+          <ArrowRight className="w-4 h-4" />
         </button>
       </div>
     </div>

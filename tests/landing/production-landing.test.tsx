@@ -9,169 +9,114 @@ vi.mock("next-auth/react", () => ({
   signIn: vi.fn(),
 }));
 
-describe("Production SATAT Marketing Landing Page (Phase 2)", () => {
-  it("renders all 7 narrative sections and required brand copy", () => {
+describe("Stitch Editorial Landing Page with Header, Footer & Continuous Proof", () => {
+  it("renders all canonical sections seamlessly on warm sunlit stone canvas", () => {
     const html = renderToStaticMarkup(React.createElement(ProductionLandingPage));
 
-    // Nav & Wordmark
-    expect(html).toContain("SATAT");
+    // Section 1: Floating Editorial Header (LandingNav)
+    expect(html).toContain("satat.");
+    expect(html).toContain("Sign in");
+    expect(html).toContain("Start free");
 
-    // Section 1: Hero
-    expect(html).toContain("YOUR LIFE. ONE SYSTEM.");
-    expect(html).toContain("Progress,");
-    expect(html).toContain("made continuous.");
-    expect(html).toContain("Start building consistency");
-    expect(html).toContain("See how it works");
+    // Section 2: Hero (Single line fit on mobile, Stitch semi-circle arch collage)
+    expect(html).toContain("A GENTLER WAY TO STAY CONTINUOUS");
+    expect(html).toContain("whitespace-nowrap");
+    expect(html).toContain("Your body doesn&#x27;t live in");
+    expect(html).toContain("five separate apps.");
+    expect(html).toContain("Workouts, meals, and daily plans that quietly adjust to real life.");
+    expect(html).toContain("Upper Body");
+    expect(html).toContain("moved to 6PM · Sleep was light");
+    expect(html).toContain("Upper body dumbbell strength training session");
+    expect(html).toContain("Warm protein oatmeal bowl");
+    expect(html).toContain("rounded-l-[92px]");
+    expect(html).toContain("Oatmeal &amp; Whey");
+    expect(html).toContain("420 kcal · 34g P");
 
-    // Section 2: Problem
-    expect(html).toContain("THE FRAGMENTATION TRAP");
-    expect(html).toContain("Your life is connected.");
-    expect(html).toContain("Your tools shouldn&#x27;t be separate.");
+    // Section 3: Problem (Rhythmic Cadence, Inter-Node Animated Beam & Live Signals)
+    expect(html).toContain("RHYTHMIC CADENCE");
+    expect(html).toContain("A single day, in seamless motion");
+    expect(html).toContain("animate-timeline-beam");
+    expect(html).toContain("animate-ping opacity-20");
+    expect(html).toContain("ring-[3px] ring-[#F6F3EC]");
+    expect(html).toContain("🌅 DAWN · 7:30 AM");
+    expect(html).toContain("Morning check-in");
+    expect(html).toContain("7h 45m sleep synced → Training readiness 92%");
+    expect(html).toContain("🍴 MIDDAY · 1:15 PM");
+    expect(html).toContain("Mindful nourishment");
+    expect(html).toContain("Plate photo scanned → 540 kcal · 34g protein logged in 2s");
+    expect(html).toContain("✨ DUSK · 6:30 PM");
+    expect(html).toContain("Adaptive recalibration");
+    expect(html).toContain("Upper Body A merged into Thursday → 24-day flow preserved");
 
-    // Section 3: Connected System
-    expect(html).toContain("THE UNBROKEN THREAD (सतत)");
-    expect(html).toContain("Everything works better");
-    expect(html).toContain("when it works together.");
-    expect(html).toContain("Goals");
-    expect(html).toContain("Routines");
-    expect(html).toContain("Training");
-    expect(html).toContain("Nutrition");
-    expect(html).toContain("Recovery");
-    expect(html).toContain("Progress");
+    // Section 4: Orbit Section (Quiet Guidance, borderless living orb centerpiece)
+    expect(html).toContain("QUIET GUIDANCE");
+    expect(html).toContain("A companion,");
+    expect(html).toContain("not a dashboard");
+    expect(html).toContain("orbit-living-orb");
+    expect(html).toContain("You trained heavier than usual today.");
+    expect(html).toContain("added a bowl of Greek yogurt to tonight");
+    expect(html).toContain("so you recover well");
+    expect(html).toContain("Accept adjustment ✓");
+    expect(html).toContain("Keep dinner as is");
 
-    // Section 4: Dynamic Adaptation
-    expect(html).toContain("DYNAMIC REBALANCING");
-    expect(html).toContain("Life changes.");
-    expect(html).toContain("Your plan should too.");
-    expect(html).toContain("Upper Body A · 45 min");
+    // Section 5: Continuous Proof (28-Day Organic Rhythm Matrix)
+    expect(html).toContain("LIVING EVIDENCE · सतत्");
+    expect(html).toContain("Why continuous beats");
+    expect(html).toContain("perfect.");
+    expect(html).toContain("Other apps punish you with a broken streak when real life happens. Satat bends with your week so your momentum compounds.");
+    expect(html).toContain("Day 7 · Start");
+    expect(html).toContain("Day 16 · Healed");
+    expect(html).toContain("Day 28 · Flow");
+    expect(html).toContain("Traditional Apps: Streak Reset to 0 ✕");
+    expect(html).toContain("Satat Rhythm: 28 Days Unbroken · +12.4% Strength ✓");
 
-    // Section 5: Orbit Personal Intelligence
-    expect(html).toContain("CONTEXT-AWARE INTELLIGENCE");
-    expect(html).toContain("Intelligence that understands");
-    expect(html).toContain("your context.");
-    expect(html).toContain("You trained harder than usual today.");
-    expect(html).toContain("You&#x27;re 38g short on protein.");
-    expect(html).toContain("Want me to adjust dinner?");
+    // Section 6: Final CTA in dark botanical card
+    expect(html).toContain("START YOUR PRACTICE");
+    expect(html).toContain("Build a body and routine you can");
+    expect(html).toContain("actually keep.");
+    expect(html).toContain("text-[#6EE7B7]");
+    expect(html).toContain("Begin in 60 seconds");
 
-    // Section 6: Progress
-    expect(html).toContain("MOMENTUM VISUALIZATION");
-    expect(html).toContain("Consistency becomes visible.");
-    expect(html).toContain("Not perfection. Progress.");
-    expect(html).toContain("87%");
-    expect(html).toContain("24 Unbroken Days");
-
-    // Section 7: Final CTA
-    expect(html).toContain("THE INVITATION");
-    expect(html).toContain("Start becoming more consistent.");
-    expect(html).toContain("Your goals don&#x27;t need another app.");
-    expect(html).toContain("They need a system.");
-
-    // Footer
-    expect(html).toContain("Progress, made continuous.");
-    expect(html).toContain("Continuous Human Improvement");
+    // Section 7: Grounded Footer
+    expect(html).toContain("Rhythm");
+    expect(html).toContain("Orbit");
+    expect(html).toContain("Proof");
+    expect(html).toContain("Rooted in सतत् (Satat) — the Sanskrit principle of continuous, unbroken flow.");
   });
 
-  it("does NOT contain fake testimonials, fake stats, or developer links in footer", () => {
+  it("confirms removed legacy SaaS sections and fake testimonials are NOT present", () => {
     const html = renderToStaticMarkup(React.createElement(ProductionLandingPage));
 
-    // Confirm fake testimonials are removed
+    // Confirm removed legacy sections are NOT present in app/page.tsx
+    expect(html).not.toContain("THE FRAGMENTATION TRAP");
+    expect(html).not.toContain("THE UNBROKEN THREAD");
+    expect(html).not.toContain("DYNAMIC REBALANCING");
+    expect(html).not.toContain("Rolling 28-Day Adherence");
+
+    // Confirm fake testimonials are NOT present
     expect(html).not.toContain("Priya M.");
     expect(html).not.toContain("Rahul K.");
     expect(html).not.toContain("Ananya S.");
 
-    // Confirm fake stat badges are removed
-    expect(html).not.toContain("100% Free forever");
-    expect(html).not.toContain("0 ads Ever");
-
-    // Confirm internal developer links are removed from footer
+    // Confirm internal developer links are NOT present
     expect(html).not.toContain("Design System Sandbox");
     expect(html).not.toContain("href=\"/design-system\"");
     expect(html).not.toContain("href=\"/design-preview\"");
     expect(html).not.toContain("href=\"/architecture\"");
   });
 
-  it("verifies mobile 393px responsiveness and hero mockup smartphone proportion", () => {
+  it("verifies borderless editorial layout, physical collage geometry, and card styling", () => {
     const html = renderToStaticMarkup(React.createElement(ProductionLandingPage));
 
-    // Hero mockup smartphone chassis (~19.5:9 proportion and bounded width for mobile)
-    expect(html).toContain("w-[310px] sm:w-[340px]");
-    expect(html).toContain("aspect-[9/19.2]");
+    // Warm Sunlit Stone canvas background
+    expect(html).toContain("bg-[#F6F3EC]");
 
-    // Cropped dashboard preview inside smartphone
-    expect(html).toContain("Good morning,");
-    expect(html).toContain("Ayush");
-    expect(html).toContain("87%");
-    expect(html).toContain("Upper Body A");
-    expect(html).toContain("1,840");
-    expect(html).toContain("Protein (142g / 180g)");
+    // Physical collage styling (Stitch semi-circle arch layer)
+    expect(html).toContain("-rotate-2");
+    expect(html).toContain("rounded-l-[92px]");
 
-    // Routine continuity section eliminating empty space above bottom navigation
-    expect(html).toContain("Routine Continuity");
-    expect(html).toContain("10m Morning Mobility");
-    expect(html).toContain("3L Hydration Target");
-
-    // Consistency momentum streak element
-    expect(html).toContain("Consistency Momentum");
-    expect(html).toContain("24 Day Streak");
-
-    // Dynamic Island & status bar
-    expect(html).toContain("w-[110px] sm:w-[118px]");
-    expect(html).toContain("9:41");
-    expect(html).toContain("5G");
-
-    // Orbit simplified conversational card (no telemetry metadata)
-    expect(html).not.toContain("Session Active");
-    expect(html).not.toContain("Realtime Sync");
-    expect(html).toContain("Adjust dinner");
-    expect(html).toContain("Not now");
-
-    // Footer minimal public navigation
-    expect(html).toContain("href=\"#system\"");
-    expect(html).toContain("href=\"#adaptation\"");
-    expect(html).toContain("href=\"#orbit\"");
-    expect(html).toContain("href=\"/signin\"");
-  });
-
-  it("verifies UX overhaul: tightened vertical spacing and WCAG 2.2 accessibility landmarks", () => {
-    const html = renderToStaticMarkup(React.createElement(ProductionLandingPage));
-
-    // WCAG 2.2 Landmark & Skip-to-content
-    expect(html).toContain("<main id=\"main-content\"");
-    expect(html).toContain("href=\"#main-content\"");
-    expect(html).toContain("Skip to main content");
-    expect(html).toContain("aria-label=\"Main Navigation\"");
-    expect(html).toContain("role=\"contentinfo\"");
-
-    // Vertical whitespace reduction: ensure the excessive padding classes are gone
-    expect(html).not.toContain("py-32 sm:py-44");
-    expect(html).not.toContain("py-24 sm:py-32");
-
-    // Connected System accessibility
-    expect(html).toContain("role=\"button\"");
-    expect(html).toContain("aria-pressed=");
-
-    // Orbit live region for accessibility
-    expect(html).toContain("aria-live=\"polite\"");
-
-    // Consistency ring accessibility
-    expect(html).toContain("role=\"img\"");
-    expect(html).toContain("87% rolling 28-day adherence score");
-  });
-
-  it("verifies theme-aware navigation header in light and dark mode conventions", () => {
-    const html = renderToStaticMarkup(React.createElement(ProductionLandingPage));
-
-    // Confirm navbar uses theme-aware light and dark background classes instead of hardcoded dark-only colors
-    expect(html).toContain("bg-white/85");
-    expect(html).toContain("dark:bg-[#0B0E11]/85");
-
-    // Accessible focus rings
-    expect(html).toContain("focus-visible:ring-2");
-    expect(html).toContain("focus-visible:ring-[var(--brand)]");
-
-    // Semantic text colors for contrast adaptation
-    expect(html).toContain("text-[var(--text-secondary)]");
-    expect(html).toContain("hover:text-[var(--text-primary)]");
+    // Final CTA dark botanical card styling
+    expect(html).toContain("bg-[#191D1A]");
+    expect(html).toContain("rounded-[32px]");
   });
 });
-

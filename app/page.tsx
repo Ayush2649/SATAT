@@ -4,8 +4,6 @@ import React from "react";
 import LandingNav from "@/components/landing/LandingNav";
 import Hero from "@/components/landing/Hero";
 import ProblemSection from "@/components/landing/ProblemSection";
-import ConnectedSystem from "@/components/landing/ConnectedSystem";
-import AdaptationSection from "@/components/landing/AdaptationSection";
 import OrbitSection from "@/components/landing/OrbitSection";
 import ProgressSection from "@/components/landing/ProgressSection";
 import FinalCTA from "@/components/landing/FinalCTA";
@@ -13,36 +11,27 @@ import Footer from "@/components/landing/Footer";
 
 export default function ProductionLandingPage() {
   return (
-    <div className="min-h-screen bg-[var(--background)] text-[var(--text-primary)] selection:bg-[var(--brand-subtle)] selection:text-[var(--brand)]">
-      {/* 1. Header Navigation */}
+    <main className="min-h-screen bg-[#F6F3EC] text-[#1C1917] selection:bg-[#E05A47]/15 selection:text-[#E05A47] overflow-x-hidden">
+      {/* 1. Floating Editorial Header */}
       <LandingNav />
 
-      {/* Main Content Landmark for WCAG 2.2 Accessibility */}
-      <main id="main-content" tabIndex={-1} className="outline-none">
-        {/* 2. Editorial Hero & Living Product Visualization */}
-        <Hero />
+      {/* 2. Hero: Left-aligned serif headline + overlapping physical collage */}
+      <Hero />
 
-        {/* 3. The Problem — The Fragmentation Trap */}
-        <ProblemSection />
+      {/* 3. ProblemSection: Sinusoidal pulse ribbon + Live System Signals */}
+      <ProblemSection />
 
-        {/* 4. One Connected System — The Continuous Loop */}
-        <ConnectedSystem />
+      {/* 4. OrbitSection: Borderless open-canvas living orb & quote */}
+      <OrbitSection />
 
-        {/* 5. Dynamic Adaptation — Plan Rebalancing */}
-        <AdaptationSection />
+      {/* 5. ProgressSection: Continuous Proof (28-Day Organic Rhythm Matrix) */}
+      <ProgressSection />
 
-        {/* 6. Orbit — Contextual Personal Intelligence */}
-        <OrbitSection />
+      {/* 6. FinalCTA: Single dark botanical card */}
+      <FinalCTA />
 
-        {/* 7. Visible Progress — Compounding Momentum */}
-        <ProgressSection />
-
-        {/* 8. Final Call to Action */}
-        <FinalCTA />
-      </main>
-
-      {/* 9. Minimal Premium Footer */}
+      {/* 7. Grounded Footer */}
       <Footer />
-    </div>
+    </main>
   );
 }
