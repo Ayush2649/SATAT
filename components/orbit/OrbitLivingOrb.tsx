@@ -5,9 +5,10 @@ import { cn } from "@/lib/utils";
 import type { OrbitState } from "./OrbitMark";
 
 export interface OrbitLivingOrbProps extends React.SVGProps<SVGSVGElement> {
-  size?: number;
+  size?: "sm" | "md" | "lg" | "hero" | number;
   className?: string;
   state?: OrbitState;
+  mood?: "idle" | "thinking" | "speaking" | "success" | "error";
   animated?: boolean;
 }
 
