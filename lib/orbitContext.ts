@@ -45,3 +45,37 @@ export const setTaskContext    = (d: TaskContextData)    => { _tasks   = d; };
 export const getDietContext    = () => _diet;
 export const getWorkoutContext = () => _workout;
 export const getTaskContext    = () => _tasks;
+
+export function computeTaskContext(
+  allTasks: Array<{
+    id?: string;
+    title: string;
+    status: "pending" | "completed";
+    dueDate?: string;
+    completedAt?: number;
+    priority?: string | null;
+    projectId?: string;
+  }>,
+  projects: Array<{ id: string; name: string }> = [],
+  currentDate?: string
+): TaskContextData {
+  const t = currentDate ?? new Date().toLocaleDateString("en-CA");
+  const todayStart = new Date(t + "T00:00:00").getTime();
+  return {
+    todayDate: t,
+    pendingToday: (allTasks || [])
+      .filter((tk) => tk.status === "pending" && (tk.dueDate === t || !tk.dueDate))
+      .map((tk) => ({
+        title: tk.title,
+        priority: tk.priority ?? undefined,
+        projectName: projects.find((p) => p.id === tk.projectId)?.name,
+      })),
+    completedToday: (allTasks || [])
+      .filter((tk) => tk.status === "completed" && !!tk.completedAt && tk.completedAt >= todayStart)
+      .map((tk) => ({ title: tk.title, completedAt: tk.completedAt })),
+    overdue: (allTasks || [])
+      .filter((tk) => tk.status === "pending" && !!tk.dueDate && tk.dueDate < t)
+      .map((tk) => ({ title: tk.title, dueDate: tk.dueDate!, priority: tk.priority ?? undefined })),
+    totalPending: (allTasks || []).filter((tk) => tk.status === "pending").length,
+  };
+}
