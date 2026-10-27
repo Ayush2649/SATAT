@@ -180,13 +180,79 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - Streamlined the mobile badge to `✓ COMPLETED` (`hidden sm:inline` for `SESSION `) and wrapped buttons in `shrink-0 whitespace-nowrap`, guaranteeing that the left badge, `+ Cardio`, and `Edit Session` sit side-by-side on a single row without wrapping or distortion.
   - Applied `whitespace-nowrap shrink-0` across movement breakdown badges, set chips, and history telemetry pills.
 
+### ✅ Sprint 4.6: Strict 1:1 Stitch Nourishment Studio (`DietPage.tsx`, `MealScannerModal.tsx`, `MacroDonutBreakdown.tsx`)
+- **Top Header & Quick-Action Icon Pills**:
+  - Rendered `Nourishment Studio` in Instrument Serif with subtitle `Mindful fueling, zero calorie anxiety.`
+  - Added 3 circular tactile icon buttons in Alabaster stone: Voice Log (`Mic`), Saved Repertoire (`Bookmark`), and Daily Macro Goals (`Settings`).
+- **Date Navigator Capsule**:
+  - Smooth date switcher pill with previous/next triggers and active mint `Today` pill.
+- **Hero Dark Botanical Nutrition Summary Card**:
+  - Implemented Deep Botanical Espresso card (`#191D1A`) with dynamic calorie remaining readout against target goals.
+  - Rendered 3-segment MyFitnessPal-style macro donut breakdown (`MacroDonutBreakdown`) with warm amber (carbs), terracotta (fat), and matcha/emerald (protein) arcs and 3px gap geometry.
+- **Flagship USP Launcher Card ("Scan Plate or Barcode")**:
+  - Viewfinder food bowl thumbnail with terracotta corner brackets.
+  - Dual action pills: `Scan Plate` (opens plate AI mode) and `Barcode` (opens barcode & label mode).
+- **"TODAY'S NOURISHMENT LOG" & Expandable Meal Drawers**:
+  - Rendered chronological photo-backed meal cards with `resolveDishThumbnail` auto-photo matcher.
+  - Added time & circadian category labels (`08:30 AM · BREAKFAST`, `01:30 PM · LUNCH`, etc.).
+  - Collapsed state displays compact macro pills (`kcal`, `P`, `C`, `F`).
+  - Interactive accordion expansion renders individual meal 3-segment `<MacroDonutBreakdown variant="light" />` drawers.
+- **Flagship Dual-Mode Food Scanner Sheet (`MealScannerModal.tsx`)**:
+  - Non-overlapping clean header with `RITUAL SCAN` eyebrow and `Fuel Scanner` title.
+  - Mode 1 (`Plate Photo AI`): Viewfinder card with corner brackets, detected component tags, confidence badge, context hint modifiers (`+ 1 tsp Ghee`, `+ 1 Scoop Whey`), portion multiplier stepper (`0.5×`–`3.0× Bowl`), and live macro donut breakdown.
+  - Mode 2 (`Barcode & Label`): 60FPS laser autofocus viewfinder HUD with pulsating terracotta laser line, packaged staples search, serving steppers, and one-tap logging.
+- **Smart Custom Dish Logger & Natural Voice Parser**:
+  - `AddMealModal` with live dish photo auto-matcher, 2×2 tactile stepper grid for calories and macros, and repertoire save option.
+  - `VoiceMealModal` with Natural Athletic Editorial styling and photo-backed parsed item cards.
+
+### ✅ Sprint 4.7: Complete Nourishment Studio Polish & Fixes (`DietPage.tsx`, `MealScannerModal.tsx`, `MacroDonutBreakdown.tsx`, `VoiceMealModal.tsx`, `dishMatcher.ts`)
+- **Fullscreen Modal Stacking & Clipping Fix (`z-[100]`)**:
+  - Elevated all modal backdrops (`Fuel Scanner`, `Voice Log`, `Saved Staples`, `Daily Macro Goals`, `Log a Custom Dish`) to `fixed inset-0 z-[100] bg-[#191D1A]/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto`.
+  - Configured inner dialog containers with `max-h-[90dvh] my-auto overflow-y-auto`, ensuring all modal headers and footer buttons sit above both the top app bar (`z-40`) and bottom floating dock (`z-50`) without being clipped.
+- **1:1 Geometric Macro Donut Engine & Unified Ring Arc Colors (`MacroDonutBreakdown.tsx`)**:
+  - Rebuilt SVG donut ring with `strokeLinecap="butt"` for crisp flat geometric cuts matching Stitch and MyFitnessPal.
+  - Unified all rings across the entire application (Daily Nutrition Summary hero card, expanded meal cards, Plate Photo AI results, and meal template previews) to use identical ring arc colors:
+    - **Carbs Arc**: Teal (`#14B8A6`)
+    - **Fat Arc**: Amber (`#F59E0B`)
+    - **Protein Arc**: Vibrant Violet (`#8B5CF6`)
+  - Aligned high-contrast percentage readouts for dark (`#14B8A6`, `#F59E0B`, `#A78BFA`) and light (`#0D9488`, `#D97706`, `#7C3AED`) card surfaces.
+  - 4px gap perimeter subtraction math with zero-macro guard preventing phantom colored dots at 0 kcal.
+  - Centered calorie summary with dynamic remaining/consumed indicator and 3-column inset breakdown box (`Carbs · Fat · Protein` with percentages and grams).
+- **True 3-State Plate Photo AI Scanner (`MealScannerModal.tsx`)**:
+  - Eliminated preloaded fake paratha photo and hardcoded "Dal Tadka" result.
+  - Clean state machine: (1) Initial empty dashed capture card with camera upload button; (2) Live analyzing state overlaying the user's real uploaded photo with animated scanner bar; (3) Real parsed results card with detected tags, confidence badge, portion steppers, and live donut.
+- **Barcode & Label Scanner Experience & Quantity Stepper Fix (`MealScannerModal.tsx`)**:
+  - Moved the quantity stepper pill (`- 1 +`) to the top-right corner of each packaged food card, directly adjacent to the item title and macros.
+  - Streamlined the bottom row to cleanly hold only the "Verified Nutrition Label" badge on the left and the "Add to Fuel →" button on the right.
+  - Added `overflow-x-hidden` and `p-4 sm:p-6` to the scanner dialog sheet and `min-w-0` to the search input flex row, completely eliminating horizontal scrolling and overflow on mobile viewports (`393px`).
+  - Integrated prominent "Scan Barcode / Label Now" camera action button directly inside the laser viewfinder.
+  - Added packaged staples search lookup with instant macro loading.
+  - Refined product cards with 2-row layout (`text-xs font-bold leading-snug line-clamp-2`), preventing truncated 5-letter titles.
+- **Daily Macro Goals Modal CSS Fix (`DietPage.tsx`)**:
+  - Converted form rows to `grid grid-cols-12 items-center gap-3` (Label: `col-span-3 text-xs font-bold`, Input: `col-span-7`, Unit: `col-span-2 text-xs font-semibold text-[#8C857B] whitespace-nowrap text-left`).
+  - Completely resolved line wrapping for `"kcal"` and `"g"` units across all viewport widths.
+- **Culinary Photo Matching Precision (`lib/diet/dishMatcher.ts`)**:
+  - Added dedicated photography mappings for Boiled Corn, Rolled Oats, Paneer Bhurji/Curry, Masala Dosa, Chicken Breast, etc.
+  - Reordered matching rules so specific dish keywords (e.g. `paneer`, `oats`, `corn`) take precedence over generic ingredient terms (`bhurji`, `roti`).
+- **Complete Anti-Slop Emoji Audit**:
+  - Systematically purged all system emojis and unicode pseudo-glyphs (`📷`, `▮▯`, `✨`, `✓`, `🎙️`, `🔖`, `⚙️`) across all Diet views and modals, replacing them with Lucide icons (`Camera`, `Barcode`, `ScanBarcode`, `Sparkles`, `Check`, `Mic`, `Bookmark`, `Settings`).
+- **1:1 Apple Voice Memos Waveform Visualizer (`AudioWaveformVisualizer.tsx`, `VoiceMealModal.tsx`)**:
+  - Implemented the iconic Apple Voice Memos recording card 1:1 matching user design reference (`media_1793076878200_04c09e7c.png`).
+  - Dark charcoal rounded card (`bg-[#1C1C1E] rounded-[24px]`) with symmetrical vertical pill bars.
+  - Signature vertical cyan/blue playhead needle (`#0A84FF`) with top and bottom circular beads.
+  - Symmetrical bars scroll smoothly across the needle: recorded audio on the left in vivid red (`#FF3B30`), incoming audio stream on the right in white (`bg-white/90`).
+  - Clean, uncluttered UI: prominent timer, live audio streaming, and circular red stop button with white square.
+  - Verified with unit tests in `tests/ui/audioWaveform.test.tsx` (2/2 passing).
+- **Test & Build Verification**:
+  - Added unit tests in `tests/diet/dishMatcher.test.ts` (12/12 passing), `tests/diet/macroDonut.test.tsx` (4/4 passing), and `tests/ui/audioWaveform.test.tsx` (2/2 passing).
+  - Full Vitest suite: **43 passed (43 files), 540 passed | 26 skipped (566 total)**.
+  - Production build: `npm run build` exits with code `0` (all 32 static/dynamic routes compiled).
+
 ---
 
 ## 3. Pending / Upcoming Sprints
 
-### ⏳ Sprint 4.6: Core Dashboard Alignment (1:1 Stitch Experience)
-- **Fuel / Diet View** (`components/diet/DietPage.tsx` + `MealScannerModal.tsx`):
-  - Refine macro wheel, recent meals bento, and camera/voice nutrition scanner with Warm Sunlit Stone aesthetic.
+### ⏳ Sprint 4.8: Core Companion Alignment (Orbit & Tasks)
 - **Orbit AI Companion** (`components/orbit/OrbitView.tsx`):
   - Natural conversation interface, context cards, and prompt suggestions.
 - **Tasks & Settings** (`TaskBoard.tsx`, `Settings`):
@@ -201,7 +267,8 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 32 static/dynamic routes compiled).
-- **Vitest Suite**: `522 passed | 26 skipped` across all 40 test suites.
+- **Vitest Suite**: `537 passed | 26 skipped` across all 42 test suites.
+- **Diet Tests**: `154/154 passed` across `tests/diet/*`.
 - **Workout Tests**: `42/42 passed` across `tests/workouts/*`.
 - **Onboarding Tests**: `78/78 passed` across `tests/onboarding/*`.
 - **Landing Tests**: `3/3 passed` across `tests/landing/*`.
