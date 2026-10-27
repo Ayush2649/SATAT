@@ -93,8 +93,8 @@ export async function POST(req: NextRequest) {
 
   const result = { workouts: 0, skipped: 0, bodyWeight: 0, steps: 0 };
 
-  // ── Workouts → cardio sessions (de-duped by externalId) ──
-  const workouts = Array.isArray(body.workouts) ? body.workouts : [];
+  // ── Workouts → cardio sessions (de-duped by externalId, capped at 100 per request) ──
+  const workouts = (Array.isArray(body.workouts) ? body.workouts : []).slice(0, 100);
   for (const w of workouts) {
     const rawType = String(w.type ?? "").toLowerCase().trim();
     const activity = ACTIVITY_MAP[rawType] ?? (CARDIO.has(rawType) ? rawType : null);
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
       if (!dup.empty) { result.skipped++; continue; }
     }
 
-    const durationMinutes = Math.max(0, Math.round(Number(w.durationMin ?? w.durationMinutes ?? 0)));
+    const durationMinutes = Math.min(1440, Math.max(0, Math.round(Number(w.durationMin ?? w.durationMinutes ?? 0))));
     const cardio: any = { id: genId(), activity, durationMinutes };
     if (w.distanceKm != null && !Number.isNaN(Number(w.distanceKm))) cardio.distanceKm = Math.round(Number(w.distanceKm) * 100) / 100;
     if (w.calories != null && !Number.isNaN(Number(w.calories))) cardio.caloriesBurned = Math.round(Number(w.calories));
@@ -128,26 +128,37 @@ export async function POST(req: NextRequest) {
     result.workouts++;
   }
 
-  // ── Body weight → one entry per day (upsert) ──
+  // ── Body weight → one entry per day (upsert, bounded between 20kg and 500kg) ──
   if (body.bodyWeightKg != null && !Number.isNaN(Number(body.bodyWeightKg))) {
-    const date = String(body.date ?? todayISO()).slice(0, 10);
-    const data = { userId, date, weightKg: Number(body.bodyWeightKg), createdAt: Date.now(), source: "watch" };
-    const dup = await adminDb.collection("bodyweight")
-      .where("userId", "==", userId).where("date", "==", date).limit(1).get();
-    if (!dup.empty) await dup.docs[0].ref.set(data, { merge: true });
-    else await adminDb.collection("bodyweight").add(data);
-    result.bodyWeight = 1;
+    const weightNum = Number(body.bodyWeightKg);
+    if (weightNum >= 20 && weightNum <= 500) {
+      const date = String(body.date ?? todayISO()).slice(0, 10);
+      const data = { userId, date, weightKg: Math.round(weightNum * 10) / 10, createdAt: Date.now(), source: "watch" };
+      const dup = await adminDb.collection("bodyweight")
+        .where("userId", "==", userId).where("date", "==", date).limit(1).get();
+      if (!dup.empty) await dup.docs[0].ref.set(data, { merge: true });
+      else await adminDb.collection("bodyweight").add(data);
+      result.bodyWeight = 1;
+    }
   }
 
-  // ── Steps → daily activity (upsert by user+date) ──
+  // ── Steps → daily activity (upsert by user+date, bounded between 0 and 200,000) ──
   if (body.steps != null && !Number.isNaN(Number(body.steps))) {
-    const date = String(body.date ?? todayISO()).slice(0, 10);
-    await adminDb.collection("healthActivity").doc(`${userId}_${date}`).set(
-      { userId, date, steps: Math.round(Number(body.steps)), source: "watch", updatedAt: Date.now() },
-      { merge: true },
-    );
-    result.steps = 1;
+    const stepsNum = Math.round(Number(body.steps));
+    if (stepsNum >= 0 && stepsNum <= 200000) {
+      const date = String(body.date ?? todayISO()).slice(0, 10);
+      await adminDb.collection("healthActivity").doc(`${userId}_${date}`).set(
+        { userId, date, steps: stepsNum, source: "watch", updatedAt: Date.now() },
+        { merge: true },
+      );
+      result.steps = 1;
+    }
   }
 
-  return NextResponse.json({ ok: true, ...result });
+  return NextResponse.json({ ok: true, ...result }, {
+    headers: {
+      "Cache-Control": "no-store, no-cache, must-revalidate",
+      Pragma: "no-cache",
+    },
+  });
 }

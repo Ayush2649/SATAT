@@ -46,6 +46,12 @@ export const getDietContext    = () => _diet;
 export const getWorkoutContext = () => _workout;
 export const getTaskContext    = () => _tasks;
 
+export const resetOrbitContext = () => {
+  _diet = null;
+  _workout = null;
+  _tasks = null;
+};
+
 export function computeTaskContext(
   allTasks: Array<{
     id?: string;

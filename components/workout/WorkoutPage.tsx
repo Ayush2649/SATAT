@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useFirebaseAuth } from "@/components/FirebaseAuthProvider";
 import {
@@ -38,6 +38,26 @@ function calcCardioCals(activity: CardioActivity, durationMinutes: number, weigh
   return Math.round(met * weightKg * (durationMinutes / 60));
 }
 
+function formatSessionForOrbit(s: WorkoutSession) {
+  return {
+    date: s.date,
+    durationMinutes: s.durationMinutes,
+    exercises: s.exercises.map((ex) => ({
+      name: ex.name,
+      sets: ex.sets.length,
+      topWeight: ex.sets.reduce((max, set) => Math.max(max, set.weight ?? 0), 0) || undefined,
+      unit: ex.sets[0]?.unit,
+    })),
+    cardio: s.cardioLogs?.map((c) => ({
+      activity: c.activity,
+      durationMinutes: c.durationMinutes,
+      distanceKm: c.distanceKm,
+      caloriesBurned: c.caloriesBurned,
+    })),
+    summary: s.summary,
+  };
+}
+
 // ── Main Component ─────────────────────────────────────────────────────────────
 export default function WorkoutPage() {
   const { data: session } = useSession();
@@ -48,6 +68,11 @@ export default function WorkoutPage() {
   const [view, setView] = useState<"log" | "history" | "templates">("log");
   const [pastSessions, setPastSessions] = useState<WorkoutSession[]>([]);
   const [bodyWeightEntries, setBodyWeightEntries] = useState<BodyWeightEntry[]>([]);
+  const bodyWeightEntriesRef = useRef<BodyWeightEntry[]>(bodyWeightEntries);
+
+  useEffect(() => {
+    bodyWeightEntriesRef.current = bodyWeightEntries;
+  }, [bodyWeightEntries]);
 
   // Cardio-only add for after today's workout is done
   const [showAddCardioToday, setShowAddCardioToday] = useState(false);
@@ -102,45 +127,39 @@ export default function WorkoutPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    let isCancelled = false;
     if (!userId || !firebaseUser || !isReady) return;
+
     getWorkoutSessions(userId).then((sessions) => {
+      if (isCancelled) return;
       setPastSessions(sessions);
-      // Write to Orbit context so chatbot knows workout history
+      // Write to Orbit context so chatbot knows workout history while preserving latest body weight
       const current = getWorkoutContext();
       setWorkoutContext({
-        bodyWeightKg: current?.bodyWeightKg ?? bodyWeightEntries[0]?.weightKg,
-        recentSessions: sessions.slice(0, 5).map((s) => ({
-          date: s.date,
-          durationMinutes: s.durationMinutes,
-          exercises: s.exercises.map((ex) => ({
-            name: ex.name,
-            sets: ex.sets.length,
-            topWeight: ex.sets.reduce((max, set) => Math.max(max, set.weight ?? 0), 0) || undefined,
-            unit: ex.sets[0]?.unit,
-          })),
-          cardio: s.cardioLogs?.map((c) => ({
-            activity: c.activity,
-            durationMinutes: c.durationMinutes,
-            distanceKm: c.distanceKm,
-            caloriesBurned: c.caloriesBurned,
-          })),
-          summary: s.summary,
-        })),
+        bodyWeightKg: current?.bodyWeightKg ?? bodyWeightEntriesRef.current[0]?.weightKg,
+        recentSessions: sessions.slice(0, 5).map(formatSessionForOrbit),
       });
     }).catch((err) => {
-      console.error("Error loading workout sessions:", err);
+      if (!isCancelled) console.error("Error loading workout sessions:", err);
     });
-    getWorkoutTemplates(userId).then(setUserTemplates).catch((err) => {
-      console.error("Error loading workout templates:", err);
+
+    getWorkoutTemplates(userId).then((templates) => {
+      if (!isCancelled) setUserTemplates(templates);
+    }).catch((err) => {
+      if (!isCancelled) console.error("Error loading workout templates:", err);
     });
+
     getUserProfile(userId).then((profile) => {
-      if (profile?.workoutPlanAssignment) {
+      if (!isCancelled && profile?.workoutPlanAssignment) {
         setAssignedRoutine(profile.workoutPlanAssignment);
       }
     }).catch((err) => {
-      console.error("Error loading profile:", err);
+      if (!isCancelled) console.error("Error loading profile:", err);
     });
+
     getBodyWeightEntries(userId).then((entries) => {
+      if (isCancelled) return;
+      bodyWeightEntriesRef.current = entries;
       setBodyWeightEntries(entries);
       if (entries.length > 0) {
         setBodyWeight(String(entries[0].weightKg));
@@ -152,8 +171,12 @@ export default function WorkoutPage() {
         });
       }
     }).catch((err) => {
-      console.error("Error loading body weight entries:", err);
+      if (!isCancelled) console.error("Error loading body weight entries:", err);
     });
+
+    return () => {
+      isCancelled = true;
+    };
   }, [userId, firebaseUser, isReady]);
 
   // Today's session (if already logged)
@@ -216,9 +239,16 @@ export default function WorkoutPage() {
       };
       if (bodyWeight) session_data.bodyWeightKg = parseFloat(bodyWeight);
       const saved = await saveWorkoutSession(session_data);
-      setPastSessions((prev) => [saved, ...prev]);
+      const updatedSessions = [saved, ...pastSessions];
+      setPastSessions(updatedSessions);
       setCardioLogsToday([]);
       setShowAddCardioToday(false);
+      // Synchronize Orbit workout context while preserving existing body weight
+      const current = getWorkoutContext();
+      setWorkoutContext({
+        bodyWeightKg: current?.bodyWeightKg ?? (session_data.bodyWeightKg ?? bodyWeightEntriesRef.current[0]?.weightKg),
+        recentSessions: updatedSessions.slice(0, 5).map(formatSessionForOrbit),
+      });
       toast("Cardio logged! 🔥", "success");
     } catch { toast("Failed to save cardio", "error"); }
     finally { setSavingCardioToday(false); }
@@ -307,9 +337,16 @@ export default function WorkoutPage() {
       if (bodyWeight) session_data.bodyWeightKg = parseFloat(bodyWeight);
       if (summaryResult) session_data.summary = summaryResult;
       const saved = await saveWorkoutSession(session_data);
-      setPastSessions((prev) => [saved, ...prev]);
+      const updatedSessions = [saved, ...pastSessions];
+      setPastSessions(updatedSessions);
       setExercises([]); setCardioLogs([]); setDuration(0);
       setSummaryResult(""); setCaloriesBurned(null); setShowSummary(false);
+      // Synchronize Orbit workout context while preserving existing body weight
+      const current = getWorkoutContext();
+      setWorkoutContext({
+        bodyWeightKg: current?.bodyWeightKg ?? (session_data.bodyWeightKg ?? bodyWeightEntriesRef.current[0]?.weightKg),
+        recentSessions: updatedSessions.slice(0, 5).map(formatSessionForOrbit),
+      });
       toast("Workout saved! 💪", "success");
     } catch (err) {
       console.error("Failed to save workout session:", err);
@@ -322,6 +359,7 @@ export default function WorkoutPage() {
   const handleLogBodyWeight = async () => {
     if (!newBodyWeight) return;
     const entry = await logBodyWeight({ userId, date: todayString(), weightKg: parseFloat(newBodyWeight), createdAt: Date.now() });
+    bodyWeightEntriesRef.current = [entry, ...bodyWeightEntriesRef.current];
     setBodyWeightEntries((prev) => [entry, ...prev]);
     setBodyWeight(newBodyWeight); setNewBodyWeight(""); setShowBodyWeightModal(false);
     const current = getWorkoutContext();
