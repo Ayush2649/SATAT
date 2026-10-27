@@ -1,37 +1,4 @@
-
-// ── ADD CARDIO MODAL COMPONENT ──────────────────────────────────────────────────
-function AddCardioModal({
-  bodyWeightKg,
-  onAdd,
-  onClose,
-}: {
-  bodyWeightKg: number;
-  onAdd: (log: Omit<CardioLog, "id">) => void;
-  onClose: () => void;
-}) {
-  const [activity, setActivity] = useState<CardioActivity>("walking");
-  const [duration, setDuration] = useState("20");
-  const [distance, setDistance] = useState("");
-
-  const meta = CARDIO_META[activity];
-  const durationNum = parseFloat(duration) || 0;
-  const estCals = durationNum > 0 ? calcCardioCals(activity, durationNum, bodyWeightKg) : 0;
-
-  const handleAdd = () => {
-    if (!duration || durationNum <= 0) return;
-    const log: Omit<CardioLog, "id"> = {
-      activity,
-      durationMinutes: durationNum,
-      caloriesBurned: estCals,
-    };
-    const parsedDist = parseFloat(distance);
-    if (!Number.isNaN(parsedDist) && parsedDist > 0) {
-      log.distanceKm = parsedDist;
-    }
-    onAdd(log);
-  };
-
-  return (
+return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pt-4 pb-24 sm:p-4 animate-fade-in">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative rounded-[28px] shadow-2xl w-full max-w-sm p-6 bg-[#FCFBF9] border border-[#1C1917]/[0.08] animate-slide-up text-[#1C1917]">
@@ -126,3 +93,10 @@ function AddCardioModal({
             disabled={!duration || durationNum <= 0}
             className="flex-1 bg-[#2D6A4F] text-white rounded-full py-2.5 text-xs font-semibold cursor-pointer disabled:opacity-50"
           >
+            Add Cardio
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
