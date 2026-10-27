@@ -22,7 +22,7 @@ export default function AudioWaveformVisualizer({
   const [bars, setBars] = useState<number[]>(() =>
     Array.from({ length: barCount }, (_, i) => {
       const dist = Math.abs(i - centerIndex);
-      return Math.max(8, Math.min(85, 75 - dist * 4));
+      return Math.max(10, Math.min(85, 78 - dist * 3.5));
     })
   );
 
@@ -87,7 +87,10 @@ export default function AudioWaveformVisualizer({
       if (now - lastPushTimeRef.current > 65) {
         lastPushTimeRef.current = now;
 
-        let currentAmp = 10;
+        let currentAmp = 12;
+        const t = now * 0.005;
+        const organicMotion = Math.sin(t * 2.5) * 8 + Math.cos(t * 1.7) * 5 + 18;
+
         if (analyserRef.current) {
           try {
             analyserRef.current.getByteFrequencyData(freqData);
@@ -96,15 +99,15 @@ export default function AudioWaveformVisualizer({
               sum += freqData[i];
             }
             const avg = sum / 16;
-            currentAmp = Math.max(8, Math.min(92, (avg / 255) * 115));
+            const liveLevel = (avg / 255) * 110;
+            currentAmp = Math.max(10, Math.min(95, liveLevel > 14 ? liveLevel * 1.25 : organicMotion));
           } catch {
-            currentAmp = 10;
+            currentAmp = organicMotion;
           }
         } else {
-          // Clean simulation when running without active mic stream
-          const t = now * 0.005;
+          // Clean lively ECG rhythm simulation when running without active mic stream
           const sim = Math.sin(t) * 0.5 + Math.sin(t * 2.3) * 0.3;
-          currentAmp = Math.max(8, Math.min(88, 20 + Math.abs(sim) * 70));
+          currentAmp = Math.max(12, Math.min(90, 22 + Math.abs(sim) * 68));
         }
 
         // Shift bars from right to left
@@ -127,10 +130,10 @@ export default function AudioWaveformVisualizer({
   return (
     <div
       className={cn(
-        "relative w-full h-28 sm:h-32 bg-[#1C1C1E] rounded-[24px] overflow-hidden flex items-center justify-center px-4 shadow-xl border border-white/10",
+        "relative w-full h-32 sm:h-36 bg-[#1C1C1E] rounded-[28px] overflow-hidden flex items-center justify-center px-4 shadow-2xl border border-white/[0.08]",
         className
       )}
-      aria-label="Voice memo waveform"
+      aria-label="Apple Voice memo waveform visualizer"
     >
       {/* ── Symmetrical Audio Waveform Bars ── */}
       <div className="relative z-10 w-full h-full flex items-center justify-between gap-[2px] sm:gap-[3px]">
@@ -147,13 +150,13 @@ export default function AudioWaveformVisualizer({
                 className={cn(
                   "w-full rounded-full transition-all duration-75",
                   isPastNeedle
-                    ? "bg-[#FF3B30]" // Red: Recorded audio to the left of the needle
+                    ? "bg-[#FF3B30] shadow-[0_0_6px_rgba(255,59,48,0.3)]" // Red: Recorded audio left of needle (1:1 Apple Voice Memos)
                     : isAtNeedle
-                    ? "bg-[#FF3B30] shadow-[0_0_8px_#FF3B30]"
-                    : "bg-white/90" // White: Incoming audio to the right of the needle
+                    ? "bg-[#FF3B30] shadow-[0_0_10px_#FF3B30]"
+                    : "bg-white/90" // White: Upcoming incoming audio right of needle
                 )}
                 style={{
-                  height: `${Math.max(5, heightPct)}%`,
+                  height: `${Math.max(6, heightPct)}%`,
                 }}
               />
             </div>
@@ -162,11 +165,11 @@ export default function AudioWaveformVisualizer({
       </div>
 
       {/* ── Iconic Apple Blue Playhead Needle with Top & Bottom Beads ── */}
-      <div className="absolute top-2.5 bottom-2.5 left-1/2 -translate-x-1/2 w-[2px] bg-[#0A84FF] z-20 pointer-events-none flex flex-col justify-between items-center shadow-[0_0_10px_rgba(10,132,255,0.7)]">
+      <div className="absolute top-2.5 bottom-2.5 left-1/2 -translate-x-1/2 w-[2.5px] bg-[#0A84FF] z-20 pointer-events-none flex flex-col justify-between items-center shadow-[0_0_12px_rgba(10,132,255,0.85)]">
         {/* Top circular bead */}
-        <div className="w-2.5 h-2.5 rounded-full bg-[#0A84FF] -mt-1 shadow-[0_0_6px_#0A84FF]" />
+        <div className="w-3 h-3 rounded-full bg-[#0A84FF] -mt-1 shadow-[0_0_8px_#0A84FF]" />
         {/* Bottom circular bead */}
-        <div className="w-2.5 h-2.5 rounded-full bg-[#0A84FF] -mb-1 shadow-[0_0_6px_#0A84FF]" />
+        <div className="w-3 h-3 rounded-full bg-[#0A84FF] -mb-1 shadow-[0_0_8px_#0A84FF]" />
       </div>
     </div>
   );

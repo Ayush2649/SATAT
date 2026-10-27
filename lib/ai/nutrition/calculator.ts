@@ -14,6 +14,7 @@
  */
 
 import { INDIAN_FOOD_DATABASE, FoodCompositionItem } from "./database";
+import { enforceAtwaterMath } from "@/lib/nutrition/foodAnchors";
 
 export type NutritionStatus = "verified" | "estimated" | "unresolved";
 
@@ -300,6 +301,17 @@ export function calculateMealNutrition(
         fib = Math.round(est.fiberG ?? 0);
       }
 
+      const enforcedEst = enforceAtwaterMath({
+        calories: cals,
+        proteinG: prot,
+        carbsG: carb,
+        fatG: fat,
+      });
+      cals = enforcedEst.calories;
+      prot = enforcedEst.proteinG;
+      carb = enforcedEst.carbsG;
+      fat = enforcedEst.fatG;
+
       calculatedItems.push({
         name: rawName,
         matchedFoodId: null,
@@ -384,13 +396,20 @@ export function calculateMealNutrition(
       ? "medium"
       : "low";
 
-  return {
-    name: mealName,
+  const enforcedTotal = enforceAtwaterMath({
     calories: totalCalories,
-    calorieRange,
     proteinG: totalProteinG,
     carbsG: totalCarbsG,
     fatG: totalFatG,
+  });
+
+  return {
+    name: mealName,
+    calories: enforcedTotal.calories,
+    calorieRange,
+    proteinG: enforcedTotal.proteinG,
+    carbsG: enforcedTotal.carbsG,
+    fatG: enforcedTotal.fatG,
     fiberG: totalFiberG,
     confidence: catConfidence,
     rawConfidence: Math.round(avgConfidence * 100) / 100,

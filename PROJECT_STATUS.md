@@ -292,7 +292,34 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ## 3. Pending / Upcoming Sprints
 
-### ⏳ Sprint 4.9: Core Companion Alignment (Orbit & Tasks)
+
+### ✅ Sprint 4.9: Clinical Nutrition Engine Overhaul & Apple Voice Memo 1:1 Experience
+- **Deterministic Food Anchor & Atwater Engine (`lib/nutrition/foodAnchors.ts`)**:
+  - Grounded in IFCT (Indian Food Composition Tables, ICMR-NIN) and USDA FoodData Central data.
+  - Distinguishes raw vs. cooked staples explicitly: dry soya chunks (50g raw/dry default = 173 kcal, 26g P, 16.5g C, 0.3g F vs. 150g boiled = 180 kcal, 27g P), raw vs. grilled chicken breast, plain roti vs. roti with ghee, etc.
+  - Implemented `enforceAtwaterMath<T>(item: T): T`, enforcing strict consistency with Atwater factors (`4P + 4C + 9F`) and calibrating drift > 8% so the macro donut ring and total calories are 100% mathematically synchronized.
+  - Added fitness staples (`soya_chunks_dry`, `soya_chunks_boiled`, `oats_rolled`, `paneer_fresh`, `egg_whole`, `egg_white`, `chicken_breast_cooked`, `whey_isolate`) into `INDIAN_FOOD_DATABASE` (`lib/ai/nutrition/database.ts`) for instant deterministic lookups.
+- **Dedicated Barcode & Nutrition Facts Label OCR Route (`app/api/diet/barcode/route.ts`)**:
+  - Direct barcode lookup via OpenFoodFacts API v2 with automatic macro extraction and Atwater enforcement.
+  - Nutrition label photo OCR using Google Gemini Vision (with Groq Vision fallback) to extract product name, serving size, calories, protein, carbs, fat, and printed barcode digits directly from camera uploads.
+  - Search / estimate query handler combining ground-truth food anchors with OpenFoodFacts search catalog.
+- **Barcode & Label Modal UX Overhaul (`components/diet/MealScannerModal.tsx`)**:
+  - Scanning a barcode or nutrition label photo stays strictly within the Barcode & Label tab (no longer erroneously forces switch to plate photo mode).
+  - Shows dedicated scanning states: `Scanning nutrition label & barcode with OCR...` with active status badge.
+  - Displays detected plate components (`result.visibleItems`) as clean, interactive pills above candidate alternatives.
+- **Apple Voice Memos 1:1 Live Waveform Visualizer (`components/ui/AudioWaveformVisualizer.tsx`)**:
+  - Symmetrical dark card with animated vertical audio bars: Apple Red (`#FF3B30`) on the left (recorded audio), bright white (`#FFFFFF/90`) on the right (upcoming audio).
+  - Electric blue playhead needle (`#0A84FF`) with luminous top and bottom circular beads (`shadow-[0_0_12px_rgba(10,132,255,0.85)]`).
+  - Organic motion breathing simulation during quiet pauses ensures the audio visualizer is always lively and never looks static or flat.
+- **Voice Meal Log Accuracy (`app/api/voice-meal/route.ts`)**:
+  - Integrated IFCT reference values for fitness staples and protein sources.
+  - Applied `enforceAtwaterMath` on all parsed meal items to eliminate calorie-to-macro mismatches.
+- **Test & Build Verification**:
+  - Added unit test suite in `tests/diet/nutrition-accuracy.test.ts` (15/15 passing).
+  - Full Vitest suite: **49 passed (49 files), 582 passed | 26 skipped (608 total)**.
+  - Production build: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
+
+### ⏳ Sprint 4.10: Core Companion Alignment (Orbit & Tasks)
 - **Orbit AI Companion** (`components/orbit/OrbitView.tsx`):
   - Natural conversation interface, context cards, and prompt suggestions.
 - **Tasks & Settings** (`TaskBoard.tsx`, `Settings`):
@@ -306,8 +333,8 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 ---
 
 ## 4. Current Quality & Build Metrics
-- **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 32 static/dynamic routes compiled).
-- **Vitest Suite**: `567 passed | 26 skipped` across all 48 test suites.
+- **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
+- **Vitest Suite**: `582 passed | 26 skipped` across all 49 test suites.
 - **Diet Tests**: `162/162 passed` across `tests/diet/*`.
 - **Workout Tests**: `42/42 passed` across `tests/workouts/*`.
 - **Onboarding Tests**: `78/78 passed` across `tests/onboarding/*`.

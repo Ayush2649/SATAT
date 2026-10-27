@@ -195,6 +195,42 @@ export default function MealScannerModal({
   const [stapleQuantities, setStapleQuantities] = useState<Record<string, number>>({});
   const [customStapleLookup, setCustomStapleLookup] = useState<PackagedStaple | null>(null);
   const [lookupLoading, setLookupLoading] = useState(false);
+  const [barcodeScanning, setBarcodeScanning] = useState(false);
+  const [barcodeScanStage, setBarcodeScanStage] = useState("");
+  const [barcodeScanError, setBarcodeScanError] = useState("");
+
+  const handleBarcodeFile = async (file: File) => {
+    setBarcodeScanError("");
+    setBarcodeScanning(true);
+    setBarcodeScanStage("Compressing photo...");
+    try {
+      const { base64, mimeType } = await resizeImageClient(file);
+      setBarcodeScanStage("Reading nutrition label & barcode with OCR...");
+      const res = await fetch("/api/diet/barcode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageBase64: base64, mimeType }),
+      });
+      const data = await res.json();
+      if (data.success && data.item) {
+        setCustomStapleLookup({
+          id: data.item.id || `lookup-${Date.now()}`,
+          name: data.item.name,
+          servingLabel: data.item.servingLabel || "1 serving",
+          calories: Math.round(data.item.calories),
+          proteinG: Math.round(data.item.proteinG || 0),
+          carbsG: Math.round(data.item.carbsG || 0),
+          fatG: Math.round(data.item.fatG || 0),
+        });
+      } else {
+        setBarcodeScanError(data.error || "Could not read barcode or nutrition label.");
+      }
+    } catch {
+      setBarcodeScanError("Failed to process nutrition label image.");
+    } finally {
+      setBarcodeScanning(false);
+    }
+  };
 
   useEffect(() => {
     return () => {
@@ -362,24 +398,47 @@ export default function MealScannerModal({
   };
 
   const handleLookupCustomStaple = async () => {
-    if (!barcodeSearch.trim()) return;
+    const q = barcodeSearch.trim();
+    if (!q) return;
     setLookupLoading(true);
+    setBarcodeScanError("");
     try {
-      const res = await fetch("/api/estimate-meal", {
+      // 1. Try dedicated barcode / food anchor / OpenFoodFacts search route
+      const res = await fetch("/api/diet/barcode", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dishName: barcodeSearch.trim() }),
+        body: JSON.stringify({ query: q }),
       });
       const data = await res.json();
-      if (!data.error && data.calories > 0) {
+      if (data.success && data.item) {
+        setCustomStapleLookup({
+          id: data.item.id || `lookup-${Date.now()}`,
+          name: data.item.name,
+          servingLabel: data.item.servingLabel || "1 serving",
+          calories: Math.round(data.item.calories),
+          proteinG: Math.round(data.item.proteinG || 0),
+          carbsG: Math.round(data.item.carbsG || 0),
+          fatG: Math.round(data.item.fatG || 0),
+        });
+        return;
+      }
+
+      // 2. Fallback to estimate-meal route
+      const estRes = await fetch("/api/estimate-meal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dishName: q }),
+      });
+      const estData = await estRes.json();
+      if (!estData.error && estData.calories > 0) {
         setCustomStapleLookup({
           id: `lookup-${Date.now()}`,
-          name: barcodeSearch.trim(),
+          name: q,
           servingLabel: "1 serving",
-          calories: Math.round(data.calories),
-          proteinG: Math.round(data.proteinG || 0),
-          carbsG: Math.round(data.carbsG || 0),
-          fatG: Math.round(data.fatG || 0),
+          calories: Math.round(estData.calories),
+          proteinG: Math.round(estData.proteinG || 0),
+          carbsG: Math.round(estData.carbsG || 0),
+          fatG: Math.round(estData.fatG || 0),
         });
       }
     } catch {
@@ -743,6 +802,25 @@ export default function MealScannerModal({
                     protein={currentProtein}
                   />
 
+                  {/* Detected Components Breakdown */}
+                  {result?.visibleItems && result.visibleItems.length > 0 && (
+                    <div className="pt-2 border-t border-white/10">
+                      <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-stone-400 block mb-1.5">
+                        PLATE COMPONENTS DETECTED
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {result.visibleItems.map((item: string, idx: number) => (
+                          <span
+                            key={idx}
+                            className="bg-white/10 text-stone-200 border border-white/10 rounded-full px-2.5 py-1 text-[11px] font-medium"
+                          >
+                            {item}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Candidate alternatives if multiple */}
                   {result?.candidates && result.candidates.length > 1 && (
                     <div className="pt-1">
@@ -799,8 +877,7 @@ export default function MealScannerModal({
                 className="hidden"
                 onChange={(e) => {
                   if (e.target.files?.[0]) {
-                    setMode("plate");
-                    handleFile(e.target.files[0]);
+                    handleBarcodeFile(e.target.files[0]);
                   }
                 }}
               />
@@ -811,30 +888,46 @@ export default function MealScannerModal({
                   <span>BARCODE &amp; NUTRITION LABEL</span>
                   <span className="text-[#34D399] flex items-center gap-1 font-semibold">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#34D399] animate-pulse" />
-                    READY
+                    {barcodeScanning ? "SCANNING" : "READY"}
                   </span>
                 </div>
 
                 <div className="relative my-3 flex flex-col items-center justify-center">
-                  <div className="flex items-center gap-1.5 opacity-40">
-                    {[4, 2, 8, 3, 6, 2, 4, 10, 2, 5, 8, 3, 2, 6, 4, 2, 8, 5, 3].map((h, i) => (
-                      <div
-                        key={i}
-                        className="bg-white rounded-xs"
-                        style={{ width: `${(i % 3) + 2}px`, height: `${30 + h}px` }}
-                      />
-                    ))}
-                  </div>
-                  <div className="absolute inset-x-0 h-0.5 bg-[#E05A47] shadow-[0_0_16px_#E05A47] animate-pulse" />
+                  {barcodeScanning ? (
+                    <div className="py-4 flex flex-col items-center justify-center gap-2">
+                      <Loader2 className="w-7 h-7 text-[#E05A47] animate-spin" />
+                      <p className="text-xs text-white/80 font-medium">{barcodeScanStage}</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-1.5 opacity-40">
+                        {[4, 2, 8, 3, 6, 2, 4, 10, 2, 5, 8, 3, 2, 6, 4, 2, 8, 5, 3].map((h, i) => (
+                          <div
+                            key={i}
+                            className="bg-white rounded-xs"
+                            style={{ width: `${(i % 3) + 2}px`, height: `${30 + h}px` }}
+                          />
+                        ))}
+                      </div>
+                      <div className="absolute inset-x-0 h-0.5 bg-[#E05A47] shadow-[0_0_16px_#E05A47] animate-pulse" />
+                    </>
+                  )}
                 </div>
+
+                {barcodeScanError && (
+                  <p className="text-xs text-[#E05A47] bg-[#E05A47]/10 border border-[#E05A47]/20 rounded-xl p-2.5 mb-2">
+                    {barcodeScanError}
+                  </p>
+                )}
 
                 <button
                   type="button"
+                  disabled={barcodeScanning}
                   onClick={() => barcodeFileRef.current?.click()}
-                  className="w-full bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full px-5 py-3 text-xs font-semibold inline-flex items-center justify-center gap-2 shadow-lg mt-2 cursor-pointer transition-all active:scale-95"
+                  className="w-full bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full px-5 py-3 text-xs font-semibold inline-flex items-center justify-center gap-2 shadow-lg mt-2 cursor-pointer transition-all active:scale-95 disabled:opacity-50"
                 >
                   <Camera className="w-4 h-4" />
-                  <span>Scan Nutrition Label or Barcode</span>
+                  <span>{barcodeScanning ? "Processing..." : "Scan Nutrition Label or Barcode"}</span>
                 </button>
               </div>
 
