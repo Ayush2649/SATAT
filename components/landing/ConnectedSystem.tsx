@@ -14,136 +14,102 @@ interface SystemPhase {
   id: string;
   number: string;
   title: string;
+  sub: string;
   action: string;
   outcome: string;
   connection: string;
+  accent: string;
 }
 
 const PHASES: SystemPhase[] = [
   {
-    id: "goals",
+    id: "intent",
     number: "01",
-    title: "Goals",
+    title: "Intent",
+    sub: "Goals",
     action: "Direction without anxiety",
-    outcome: "Clear body composition, strength, and life milestones.",
-    connection: "Feeds your weekly routines",
+    outcome: "Clear body composition, strength, and life milestones grounded in who you want to become.",
+    connection: "Guides daily cadence",
+    accent: "#E05A47",
   },
   {
-    id: "routines",
+    id: "cadence",
     number: "02",
-    title: "Routines",
+    title: "Cadence",
+    sub: "Routines",
     action: "Habits that fit reality",
-    outcome: "Mobility, hydration, and daily timeblocks that protect momentum.",
-    connection: "Prepares your training window",
+    outcome: "Mobility, hydration, and timeblocks that protect your rhythm when schedules get hectic.",
+    connection: "Opens the training window",
+    accent: "#2D6A4F",
   },
   {
-    id: "training",
+    id: "movement",
     number: "03",
-    title: "Training",
-    action: "Progressive, structured work",
-    outcome: "Compound lift telemetry, RPE tracking, and automatic volume curves.",
-    connection: "Signals nutrition caloric demand",
+    title: "Movement",
+    sub: "Training",
+    action: "Progressive physical craft",
+    outcome: "Compound lift progressions, mindful effort, and automatic volume curves tailored to energy.",
+    connection: "Signals fueling demand",
+    accent: "#E05A47",
   },
   {
-    id: "nutrition",
+    id: "fueling",
     number: "04",
-    title: "Nutrition",
-    action: "Deterministic fuel matching",
-    outcome: "Protein targets and calorie balances calculated against real expenditure.",
-    connection: "Determines tonight's recovery quality",
+    title: "Fueling",
+    sub: "Nutrition",
+    action: "Mindful nourishment",
+    outcome: "Protein targets and calorie balances automatically synchronized with your actual exertion.",
+    connection: "Nourishes tonight's restoration",
+    accent: "#D97706",
   },
   {
-    id: "recovery",
+    id: "restoration",
     number: "05",
-    title: "Recovery",
-    action: "Restitution of baseline",
-    outcome: "Sleep duration, resting heart rate, and fatigue monitoring.",
-    connection: "Synthesizes trajectory updates",
+    title: "Restoration",
+    sub: "Recovery",
+    action: "Reclaiming baseline",
+    outcome: "Gentle sleep monitoring, resting fatigue tracking, and nervous system replenishment.",
+    connection: "Synthesizes tomorrow's readiness",
+    accent: "#2D6A4F",
   },
   {
-    id: "progress",
+    id: "momentum",
     number: "06",
-    title: "Progress",
-    action: "Continuous upward spiral",
-    outcome: "Consistency streaks, weekly capacity, and adaptive baseline adjustments.",
-    connection: "Refines tomorrow's starting plan",
+    title: "Momentum",
+    sub: "Progress",
+    action: "The continuous loop",
+    outcome: "Visible 28-day consistency ribbons, capacity growth, and sustainable habits for life.",
+    connection: "Refines long-term intent",
+    accent: "#E05A47",
   },
 ];
 
 export default function ConnectedSystem() {
-  const [activePhase, setActivePhase] = useState<string>("training");
-  const sectionRef = useRef<HTMLElement>(null);
-  const cardsGridRef = useRef<HTMLDivElement>(null);
-  const prefersReduced = useReducedMotion();
-
-  useGSAP(
-    () => {
-      if (prefersReduced) return;
-
-      // Safe progressive entrance: content is visible by default in CSS.
-      // Animation enhances the entrance with clearProps: "all" to prevent lingering inline styles.
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: "top 90%",
-          once: true,
-        },
-        defaults: { ease: "power2.out" },
-      });
-
-      tl.fromTo(
-        ".system-header",
-        { opacity: 0.3, y: 16 },
-        { opacity: 1, y: 0, duration: 0.5, clearProps: "all" }
-      )
-        .fromTo(
-          ".continuity-flow-bar",
-          { opacity: 0.3, y: 12 },
-          { opacity: 1, y: 0, duration: 0.4, clearProps: "all" },
-          "-=0.2"
-        )
-        .fromTo(
-          ".system-phase-card",
-          { opacity: 0.3, y: 16 },
-          { opacity: 1, y: 0, stagger: 0.04, duration: 0.5, clearProps: "all" },
-          "-=0.2"
-        );
-    },
-    { scope: sectionRef, dependencies: [prefersReduced] }
-  );
-
-  const handleKeyDown = (e: React.KeyboardEvent, phaseId: string) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      setActivePhase(phaseId);
-    }
-  };
+  const [activePhase, setActivePhase] = useState<string>("movement");
 
   return (
-    <section
-      ref={sectionRef}
-      id="system"
-      aria-label="One Connected System"
-      className="py-16 sm:py-24 px-5 sm:px-6 border-t border-[var(--border)] bg-[var(--background)] relative overflow-hidden"
-    >
+    <section id="system" className="py-24 sm:py-32 px-5 sm:px-6 border-t border-[rgba(28,25,23,0.07)] bg-[#F6F3EC]">
       <div className="max-w-5xl mx-auto">
         {/* Section Header */}
-        <div className="system-header max-w-3xl mx-auto text-center mb-8 sm:mb-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--brand-subtle)] border border-[var(--border)] mb-4">
-            <span className="type-eyebrow text-[var(--brand)]">
+        <div className="max-w-3xl mx-auto text-center mb-16 sm:mb-20">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#FCFBF9] border border-[rgba(28,25,23,0.07)] mb-4 shadow-xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#2D6A4F]" />
+            <span className="font-mono text-xs font-semibold tracking-wider text-[#2D6A4F] uppercase">
               THE UNBROKEN THREAD (सतत)
             </span>
           </div>
 
-          <h2 className="type-display-l text-[var(--text-primary)]">
+          <h2 className="text-3xl sm:text-5xl font-display font-bold text-[#1C1917] tracking-tight leading-tight">
             Everything works better
             <br />
-            <span className="text-[var(--brand)]">when it works together.</span>
+            <span className="font-serif italic font-normal text-[#E05A47]">
+              when it works together.
+            </span>
           </h2>
 
-          <p className="type-body-lg text-[var(--text-secondary)] mt-4 max-w-xl mx-auto">
-            Instead of managing five separate silos, SATAT connects the complete cycle of human improvement 
-            into a self-reinforcing continuous loop.
+          <p className="text-base sm:text-lg text-[#57534E] mt-5 max-w-xl mx-auto leading-relaxed">
+            Instead of managing five disconnected silos, SATAT connects the complete cycle of human wellness
+            into a quiet, self-reinforcing continuous loop.
           </p>
         </div>
 
@@ -177,12 +143,7 @@ export default function ConnectedSystem() {
         </div>
 
         {/* 6 Connected Phases Grid */}
-        <div
-          ref={cardsGridRef}
-          role="region"
-          aria-label="Interactive System Phases"
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
-        >
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
           {PHASES.map((phase) => {
             const isActive = activePhase === phase.id;
 
@@ -193,46 +154,98 @@ export default function ConnectedSystem() {
                 tabIndex={0}
                 aria-pressed={isActive}
                 onClick={() => setActivePhase(phase.id)}
-                onKeyDown={(e) => handleKeyDown(e, phase.id)}
-                className={`system-phase-card group p-6 rounded-[24px] bg-[var(--surface)] border transition-all duration-200 cursor-pointer flex flex-col justify-between hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] ${
+                className={`group p-6 sm:p-7 rounded-[26px] transition-all duration-300 cursor-pointer flex flex-col justify-between select-none ${
                   isActive
-                    ? "border-[var(--brand)] shadow-[var(--shadow-md)] ring-1 ring-[var(--brand)] bg-[var(--surface-elevated)]"
-                    : "border-[var(--border)] shadow-xs hover:border-[var(--border-strong)]"
+                    ? "bg-[#191D1A] text-white shadow-[0_20px_45px_-10px_rgba(25,29,26,0.35)] border border-[#191D1A]"
+                    : "bg-[#FCFBF9] text-[#1C1917] border border-[rgba(28,25,23,0.07)] shadow-[0_14px_34px_-12px_rgba(28,25,23,0.06)] hover:border-[rgba(28,25,23,0.15)]"
                 }`}
               >
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <span className="font-mono text-xs font-bold px-2.5 py-0.5 rounded-full bg-[var(--surface-subtle)] text-[var(--brand)] transition-colors group-hover:bg-[var(--brand-subtle)]">
+                    <span
+                      className={`font-mono text-xs font-bold px-2.5 py-0.5 rounded-full ${
+                        isActive
+                          ? "bg-white/10 text-[#FCFBF9]"
+                          : "bg-[#EFECE4] text-[#1C1917]"
+                      }`}
+                    >
                       {phase.number}
                     </span>
-                    <span className="text-[11px] font-mono text-[var(--text-muted)] group-hover:text-[var(--brand)] transition-colors">
+                    <span
+                      className={`text-[11px] font-mono tracking-wide ${
+                        isActive ? "text-[#8C857B]" : "text-[#8C857B]"
+                      }`}
+                    >
                       {phase.action}
                     </span>
                   </div>
 
-                  <h3 className="text-xl font-bold tracking-tight text-[var(--text-primary)] mb-2">
-                    {phase.title}
-                  </h3>
+                  <div className="flex items-baseline gap-2 mb-2">
+                    <h3
+                      className={`text-xl font-display font-bold tracking-tight ${
+                        isActive ? "text-[#FCFBF9]" : "text-[#1C1917]"
+                      }`}
+                    >
+                      {phase.title}
+                    </h3>
+                    <span
+                      className={`text-xs font-mono ${
+                        isActive ? "text-[#8C857B]" : "text-[#8C857B]"
+                      }`}
+                    >
+                      ({phase.sub})
+                    </span>
+                  </div>
 
-                  <p className="text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed">
+                  <p
+                    className={`text-xs sm:text-sm leading-relaxed ${
+                      isActive ? "text-[#EFECE4]/85" : "text-[#57534E]"
+                    }`}
+                  >
                     {phase.outcome}
                   </p>
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-[var(--border-subtle)] flex items-center justify-between text-xs">
-                  <span className="text-[var(--text-muted)] font-mono text-[11px] group-hover:text-[var(--brand)] transition-colors">
-                    → {phase.connection}
-                  </span>
+                <div
+                  className={`mt-6 pt-4 border-t flex items-center justify-between text-xs ${
+                    isActive
+                      ? "border-white/10 text-[#EFECE4]/70"
+                      : "border-[rgba(28,25,23,0.05)] text-[#8C857B]"
+                  }`}
+                >
+                  <span className="font-mono text-[11px]">→ {phase.connection}</span>
                   <span
-                    aria-hidden="true"
-                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                      isActive ? "bg-[var(--brand)] scale-125" : "bg-[var(--border-strong)] group-hover:bg-[var(--brand)]"
+                    className={`w-2 h-2 rounded-full ${
+                      isActive ? "bg-[#E05A47] animate-pulse" : "bg-[#2D6A4F]"
                     }`}
                   />
                 </div>
               </div>
             );
           })}
+        </div>
+
+        {/* Continuous Flow Loop Ribbon */}
+        <div className="mt-10 sm:mt-12 p-5 sm:p-6 rounded-[24px] bg-[#FCFBF9] border border-[rgba(28,25,23,0.08)] shadow-xs flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs font-mono text-[#57534E]">
+          {PHASES.map((p, idx) => (
+            <React.Fragment key={p.id}>
+              <button
+                type="button"
+                onClick={() => setActivePhase(p.id)}
+                className={`px-3 py-1.5 rounded-full transition-all cursor-pointer ${
+                  activePhase === p.id
+                    ? "bg-[#191D1A] text-white font-bold shadow-xs"
+                    : "hover:bg-[#EFECE4] text-[#1C1917]"
+                }`}
+              >
+                {p.title}
+              </button>
+              {idx < PHASES.length - 1 && (
+                <span className="text-[#E05A47] select-none font-semibold">→</span>
+              )}
+            </React.Fragment>
+          ))}
+          <span className="text-[#2D6A4F] select-none font-semibold ml-1">↺ continuous</span>
         </div>
       </div>
     </section>

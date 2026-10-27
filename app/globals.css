@@ -716,6 +716,38 @@ button:disabled { cursor: not-allowed; }
   opacity: 0.4;
 }
 
+/* ── Orbit Living Orb Keyframes & Sensory Motion ── */
+@keyframes orbit-living-breathe {
+  0%, 100% {
+    transform: scale(0.975);
+    opacity: 0.94;
+  }
+  50% {
+    transform: scale(1.03);
+    opacity: 1;
+  }
+}
+
+@keyframes orbit-living-spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes orbit-living-lotus-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.95;
+  }
+  50% {
+    transform: scale(1.035);
+    opacity: 1;
+  }
+}
+
 /* Reduced motion preference override */
 @media (prefers-reduced-motion: reduce) {
   .orbit-mark .orbit-core-group,
@@ -984,4 +1016,27 @@ button:disabled { cursor: not-allowed; }
 
 .animate-onboarding-step {
   animation: onboardingSlideIn 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+
+/* Inter-Node Timeline Animated Beam */
+@keyframes timelineBeam {
+  0% {
+    transform: translateY(-120%);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(260%);
+    opacity: 0;
+  }
+}
+
+.animate-timeline-beam {
+  animation: timelineBeam 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }

@@ -1,49 +1,54 @@
 "use client";
-import React, { useState, useEffect, useRef } from 'react';
+
+import { createPortal } from "react-dom";
+import React, { useState, useEffect, useRef } from "react";
 import NextImage from "next/image";
 import { useSession } from "next-auth/react";
 import { useFirebaseAuth } from "@/components/FirebaseAuthProvider";
 import {
-  Plus, Minus, Utensils, Camera, Trash2, X, Loader2, Settings,
-  ChevronLeft, ChevronRight, Sparkles, CheckCircle2, AlertCircle,
-  Bookmark, BookmarkPlus, Search, Mic, Edit3
+  Plus,
+  Minus,
+  Utensils,
+  Camera,
+  Trash2,
+  X,
+  Loader2,
+  Settings,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  Sparkles,
+  CheckCircle2,
+  AlertCircle,
+  Bookmark,
+  BookmarkPlus,
+  Search,
+  Mic,
+  Check,
+  Barcode,
 } from "lucide-react";
 import VoiceMealModal from "@/components/diet/VoiceMealModal";
+import MealScannerModal from "@/components/diet/MealScannerModal";
+import MacroDonutBreakdown from "@/components/diet/MacroDonutBreakdown";
+import { resolveDishThumbnail, formatMealTimeAndCategory } from "@/lib/diet/dishMatcher";
 import { cn, todayString, formatDate, localDateString } from "@/lib/utils";
 import {
-  getMeals, addMeal, deleteMeal, getMacroGoals, saveMacroGoals,
-  getMealTemplates, saveMealTemplate, updateMealTemplate, deleteMealTemplate,
+  getMeals,
+  addMeal,
+  deleteMeal,
+  getMacroGoals,
+  saveMacroGoals,
+  getMealTemplates,
+  saveMealTemplate,
+  updateMealTemplate,
+  deleteMealTemplate,
 } from "@/lib/firestore";
 import { setDietContext } from "@/lib/orbitContext";
-
 import type { MealEntry, MealMacros, MacroGoals, MealTemplate } from "@/types";
 import EmptyState from "@/components/ui/EmptyState";
 
-
 const defaultGoals: MacroGoals = { calories: 2000, proteinG: 150, carbsG: 200, fatG: 65 };
-
-function MacroProgress({ label, value, goal, unit, color }: {
-  label: string; value: number; goal?: number | null; unit: string; color: string;
-}) {
-  const percent = goal && goal > 0 ? Math.min((value / goal) * 100, 100) : 0;
-  return (
-    <div>
-      <div className="flex items-baseline justify-between gap-2 mb-1.5">
-        <span className="text-sm font-medium" style={{ color: "var(--text-1)" }}>{label}</span>
-        <span className="text-sm font-semibold tabular-nums" style={{ color: "var(--text-2)" }}>
-          {Math.round(value)}{goal ? <span className="text-xs font-normal" style={{ color: "var(--text-3)" }}> / {goal}{unit}</span> : <span className="text-xs font-normal" style={{ color: "var(--text-3)" }}> {unit}</span>}
-        </span>
-      </div>
-      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--surface-inset)" }}>
-        {goal && goal > 0 ? (
-          <div className="h-full rounded-full transition-all duration-300" style={{ width: `${percent}%`, background: color }} />
-        ) : (
-          <div className="h-full rounded-full bg-surface-2" />
-        )}
-      </div>
-    </div>
-  );
-}
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function DietPage() {
@@ -56,13 +61,18 @@ export default function DietPage() {
   const [goals, setGoals] = useState<MacroGoals | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Modals state
   const [showAddMeal, setShowAddMeal] = useState(false);
   const [showGoals, setShowGoals] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
+  const [scannerMode, setScannerMode] = useState<"plate" | "barcode">("plate");
   const [showSaved, setShowSaved] = useState(false);
   const [showVoiceMeal, setShowVoiceMeal] = useState(false);
   const [templates, setTemplates] = useState<MealTemplate[]>([]);
   const [savingTemplate, setSavingTemplate] = useState<{ name: string; macros: MealMacros } | null>(null);
+
+  // Expanded meal card accordion
+  const [expandedMealId, setExpandedMealId] = useState<string | null>(null);
 
   // Load the selected day's meals, goals, and saved meal templates.
   useEffect(() => {
@@ -84,9 +94,17 @@ export default function DietPage() {
 
         if (cancelled) return;
 
-        setMeals(Array.isArray(mealData) ? mealData : []);
+        const loadedMeals = Array.isArray(mealData) ? mealData : [];
+        setMeals(loadedMeals);
         setGoals(goalData ? { ...defaultGoals, ...goalData } : defaultGoals);
         setTemplates(Array.isArray(templateData) ? templateData : []);
+
+        // Default the first meal to expanded if any exists
+        if (loadedMeals.length > 0) {
+          setExpandedMealId(loadedMeals[0].id);
+        } else {
+          setExpandedMealId(null);
+        }
       } catch (error) {
         console.error("Failed to load diet data:", error);
         if (!cancelled) {
@@ -115,10 +133,12 @@ export default function DietPage() {
         ? { fiberG: (acc.fiberG || 0) + (Number(meal.macros.fiberG) || 0) }
         : {}),
     }),
-    { calories: 0, proteinG: 0, carbsG: 0, fatG: 0 },
+    { calories: 0, proteinG: 0, carbsG: 0, fatG: 0 }
   );
 
   const isToday = date === todayString();
+  const targetCalories = goals?.calories ?? 2000;
+  const remainingCalories = Math.max(0, targetCalories - Math.round(totals.calories));
 
   // Keep Orbit's diet context in sync so it can answer meal-specific questions.
   useEffect(() => {
@@ -162,6 +182,9 @@ export default function DietPage() {
     try {
       const created = await (addMeal as any)(meal);
       setMeals((prev) => [...prev, created]);
+      if (!expandedMealId) {
+        setExpandedMealId(created.id);
+      }
       setShowAddMeal(false);
       setShowScanner(false);
     } catch (error) {
@@ -171,10 +194,11 @@ export default function DietPage() {
 
   const handleDeleteMeal = async (mealId: string) => {
     try {
-      // Passing userId is harmless for implementations that only accept the id,
-      // while supporting implementations that scope deletion by user.
       await (deleteMeal as any)(mealId, userId);
       setMeals((prev) => prev.filter((meal) => meal.id !== mealId));
+      if (expandedMealId === mealId) {
+        setExpandedMealId(null);
+      }
     } catch (error) {
       console.error("Failed to delete meal:", error);
     }
@@ -212,10 +236,7 @@ export default function DietPage() {
     }
   };
 
-  const handleLogFromTemplate = async (
-    meal: Omit<MealEntry, "id">,
-    templateId: string,
-  ) => {
+  const handleLogFromTemplate = async (meal: Omit<MealEntry, "id">, templateId: string) => {
     try {
       const created = await (addMeal as any)(meal);
       setMeals((prev) => [...prev, created]);
@@ -229,9 +250,11 @@ export default function DietPage() {
         };
         try {
           await (updateMealTemplate as any)(templateId, updatedTemplate);
-          setTemplates((prev) => prev.map((item) => item.id === templateId ? updatedTemplate : item));
+          setTemplates((prev) =>
+            prev.map((item) => (item.id === templateId ? updatedTemplate : item))
+          );
         } catch (templateError) {
-          console.warn("Meal was logged, but the template usage count could not be updated:", templateError);
+          console.warn("Template useCount update error:", templateError);
         }
       }
 
@@ -241,14 +264,12 @@ export default function DietPage() {
     }
   };
 
-  // VoiceMealModal can return either one meal, an array of meals, or an object
-  // containing a meals array. Normalize all supported shapes here.
   const handleLogVoiceMeals = async (payload: any) => {
     const candidates = Array.isArray(payload)
       ? payload
       : Array.isArray(payload?.meals)
-        ? payload.meals
-        : [payload];
+      ? payload.meals
+      : [payload];
 
     const validMeals = candidates.filter(Boolean);
 
@@ -277,206 +298,351 @@ export default function DietPage() {
   };
 
   return (
-    <div className="animate-fade-in space-y-4 sm:space-y-5">
-      {/* ── Page header ── */}
-      <div>
-        <div className="flex items-center justify-between gap-3">
-          <h1 className="page-title">Diet</h1>
-          <div className="flex items-center gap-1.5 flex-shrink-0">
-            <button
-              onClick={() => setShowVoiceMeal(true)}
-              type="button"
-              className="btn-icon"
-              title="Log meal by voice"
-              aria-label="Log meal by voice"
-            >
-              <Mic className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setShowSaved(true)}
-              type="button"
-              className="btn-icon"
-              title="Saved meals"
-              aria-label="Saved meals"
-            >
-              <Bookmark className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setShowGoals(true)}
-              type="button"
-              className="btn-icon"
-              title="Nutrition goals"
-              aria-label="Nutrition goals"
-            >
-              <Settings className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setShowAddMeal(true)}
-              type="button"
-              className="btn-primary min-h-11 text-sm flex items-center gap-1.5 px-3 whitespace-nowrap"
-            >
-              <Plus className="w-4 h-4" />
-              Log meal
-            </button>
-          </div>
+    <div className="w-full max-w-md mx-auto lg:max-w-5xl pb-6 animate-fade-in text-[#1C1917]">
+      {/* ── 1. TOP HEADER & QUICK-ACTION ICON PILLS ── */}
+      <div className="flex items-start justify-between pt-1 pb-3">
+        <div>
+          <h1 className="font-serif text-3xl sm:text-4xl text-[#1C1917] tracking-tight leading-none">
+            Nourishment Studio
+          </h1>
+          <p className="text-xs text-[#57534E] mt-1.5 font-medium">
+            Mindful fueling, zero calorie anxiety.
+          </p>
         </div>
-        <p className="page-description mt-1">Daily nutrition</p>
+
+        {/* 3 Circular Tactile Icon Buttons */}
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => setShowVoiceMeal(true)}
+            type="button"
+            className="w-9 h-9 rounded-full bg-[#EFECE4] hover:bg-[#E2DDD2] text-[#1C1917] flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+            title="Log meal by voice"
+            aria-label="Log meal by voice"
+          >
+            <Mic className="w-4 h-4 text-[#2D6A4F]" />
+          </button>
+
+          <button
+            onClick={() => setShowSaved(true)}
+            type="button"
+            className="w-9 h-9 rounded-full bg-[#EFECE4] hover:bg-[#E2DDD2] text-[#1C1917] flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+            title="Saved meals"
+            aria-label="Saved meals"
+          >
+            <Bookmark className="w-4 h-4 text-[#E05A47]" />
+          </button>
+
+          <button
+            onClick={() => setShowGoals(true)}
+            type="button"
+            className="w-9 h-9 rounded-full bg-[#EFECE4] hover:bg-[#E2DDD2] text-[#1C1917] flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+            title="Nutrition goals"
+            aria-label="Daily macro goals"
+          >
+            <Settings className="w-4 h-4 text-[#57534E]" />
+          </button>
+        </div>
       </div>
 
-      {/* ── Date navigator ── */}
-      <div className="flex items-center justify-between border-y py-1" style={{ borderColor: "var(--border-subtle)" }}>
+      {/* ── 2. DATE NAVIGATOR CAPSULE ── */}
+      <div className="bg-[#FCFBF9] rounded-full px-4 py-2 border border-[#1C1917]/[0.06] shadow-2xs flex items-center justify-between mb-4">
         <button
           onClick={() => changeDate(-1)}
           type="button"
-          className="btn-icon"
+          className="w-7 h-7 rounded-full bg-[#EFECE4] hover:bg-[#E2DDD2] flex items-center justify-center text-[#1C1917] transition-all cursor-pointer"
           aria-label="Previous day"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
-        <div className="text-center">
-          <p className="text-sm font-medium truncate" style={{ color: "var(--text-1)" }}>{formatDate(date)}</p>
-          <p className="metadata">{isToday ? "Today" : "Daily log"}</p>
+
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-[#1C1917] flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#2D6A4F]" />
+            {formatDate(date)}
+          </span>
+          {isToday && (
+            <span className="bg-[#D1FAE5] text-[#1B4332] text-[10px] font-bold px-2 py-0.5 rounded-full">
+              Today
+            </span>
+          )}
         </div>
+
         <button
           onClick={() => changeDate(1)}
           disabled={isToday}
           type="button"
-          className="btn-icon disabled:opacity-30"
+          className="w-7 h-7 rounded-full bg-[#EFECE4] hover:bg-[#E2DDD2] flex items-center justify-center text-[#1C1917] transition-all cursor-pointer disabled:opacity-30 disabled:pointer-events-none"
           aria-label="Next day"
         >
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
 
-      {/* ── Daily nutrition: Single Clean Restrained Surface ── */}
-      <div
-        className="rounded-2xl p-4 sm:p-5"
-        style={{
-          background: "var(--satat-surface, #0D0F11)",
-          border: "1px solid var(--satat-border-subtle, rgba(255,255,255,0.05))",
-        }}
-      >
-        <div className="flex items-center justify-between gap-3 mb-3">
-          <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
-            Daily Intake
+      {/* ── 3. HERO DARK BOTANICAL NUTRITION SUMMARY CARD ── */}
+      <div className="bg-[#191D1A] text-[#FCFBF9] rounded-[28px] p-5 shadow-xl mb-4">
+        {/* Top Row */}
+        <div className="flex items-center justify-between gap-2 mb-4">
+          <span className="bg-[#2D6A4F]/30 border border-[#6EE7B7]/20 text-[#6EE7B7] rounded-full px-3 py-1 text-[10px] font-bold tracking-wider uppercase inline-flex items-center gap-1.5 whitespace-nowrap shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7]" />
+            DAILY NUTRITION SUMMARY
           </span>
-          <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>
-            {meals.length} {meals.length === 1 ? "meal" : "meals"} logged
+          <span className="text-xs text-stone-300 font-medium text-right truncate">
+            <strong className="text-white font-bold">{remainingCalories.toLocaleString()} kcal</strong>{" "}
+            remaining · Target {targetCalories.toLocaleString()}
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,0.85fr)_minmax(0,1.4fr)] gap-5 sm:gap-6">
-          <div className="min-w-0">
-            <span className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Total Calories</span>
-            <div className="flex items-baseline gap-1.5 mt-1">
-              <span className="text-3xl font-semibold tabular-nums leading-none" style={{ color: "var(--text-primary)" }}>
-                {Math.round(totals.calories).toLocaleString()}
-              </span>
-              <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>kcal</span>
-            </div>
-            {goals ? (
-              <>
-                <p className="text-xs mt-1" style={{ color: "var(--text-secondary)" }}>
-                  {totals.calories > goals.calories
-                    ? `${Math.round(totals.calories - goals.calories)} kcal above goal`
-                    : `${Math.max(0, Math.round(goals.calories - totals.calories))} kcal remaining`}
-                  <span style={{ color: "var(--text-muted)" }}> · target {goals.calories.toLocaleString()}</span>
-                </p>
-                <div className="h-1.5 rounded-full overflow-hidden mt-3" style={{ background: "var(--surface-inset)" }}>
-                  <div
-                    className="h-full rounded-full transition-all duration-300"
-                    style={{
-                      width: `${Math.min((totals.calories / Math.max(goals.calories, 1)) * 100, 100)}%`,
-                      background: totals.calories > goals.calories ? "var(--satat-warning, #E0AB57)" : "var(--satat-brand, #6E8BFF)",
-                    }}
-                  />
-                </div>
-              </>
-            ) : (
-              <p className="text-xs mt-1" style={{ color: "var(--text-secondary)" }}>
-                Intuitive Habit Tracking Active
-              </p>
-            )}
+        {/* 3-Segment Macro Donut Breakdown (Dark Variant) */}
+        <MacroDonutBreakdown
+          variant="dark"
+          calories={totals.calories}
+          carbs={totals.carbsG}
+          fat={totals.fatG}
+          protein={totals.proteinG}
+          targetCarbs={goals?.carbsG}
+          targetFat={goals?.fatG}
+          targetProtein={goals?.proteinG}
+        />
+      </div>
+
+      {/* ── 4. FLAGSHIP USP LAUNCHER CARD: "SCAN PLATE OR BARCODE" ── */}
+      <div className="bg-[#FCFBF9] rounded-[26px] p-4 border border-[#1C1917]/[0.06] shadow-xs mb-5">
+        <div className="flex items-center gap-3.5">
+          {/* Thumbnail with viewfinder corners */}
+          <div className="w-16 h-16 rounded-2xl overflow-hidden relative shrink-0 shadow-xs bg-[#EFECE4]">
+            <img
+              src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=300&q=75"
+              alt="Meal scanning viewfinder"
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
+            {/* Corner brackets */}
+            <div className="absolute top-1 left-1 w-3 h-3 border-t-2 border-l-2 border-[#E05A47]" />
+            <div className="absolute top-1 right-1 w-3 h-3 border-t-2 border-r-2 border-[#E05A47]" />
+            <div className="absolute bottom-1 left-1 w-3 h-3 border-b-2 border-l-2 border-[#E05A47]" />
+            <div className="absolute bottom-1 right-1 w-3 h-3 border-b-2 border-r-2 border-[#E05A47]" />
           </div>
 
-          <div className="space-y-3">
-            <MacroProgress label="Protein" value={totals.proteinG} goal={goals?.proteinG} unit="g" color="var(--satat-brand, #6E8BFF)" />
-            <MacroProgress label="Carbs" value={totals.carbsG} goal={goals?.carbsG} unit="g" color="var(--satat-peach, #F2A080)" />
-            <MacroProgress label="Fat" value={totals.fatG} goal={goals?.fatG} unit="g" color="var(--satat-warning, #E0AB57)" />
+          <div className="min-w-0 flex-1">
+            <span className="text-[9px] font-bold tracking-[0.15em] uppercase text-[#E05A47] block">
+              INSTANT AI VISION
+            </span>
+            <h2 className="font-sans font-bold text-lg text-[#1C1917] leading-snug">
+              Scan Plate or Barcode
+            </h2>
+            <p className="text-xs text-[#57534E] truncate mt-0.5">
+              Dal Chawal, bowls, or labels for 2-second macros.
+            </p>
           </div>
+        </div>
+
+        {/* Bottom Action Buttons Row */}
+        <div className="flex items-center justify-end gap-2.5 mt-3.5">
+          <button
+            type="button"
+            onClick={() => {
+              setScannerMode("plate");
+              setShowScanner(true);
+            }}
+            className="bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full px-4 py-2 text-xs font-semibold inline-flex items-center gap-1.5 shadow-xs transition-all cursor-pointer whitespace-nowrap active:scale-95"
+          >
+            <Camera className="w-3.5 h-3.5" />
+            <span>Scan Plate</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setScannerMode("barcode");
+              setShowScanner(true);
+            }}
+            className="bg-[#191D1A] hover:bg-[#2D6A4F] text-white rounded-full px-4 py-2 text-xs font-semibold inline-flex items-center gap-1.5 shadow-xs transition-all cursor-pointer whitespace-nowrap active:scale-95"
+          >
+            <Barcode className="w-3.5 h-3.5" />
+            <span>Barcode</span>
+          </button>
         </div>
       </div>
 
-      {/* ── AI photo logging ── */}
-      <button
-        onClick={() => setShowScanner(true)}
-        type="button"
-        className="w-full rounded-2xl p-3.5 flex items-center gap-3 text-left transition-all hover:border-white/15"
-        style={{
-          background: "var(--satat-surface, #0D0F11)",
-          border: "1px solid var(--satat-border-subtle, rgba(255,255,255,0.05))",
-        }}
-      >
-        <div
-          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-          style={{ background: "rgba(110, 139, 255, 0.12)", color: "var(--satat-brand, #6E8BFF)" }}
-        >
-          <Camera className="w-4 h-4" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Estimate from a photo</p>
-          <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>Snap a meal for instant macro breakdown</p>
-        </div>
-        <ChevronRight className="w-4 h-4 shrink-0" style={{ color: "var(--text-secondary)" }} />
-      </button>
+      {/* ── 5. "TODAY'S NOURISHMENT LOG" SECTION ── */}
+      <div className="mb-4">
+        {/* Section Header */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center">
+            <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#1C1917]">
+              TODAY&apos;S NOURISHMENT LOG
+            </span>
+            <span className="bg-[#EFECE4] text-[#1C1917] text-[10px] font-bold px-2 py-0.5 rounded-full ml-1.5">
+              {meals.length}
+            </span>
+          </div>
 
-      {/* ── Meals list ── */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="card-title">Meals</h2>
-          <span className="metadata">{meals.length} logged</span>
+          <button
+            onClick={() => setShowAddMeal(true)}
+            type="button"
+            className="bg-[#EFECE4] hover:bg-[#E2DDD2] text-[#1C1917] rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer"
+          >
+            + Manual Log
+          </button>
         </div>
 
+        {/* Logged Meal Cards */}
         {loading ? (
-          <div className="space-y-2">
-            {[1, 2, 3].map((i) => <div key={i} className="h-20 skeleton" />)}
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-20 bg-[#FCFBF9] rounded-[26px] animate-pulse" />
+            ))}
           </div>
         ) : meals.length === 0 ? (
-          <EmptyState
-            title="No meals logged today"
-            description="Add a meal to start tracking your nutrition."
-            actionLabel="Log meal"
-            onAction={() => setShowAddMeal(true)}
-          />
+          <div className="bg-[#FCFBF9] rounded-[28px] p-8 text-center border border-[#1C1917]/[0.06] shadow-xs">
+            <Utensils className="w-8 h-8 text-[#8C857B] mx-auto mb-2 opacity-60" />
+            <p className="font-serif text-lg text-[#1C1917]">No Meals Logged Today</p>
+            <p className="text-xs text-[#57534E] max-w-xs mx-auto mt-1 mb-4 leading-relaxed">
+              Snap a plate with instant AI vision, speak your meal, or log manual dishes.
+            </p>
+            <div className="flex justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setScannerMode("plate");
+                  setShowScanner(true);
+                }}
+                className="bg-[#E05A47] text-white rounded-full px-4 py-2 text-xs font-semibold cursor-pointer"
+              >
+                Scan Plate Now
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowAddMeal(true)}
+                className="bg-[#EFECE4] text-[#1C1917] rounded-full px-4 py-2 text-xs font-semibold cursor-pointer"
+              >
+                + Custom Dish
+              </button>
+            </div>
+          </div>
         ) : (
-          <div className="space-y-2 stagger">
-            {meals.map((meal) => (
-              <MealCard
-                key={meal.id}
-                meal={meal}
-                onDelete={() => void handleDeleteMeal(meal.id)}
-                onSave={() => setSavingTemplate({ name: meal.name, macros: meal.macros })}
-              />
-            ))}
+          <div className="space-y-3">
+            {meals.map((meal) => {
+              const isExpanded = expandedMealId === meal.id;
+              const photoUrl = resolveDishThumbnail(meal.name, meal.photoUrl);
+              const { timeLabel, categoryLabel } = formatMealTimeAndCategory(meal.createdAt);
+
+              return (
+                <div
+                  key={meal.id}
+                  className="bg-[#FCFBF9] rounded-[26px] p-4 border border-[#1C1917]/[0.06] shadow-xs transition-all"
+                >
+                  {/* Top Row: Clickable to toggle expanded drawer */}
+                  <div
+                    onClick={() => setExpandedMealId(isExpanded ? null : meal.id)}
+                    className="flex items-start gap-3.5 cursor-pointer"
+                  >
+                    {/* Dish Photo */}
+                    <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 shadow-2xs bg-[#EFECE4] mt-0.5">
+                      <img
+                        src={photoUrl}
+                        alt={meal.name}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    </div>
+
+                    {/* Meal Info */}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <span className="text-[10px] font-mono uppercase text-[#8C857B] block">
+                            {timeLabel} · {categoryLabel}
+                          </span>
+                          <h3 className="line-clamp-1 text-[15px] font-bold text-[#1C1917] leading-snug">
+                            {meal.name}
+                          </h3>
+                        </div>
+
+                        {/* Compact Top-Right Bookmark, Delete, & Chevron */}
+                        <div className="flex items-center gap-1 shrink-0 -mt-0.5">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSavingTemplate({ name: meal.name, macros: meal.macros });
+                            }}
+                            title="Save as a reusable meal"
+                            type="button"
+                            aria-label={`Save ${meal.name} as a reusable meal`}
+                            className="w-7 h-7 rounded-full hover:bg-[#EFECE4] text-[#8C857B] hover:text-[#1C1917] flex items-center justify-center transition-colors cursor-pointer"
+                          >
+                            <BookmarkPlus className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void handleDeleteMeal(meal.id);
+                            }}
+                            type="button"
+                            aria-label={`Delete ${meal.name}`}
+                            className="w-7 h-7 rounded-full hover:bg-[#FADCD5] text-[#8C857B] hover:text-[#E05A47] flex items-center justify-center transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+
+                          <div className="w-5 h-7 flex items-center justify-center text-[#8C857B]">
+                            {isExpanded ? (
+                              <ChevronUp className="w-3.5 h-3.5" />
+                            ) : (
+                              <ChevronDown className="w-3.5 h-3.5" />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Collapsed Macro Pills */}
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                        <span className="bg-[#FADCD5]/70 text-[#C94A38] rounded-full px-2.5 py-0.5 text-[10px] font-bold whitespace-nowrap shrink-0">
+                          {Math.round(meal.macros.calories)} kcal
+                        </span>
+                        <span className="bg-[#D1FAE5] text-[#1B4332] rounded-full px-2.5 py-0.5 text-[10px] font-bold whitespace-nowrap shrink-0">
+                          {Math.round(meal.macros.proteinG)}g P
+                        </span>
+                        <span className="bg-[#EFECE4] text-[#57534E] rounded-full px-2.5 py-0.5 text-[10px] font-semibold whitespace-nowrap shrink-0">
+                          {Math.round(meal.macros.carbsG)}g C
+                        </span>
+                        <span className="bg-[#EFECE4] text-[#57534E] rounded-full px-2.5 py-0.5 text-[10px] font-semibold whitespace-nowrap shrink-0">
+                          {Math.round(meal.macros.fatG)}g F
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Expanded Macro Donut Drawer */}
+                  {isExpanded && (
+                    <div className="bg-[#F6F3EC] rounded-[20px] p-3.5 mt-3.5 border border-[#1C1917]/[0.04] animate-slide-down">
+                      <div className="flex items-center justify-between text-[10px] font-bold text-[#8C857B] tracking-wider uppercase mb-2">
+                        <span>MACRO DONUT BREAKDOWN</span>
+                        <span>1 Serving</span>
+                      </div>
+                      <MacroDonutBreakdown
+                        variant="light"
+                        calories={meal.macros.calories}
+                        carbs={meal.macros.carbsG}
+                        fat={meal.macros.fatG}
+                        protein={meal.macros.proteinG}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
 
-      {/* ── Modals ── */}
-      {showAddMeal && (
-        <AddMealModal
-          userId={userId}
-          date={date}
-          onSave={handleAddMeal}
-          onSaveTemplate={handleSaveTemplate}
-          onClose={() => setShowAddMeal(false)}
-        />
-      )}
-
+      {/* ── DUAL-MODE SCANNER MODAL ── */}
       {showScanner && (
         <MealScannerModal
           userId={userId}
           date={date}
+          initialMode={scannerMode}
           onSave={handleAddMeal}
           onClose={() => setShowScanner(false)}
           onSwitchToManual={() => {
@@ -490,14 +656,23 @@ export default function DietPage() {
         />
       )}
 
-      {showGoals && (
-        <GoalsModal
-          goals={goals}
-          onSave={handleSaveGoals}
-          onClose={() => setShowGoals(false)}
+      {/* ── SMART CUSTOM DISH MODAL (AddMealModal) ── */}
+      {showAddMeal && (
+        <AddMealModal
+          userId={userId}
+          date={date}
+          onSave={handleAddMeal}
+          onSaveTemplate={handleSaveTemplate}
+          onClose={() => setShowAddMeal(false)}
         />
       )}
 
+      {/* ── MACRO GOALS MODAL ── */}
+      {showGoals && (
+        <GoalsModal goals={goals} onSave={handleSaveGoals} onClose={() => setShowGoals(false)} />
+      )}
+
+      {/* ── SAVED MEALS REPERTOIRE MODAL ── */}
       {showSaved && (
         <SavedMealsModal
           templates={templates}
@@ -509,6 +684,7 @@ export default function DietPage() {
         />
       )}
 
+      {/* ── SAVE REPERTOIRE TEMPLATE MODAL ── */}
       {savingTemplate && (
         <SaveTemplateModal
           userId={userId}
@@ -518,104 +694,79 @@ export default function DietPage() {
         />
       )}
 
+      {/* ── VOICE NOURISHMENT MODAL ── */}
       {showVoiceMeal && (
-        <VoiceMealModal
-          onAdd={handleLogVoiceMeals}
-          onClose={() => setShowVoiceMeal(false)}
-        />
+        <VoiceMealModal onAdd={handleLogVoiceMeals} onClose={() => setShowVoiceMeal(false)} />
       )}
     </div>
   );
 }
 
-// ── MealCard ──────────────────────────────────────────────────────────────────
-function MealCard({ meal, onDelete, onSave }: { meal: MealEntry; onDelete: () => void; onSave: () => void }) {
-  const macros = [
-    { label: "P", value: Math.round(meal.macros.proteinG), color: "var(--macro-protein)" },
-    { label: "C", value: Math.round(meal.macros.carbsG),   color: "var(--macro-carbs)" },
-    { label: "F", value: Math.round(meal.macros.fatG),     color: "var(--macro-fat)" },
-    ...(meal.macros.fiberG != null && meal.macros.fiberG > 0
-      ? [{ label: "Fib", value: Math.round(meal.macros.fiberG), color: "var(--accent)" }]
-      : []),
-  ];
+// ── MODAL DIALOG CONTAINER ───────────────────────────────────────────────────
+function Modal({
+  title,
+  onClose,
+  children,
+}: {
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  const [mounted, setMounted] = useState(false);
 
-  return (
-    <div
-      className="group relative rounded-2xl p-3.5 flex items-start gap-3 transition-all duration-150 animate-slide-up"
-      style={{
-        background: "var(--satat-surface, #0D0F11)",
-        border: "1px solid var(--satat-border-subtle, rgba(255,255,255,0.05))",
-      }}
-    >
+  useEffect(() => {
+    setMounted(true);
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
+
+  if (!mounted || typeof document === "undefined") {
+    return null;
+  }
+
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] bg-[#191D1A]/65 backdrop-blur-xs flex flex-col justify-end sm:justify-center items-center sm:p-4 animate-fade-in">
+      <div className="fixed inset-0" onClick={onClose} />
       <div
-        className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-        style={{ background: "rgba(110, 139, 255, 0.12)", color: "var(--satat-brand, #6E8BFF)" }}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        className="relative w-full max-w-md bg-[#FCFBF9] text-[#1C1917] rounded-t-[32px] sm:rounded-[32px] max-h-[92dvh] flex flex-col overflow-hidden shadow-2xl border border-[#1C1917]/10 animate-slide-up"
       >
-        <Utensils className="w-4 h-4" />
-      </div>
+        {/* Sticky Modal Header (Never scrolls away) */}
+        <div className="shrink-0 px-5 pt-4 pb-3 bg-[#FCFBF9] border-b border-[#1C1917]/[0.06] flex items-center justify-between">
+          <h3 className="font-serif text-xl sm:text-2xl text-[#1C1917]">{title}</h3>
+          <button
+            onClick={onClose}
+            type="button"
+            className="w-8 h-8 rounded-full bg-[#EFECE4] hover:bg-[#E2DDD2] text-[#1C1917] flex items-center justify-center transition-all cursor-pointer"
+            aria-label={`Close ${title}`}
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
 
-      <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm truncate pr-1" style={{ color: "var(--text-primary)" }}>{meal.name}</p>
-        <div className="mt-1">
-          <span className="text-sm font-semibold leading-none tabular-nums" style={{ color: "var(--text-primary)" }}>
-            {Math.round(meal.macros.calories)}
-            <span className="text-xs font-normal ml-0.5" style={{ color: "var(--text-muted)" }}>kcal</span>
-          </span>
-          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 mt-1.5">
-            {macros.map(({ label, value, color }) => (
-              <span key={label} className="inline-flex items-center gap-1 text-xs font-medium whitespace-nowrap" style={{ color: "var(--text-secondary)" }}>
-                <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: color }} />
-                {value}<span style={{ color: "var(--text-muted)" }}>{label}</span>
-              </span>
-            ))}
-          </div>
+        {/* Independently Scrollable Modal Body */}
+        <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4 space-y-4 no-scrollbar">
+          {children}
         </div>
       </div>
-
-      <div className="flex items-center flex-shrink-0">
-        <button
-          onClick={onSave}
-          title="Save as a reusable meal"
-          type="button"
-          aria-label={`Save ${meal.name} as a reusable meal`}
-          className="btn-icon"
-          style={{ color: "var(--text-3)" }}
-        >
-          <BookmarkPlus className="w-4 h-4" />
-        </button>
-        <button
-          onClick={onDelete}
-          type="button"
-          aria-label={`Delete ${meal.name}`}
-          className="btn-icon hover:text-danger hover:bg-danger-soft"
-          style={{ color: "var(--text-3)" }}
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
-      </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
-// ── Modal wrapper ─────────────────────────────────────────────────────────────
-function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-3 pt-4 pb-24 sm:p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div role="dialog" aria-modal="true" aria-label={title}
-        className="relative dialog-surface w-full max-w-md p-4 sm:p-5 animate-slide-up max-h-[80dvh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="card-title">{title}</h3>
-          <button onClick={onClose} type="button" className="btn-icon" aria-label={`Close ${title}`}><X className="w-4 h-4" /></button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-// ── AddMealModal ──────────────────────────────────────────────────────────────
-function AddMealModal({ userId, date, onSave, onSaveTemplate, onClose }: {
+// ── ADD MEAL MODAL (Smart Custom Dish Logger) ────────────────────────────────
+function AddMealModal({
+  userId,
+  date,
+  onSave,
+  onSaveTemplate,
+  onClose,
+}: {
   userId: string;
   date: string;
   onSave: (m: Omit<MealEntry, "id">) => void;
@@ -632,11 +783,11 @@ function AddMealModal({ userId, date, onSave, onSaveTemplate, onClose }: {
   const [estimated, setEstimated] = useState(false);
   const lastEstimated = useRef("");
 
+  const matchedPhoto = resolveDishThumbnail(name);
+
   const estimateMacros = async (dishName: string) => {
     if (!dishName.trim() || dishName.trim().length < 3) return;
     if (dishName.trim() === lastEstimated.current) return;
-    // Only auto-estimate if user hasn't already filled in macros manually
-    if (calories || protein || carbs || fat) return;
 
     setEstimating(true);
     setEstimated(false);
@@ -655,8 +806,11 @@ function AddMealModal({ userId, date, onSave, onSaveTemplate, onClose }: {
         lastEstimated.current = dishName.trim();
         setEstimated(true);
       }
-    } catch { /* silently fail — user can fill manually */ }
-    finally { setEstimating(false); }
+    } catch {
+      // silently fail — user can fill manually
+    } finally {
+      setEstimating(false);
+    }
   };
 
   const handleSave = () => {
@@ -669,872 +823,278 @@ function AddMealModal({ userId, date, onSave, onSaveTemplate, onClose }: {
     };
     if (saveAsTemplate) {
       onSaveTemplate({
-        userId, name: name.trim(),
-        baseQuantity: 1, unit: "serving",
-        macros, createdAt: Date.now(), useCount: 0,
+        userId,
+        name: name.trim(),
+        baseQuantity: 1,
+        unit: "serving",
+        macros,
+        createdAt: Date.now(),
+        useCount: 0,
       });
-    }
-    onSave({ userId, date, name: name.trim(), macros, createdAt: Date.now() });
-  };
-
-  return (
-    <Modal title="Log a meal" onClose={onClose}>
-      <div className="space-y-3">
-        <div>
-          <label className="label">Meal name *</label>
-          <input
-            autoFocus
-            className="input"
-            placeholder="e.g. 2 besan cheela with curd"
-            value={name}
-            onChange={(e) => { setName(e.target.value); setEstimated(false); }}
-            onKeyDown={(e) => e.key === "Enter" && handleSave()}
-          />
-          <p className="field-helper">
-            Enter a dish name, then tap Calories to estimate macros.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="label flex items-center gap-1.5">
-              Calories (kcal)
-              {estimating && <Loader2 className="w-3 h-3 animate-spin text-emerald-500" />}
-              {estimated && !estimating && <Sparkles className="w-3 h-3 text-emerald-500" />}
-            </label>
-            <input
-              type="number"
-              className={cn("input text-sm transition-all", estimated && "border-emerald-400/60 bg-emerald-500/5")}
-              placeholder="0"
-              value={calories}
-              onFocus={() => estimateMacros(name)}
-              onChange={(e) => { setCalories(e.target.value); setEstimated(false); }}
-            />
-          </div>
-          <div>
-            <label className="label">Protein (g)</label>
-            <input
-              type="number"
-              className={cn("input text-sm transition-all", estimated && "border-emerald-400/60 bg-emerald-500/5")}
-              placeholder="0"
-              value={protein}
-              onChange={(e) => { setProtein(e.target.value); setEstimated(false); }}
-            />
-          </div>
-          <div>
-            <label className="label">Carbs (g)</label>
-            <input
-              type="number"
-              className={cn("input text-sm transition-all", estimated && "border-emerald-400/60 bg-emerald-500/5")}
-              placeholder="0"
-              value={carbs}
-              onChange={(e) => { setCarbs(e.target.value); setEstimated(false); }}
-            />
-          </div>
-          <div>
-            <label className="label">Fat (g)</label>
-            <input
-              type="number"
-              className={cn("input text-sm transition-all", estimated && "border-emerald-400/60 bg-emerald-500/5")}
-              placeholder="0"
-              value={fat}
-              onChange={(e) => { setFat(e.target.value); setEstimated(false); }}
-            />
-          </div>
-        </div>
-
-        {estimated && (
-          <p className="field-helper flex items-center gap-1" style={{ color: "var(--success)" }}>
-            <CheckCircle2 className="w-3.5 h-3.5" /> Estimated values — review before logging
-          </p>
-        )}
-
-        {/* Save as reusable meal */}
-        <button
-          type="button"
-          onClick={() => setSaveAsTemplate((v) => !v)}
-          className="w-full flex items-center gap-2.5 py-2 px-1 group"
-        >
-          <span className={cn(
-            "w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all flex-shrink-0",
-            saveAsTemplate ? "bg-emerald-500 border-emerald-500" : "border-gray-300 dark:border-gray-600"
-          )}>
-            {saveAsTemplate && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
-          </span>
-          <span className="flex items-center gap-1.5 text-sm font-medium" style={{ color: "var(--text-2)" }}>
-            <Bookmark className="w-3.5 h-3.5 text-emerald-500" />
-            Save as a reusable meal
-          </span>
-        </button>
-
-        <div className="flex gap-2 pt-1">
-          <button onClick={onClose} className="btn-secondary flex-1 text-sm">Cancel</button>
-          <button onClick={handleSave} disabled={!name.trim()} className="btn-primary flex-1 text-sm">Log meal</button>
-        </div>
-      </div>
-    </Modal>
-  );
-}
-
-// TODO: When dedicated user AI consent modal/settings are implemented, ensure consent disclosure states: "Photos are processed by Google Gemini for nutritional identification."
-
-// Client-side image resize helper (max 1024px, JPEG 0.82)
-async function resizeImageClient(file: File, maxDim = 1024, quality = 0.82): Promise<{ base64: string; mimeType: string }> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error("Failed to read image file"));
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string;
-      const img = new Image();
-      img.onerror = () => {
-        const raw = dataUrl.split(",")[1];
-        resolve({ base64: raw, mimeType: file.type || "image/jpeg" });
-      };
-      img.onload = () => {
-        try {
-          let width = img.width;
-          let height = img.height;
-
-          if (width > maxDim || height > maxDim) {
-            if (width > height) {
-              height = Math.round((height * maxDim) / width);
-              width = maxDim;
-            } else {
-              width = Math.round((width * maxDim) / height);
-              height = maxDim;
-            }
-          }
-
-          const canvas = document.createElement("canvas");
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext("2d");
-          if (!ctx) {
-            const raw = dataUrl.split(",")[1];
-            return resolve({ base64: raw, mimeType: file.type || "image/jpeg" });
-          }
-
-          // Solid white background for PNG/WebP transparency
-          ctx.fillStyle = "#FFFFFF";
-          ctx.fillRect(0, 0, width, height);
-          ctx.drawImage(img, 0, 0, width, height);
-
-          const scaledDataUrl = canvas.toDataURL("image/jpeg", quality);
-          const base64 = scaledDataUrl.split(",")[1];
-          resolve({ base64, mimeType: "image/jpeg" });
-        } catch {
-          const raw = dataUrl.split(",")[1];
-          resolve({ base64: raw, mimeType: file.type || "image/jpeg" });
-        }
-      };
-      img.src = dataUrl;
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
-// ── MealScannerModal ──────────────────────────────────────────────────────────
-function MealScannerModal({
-  userId,
-  date,
-  onSave,
-  onClose,
-  onSwitchToManual,
-  onSwitchToVoice,
-}: {
-  userId: string;
-  date: string;
-  onSave: (m: Omit<MealEntry, "id">) => void;
-  onClose: () => void;
-  onSwitchToManual?: () => void;
-  onSwitchToVoice?: () => void;
-}) {
-  const fileRef = useRef<HTMLInputElement>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
-  const [preview, setPreview] = useState<string>("");
-  const [scanning, setScanning] = useState(false);
-  const [scanStage, setScanStage] = useState("Compressing photo...");
-  const [reestimating, setReestimating] = useState(false);
-  const [result, setResult] = useState<any>(null);
-  const [hint, setHint] = useState("");
-  const [selectedOption, setSelectedOption] = useState<string>("");
-  const [calorieRange, setCalorieRange] = useState<{ low: number; high: number } | null>(null);
-  const [editedName, setEditedName] = useState("");
-  const [editedMacros, setEditedMacros] = useState({ calories: "", protein: "", carbs: "", fat: "", fiber: "" });
-  const [unverifiedFoods, setUnverifiedFoods] = useState<string[]>([]);
-  const [error, setError] = useState("");
-  const [isPhotoUnavailable, setIsPhotoUnavailable] = useState(false);
-
-  useEffect(() => {
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    };
-  }, []);
-
-  const handleClose = () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    onClose();
-  };
-
-  const handleFile = async (file: File) => {
-    if (scanning) return;
-    setError("");
-    setIsPhotoUnavailable(false);
-
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-
-    setScanning(true);
-    setScanStage("Compressing photo...");
-
-    try {
-      const { base64, mimeType } = await resizeImageClient(file);
-      setPreview(`data:${mimeType};base64,${base64}`);
-
-      setScanStage("Identifying dishes & items...");
-      const stageTimer = setTimeout(() => {
-        if (!controller.signal.aborted) {
-          setScanStage("Calculating nutrition...");
-        }
-      }, 2000);
-
-      const res = await fetch("/api/analyze-meal", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        signal: controller.signal,
-        body: JSON.stringify({
-          imageBase64: base64,
-          mimeType,
-          hint: hint.trim() || undefined,
-        }),
-      });
-
-      clearTimeout(stageTimer);
-
-      if (controller.signal.aborted) return;
-
-      const data = await res.json();
-      if (data.error) {
-        if (data.error === "PHOTO_UNAVAILABLE" || data.message?.includes("Photo scan is busy")) {
-          setIsPhotoUnavailable(true);
-          setError("Photo scan is busy. Type or speak your meal instead.");
-        } else {
-          setError(data.error);
-        }
-      } else {
-        setResult(data);
-        const unverified = data.unknownFoods || [];
-        setUnverifiedFoods(unverified);
-        setEditedName(data.name || "");
-        setSelectedOption(data.name || "");
-        if (data.calorieRange) {
-          setCalorieRange(data.calorieRange);
-        } else {
-          setCalorieRange(null);
-        }
-        // Do NOT populate 0 as valid calories for unverified foods
-        const hasPositiveCalories = Number(data.calories) > 0;
-        setEditedMacros({
-          calories: hasPositiveCalories ? String(data.calories) : "",
-          protein: hasPositiveCalories ? String(data.proteinG ?? "") : "",
-          carbs: hasPositiveCalories ? String(data.carbsG ?? "") : "",
-          fat: hasPositiveCalories ? String(data.fatG ?? "") : "",
-          fiber: hasPositiveCalories ? String(data.fiberG ?? "") : "",
-        });
-      }
-    } catch (err: any) {
-      if (err?.name === "AbortError") return;
-      setError("Failed to analyze image. Please try again.");
-    } finally {
-      setScanning(false);
-    }
-  };
-
-  const handleRemoveUnverifiedFood = (foodToRemove: string) => {
-    const updated = unverifiedFoods.filter((f) => f !== foodToRemove);
-    setUnverifiedFoods(updated);
-    setError("");
-  };
-
-  const handleConfirmManualMacros = () => {
-    const cals = Number(editedMacros.calories) || 0;
-    if (cals <= 0) {
-      setError("Please enter valid calories (> 0) before confirming.");
-      return;
-    }
-    setUnverifiedFoods([]);
-    setError("");
-  };
-
-  const handleSelectOption = async (optionName: string) => {
-    setSelectedOption(optionName);
-    setReestimating(true);
-    setError("");
-    try {
-      // Re-run ONLY Stage 2: text macro estimate with the chosen dish
-      // Preserve any non-flatbread visible accompaniments from stage 1 (e.g. dahi, dal, sabzi)
-      const visibleAcc = (result?.visibleItems || [])
-        .filter((item: string) => !/\b(roti|chapati|phulka|paratha|naan|puri|bhatura|thepla)\b/i.test(item))
-        .join(", ");
-      const dishDescription = visibleAcc ? `${optionName} with ${visibleAcc}` : optionName;
-
-      const res = await fetch("/api/estimate-meal", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dishName: dishDescription }),
-      });
-      const data = await res.json();
-      if (data.error) {
-        setError(data.error);
-      } else {
-        setEditedName(optionName);
-        if (data.calorieRange) {
-          setCalorieRange(data.calorieRange);
-        }
-        setEditedMacros({
-          calories: String(data.calories ?? ""),
-          protein: String(data.proteinG ?? ""),
-          carbs: String(data.carbsG ?? ""),
-          fat: String(data.fatG ?? ""),
-          fiber: String(data.fiberG ?? ""),
-        });
-      }
-    } catch {
-      setError("Failed to recalculate macros. Please try again.");
-    } finally {
-      setReestimating(false);
-    }
-  };
-
-  const handleLog = () => {
-    const cals = Number(editedMacros.calories) || 0;
-    if (cals <= 0) {
-      setError("Cannot log a meal with 0 calories. Please enter estimated calories.");
-      return;
-    }
-    if (unverifiedFoods.length > 0) {
-      setError("Please enter macros or remove unverified foods before logging.");
-      return;
     }
     onSave({
       userId,
       date,
-      name: editedName.trim() || "Scanned meal",
-      macros: {
-        calories: cals,
-        proteinG: Number(editedMacros.protein) || 0,
-        carbsG: Number(editedMacros.carbs) || 0,
-        fatG: Number(editedMacros.fat) || 0,
-        ...(editedMacros.fiber ? { fiberG: Number(editedMacros.fiber) } : {}),
-      },
+      name: name.trim(),
+      macros,
+      photoUrl: matchedPhoto,
       createdAt: Date.now(),
     });
   };
 
-  const isAmbiguous =
-    result?.ambiguity === "medium" ||
-    result?.ambiguity === "high" ||
-    Boolean(result?.needsClarification);
-
-  const confidenceColor = result?.confidence === "high"
-    ? "badge-success"
-    : result?.confidence === "medium"
-    ? "badge-warning"
-    : "badge-danger";
-
-  // Derive options chips to display
-  const optionsToDisplay: string[] = result?.needsClarification?.options
-    ? result.needsClarification.options
-    : (result?.candidates || []).map((c: any) => c.name);
-
-  const canLog = unverifiedFoods.length === 0 && Number(editedMacros.calories) > 0 && Boolean(editedName.trim());
+  const stepMacro = (
+    setter: React.Dispatch<React.SetStateAction<string>>,
+    current: string,
+    delta: number
+  ) => {
+    const val = Math.max(0, (Number(current) || 0) + delta);
+    setter(String(val));
+    setEstimated(false);
+  };
 
   return (
-    <Modal title="Estimate from photo" onClose={handleClose}>
-      {!preview ? (
-        <div className="space-y-3">
-          <div>
-            <label className="label text-xs font-semibold text-gray-600 dark:text-gray-300">
-              Optional hint (helps identify flatbreads / hidden fillings)
+    <Modal title="Log a Custom Dish" onClose={onClose}>
+      <div className="space-y-4">
+        {/* Header badges */}
+        <div className="flex items-center justify-between -mt-2">
+          <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#E05A47]">
+            SMART DISCERNMENT
+          </span>
+          <span className="bg-[#E0F2E9] text-[#2D6A4F] text-[10px] font-bold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
+            <Sparkles className="w-3 h-3" />
+            AI Auto-Match
+          </span>
+        </div>
+
+        {/* Dish Name & Live Matched Thumbnail */}
+        <div className="bg-[#F6F3EC] rounded-2xl p-3.5 flex items-center justify-between gap-3 border border-[#1C1917]/[0.05]">
+          <div className="flex-1 min-w-0">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-[#8C857B] block mb-1">
+              DISH NAME / RECIPE *
             </label>
             <input
-              type="text"
-              placeholder="What is this? (optional, e.g. 2 aloo parathas, sugar-free chai)"
-              value={hint}
-              disabled={scanning}
-              onChange={(e) => setHint(e.target.value)}
-              className="input text-sm"
-            />
-          </div>
-          <button
-            type="button"
-            disabled={scanning}
-            onClick={() => fileRef.current?.click()}
-            className="w-full border border-dashed rounded-lg p-6 sm:p-8 text-center transition-colors hover:bg-surface-tertiary disabled:opacity-50 disabled:pointer-events-none"
-            style={{ borderColor: "var(--border)" }}
-          >
-            <div className="w-10 h-10 rounded-md flex items-center justify-center mx-auto mb-3" style={{ background: "var(--accent-soft)" }}>
-              <Camera className="w-5 h-5" style={{ color: "var(--accent)" }} />
-            </div>
-            <p className="text-sm font-medium" style={{ color: "var(--text-1)" }}>Choose a meal photo</p>
-            <p className="text-xs mt-1" style={{ color: "var(--text-3)" }}>JPG, PNG, or HEIC</p>
-          </button>
-          <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden"
-            disabled={scanning}
-            onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <div className="relative w-full h-44 rounded-xl overflow-hidden">
-            <NextImage
-              src={preview}
-              alt="Meal preview"
-              fill
-              unoptimized
-              className="object-cover"
-              onError={() => setError("Image preview not supported. Please select a JPG or PNG.")}
-            />
-            {(scanning || reestimating) && (
-              <div className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center gap-2 text-white z-10">
-                <Loader2 className="w-5 h-5 animate-spin" />
-                <span className="text-sm font-semibold">
-                  {scanning ? scanStage : "Recalculating macros..."}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {isPhotoUnavailable ? (
-            <div className="rounded-lg p-4 text-center space-y-3 border" style={{ background: "var(--warning-soft)", borderColor: "color-mix(in srgb, var(--warning) 24%, transparent)" }}>
-              <p className="text-sm font-medium" style={{ color: "var(--warning)" }}>
-                Photo scan is busy. Type or speak your meal instead.
-              </p>
-              <div className="flex gap-2 justify-center pt-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    onClose();
-                    onSwitchToManual?.();
-                  }}
-                  className="btn-secondary min-h-11 text-sm flex items-center gap-1.5 px-3"
-                >
-                  <Edit3 className="w-4 h-4" style={{ color: "var(--accent)" }} /> Type meal
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onClose();
-                    onSwitchToVoice?.();
-                  }}
-                  className="btn-secondary min-h-11 text-sm flex items-center gap-1.5 px-3"
-                >
-                  <Mic className="w-4 h-4" style={{ color: "var(--accent)" }} /> Speak meal
-                </button>
-              </div>
-            </div>
-          ) : error ? (
-            <div className="rounded-md p-3 text-sm font-medium bg-danger-soft text-danger">
-              {error}
-            </div>
-          ) : null}
-
-          {!scanning && result && (
-            <div className="space-y-3">
-              {/* Unverified / Unknown Foods Alert */}
-              {unverifiedFoods.length > 0 && (
-                <div className="rounded-lg p-3 bg-amber-500/10 border border-amber-500/20 text-xs space-y-2">
-                  <div className="flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-semibold text-amber-600 dark:text-amber-400">
-                        Unverified foods detected:
-                      </span>
-                      <p className="text-[11px] mt-0.5" style={{ color: "var(--text-2)" }}>
-                        Automatic nutrition is not available for these items. Remove them or manually enter calories/macros below to log.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 pt-1">
-                    {unverifiedFoods.map((food) => (
-                      <span
-                        key={food}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-amber-500/20 text-amber-700 dark:text-amber-300 font-medium"
-                      >
-                        {food}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveUnverifiedFood(food)}
-                          className="hover:text-red-500 ml-0.5 font-bold"
-                          title={`Remove ${food}`}
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                  <div className="flex justify-end pt-1">
-                    <button
-                      type="button"
-                      onClick={handleConfirmManualMacros}
-                      disabled={!(Number(editedMacros.calories) > 0)}
-                      className="px-2.5 py-1 text-xs font-semibold rounded bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Confirm manual macros
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Confidence / Ambiguity Badge & Notes */}
-              <div className="flex items-center gap-2 flex-wrap">
-                {isAmbiguous ? (
-                  <span className="text-xs font-medium px-2 py-1 rounded-md badge-warning">
-                    Check this
-                  </span>
-                ) : result?.confidence ? (
-                  <span className={cn("text-xs font-medium px-2 py-1 rounded-md", confidenceColor)}>
-                    {result.confidence} confidence
-                  </span>
-                ) : null}
-                {result.notes && (
-                  <span className="text-xs truncate flex-1" style={{ color: "var(--text-3)" }}>{result.notes}</span>
-                )}
-              </div>
-
-              {/* One-Tap Option Chips */}
-              {optionsToDisplay.length > 0 && (
-                <div className="space-y-1.5 pt-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium" style={{ color: "var(--text-2)" }}>
-                      {result?.needsClarification ? "Choose flatbread type:" : "Suggested options:"}
-                    </span>
-                    {reestimating && (
-                      <span className="text-xs flex items-center gap-1 font-medium" style={{ color: "var(--success)" }}>
-                        <Loader2 className="w-3 h-3 animate-spin" /> Updating...
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {optionsToDisplay.map((opt) => (
-                      <button
-                        key={opt}
-                        type="button"
-                        disabled={reestimating}
-                        onClick={() => handleSelectOption(opt)}
-                        className="min-h-11 px-3 rounded-md border text-sm font-medium transition-colors"
-                        style={selectedOption.toLowerCase() === opt.toLowerCase()
-                          ? { background: "var(--accent)", color: "var(--on-accent)", borderColor: "var(--accent)" }
-                          : { background: "var(--surface-base)", color: "var(--text-2)", borderColor: "var(--border)" }}
-                      >
-                        {opt}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <label className="label">Meal name</label>
-                <input
-                  className="input text-sm"
-                  value={editedName}
-                  onChange={(e) => setEditedName(e.target.value)}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <div className="flex justify-between items-baseline mb-1">
-                    <label className="label mb-0">Calories (kcal)</label>
-                    {calorieRange && (
-                      <span className="text-[11px] text-gray-500 dark:text-gray-400">
-                        ≈{editedMacros.calories} kcal ({calorieRange.low}–{calorieRange.high})
-                      </span>
-                    )}
-                  </div>
-                  <input
-                    type="number"
-                    className="input text-sm"
-                    value={editedMacros.calories}
-                    onChange={(e) => setEditedMacros((m) => ({ ...m, calories: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <label className="label">Protein (g)</label>
-                  <input
-                    type="number"
-                    className="input text-sm"
-                    value={editedMacros.protein}
-                    onChange={(e) => setEditedMacros((m) => ({ ...m, protein: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <label className="label">Carbs (g)</label>
-                  <input
-                    type="number"
-                    className="input text-sm"
-                    value={editedMacros.carbs}
-                    onChange={(e) => setEditedMacros((m) => ({ ...m, carbs: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <label className="label">Fat (g)</label>
-                  <input
-                    type="number"
-                    className="input text-sm"
-                    value={editedMacros.fat}
-                    onChange={(e) => setEditedMacros((m) => ({ ...m, fat: e.target.value }))}
-                  />
-                </div>
-                <div className="col-span-2">
-                  <label className="label">Fiber (g)</label>
-                  <input
-                    type="number"
-                    className="input text-sm"
-                    value={editedMacros.fiber}
-                    placeholder="0"
-                    onChange={(e) => setEditedMacros((m) => ({ ...m, fiber: e.target.value }))}
-                  />
-                </div>
-              </div>
-
-              {/* Portion Uncertainty Notice */}
-              <p className="text-[11px] text-gray-500 dark:text-gray-400 italic">
-                Portions are estimated from standard serving sizes. Adjust the portion if your serving was larger or smaller.
-              </p>
-
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setPreview("");
-                    setResult(null);
-                    setError("");
-                    setIsPhotoUnavailable(false);
-                    setCalorieRange(null);
-                    setSelectedOption("");
-                    setUnverifiedFoods([]);
-                  }}
-                  className="btn-secondary flex-1 text-sm"
-                >
-                  Retake
-                </button>
-                <button
-                  onClick={handleLog}
-                  disabled={!canLog}
-                  className="btn-primary flex-1 text-sm flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <CheckCircle2 className="w-4 h-4" /> Log meal
-                </button>
-              </div>
-            </div>
-          )}
-
-          {!scanning && !result && (
-            <button
-              onClick={() => {
-                setPreview("");
-                setError("");
-                setIsPhotoUnavailable(false);
+              autoFocus
+              className="w-full bg-transparent text-sm font-bold text-[#1C1917] outline-none"
+              placeholder="e.g. 2 besan cheela with curd"
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                setEstimated(false);
               }}
-              className="btn-secondary w-full text-sm"
-            >
-              Try again with another photo
-            </button>
+              onKeyDown={(e) => e.key === "Enter" && handleSave()}
+            />
+          </div>
+
+          <div className="w-14 h-14 rounded-2xl overflow-hidden relative shrink-0 shadow-2xs bg-[#EFECE4]">
+            <img src={matchedPhoto} alt="Dish match preview" className="w-full h-full object-cover" />
+            <span className="absolute inset-x-0 bottom-0 bg-[#2D6A4F]/90 text-white text-[8px] font-bold text-center py-0.2 tracking-wider uppercase flex items-center justify-center gap-0.5">
+              <Check className="w-2.5 h-2.5" /> Matched
+            </span>
+          </div>
+        </div>
+
+        {/* AI Recalculate Trigger */}
+        <button
+          type="button"
+          onClick={() => estimateMacros(name)}
+          disabled={estimating || !name.trim()}
+          className="w-full bg-[#EFECE4] hover:bg-[#E2DDD2] text-[#1C1917] rounded-full py-2.5 px-4 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+        >
+          {estimating ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-[#2D6A4F]" />
+          ) : (
+            <Sparkles className="w-3.5 h-3.5 text-[#2D6A4F]" />
           )}
-        </div>
-      )}
-      <p className="text-[11px] text-gray-400 dark:text-gray-500 text-center pt-2">
-        Photos are analyzed by AI to identify foods and estimate portions.
-      </p>
-    </Modal>
-  );
-}
+          <span>{estimating ? "Calculating Macros..." : "Recalculate Macros from Dish Name"}</span>
+        </button>
 
-// ── GoalsModal ────────────────────────────────────────────────────────────────
-function GoalsModal({ goals, onSave, onClose }: {
-  goals: MacroGoals | null; onSave: (g: MacroGoals) => void; onClose: () => void;
-}) {
-  const [form, setForm] = useState({
-    calories: goals ? String(goals.calories) : "",
-    proteinG: goals ? String(goals.proteinG) : "",
-    carbsG: goals ? String(goals.carbsG) : "",
-    fatG: goals ? String(goals.fatG) : "",
-  });
-
-  const handleSave = () => {
-    const cal = Number(form.calories);
-    const p = Number(form.proteinG);
-    const c = Number(form.carbsG);
-    const f = Number(form.fatG);
-    if (!cal || !p || !c || !f || cal <= 0 || p <= 0 || c <= 0 || f <= 0) return;
-    onSave({
-      calories: Math.round(cal),
-      proteinG: Math.round(p),
-      carbsG: Math.round(c),
-      fatG: Math.round(f),
-    });
-  };
-
-  const fields = [
-    { key: "calories" as const, label: "Calories", unit: "kcal", color: "text-amber-500" },
-    { key: "proteinG" as const, label: "Protein", unit: "g", color: "text-blue-500" },
-    { key: "carbsG" as const, label: "Carbs", unit: "g", color: "text-emerald-500" },
-    { key: "fatG" as const, label: "Fat", unit: "g", color: "text-rose-500" },
-  ];
-
-  return (
-    <Modal title="Daily macro goals" onClose={onClose}>
-      <p className="text-xs text-gray-400 -mt-2 mb-4 font-medium">Set your daily nutrition targets</p>
-      <div className="space-y-3 mb-4">
-        {fields.map(({ key, label, unit, color }) => (
-          <div key={key} className="flex items-center gap-3">
-            <label className={cn("text-xs font-bold w-16 flex-shrink-0", color)}>{label}</label>
-            <input
-              type="number"
-              className="input text-sm flex-1"
-              value={form[key]}
-              onChange={(e) => setForm(f => ({ ...f, [key]: e.target.value }))}
-            />
-            <span className="text-xs text-gray-400 w-8">{unit}</span>
-          </div>
-        ))}
-      </div>
-      <div className="flex gap-2">
-        <button onClick={onClose} className="btn-secondary flex-1 text-sm">Cancel</button>
-        <button onClick={handleSave} className="btn-primary flex-1 text-sm">Save goals</button>
-      </div>
-    </Modal>
-  );
-}
-
-// ── SaveTemplateModal ─────────────────────────────────────────────────────────
-// Save a meal (its macros) as a reusable template tied to a base quantity + unit.
-function SaveTemplateModal({ userId, initial, onSave, onClose }: {
-  userId: string;
-  initial: { name: string; macros: MealMacros };
-  onSave: (t: Omit<MealTemplate, "id">) => void;
-  onClose: () => void;
-}) {
-  const [name, setName] = useState(initial.name);
-  const [baseQuantity, setBaseQuantity] = useState("1");
-  const [unit, setUnit] = useState("serving");
-  const [macros, setMacros] = useState({
-    calories: String(Math.round(initial.macros.calories)),
-    protein: String(Math.round(initial.macros.proteinG)),
-    carbs: String(Math.round(initial.macros.carbsG)),
-    fat: String(Math.round(initial.macros.fatG)),
-    fiber: initial.macros.fiberG != null ? String(Math.round(initial.macros.fiberG)) : "",
-  });
-
-  const units = ["serving", "g", "bowl", "piece", "cup", "plate"];
-
-  const handleSave = () => {
-    if (!name.trim()) return;
-    onSave({
-      userId,
-      name: name.trim(),
-      baseQuantity: Number(baseQuantity) || 1,
-      unit: unit.trim() || "serving",
-      macros: {
-        calories: Number(macros.calories) || 0,
-        proteinG: Number(macros.protein) || 0,
-        carbsG: Number(macros.carbs) || 0,
-        fatG: Number(macros.fat) || 0,
-        ...(macros.fiber ? { fiberG: Number(macros.fiber) } : {}),
-      },
-      createdAt: Date.now(),
-      useCount: 0,
-    });
-  };
-
-  const fields = [
-    { key: "calories" as const, label: "Calories (kcal)" },
-    { key: "protein" as const, label: "Protein (g)" },
-    { key: "carbs" as const, label: "Carbs (g)" },
-    { key: "fat" as const, label: "Fat (g)" },
-  ];
-
-  return (
-    <Modal title="Save as a reusable meal" onClose={onClose}>
-      <div className="space-y-3">
-        <div>
-          <label className="label">Meal name *</label>
-          <input className="input" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
-        </div>
-
-        <div>
-          <label className="label">These macros are for…</label>
-          <div className="flex items-center gap-2 flex-wrap">
-            <input
-              type="number"
-              className="input text-sm w-20 flex-shrink-0"
-              value={baseQuantity}
-              onChange={(e) => setBaseQuantity(e.target.value)}
-            />
-            <div className="flex flex-wrap gap-1.5">
-              {units.map((u) => (
-                <button
-                  key={u}
-                  type="button"
-                  onClick={() => setUnit(u)}
-                  className={cn(
-                    "px-2.5 py-1 rounded-full text-xs font-bold transition-all",
-                    unit === u ? "bg-emerald-500 text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
-                  )}
-                >
-                  {u}
-                </button>
-              ))}
-            </div>
-          </div>
-          <p className="text-[11px] mt-1.5 font-medium" style={{ color: "var(--text-3)" }}>
-            Later you can log any quantity and the macros scale automatically.
-          </p>
-        </div>
-
+        {/* 2x2 Tactile Macro Grid with Steppers */}
         <div className="grid grid-cols-2 gap-3">
-          {fields.map(({ key, label }) => (
-            <div key={key}>
-              <label className="label">{label}</label>
+          {/* Calories */}
+          <div className="bg-[#F6F3EC] rounded-2xl p-3 border border-[#1C1917]/[0.05]">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#C94A38] block mb-1">
+              ENERGY (KCAL)
+            </span>
+            <div className="flex items-center justify-between gap-1">
+              <button
+                type="button"
+                onClick={() => stepMacro(setCalories, calories, -25)}
+                className="w-6 h-6 rounded-full bg-white text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs"
+              >
+                -
+              </button>
               <input
                 type="number"
-                className="input text-sm"
-                value={macros[key]}
-                onChange={(e) => setMacros((m) => ({ ...m, [key]: e.target.value }))}
+                placeholder="0"
+                value={calories}
+                onChange={(e) => {
+                  setCalories(e.target.value);
+                  setEstimated(false);
+                }}
+                className="w-14 text-center bg-transparent text-sm font-bold text-[#1C1917] outline-none"
               />
+              <button
+                type="button"
+                onClick={() => stepMacro(setCalories, calories, 25)}
+                className="w-6 h-6 rounded-full bg-white text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs"
+              >
+                +
+              </button>
             </div>
-          ))}
-          <div className="col-span-2">
-            <label className="label">Fiber (g)</label>
-            <input
-              type="number"
-              className="input text-sm"
-              placeholder="0"
-              value={macros.fiber}
-              onChange={(e) => setMacros((m) => ({ ...m, fiber: e.target.value }))}
-            />
+          </div>
+
+          {/* Protein */}
+          <div className="bg-[#F6F3EC] rounded-2xl p-3 border border-[#1C1917]/[0.05]">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#2D6A4F] block mb-1">
+              PROTEIN (G)
+            </span>
+            <div className="flex items-center justify-between gap-1">
+              <button
+                type="button"
+                onClick={() => stepMacro(setProtein, protein, -5)}
+                className="w-6 h-6 rounded-full bg-white text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs"
+              >
+                -
+              </button>
+              <input
+                type="number"
+                placeholder="0"
+                value={protein}
+                onChange={(e) => {
+                  setProtein(e.target.value);
+                  setEstimated(false);
+                }}
+                className="w-14 text-center bg-transparent text-sm font-bold text-[#1C1917] outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => stepMacro(setProtein, protein, 5)}
+                className="w-6 h-6 rounded-full bg-white text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs"
+              >
+                +
+              </button>
+            </div>
+          </div>
+
+          {/* Carbs */}
+          <div className="bg-[#F6F3EC] rounded-2xl p-3 border border-[#1C1917]/[0.05]">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#F59E0B] block mb-1">
+              CARBS (G)
+            </span>
+            <div className="flex items-center justify-between gap-1">
+              <button
+                type="button"
+                onClick={() => stepMacro(setCarbs, carbs, -5)}
+                className="w-6 h-6 rounded-full bg-white text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs"
+              >
+                -
+              </button>
+              <input
+                type="number"
+                placeholder="0"
+                value={carbs}
+                onChange={(e) => {
+                  setCarbs(e.target.value);
+                  setEstimated(false);
+                }}
+                className="w-14 text-center bg-transparent text-sm font-bold text-[#1C1917] outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => stepMacro(setCarbs, carbs, 5)}
+                className="w-6 h-6 rounded-full bg-white text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs"
+              >
+                +
+              </button>
+            </div>
+          </div>
+
+          {/* Fat */}
+          <div className="bg-[#F6F3EC] rounded-2xl p-3 border border-[#1C1917]/[0.05]">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#E05A47] block mb-1">
+              FAT (G)
+            </span>
+            <div className="flex items-center justify-between gap-1">
+              <button
+                type="button"
+                onClick={() => stepMacro(setFat, fat, -2)}
+                className="w-6 h-6 rounded-full bg-white text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs"
+              >
+                -
+              </button>
+              <input
+                type="number"
+                placeholder="0"
+                value={fat}
+                onChange={(e) => {
+                  setFat(e.target.value);
+                  setEstimated(false);
+                }}
+                className="w-14 text-center bg-transparent text-sm font-bold text-[#1C1917] outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => stepMacro(setFat, fat, 2)}
+                className="w-6 h-6 rounded-full bg-white text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs"
+              >
+                +
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="flex gap-2 pt-1">
-          <button onClick={onClose} className="btn-secondary flex-1 text-sm">Cancel</button>
-          <button onClick={handleSave} disabled={!name.trim()} className="btn-primary flex-1 text-sm">Save meal</button>
+        {/* Save as Repertoire checkbox */}
+        <button
+          type="button"
+          onClick={() => setSaveAsTemplate((v) => !v)}
+          className="w-full flex items-center gap-2.5 py-1 px-1 cursor-pointer"
+        >
+          <span
+            className={cn(
+              "w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all shrink-0",
+              saveAsTemplate ? "bg-[#2D6A4F] border-[#2D6A4F]" : "border-stone-300"
+            )}
+          >
+            {saveAsTemplate && <Check className="w-3.5 h-3.5 text-white" />}
+          </span>
+          <span className="text-xs font-semibold text-[#57534E] flex items-center gap-1.5">
+            <Bookmark className="w-3.5 h-3.5 text-[#2D6A4F]" />
+            Save to my Repertoire for 1-tap logging
+          </span>
+        </button>
+
+        {/* Buttons */}
+        <div className="flex gap-2 pt-2">
+          <button
+            onClick={onClose}
+            type="button"
+            className="flex-1 bg-[#EFECE4] text-[#1C1917] rounded-full py-3.5 text-xs font-semibold cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={!name.trim()}
+            type="button"
+            className="flex-1 bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full py-3.5 text-xs font-semibold shadow-md transition-all cursor-pointer disabled:opacity-50"
+          >
+            Add to Today&apos;s Fuel →
+          </button>
         </div>
       </div>
     </Modal>
   );
 }
 
-// ── SavedMealsModal ───────────────────────────────────────────────────────────
-// Browse saved meals; selecting one opens the quantity-scaling view to log it.
-function SavedMealsModal({ templates, userId, date, onLog, onDelete, onClose }: {
+// ── SAVED MEALS MODAL (Repertoire) ───────────────────────────────────────────
+function SavedMealsModal({
+  templates,
+  userId,
+  date,
+  onLog,
+  onDelete,
+  onClose,
+}: {
   templates: MealTemplate[];
   userId: string;
   date: string;
@@ -1563,69 +1123,103 @@ function SavedMealsModal({ templates, userId, date, onLog, onDelete, onClose }: 
   );
 
   return (
-    <Modal title="Saved meals" onClose={onClose}>
-      {templates.length === 0 ? (
-        <div className="text-center py-10">
-          <Bookmark className="w-10 h-10 text-gray-200 dark:text-gray-700 mx-auto mb-2" />
-          <p className="text-sm font-medium" style={{ color: "var(--text-2)" }}>No saved meals yet</p>
-          <p className="text-xs mt-1 px-4" style={{ color: "var(--text-3)" }}>
-            Tap the bookmark icon on any logged meal to save it here for one-tap logging.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--text-3)" }} />
-            <input
-              className="input pl-9 text-sm"
-              placeholder="Search saved meals…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+    <Modal title="Frequent & Saved Staples" onClose={onClose}>
+      <div className="space-y-3.5">
+        <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#2D6A4F] block -mt-2">
+          SAVED REPERTOIRE
+        </span>
 
-          <div className="space-y-2 max-h-[52dvh] overflow-y-auto -mx-1 px-1">
-            {filtered.map((t) => (
-              <div
-                key={t.id}
-                role="button"
-                onClick={() => setSelected(t)}
-                className="card flex items-center gap-3 cursor-pointer hover:shadow-md transition-all"
-                style={{ borderLeftColor: "var(--accent)", borderLeftWidth: "3px" }}
-              >
-                <div className="w-9 h-9 bg-emerald-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Utensils className="w-4 h-4 text-emerald-500" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm truncate" style={{ color: "var(--text-1)" }}>{t.name}</p>
-                  <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-3)" }}>
-                    Per {t.baseQuantity} {t.unit} · {Math.round(t.macros.calories)} kcal · {Math.round(t.macros.proteinG)}P {Math.round(t.macros.carbsG)}C {Math.round(t.macros.fatG)}F
-                  </p>
-                </div>
-                <button
-                  onClick={(e) => { e.stopPropagation(); onDelete(t.id); }}
-                  className="p-2 rounded-lg hover:text-red-400 hover:bg-red-500/10 active:scale-90 transition-all flex-shrink-0"
-                  style={{ color: "var(--text-3)" }}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
-            {filtered.length === 0 && (
-              <p className="text-center text-xs py-6" style={{ color: "var(--text-3)" }}>
-                No meals match “{search}”.
-              </p>
-            )}
-          </div>
+        {/* Search bar */}
+        <div className="relative">
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8C857B]" />
+          <input
+            className="w-full bg-[#F6F3EC] rounded-full pl-10 pr-4 py-2 text-xs text-[#1C1917] outline-none border border-[#1C1917]/[0.06]"
+            placeholder="Search staples (e.g., Oats, Dosa, Chicken)..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
-      )}
+
+        {templates.length === 0 ? (
+          <div className="text-center py-8">
+            <Bookmark className="w-10 h-10 text-[#8C857B] mx-auto mb-2 opacity-50" />
+            <p className="font-serif text-base text-[#1C1917]">No Saved Meals Yet</p>
+            <p className="text-xs text-[#57534E] mt-1 px-4 leading-relaxed">
+              Tap the bookmark icon on any logged meal to save it here for one-tap logging.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2.5 max-h-[50dvh] overflow-y-auto no-scrollbar pr-0.5">
+            {filtered.map((t) => {
+              const thumb = resolveDishThumbnail(t.name);
+              return (
+                <div
+                  key={t.id}
+                  className="bg-[#F6F3EC] rounded-[22px] p-3 flex items-center justify-between gap-3 border border-[#1C1917]/[0.05]"
+                >
+                  <div
+                    onClick={() => setSelected(t)}
+                    className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer"
+                  >
+                    <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-[#EFECE4]">
+                      <img src={thumb} alt={t.name} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h4 className="font-bold text-xs text-[#1C1917] leading-snug truncate">
+                        {t.name}
+                      </h4>
+                      <p className="text-[10px] text-[#8C857B] mt-0.5 truncate">
+                        Per {t.baseQuantity} {t.unit}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                        <span className="bg-[#FADCD5]/70 text-[#C94A38] text-[9px] font-bold px-2 py-0.2 rounded-full whitespace-nowrap">
+                          {Math.round(t.macros.calories)} kcal
+                        </span>
+                        <span className="bg-[#D1FAE5] text-[#1B4332] text-[9px] font-bold px-2 py-0.2 rounded-full whitespace-nowrap">
+                          {Math.round(t.macros.proteinG)}g P
+                        </span>
+                        <span className="text-[9px] text-[#57534E] whitespace-nowrap">
+                          {Math.round(t.macros.carbsG)}g C · {Math.round(t.macros.fatG)}g F
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setSelected(t)}
+                      className="bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full px-3 py-1.5 text-xs font-semibold whitespace-nowrap shadow-xs transition-all cursor-pointer"
+                    >
+                      + Log
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onDelete(t.id)}
+                      className="text-[#8C857B] hover:text-[#E05A47] p-1.5 transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </Modal>
   );
 }
 
-// ── LogTemplateView ───────────────────────────────────────────────────────────
-// Pick a quantity for a saved meal; macros scale proportionally and stay editable.
-function LogTemplateView({ template, userId, date, onBack, onLog, onClose }: {
+// ── LOG TEMPLATE VIEW (Scale & Log Saved Staple) ──────────────────────────────
+function LogTemplateView({
+  template,
+  userId,
+  date,
+  onBack,
+  onLog,
+  onClose,
+}: {
   template: MealTemplate;
   userId: string;
   date: string;
@@ -1647,7 +1241,6 @@ function LogTemplateView({ template, userId, date, onBack, onLog, onClose }: {
   const [qty, setQty] = useState(String(template.baseQuantity));
   const [macros, setMacros] = useState(scaledFor(template.baseQuantity));
 
-  // Changing quantity re-scales the macros; editing a macro field afterwards is preserved.
   const setQtyAndScale = (v: string) => {
     setQty(v);
     setMacros(scaledFor(Number(v)));
@@ -1676,75 +1269,298 @@ function LogTemplateView({ template, userId, date, onBack, onLog, onClose }: {
         },
         createdAt: Date.now(),
       },
-      template.id,
+      template.id
     );
   };
-
-  const fields = [
-    { key: "calories" as const, label: "Calories (kcal)" },
-    { key: "protein" as const, label: "Protein (g)" },
-    { key: "carbs" as const, label: "Carbs (g)" },
-    { key: "fat" as const, label: "Fat (g)" },
-  ];
 
   return (
     <Modal title={template.name} onClose={onClose}>
       <div className="space-y-4">
-        <button onClick={onBack} className="text-xs font-semibold text-emerald-500 flex items-center gap-1 -mt-1">
-          <ChevronLeft className="w-3.5 h-3.5" /> All saved meals
+        <button
+          onClick={onBack}
+          type="button"
+          className="text-xs font-semibold text-[#2D6A4F] flex items-center gap-1 -mt-2 cursor-pointer"
+        >
+          <ChevronLeft className="w-3.5 h-3.5" /> Back to Repertoire
         </button>
 
-        {/* Quantity stepper */}
-        <div>
-          <label className="label">Quantity</label>
-          <div className="flex items-center gap-2">
-            <button onClick={() => step(-stepSize)} className="btn-secondary px-3 py-2"><Minus className="w-4 h-4" /></button>
+        {/* Quantity Stepper */}
+        <div className="bg-[#F6F3EC] rounded-2xl p-3.5 border border-[#1C1917]/[0.05]">
+          <label className="text-[10px] font-bold uppercase tracking-wider text-[#8C857B] block mb-1">
+            PORTION QUANTITY
+          </label>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => step(-stepSize)}
+              type="button"
+              className="w-8 h-8 rounded-full bg-white text-base font-bold flex items-center justify-center cursor-pointer shadow-2xs"
+            >
+              -
+            </button>
             <input
               type="number"
-              className="input text-sm text-center flex-1"
+              className="w-20 text-center text-lg font-bold bg-transparent text-[#1C1917] outline-none"
               value={qty}
               onChange={(e) => setQtyAndScale(e.target.value)}
             />
-            <span className="text-xs font-bold w-14 text-center truncate" style={{ color: "var(--text-2)" }}>{template.unit}</span>
-            <button onClick={() => step(stepSize)} className="btn-secondary px-3 py-2"><Plus className="w-4 h-4" /></button>
+            <span className="text-xs font-bold text-[#8C857B]">{template.unit}</span>
+            <button
+              onClick={() => step(stepSize)}
+              type="button"
+              className="w-8 h-8 rounded-full bg-white text-base font-bold flex items-center justify-center cursor-pointer shadow-2xs"
+            >
+              +
+            </button>
           </div>
         </div>
 
-        {/* Scaled macros — editable */}
-        <div className="grid grid-cols-2 gap-3">
-          {fields.map(({ key, label }) => (
-            <div key={key}>
-              <label className="label">{label}</label>
-              <input
-                type="number"
-                className="input text-sm"
-                value={macros[key]}
-                onChange={(e) => setMacros((m) => ({ ...m, [key]: e.target.value }))}
-              />
-            </div>
-          ))}
-          {template.macros.fiberG != null && (
-            <div className="col-span-2">
-              <label className="label">Fiber (g)</label>
-              <input
-                type="number"
-                className="input text-sm"
-                value={macros.fiber}
-                onChange={(e) => setMacros((m) => ({ ...m, fiber: e.target.value }))}
-              />
-            </div>
-          )}
+        {/* Scaled Macro Donut Breakdown */}
+        <div className="bg-[#191D1A] text-white rounded-[24px] p-4 shadow-md">
+          <MacroDonutBreakdown
+            variant="dark"
+            calories={Number(macros.calories) || 0}
+            carbs={Number(macros.carbs) || 0}
+            fat={Number(macros.fat) || 0}
+            protein={Number(macros.protein) || 0}
+          />
         </div>
 
-        <p className="text-[11px] font-medium" style={{ color: "var(--text-3)" }}>
-          Macros scale with quantity — tweak any value before logging.
-        </p>
-
-        <div className="flex gap-2 pt-1">
-          <button onClick={onBack} className="btn-secondary flex-1 text-sm">Back</button>
-          <button onClick={handleLog} className="btn-primary flex-1 text-sm">Log meal</button>
+        <div className="flex gap-2 pt-2">
+          <button
+            onClick={onBack}
+            type="button"
+            className="flex-1 bg-[#EFECE4] text-[#1C1917] rounded-full py-3.5 text-xs font-semibold cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleLog}
+            type="button"
+            className="flex-1 bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full py-3.5 text-xs font-semibold shadow-md transition-all cursor-pointer inline-flex items-center justify-center gap-1.5"
+          >
+            <Check className="w-3.5 h-3.5" />
+            <span>Log Meal</span>
+          </button>
         </div>
       </div>
     </Modal>
+  );
+}
+
+// ── SAVE TEMPLATE MODAL ───────────────────────────────────────────────────────
+function SaveTemplateModal({
+  userId,
+  initial,
+  onSave,
+  onClose,
+}: {
+  userId: string;
+  initial: { name: string; macros: MealMacros };
+  onSave: (t: Omit<MealTemplate, "id">) => void;
+  onClose: () => void;
+}) {
+  const [name, setName] = useState(initial.name);
+  const [baseQuantity, setBaseQuantity] = useState("1");
+  const [unit, setUnit] = useState("serving");
+  const [macros, setMacros] = useState({
+    calories: String(Math.round(initial.macros.calories)),
+    protein: String(Math.round(initial.macros.proteinG)),
+    carbs: String(Math.round(initial.macros.carbsG)),
+    fat: String(Math.round(initial.macros.fatG)),
+  });
+
+  const units = ["serving", "bowl", "plate", "piece", "cup", "g"];
+
+  const handleSave = () => {
+    if (!name.trim()) return;
+    onSave({
+      userId,
+      name: name.trim(),
+      baseQuantity: Number(baseQuantity) || 1,
+      unit: unit.trim() || "serving",
+      macros: {
+        calories: Number(macros.calories) || 0,
+        proteinG: Number(macros.protein) || 0,
+        carbsG: Number(macros.carbs) || 0,
+        fatG: Number(macros.fat) || 0,
+      },
+      createdAt: Date.now(),
+      useCount: 0,
+    });
+  };
+
+  return (
+    <Modal title="Save to Repertoire" onClose={onClose}>
+      <div className="space-y-4">
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-[#8C857B] block mb-1">
+            STAPLE NAME *
+          </label>
+          <input
+            className="w-full bg-[#F6F3EC] rounded-xl px-3.5 py-2.5 text-xs font-bold text-[#1C1917] outline-none"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            autoFocus
+          />
+        </div>
+
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-[#8C857B] block mb-1.5">
+            SERVING UNIT
+          </label>
+          <div className="flex flex-wrap gap-1.5">
+            {units.map((u) => (
+              <button
+                key={u}
+                type="button"
+                onClick={() => setUnit(u)}
+                className={cn(
+                  "px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer",
+                  unit === u ? "bg-[#2D6A4F] text-white" : "bg-[#EFECE4] text-[#57534E]"
+                )}
+              >
+                {u}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex gap-2 pt-2">
+          <button
+            onClick={onClose}
+            type="button"
+            className="flex-1 bg-[#EFECE4] text-[#1C1917] rounded-full py-3 text-xs font-semibold cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={!name.trim()}
+            type="button"
+            className="flex-1 bg-[#191D1A] hover:bg-[#2D6A4F] text-white rounded-full py-3 text-xs font-semibold shadow-md cursor-pointer disabled:opacity-50"
+          >
+            Save Staple
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+// ── GOALS MODAL ───────────────────────────────────────────────────────────────
+function GoalsModal({
+  goals,
+  onSave,
+  onClose,
+}: {
+  goals: MacroGoals | null;
+  onSave: (g: MacroGoals) => void;
+  onClose: () => void;
+}) {
+  const [form, setForm] = useState({
+    calories: goals ? String(goals.calories) : "2000",
+    proteinG: goals ? String(goals.proteinG) : "150",
+    carbsG: goals ? String(goals.carbsG) : "200",
+    fatG: goals ? String(goals.fatG) : "65",
+  });
+
+  const handleSave = () => {
+    const cal = Number(form.calories);
+    const p = Number(form.proteinG);
+    const c = Number(form.carbsG);
+    const f = Number(form.fatG);
+    if (!cal || !p || !c || !f || cal <= 0 || p <= 0 || c <= 0 || f <= 0) return;
+    onSave({
+      calories: Math.round(cal),
+      proteinG: Math.round(p),
+      carbsG: Math.round(c),
+      fatG: Math.round(f),
+    });
+  };
+
+  const fields = [
+    { key: "calories" as const, label: "Calories", unit: "kcal", color: "text-[#E05A47]" },
+    { key: "proteinG" as const, label: "Protein", unit: "g", color: "text-[#2D6A4F]" },
+    { key: "carbsG" as const, label: "Carbs", unit: "g", color: "text-[#F59E0B]" },
+    { key: "fatG" as const, label: "Fat", unit: "g", color: "text-[#E05A47]" },
+  ];
+
+  return (
+    <Modal title="Daily Macro Goals" onClose={onClose}>
+      <p className="text-xs text-[#57534E] -mt-2 mb-4 font-medium">
+        Calibrate your daily nutritional anchors
+      </p>
+      <div className="space-y-3 mb-5">
+        {fields.map(({ key, label, unit, color }) => (
+          <div
+            key={key}
+            className="grid grid-cols-12 items-center gap-3 bg-[#F6F3EC] rounded-2xl p-3 border border-[#1C1917]/[0.05]"
+          >
+            <label className={cn("col-span-3 text-xs font-bold", color)}>{label}</label>
+            <input
+              type="number"
+              className="col-span-7 text-right text-sm font-bold bg-transparent text-[#1C1917] outline-none"
+              value={form[key]}
+              onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+            />
+            <span className="col-span-2 text-xs font-semibold text-[#8C857B] whitespace-nowrap text-left">{unit}</span>
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <button
+          onClick={onClose}
+          type="button"
+          className="flex-1 bg-[#EFECE4] text-[#1C1917] rounded-full py-3 text-xs font-semibold cursor-pointer"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleSave}
+          type="button"
+          className="flex-1 bg-[#191D1A] hover:bg-[#2D6A4F] text-white rounded-full py-3 text-xs font-semibold shadow-md transition-all cursor-pointer"
+        >
+          Save Goals
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+
+// ── MEAL PHOTO PREVIEW CONTAINER (Compliant Next.js Image) ────────────────────
+export function MealPhotoPreview({
+  preview,
+  scanning,
+  reestimating,
+  scanStage,
+  setError,
+}: {
+  preview: string;
+  scanning?: boolean;
+  reestimating?: boolean;
+  scanStage?: string;
+  setError: (err: string) => void;
+}) {
+  if (!preview) return null;
+  return (
+    <div className="relative w-full h-44 rounded-xl overflow-hidden">
+      <NextImage
+        src={preview}
+        alt="Meal preview"
+        fill
+        unoptimized
+        className="object-cover"
+        onError={() => setError("Image preview not supported. Please select a JPG or PNG.")}
+      />
+      {(scanning || reestimating) && (
+        <div className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center gap-2 text-white z-10">
+          <Loader2 className="w-5 h-5 animate-spin" />
+          <span className="text-sm font-semibold">
+            {scanning ? scanStage : "Recalculating macros..."}
+          </span>
+        </div>
+      )}
+    </div>
   );
 }

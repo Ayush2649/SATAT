@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import Link from "next/link";
 import { useSession, signIn } from "next-auth/react";
 import Logo from "@/components/Logo";
@@ -15,174 +15,65 @@ const NAV_ITEMS = [
 
 export default function LandingNav() {
   const { data: session } = useSession();
-  const [scrolled, setScrolled] = useState(false);
-  const [activeSection, setActiveSection] = useState<string>("");
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 16);
-
-      // Active section detection
-      const sections = ["problem", "system", "adaptation", "orbit", "progress"];
-      let current = "";
-      for (const id of sections) {
-        const el = document.getElementById(id);
-        if (el) {
-          const rect = el.getBoundingClientRect();
-          if (rect.top <= 140 && rect.bottom >= 140) {
-            current = `#${id}`;
-            break;
-          }
-        }
-      }
-      setActiveSection(current);
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   return (
-    <>
-      {/* Skip to Main Content Link for WCAG 2.2 AA Accessibility */}
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2.5 focus:rounded-lg focus:bg-[var(--brand)] focus:text-white focus:shadow-md focus:outline-none focus:ring-2 focus:ring-white text-xs font-semibold"
-      >
-        Skip to main content
-      </a>
-
+    <header className="fixed top-3 inset-x-4 z-50 max-w-md md:max-w-4xl mx-auto pointer-events-none transition-all duration-300">
       <nav
         aria-label="Main Navigation"
-        className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-200 ${
-          scrolled || mobileMenuOpen
-            ? "bg-white/95 dark:bg-[#0B0E11]/95 backdrop-blur-sm border-b border-[var(--border)] shadow-xs"
-            : "bg-white/85 dark:bg-[#0B0E11]/85 backdrop-blur-sm border-b border-[var(--border-subtle)]"
-        }`}
+        className="pointer-events-auto bg-[#FCFBF9]/85 backdrop-blur-md border border-[#1C1917]/[0.08] rounded-full px-4 py-2.5 shadow-sm flex items-center justify-between"
       >
-        <div className="max-w-6xl mx-auto px-5 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
-          {/* Brand identity */}
-          <Link
-            href="/"
-            aria-label="SATAT Home"
-            className="flex items-center gap-2.5 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:rounded-lg"
-          >
-            <Logo size={28} className="rounded-lg transition-transform duration-200 group-hover:scale-105" priority />
-            <span className="font-display font-extrabold text-xl sm:text-2xl tracking-tight text-[var(--text-primary)]">
-              SATAT
-            </span>
-          </Link>
+        {/* Left: Brand identity with Logo and font-serif satat. wordmark */}
+        <Link href="/" className="flex items-center gap-2 group shrink-0">
+          <Logo size={22} className="rounded-md transition-transform duration-200 group-hover:scale-105" priority />
+          <span className="font-serif text-xl tracking-tight text-[#1C1917]">
+            satat.
+          </span>
+        </Link>
 
-          {/* Desktop Navigation Links — Crisp, high-contrast, theme-aware */}
-          <div className="hidden md:flex items-center gap-8 text-sm font-medium text-[var(--text-secondary)]">
-            {NAV_ITEMS.map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                aria-current={activeSection === item.href ? "page" : undefined}
-                className={`transition-colors duration-150 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:rounded-md text-sm ${
-                  activeSection === item.href
-                    ? "text-[var(--brand)] font-semibold"
-                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-                }`}
-              >
-                {item.label}
-              </a>
-            ))}
-          </div>
-
-          {/* Action Area & Mobile Hamburger */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            {session ? (
-              <Link
-                href="/dashboard"
-                className="btn-primary rounded-full px-5 py-2.5 text-xs sm:text-sm font-medium shadow-sm hover:shadow-md transition-all flex items-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]"
-              >
-                <span>Dashboard</span>
-                <span aria-hidden="true">→</span>
-              </Link>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-                  className="hidden sm:inline-flex text-xs sm:text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors px-3 py-2 cursor-pointer rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
-                >
-                  Sign in
-                </button>
-                <button
-                  type="button"
-                  onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-                  className="btn-primary rounded-full px-4 sm:px-6 py-2.5 text-xs sm:text-sm font-medium shadow-sm hover:shadow-md transition-all flex items-center gap-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]"
-                >
-                  <span>Start building consistency</span>
-                  <span aria-hidden="true" className="text-sm">→</span>
-                </button>
-              </>
-            )}
-
-            {/* Mobile Menu Toggle Button */}
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen((prev) => !prev)}
-              aria-expanded={mobileMenuOpen}
-              aria-controls="mobile-navigation"
-              aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
-              className="md:hidden inline-flex items-center justify-center w-9 h-9 rounded-full bg-[var(--surface-subtle)] border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
-            >
-              {mobileMenuOpen ? (
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              ) : (
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              )}
-            </button>
-          </div>
+        {/* Center: Desktop anchor links */}
+        <div className="hidden md:flex items-center gap-6 text-xs font-medium text-[#57534E]">
+          <a href="#problem" className="hover:text-[#1C1917] transition-colors py-1">
+            Rhythm
+          </a>
+          <a href="#orbit" className="hover:text-[#1C1917] transition-colors py-1">
+            Orbit
+          </a>
+          <a href="#progress" className="hover:text-[#1C1917] transition-colors py-1">
+            Proof
+          </a>
         </div>
 
-        {/* Mobile Navigation Drawer */}
-        {mobileMenuOpen && (
-          <div
-            id="mobile-navigation"
-            className="md:hidden border-t border-[var(--border)] bg-white/95 dark:bg-[var(--surface)] backdrop-blur-md px-5 py-4 space-y-2 animate-slide-down shadow-md"
-          >
-            {NAV_ITEMS.map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                onClick={() => setMobileMenuOpen(false)}
-                className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] ${
-                  activeSection === item.href
-                    ? "bg-[var(--brand-subtle)] text-[var(--brand)] font-semibold"
-                    : "text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)] hover:text-[var(--text-primary)]"
-                }`}
+        {/* Right: Actions */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {session ? (
+            <Link
+              href="/dashboard"
+              className="bg-[#191D1A] hover:bg-[#2A302C] text-white rounded-full px-4 py-1.5 text-xs font-semibold shadow-sm transition-all flex items-center gap-1 active:scale-95"
+            >
+              <span>Dashboard</span>
+              <span className="text-xs">→</span>
+            </Link>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+                className="text-xs font-medium text-[#57534E] hover:text-[#1C1917] px-2.5 py-1 transition-colors rounded-full"
               >
-                {item.label}
-              </a>
-            ))}
-            {!session && (
-              <div className="pt-2 border-t border-[var(--border-subtle)]">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    signIn("google", { callbackUrl: "/dashboard" });
-                  }}
-                  className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-subtle)] hover:text-[var(--text-primary)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)]"
-                >
-                  Sign in
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+                Sign in
+              </button>
+              <button
+                type="button"
+                onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+                className="bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full px-4 py-1.5 text-xs font-semibold shadow-sm hover:shadow-md transition-all active:scale-95 flex items-center gap-1"
+              >
+                <span>Start free</span>
+                <span className="text-xs">→</span>
+              </button>
+            </>
+          )}
+        </div>
       </nav>
-    </>
+    </header>
   );
 }

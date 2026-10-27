@@ -100,17 +100,17 @@ const config: Config = {
         },
         // Inside tailwind.config.ts -> theme.extend.colors:
         primary: {
-          50: "#EEF2FF",
-          100: "#E0E7FF",
-          200: "#C7D2FE",
-          300: "#A5B4FC",
-          400: "#7C93FF",
-          500: "#4F6BFF", // SATAT Dark Brand Cobalt
-          600: "#3B54D4", // SATAT Light Brand Cobalt
-          700: "#2F44B0",
-          800: "#263794",
-          900: "#1E2B75",
-          950: "#111842",
+          50: "#FEF2F0",
+          100: "#FDE5E2",
+          200: "#FBCDC7",
+          300: "#F7A89D",
+          400: "#EF7E6E",
+          500: "#E05A47", // SATAT Terracotta Clay
+          600: "#C94A38", // SATAT Terracotta Dark / Hover
+          700: "#A83C2C",
+          800: "#8B3326",
+          900: "#732F24",
+          950: "#3F150E",
         },
       },
       spacing: {
@@ -121,6 +121,7 @@ const config: Config = {
       fontFamily: {
         sans: ["var(--font-inter)", "sans-serif"],
         display: ["var(--font-plus-jakarta)", "sans-serif"],
+        serif: ["var(--font-serif)", "Georgia", "serif"],
       },
       fontWeight: {
         black: "700",

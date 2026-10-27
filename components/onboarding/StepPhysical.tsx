@@ -3,8 +3,7 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronRight, ChevronLeft, HelpCircle, Activity } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Ruler, Scale, Calendar, Activity, ArrowRight, Leaf, Minus, Plus } from "lucide-react";
 import type { BiologicalSex } from "@/lib/onboarding/validation";
 import type { OnboardingFormValues } from "./types";
 
@@ -21,8 +20,6 @@ export function StepPhysical({
   formValues,
   updateFormField,
   onNext,
-  onBack,
-  onSkip,
   isSaving,
 }: StepPhysicalProps) {
   const router = useRouter();
@@ -62,9 +59,9 @@ export function StepPhysical({
     const h = formValues.heightCm;
     const w = formValues.weightKg;
     const a = formValues.age;
-    if (!h || !w || h < 120 || w < 35) return null;
+    if (!h || !w || h < 120 || w < 35) return { bmi: null, bmr: 1780 };
     const bmi = Math.round((w / Math.pow(h / 100, 2)) * 10) / 10;
-    let bmr: number | null = null;
+    let bmr: number = 1780;
     if (a && a >= 18 && a <= 100) {
       const base = 10 * w + 6.25 * h - 5 * a;
       if (sexSelected === "male") bmr = Math.round(base + 5);
@@ -146,6 +143,22 @@ export function StepPhysical({
     updateFormField("age", num);
   };
 
+  const stepHeight = (delta: number) => {
+    const current = formValues.heightCm || 175;
+    const next = Math.max(120, Math.min(230, current + delta));
+    handleHeightCmChange(String(next));
+  };
+
+  const stepAge = (delta: number) => {
+    const current = formValues.age || 28;
+    const next = Math.max(18, Math.min(100, current + delta));
+    handleAgeChange(String(next));
+  };
+
+  const handleSelectSex = (sex: BiologicalSex) => {
+    updateFormField("biologicalSex", sex);
+  };
+
   const handleContinue = () => {
     if (ageInput.trim()) {
       const num = parseInt(ageInput, 10);
@@ -154,7 +167,7 @@ export function StepPhysical({
         return;
       }
       if (num < 18) {
-        router.replace("/onboarding/under-18");
+        router.push("/onboarding/under-18");
         return;
       }
       if (num > 100) {
@@ -162,256 +175,316 @@ export function StepPhysical({
         return;
       }
       updateFormField("age", num);
-    } else {
-      updateFormField("age", null);
     }
     onNext();
   };
 
-  return (
-    <div className="flex-1 flex flex-col justify-between gap-4">
-      <div className="space-y-4">
-        {/* Header + Inline Unit Toggle */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--brand)]">
-              Biometric Baseline
-            </span>
-            <div className="inline-flex p-0.5 rounded-lg bg-[var(--surface)] border border-[var(--border)]">
-              <button
-                type="button"
-                onClick={() => setUnitSystem("metric")}
-                className={cn(
-                  "px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all",
-                  unitSystem === "metric"
-                    ? "bg-[var(--brand)] text-white"
-                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-                )}
-              >
-                Metric (cm, kg)
-              </button>
-              <button
-                type="button"
-                onClick={() => setUnitSystem("imperial")}
-                className={cn(
-                  "px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all",
-                  unitSystem === "imperial"
-                    ? "bg-[var(--brand)] text-white"
-                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-                )}
-              >
-                Imperial (ft/in, lbs)
-              </button>
-            </div>
-          </div>
+  const sexDisplay =
+    sexSelected === "male"
+      ? "Male"
+      : sexSelected === "female"
+      ? "Female"
+      : sexSelected === "prefer_not_to_say"
+      ? "Neutral"
+      : "Select";
 
-          <h1 className="text-xl sm:text-2xl font-bold font-display text-[var(--text-primary)] tracking-tight leading-snug">
-            What is your current physical baseline?
-          </h1>
-          <p className="text-xs text-[var(--text-secondary)]">
-            Used strictly to estimate resting energy expenditure. Never shared publicly.
-          </p>
+  return (
+    <div className="flex flex-col justify-between flex-1 py-1 animate-fade-in">
+      <div>
+        {/* Eyebrow */}
+        <div className="flex items-center gap-2 text-[11px] font-bold tracking-[0.14em] uppercase text-[#2D6A4F]">
+          <span className="w-2 h-2 rounded-full bg-[#2D6A4F]" />
+          <span>STEP 02 · YOUR BASELINE</span>
         </div>
 
-        {/* Compact Phone-First Biometric Tiles */}
-        {unitSystem === "metric" ? (
-          <div className="grid grid-cols-3 gap-2.5">
-            {/* Height */}
-            <div className="p-3 rounded-2xl bg-[var(--surface)] border border-[var(--border)] focus-within:border-[var(--brand)]">
-              <label className="block text-[10px] font-mono font-bold uppercase text-[var(--text-muted)] mb-1">
-                Height (cm)
-              </label>
-              <input
-                type="number"
-                inputMode="decimal"
-                placeholder="e.g. 175"
-                value={heightCmInput}
-                onChange={(e) => handleHeightCmChange(e.target.value)}
-                className="w-full bg-transparent text-lg font-bold font-mono text-[var(--text-primary)] placeholder:text-[var(--text-muted)]/40 focus:outline-none"
-              />
-            </div>
+        {/* Headline */}
+        <h1 className="font-serif font-normal text-[2.15rem] leading-[1.12] tracking-tight text-[#1C1917] mt-2">
+          Where is your body <span className="italic text-[#E05A47]">starting from</span> today?
+        </h1>
+        <p className="text-xs sm:text-sm text-[#57534E] mt-2 leading-relaxed">
+          Pure physiology without moral judgment. Satat uses this to calibrate non-punitive energy curves.
+        </p>
 
-            {/* Weight */}
-            <div className="p-3 rounded-2xl bg-[var(--surface)] border border-[var(--border)] focus-within:border-[var(--brand)]">
-              <label className="block text-[10px] font-mono font-bold uppercase text-[var(--text-muted)] mb-1">
-                Weight (kg)
-              </label>
-              <input
-                type="number"
-                inputMode="decimal"
-                placeholder="e.g. 70"
-                value={weightKgInput}
-                onChange={(e) => handleWeightKgChange(e.target.value)}
-                className="w-full bg-transparent text-lg font-bold font-mono text-[var(--text-primary)] placeholder:text-[var(--text-muted)]/40 focus:outline-none"
-              />
-            </div>
-
-            {/* Age */}
-            <div
-              className={cn(
-                "p-3 rounded-2xl bg-[var(--surface)] border",
-                ageError ? "border-[var(--error)]" : "border-[var(--border)] focus-within:border-[var(--brand)]"
-              )}
+        {/* Unit Switcher Pill (Centered) */}
+        <div className="flex justify-center mt-4">
+          <div className="bg-[#EFECE4] p-1 rounded-full inline-flex">
+            <button
+              type="button"
+              onClick={() => setUnitSystem("metric")}
+              className={`rounded-full px-5 py-2 text-xs transition-all cursor-pointer ${
+                unitSystem === "metric"
+                  ? "bg-[#191D1A] text-white font-semibold shadow-xs"
+                  : "text-[#57534E] hover:text-[#1C1917] font-medium"
+              }`}
             >
-              <label className="block text-[10px] font-mono font-bold uppercase text-[var(--text-muted)] mb-1">
-                Age (yrs)
-              </label>
-              <input
-                type="number"
-                inputMode="numeric"
-                placeholder="e.g. 28"
-                value={ageInput}
-                onChange={(e) => handleAgeChange(e.target.value)}
-                className="w-full bg-transparent text-lg font-bold font-mono text-[var(--text-primary)] placeholder:text-[var(--text-muted)]/40 focus:outline-none"
-              />
+              Metric (cm, kg)
+            </button>
+            <button
+              type="button"
+              onClick={() => setUnitSystem("imperial")}
+              className={`rounded-full px-5 py-2 text-xs transition-all cursor-pointer ${
+                unitSystem === "imperial"
+                  ? "bg-[#191D1A] text-white font-semibold shadow-xs"
+                  : "text-[#57534E] hover:text-[#1C1917] font-medium"
+              }`}
+            >
+              Imperial (ft/in, lbs)
+            </button>
+          </div>
+        </div>
+
+        {/* 2×2 Tactile Biometric Bento Grid */}
+        <div className="grid grid-cols-2 gap-3.5 mt-4">
+          {/* Card 1: Stature / Height */}
+          <div className="bg-[#FCFBF9] rounded-[24px] p-4 shadow-xs border border-[#1C1917]/[0.05] flex flex-col justify-between min-h-[148px]">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold tracking-wider uppercase text-[#57534E]">
+                STATURE / HEIGHT
+              </span>
+              <Ruler className="w-4 h-4 text-[#8C857B]" />
+            </div>
+
+            <div className="my-2">
+              {unitSystem === "metric" ? (
+                <div className="flex items-baseline gap-1">
+                  <input
+                    type="number"
+                    value={heightCmInput}
+                    onChange={(e) => handleHeightCmChange(e.target.value)}
+                    placeholder="175"
+                    className="w-24 bg-transparent font-serif text-3xl font-normal text-[#1C1917] focus:outline-none"
+                    aria-label="Height in centimeters"
+                  />
+                  <span className="font-serif text-lg italic text-[#8C857B]">cm</span>
+                </div>
+              ) : (
+                <div className="flex items-baseline gap-1.5">
+                  <input
+                    type="number"
+                    value={heightFeetInput}
+                    onChange={(e) => handleImperialHeightChange(e.target.value, heightInchesInput)}
+                    placeholder="5"
+                    className="w-10 bg-transparent font-serif text-3xl font-normal text-[#1C1917] focus:outline-none"
+                    aria-label="Height in feet"
+                  />
+                  <span className="font-serif text-base italic text-[#8C857B]">ft</span>
+                  <input
+                    type="number"
+                    value={heightInchesInput}
+                    onChange={(e) => handleImperialHeightChange(heightFeetInput, e.target.value)}
+                    placeholder="9"
+                    className="w-12 bg-transparent font-serif text-3xl font-normal text-[#1C1917] focus:outline-none"
+                    aria-label="Height in inches"
+                  />
+                  <span className="font-serif text-base italic text-[#8C857B]">in</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => stepHeight(-1)}
+                aria-label="Decrease height"
+                className="w-9 h-9 rounded-full bg-[#EFECE4] hover:bg-[#E2DDD2] text-[#1C1917] font-bold flex items-center justify-center transition-all active:scale-95 cursor-pointer"
+              >
+                <Minus className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => stepHeight(1)}
+                aria-label="Increase height"
+                className="w-9 h-9 rounded-full bg-[#EFECE4] hover:bg-[#E2DDD2] text-[#1C1917] font-bold flex items-center justify-center transition-all active:scale-95 cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
             </div>
           </div>
-        ) : (
-          <div className="space-y-2.5">
-            <div className="p-3 rounded-2xl bg-[var(--surface)] border border-[var(--border)]">
-              <label className="block text-[10px] font-mono font-bold uppercase text-[var(--text-muted)] mb-1.5">
-                Height (ft / in)
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  placeholder="Feet (e.g. 5)"
-                  value={heightFeetInput}
-                  onChange={(e) => handleImperialHeightChange(e.target.value, heightInchesInput)}
-                  className="w-full bg-[var(--surface-subtle)] px-2.5 py-1.5 rounded-lg border border-[var(--border)] text-sm font-bold font-mono text-[var(--text-primary)] focus:outline-none"
-                />
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  placeholder="Inches (e.g. 9)"
-                  value={heightInchesInput}
-                  onChange={(e) => handleImperialHeightChange(heightFeetInput, e.target.value)}
-                  className="w-full bg-[var(--surface-subtle)] px-2.5 py-1.5 rounded-lg border border-[var(--border)] text-sm font-bold font-mono text-[var(--text-primary)] focus:outline-none"
-                />
-              </div>
+
+          {/* Card 2: Body Mass */}
+          <div className="bg-[#FCFBF9] rounded-[24px] p-4 shadow-xs border border-[#1C1917]/[0.05] flex flex-col justify-between min-h-[148px]">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold tracking-wider uppercase text-[#57534E]">
+                BODY MASS
+              </span>
+              <Scale className="w-4 h-4 text-[#8C857B]" />
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5">
-              <div className="p-3 rounded-2xl bg-[var(--surface)] border border-[var(--border)]">
-                <label className="block text-[10px] font-mono font-bold uppercase text-[var(--text-muted)] mb-1">
-                  Weight (lbs)
-                </label>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  placeholder="e.g. 154"
-                  value={weightLbsInput}
-                  onChange={(e) => handleWeightLbsChange(e.target.value)}
-                  className="w-full bg-transparent text-lg font-bold font-mono text-[var(--text-primary)] focus:outline-none"
-                />
-              </div>
+            <div className="my-2">
+              {unitSystem === "metric" ? (
+                <div className="flex items-baseline gap-1">
+                  <input
+                    type="number"
+                    value={weightKgInput}
+                    onChange={(e) => handleWeightKgChange(e.target.value)}
+                    placeholder="70"
+                    className="w-24 bg-transparent font-serif text-3xl font-normal text-[#1C1917] focus:outline-none"
+                    aria-label="Weight in kilograms"
+                  />
+                  <span className="font-serif text-lg italic text-[#8C857B]">kg</span>
+                </div>
+              ) : (
+                <div className="flex items-baseline gap-1">
+                  <input
+                    type="number"
+                    value={weightLbsInput}
+                    onChange={(e) => handleWeightLbsChange(e.target.value)}
+                    placeholder="154"
+                    className="w-24 bg-transparent font-serif text-3xl font-normal text-[#1C1917] focus:outline-none"
+                    aria-label="Weight in pounds"
+                  />
+                  <span className="font-serif text-lg italic text-[#8C857B]">lbs</span>
+                </div>
+              )}
+            </div>
 
-              <div className="p-3 rounded-2xl bg-[var(--surface)] border border-[var(--border)]">
-                <label className="block text-[10px] font-mono font-bold uppercase text-[var(--text-muted)] mb-1">
-                  Age (yrs)
-                </label>
+            <div className="bg-[#B7F0D0] text-[#1B4332] text-[10px] font-semibold px-3 py-1 rounded-full w-fit flex items-center gap-1.5 shadow-xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#1B4332]" />
+              <span>Recorded today</span>
+            </div>
+          </div>
+
+          {/* Card 3: Age */}
+          <div className="bg-[#FCFBF9] rounded-[24px] p-4 shadow-xs border border-[#1C1917]/[0.05] flex flex-col justify-between min-h-[148px]">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold tracking-wider uppercase text-[#57534E]">
+                AGE
+              </span>
+              <Calendar className="w-4 h-4 text-[#8C857B]" />
+            </div>
+
+            <div className="my-2">
+              <div className="flex items-baseline gap-1">
                 <input
                   type="number"
-                  inputMode="numeric"
-                  placeholder="e.g. 28"
                   value={ageInput}
                   onChange={(e) => handleAgeChange(e.target.value)}
-                  className="w-full bg-transparent text-lg font-bold font-mono text-[var(--text-primary)] focus:outline-none"
+                  placeholder="28"
+                  className="w-20 bg-transparent font-serif text-3xl font-normal text-[#1C1917] focus:outline-none"
+                  aria-label="Age in years"
                 />
+                <span className="font-serif text-lg italic text-[#8C857B]">yrs</span>
               </div>
+              {ageError && (
+                <span className="text-[10px] text-red-600 block mt-0.5 leading-tight">
+                  {ageError}
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => stepAge(-1)}
+                aria-label="Decrease age"
+                className="w-9 h-9 rounded-full bg-[#EFECE4] hover:bg-[#E2DDD2] text-[#1C1917] font-bold flex items-center justify-center transition-all active:scale-95 cursor-pointer"
+              >
+                <Minus className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => stepAge(1)}
+                aria-label="Increase age"
+                className="w-9 h-9 rounded-full bg-[#EFECE4] hover:bg-[#E2DDD2] text-[#1C1917] font-bold flex items-center justify-center transition-all active:scale-95 cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
             </div>
           </div>
-        )}
 
-        {ageError && <p className="text-xs text-[var(--error)] font-medium">{ageError}</p>}
+          {/* Card 4: Metabolism / Biological Sex */}
+          <div className="bg-[#FCFBF9] rounded-[24px] p-4 shadow-xs border border-[#1C1917]/[0.05] flex flex-col justify-between min-h-[148px]">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold tracking-wider uppercase text-[#57534E]">
+                METABOLISM
+              </span>
+              <Activity className="w-4 h-4 text-[#8C857B]" />
+            </div>
 
-        {/* Biological Sex */}
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between">
-            <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--text-muted)]">
-              Biological Sex
-            </label>
-            <span className="text-[10px] text-[var(--text-muted)]">For metabolic formula</span>
+            <div className="my-1">
+              <div className="font-serif text-2xl text-[#1C1917] leading-tight">
+                {sexDisplay}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-1">
+              <button
+                type="button"
+                onClick={() => handleSelectSex("female")}
+                className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-all cursor-pointer ${
+                  sexSelected === "female"
+                    ? "bg-[#191D1A] text-white"
+                    : "bg-[#EFECE4] text-[#57534E] hover:text-[#1C1917]"
+                }`}
+              >
+                Female
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSelectSex("male")}
+                className={`px-2 py-0.5 rounded-full text-[10px] font-medium transition-all cursor-pointer ${
+                  sexSelected === "male"
+                    ? "bg-[#191D1A] text-white"
+                    : "bg-[#EFECE4] text-[#57534E] hover:text-[#1C1917]"
+                }`}
+              >
+                Male
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSelectSex("prefer_not_to_say")}
+                className={`px-2 py-0.5 rounded-full text-[9px] font-medium transition-all cursor-pointer ${
+                  sexSelected === "prefer_not_to_say"
+                    ? "bg-[#191D1A] text-white"
+                    : "bg-[#EFECE4] text-[#57534E] hover:text-[#1C1917]"
+                }`}
+              >
+                Neutral
+              </button>
+            </div>
           </div>
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { id: "female" as BiologicalSex, label: "Female" },
-              { id: "male" as BiologicalSex, label: "Male" },
-              { id: "prefer_not_to_say" as BiologicalSex, label: "Prefer not to say" },
-            ].map((opt) => {
-              const isSelected = sexSelected === opt.id;
-              return (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => updateFormField("biologicalSex", opt.id)}
-                  className={cn(
-                    "satat-option-row py-2.5 px-2 rounded-xl border text-xs font-semibold text-center",
-                    isSelected
-                      ? "border-[var(--brand)] bg-[var(--brand-subtle)] text-[var(--brand)] ring-1 ring-[var(--brand)]"
-                      : "border-[var(--border)] bg-[var(--surface)] text-[var(--text-secondary)]"
-                  )}
-                >
-                  {opt.label}
-                </button>
-              );
-            })}
-          </div>
-          {sexSelected === "prefer_not_to_say" && (
-            <p className="text-[11px] text-[var(--text-secondary)] flex items-center gap-1 pt-0.5">
-              <HelpCircle className="w-3 h-3 text-[var(--brand)] shrink-0" />
-              <span>SATAT will estimate an energy range rather than a fixed target.</span>
-            </p>
-          )}
         </div>
 
-        {/* Live Resting Metabolic Pill */}
-        {liveBiometrics && (
-          <div className="px-3.5 py-2.5 rounded-xl bg-[var(--brand-subtle)] border border-[var(--brand)]/25 flex items-center justify-between text-xs">
-            <span className="flex items-center gap-1.5 text-[var(--text-primary)] font-medium">
-              <Activity className="w-3.5 h-3.5 text-[var(--brand)]" />
-              Resting Baseline (BMR)
-            </span>
-            <span className="font-mono font-bold text-[var(--brand)]">
-              {liveBiometrics.bmr
-                ? `~${liveBiometrics.bmr.toLocaleString()} kcal/d · BMI ${liveBiometrics.bmi}`
-                : `BMI ${liveBiometrics.bmi}`}
-            </span>
+        {/* Mint Mifflin-St Jeor Callout Card */}
+        <div className="bg-[#B7F0D0]/80 border border-[#2D6A4F]/15 rounded-[24px] p-4 flex items-start gap-3.5 mt-4">
+          <div className="w-9 h-9 rounded-full bg-[#1B4332] text-white flex items-center justify-center shrink-0">
+            <Leaf className="w-4 h-4" />
           </div>
-        )}
+          <div>
+            <h4 className="font-sans font-bold text-xs text-[#1B4332]">
+              Resting baseline: ~{liveBiometrics.bmr || 1780} kcal / day
+            </h4>
+            <p className="text-[11px] text-[#2D6A4F] mt-0.5 leading-relaxed">
+              Calibrated via Mifflin-St Jeor equation. We never cut below this recovery threshold.
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Sticky Bottom Action Bar */}
-      <div className="satat-onboarding-footer border-t border-[var(--border-subtle)] flex items-center justify-between gap-2">
+      {/* Bottom Floating Capsule Bar */}
+      <div className="bg-[#FCFBF9] rounded-full p-2.5 pl-5 shadow-[0_14px_34px_rgba(28,25,23,0.08)] border border-[#1C1917]/[0.05] flex items-center justify-between mt-5">
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-[#E05A47] shrink-0" />
+          <div>
+            <span className="text-[9px] font-mono font-bold tracking-wider uppercase text-[#8C857B] block">
+              TARGET ENERGY FLOOR
+            </span>
+            <span className="text-xs font-bold text-[#1C1917]">
+              {(liveBiometrics.bmr || 1780).toLocaleString()} kcal
+            </span>
+          </div>
+        </div>
+
         <button
           type="button"
-          onClick={onBack}
-          className="btn-ghost px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-1"
+          onClick={handleContinue}
+          disabled={isSaving}
+          aria-label="Continue"
+          className="w-12 h-12 rounded-full bg-[#E05A47] hover:bg-[#C94A38] text-white flex items-center justify-center disabled:opacity-40 shadow-sm transition-all active:scale-95 cursor-pointer shrink-0"
         >
-          <ChevronLeft className="w-4 h-4" />
-          <span>Back</span>
+          <ArrowRight className="w-5 h-5" />
+          <span className="sr-only">Continue</span>
         </button>
-
-        <div className="flex items-center gap-2.5">
-          <button
-            type="button"
-            onClick={onSkip}
-            className="text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] underline underline-offset-4 px-2 py-1"
-          >
-            Skip for now
-          </button>
-
-          <button
-            type="button"
-            onClick={handleContinue}
-            disabled={isSaving || Boolean(ageError)}
-            className="btn-primary px-6 py-3 rounded-xl font-semibold text-sm shadow-sm flex items-center gap-1.5"
-          >
-            <span>{isSaving ? "Saving..." : "Continue"}</span>
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
       </div>
     </div>
   );
