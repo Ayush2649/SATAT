@@ -54,6 +54,13 @@ describe("dishMatcher", () => {
     expect(url).toContain("photo-1488477181946-6428a0291777");
   });
 
+  it("matches soya keywords with dedicated high-protein soya bowl photo", () => {
+    const url = resolveDishThumbnail("50 gms Soyabean");
+    expect(url).toContain("photo-1515543237350-b3eea1ec8082");
+    const chunks = resolveDishThumbnail("Soya Chunks Curry");
+    expect(chunks).toContain("photo-1515543237350-b3eea1ec8082");
+  });
+
   it("falls back to wholesome plate for unknown dish", () => {
     const url = resolveDishThumbnail("Mysterious Superfood Blend");
     expect(url).toContain("photo-1546069901-ba9599a7e63c");

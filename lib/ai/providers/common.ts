@@ -215,10 +215,6 @@ export function parseVisionJsonWithDefaults(rawJsonStr: string): VisionAnalysis 
 
   const validated = VisionAnalysisSchema.parse(parsed);
 
-  if (validated.candidates.length === 0) {
-    validated.candidates.push({ name: "Unknown Indian Dish", confidence: 0.2 });
-  }
-
   if (validated.foods.length === 0) {
     if (validated.visibleItems.length > 0) {
       validated.foods = validated.visibleItems.map((item) => {
@@ -248,6 +244,10 @@ export function parseVisionJsonWithDefaults(rawJsonStr: string): VisionAnalysis 
         confidence: c.confidence,
       }));
     }
+  }
+
+  if (validated.candidates.length === 0 && validated.foods.length > 0) {
+    validated.candidates.push({ name: validated.foods[0].name, confidence: 0.5 });
   } else {
     validated.foods = reconcileFoodPortions(validated.foods, validated.visibleItems);
   }

@@ -252,11 +252,47 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - Full Vitest suite: **47 passed (47 files), 564 passed | 26 skipped (590 total)**.
   - Production build: `npm run build` exits with code `0` (all 32 static/dynamic routes compiled).
 
+### ✅ Sprint 4.8: Responsive Bottom Dock, Header Alignment, Modal Portals & Food Scanner Hardening (`Navigation.tsx`, `HomeView.tsx`, `DietPage.tsx`, `MealScannerModal.tsx`, `VoiceMealModal.tsx`, `dishMatcher.ts`)
+- **Responsive Floating Bottom Dock (`Navigation.tsx` & `styles/app-shell.css`)**:
+  - Pinned dock with `fixed left-1/2 -translate-x-1/2 bottom-[max(10px,env(safe-area-inset-bottom))] z-50`.
+  - Responsive multi-device width: `w-[calc(100vw-24px)] max-w-[400px] sm:max-w-[480px] md:max-w-[600px] lg:max-w-[720px]` with compact height `h-[58px] sm:h-[62px]`.
+  - Moved safe area inset from internal padding to bottom offset, preventing bloated 90px pills on iPhone.
+  - Configured 5-column CSS grid (`grid grid-cols-5 items-center justify-items-center w-full h-full`) distributing `Today`, `Plan`, `Track (+)`, `Train`, and `Fuel` with mathematically equal spacing on iPhone, iPad, and desktop.
+  - Proportional center `+` button (`w-10 h-10 sm:w-11 sm:h-11 -mt-3 bg-[#E05A47]`) with `Track` label.
+- **Greeting & Streak Badge Overlap Fix (`components/dashboard/HomeView.tsx`)**:
+  - Moved `🔥 {activeStreakDays}d` badge into the top eyebrow row alongside the date (`● TUESDAY, OCT 27` on left, streak on right).
+  - Rendered master greeting `<h1 className="font-serif font-normal text-[1.6rem] sm:text-3xl leading-tight tracking-tight text-[#1C1917] mt-1">` on its own full-width row, completely eliminating collisions on narrow screens.
+- **Modal Portaling to `document.body` & Body Scroll Lock (`DietPage.tsx`, `MealScannerModal.tsx`, `VoiceMealModal.tsx`)**:
+  - Portaled all modal overlays (`Modal`, `MealScannerModal`, `VoiceMealModal`) directly to `document.body` via `createPortal`, breaking out of parent CSS transform stacking contexts.
+  - Locked background scrolling via `useEffect` (`document.body.style.overflow = "hidden"` on open, restored on unmount).
+  - Configured standard layout: `fixed inset-0 z-[9999] bg-[#191D1A]/65 backdrop-blur-xs flex flex-col justify-end sm:justify-center items-center sm:p-4`, sticky header, and independently scrollable body (`max-h-[92dvh]`).
+- **Barcode & Label Tab Polish (`MealScannerModal.tsx`)**:
+  - Removed hardcoded "POPULAR PACKAGED STAPLES" list when search query is empty; displays only laser viewfinder and search box.
+  - Added always-visible `Search / Estimate` action button.
+  - Rendered all 4 macro pills (`kcal`, `protein`, `carbs`, `fat`) as clean flex-wrap badges (`flex flex-wrap gap-1.5 mt-1.5`), completely eliminating fat gram truncation.
+- **Plate Photo AI Error / Non-Food & Confidence Handling (`MealScannerModal.tsx`, `app/api/analyze-meal/route.ts`, `lib/ai/providers/common.ts`, `gemini.ts`)**:
+  - Reordered item extraction before candidate fallback so food from visibleItems is correctly assigned.
+  - Eliminated fake `"Unknown Indian Dish"` fallback; returns `noFoodDetected: true` and `calories: 0`.
+  - Rendered Amber Guidance Card (`bg-[#FEF3C7] border border-[#F59E0B]/30 rounded-[24px] p-4 text-[#92400E]`) with `<AlertCircle />` and re-analyze/retake actions when no food is detected.
+  - Applied strict confidence badge styling:
+    - High: mint green (`bg-[#D1FAE5] text-[#065F46]`) with `<Check className="w-3 h-3" /> High Confidence · Depth Calibrated`
+    - Medium: warm amber (`bg-[#FEF3C7] text-[#92400E]`) with `Medium Confidence · Portion Estimated`
+    - Low: soft coral (`bg-[#FEE2E2] text-[#991B1B]`) with `Low Confidence · Add a Context Hint below` (zero green checkmarks on low confidence).
+  - Stacked detected dish title on its own full-width line (`font-serif text-xl sm:text-2xl text-white leading-snug break-words`) with portion stepper row below.
+- **Logged Meal Row Alignment & Soya Photography (`DietPage.tsx`, `lib/diet/dishMatcher.ts`)**:
+  - Expanded dish title area with `line-clamp-1 text-[15px] font-bold text-[#1C1917] leading-snug`.
+  - Moved bookmark and delete icons into compact top-right button group (`gap-1`).
+  - Added dedicated high-protein soya dish photo mapping (`https://images.unsplash.com/photo-1515543237350-b3eea1ec8082?auto=format&fit=crop&w=300&q=75`).
+- **Test & Build Verification**:
+  - Added unit tests in `tests/diet/dishMatcher.test.ts` (13/13 passing) and `tests/diet/mealScannerModal.test.tsx` (2/2 passing).
+  - Full Vitest suite: **48 passed (48 files), 567 passed | 26 skipped (593 total)**.
+  - Production build: `npm run build` exits with code `0` (all 32 static/dynamic routes compiled).
+
 ---
 
 ## 3. Pending / Upcoming Sprints
 
-### ⏳ Sprint 4.8: Core Companion Alignment (Orbit & Tasks)
+### ⏳ Sprint 4.9: Core Companion Alignment (Orbit & Tasks)
 - **Orbit AI Companion** (`components/orbit/OrbitView.tsx`):
   - Natural conversation interface, context cards, and prompt suggestions.
 - **Tasks & Settings** (`TaskBoard.tsx`, `Settings`):
@@ -271,8 +307,8 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 32 static/dynamic routes compiled).
-- **Vitest Suite**: `537 passed | 26 skipped` across all 42 test suites.
-- **Diet Tests**: `154/154 passed` across `tests/diet/*`.
+- **Vitest Suite**: `567 passed | 26 skipped` across all 48 test suites.
+- **Diet Tests**: `162/162 passed` across `tests/diet/*`.
 - **Workout Tests**: `42/42 passed` across `tests/workouts/*`.
 - **Onboarding Tests**: `78/78 passed` across `tests/onboarding/*`.
 - **Landing Tests**: `3/3 passed` across `tests/landing/*`.

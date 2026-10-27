@@ -24,7 +24,12 @@ export function resolveDishThumbnail(mealName?: string, existingPhotoUrl?: strin
     return "https://images.unsplash.com/photo-1630383249896-424e482df921?auto=format&fit=crop&w=300&q=75";
   }
 
-  // 4. Paneer / Tofu / Palak / Sabzi / Roti / Chapati / Naan / Phulka (Checked before general bhurji)
+  // 4. Soya / Soyabean / Soya Chunks / Edamame / Nutrela
+  if (/soya|soyabean|edamame|nutrela/i.test(name)) {
+    return "https://images.unsplash.com/photo-1515543237350-b3eea1ec8082?auto=format&fit=crop&w=300&q=75";
+  }
+
+  // 5. Paneer / Tofu / Palak / Sabzi / Roti / Chapati / Naan / Phulka (Checked before general bhurji)
   if (/paneer|tofu|palak|sabzi|roti|chapati|naan|phulka/i.test(name)) {
     return "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=300&q=75";
   }

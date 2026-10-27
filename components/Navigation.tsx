@@ -265,19 +265,25 @@ export default function Navigation() {
       </header>
 
       {/* ── Mobile bottom navigation (5 Canonical Slots: Today, Plan, Quick Track FAB, Train, Fuel) ── */}
-      <nav className="app-mobile-bottom-nav lg:hidden" aria-label="Primary navigation">
-        <div className="app-mobile-nav-grid">
+      <nav
+        className="fixed left-1/2 -translate-x-1/2 bottom-[max(10px,env(safe-area-inset-bottom))] z-50 w-[calc(100vw-24px)] max-w-[400px] sm:max-w-[480px] md:max-w-[600px] lg:max-w-[720px] h-[58px] sm:h-[62px] rounded-full bg-[#191D1A]/95 backdrop-blur-md border border-white/[0.08] shadow-[0_14px_34px_rgba(0,0,0,0.28)] px-2 sm:px-4 flex items-center lg:hidden"
+        aria-label="Primary navigation"
+      >
+        <div className="grid grid-cols-5 items-center justify-items-center w-full h-full">
           {/* 1. Today */}
           <Link
             href="/dashboard"
             aria-label="Today"
             aria-current={pathname === "/dashboard" ? "page" : undefined}
-            className={cn("app-mobile-nav-slot", pathname === "/dashboard" && "is-active")}
+            className={cn(
+              "flex flex-col items-center justify-center gap-0.5 w-full h-full select-none transition-colors",
+              pathname === "/dashboard" ? "text-[#E05A47]" : "text-[#8C857B] hover:text-[#FCFBF9]"
+            )}
           >
-            <div className="app-mobile-nav-icon-container">
-              <LayoutDashboard className="w-5 h-5" aria-hidden="true" />
+            <div className="w-[20px] h-[20px] flex items-center justify-center">
+              <LayoutDashboard className="w-[18px] h-[18px] sm:w-5 sm:h-5" aria-hidden="true" />
             </div>
-            <span className="app-mobile-nav-label">Today</span>
+            <span className="text-[10px] sm:text-[11px] font-medium leading-none">Today</span>
           </Link>
 
           {/* 2. Plan */}
@@ -285,25 +291,28 @@ export default function Navigation() {
             href="/dashboard/tasks"
             aria-label="Plan"
             aria-current={pathname?.startsWith("/dashboard/tasks") ? "page" : undefined}
-            className={cn("app-mobile-nav-slot", pathname?.startsWith("/dashboard/tasks") && "is-active")}
+            className={cn(
+              "flex flex-col items-center justify-center gap-0.5 w-full h-full select-none transition-colors",
+              pathname?.startsWith("/dashboard/tasks") ? "text-[#E05A47]" : "text-[#8C857B] hover:text-[#FCFBF9]"
+            )}
           >
-            <div className="app-mobile-nav-icon-container">
-              <CheckSquare className="w-5 h-5" aria-hidden="true" />
+            <div className="w-[20px] h-[20px] flex items-center justify-center">
+              <CheckSquare className="w-[18px] h-[18px] sm:w-5 sm:h-5" aria-hidden="true" />
             </div>
-            <span className="app-mobile-nav-label">Plan</span>
+            <span className="text-[10px] sm:text-[11px] font-medium leading-none">Plan</span>
           </Link>
 
-          {/* 3. Quick Track FAB (Centered 46x46 Terracotta #E05A47 + Action Button) */}
-          <div className="app-mobile-nav-slot">
+          {/* 3. Quick Track FAB */}
+          <div className="flex flex-col items-center justify-center w-full h-full relative select-none">
             <button
               type="button"
               onClick={() => setShowTrackSheet(true)}
               aria-label="Quick track"
-              className="app-mobile-track-fab"
+              className="w-10 h-10 sm:w-11 sm:h-11 -mt-3 rounded-full bg-[#E05A47] text-white shadow-md flex items-center justify-center transition-transform active:scale-95 border-2 border-[#191D1A]"
             >
               <Plus className="w-5 h-5 stroke-[2.5]" style={{ color: "#FFFFFF" }} />
             </button>
-            <span className="app-mobile-nav-label mt-auto pb-1 text-[#8C857B]">Track</span>
+            <span className="text-[10px] leading-none text-stone-400 mt-0.5">Track</span>
           </div>
 
           {/* 4. Train */}
@@ -311,12 +320,15 @@ export default function Navigation() {
             href="/dashboard/workout"
             aria-label="Train"
             aria-current={pathname?.startsWith("/dashboard/workout") ? "page" : undefined}
-            className={cn("app-mobile-nav-slot", pathname?.startsWith("/dashboard/workout") && "is-active")}
+            className={cn(
+              "flex flex-col items-center justify-center gap-0.5 w-full h-full select-none transition-colors",
+              pathname?.startsWith("/dashboard/workout") ? "text-[#E05A47]" : "text-[#8C857B] hover:text-[#FCFBF9]"
+            )}
           >
-            <div className="app-mobile-nav-icon-container">
-              <Dumbbell className="w-5 h-5" aria-hidden="true" />
+            <div className="w-[20px] h-[20px] flex items-center justify-center">
+              <Dumbbell className="w-[18px] h-[18px] sm:w-5 sm:h-5" aria-hidden="true" />
             </div>
-            <span className="app-mobile-nav-label">Train</span>
+            <span className="text-[10px] sm:text-[11px] font-medium leading-none">Train</span>
           </Link>
 
           {/* 5. Fuel */}
@@ -324,12 +336,15 @@ export default function Navigation() {
             href="/dashboard/diet"
             aria-label="Fuel"
             aria-current={pathname?.startsWith("/dashboard/diet") ? "page" : undefined}
-            className={cn("app-mobile-nav-slot", pathname?.startsWith("/dashboard/diet") && "is-active")}
+            className={cn(
+              "flex flex-col items-center justify-center gap-0.5 w-full h-full select-none transition-colors",
+              pathname?.startsWith("/dashboard/diet") ? "text-[#E05A47]" : "text-[#8C857B] hover:text-[#FCFBF9]"
+            )}
           >
-            <div className="app-mobile-nav-icon-container">
-              <Utensils className="w-5 h-5" aria-hidden="true" />
+            <div className="w-[20px] h-[20px] flex items-center justify-center">
+              <Utensils className="w-[18px] h-[18px] sm:w-5 sm:h-5" aria-hidden="true" />
             </div>
-            <span className="app-mobile-nav-label">Fuel</span>
+            <span className="text-[10px] sm:text-[11px] font-medium leading-none">Fuel</span>
           </Link>
         </div>
       </nav>

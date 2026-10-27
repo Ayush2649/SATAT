@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   Mic,
   Square,
@@ -80,24 +81,39 @@ export default function VoiceMealModal({
     setPhase("idle");
   };
 
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
+
   const removeMeal = (i: number) => setMeals((prev) => prev.filter((_, idx) => idx !== i));
 
   const mmss = `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(
     seconds % 60
   ).padStart(2, "0")}`;
 
-  return (
-    <div className="fixed inset-0 z-[100] bg-[#191D1A]/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
+  if (!mounted || typeof document === "undefined") {
+    return null;
+  }
+
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] bg-[#191D1A]/65 backdrop-blur-xs flex flex-col justify-end sm:justify-center items-center sm:p-4 animate-fade-in">
       <div className="fixed inset-0" onClick={onClose} />
 
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Voice Nourishment Parser"
-        className="relative bg-[#FCFBF9] text-[#1C1917] rounded-[32px] w-full max-w-md p-5 sm:p-6 shadow-2xl border border-[#1C1917]/[0.08] animate-slide-up max-h-[90dvh] my-auto overflow-y-auto no-scrollbar"
+        className="relative w-full max-w-md bg-[#FCFBF9] text-[#1C1917] rounded-t-[32px] sm:rounded-[32px] max-h-[92dvh] flex flex-col overflow-hidden shadow-2xl border border-[#1C1917]/10 animate-slide-up"
       >
-        {/* Header */}
-        <div className="flex items-start justify-between gap-3 mb-3">
+        {/* Sticky Header */}
+        <div className="shrink-0 px-5 pt-4 pb-3 bg-[#FCFBF9] border-b border-[#1C1917]/[0.06] flex items-start justify-between gap-3">
           <div>
             <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#E05A47] block">
               NATURAL VOICE PARSER
@@ -119,6 +135,9 @@ export default function VoiceMealModal({
             </button>
           </div>
         </div>
+
+        {/* Scrollable Body */}
+        <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4 space-y-4 no-scrollbar">
 
         {/* ── Idle Phase ── */}
         {phase === "idle" && (
@@ -300,7 +319,9 @@ export default function VoiceMealModal({
             </div>
           </div>
         )}
+        </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
