@@ -101,6 +101,7 @@ export interface MealEntry {
   name: string;
   macros: MealMacros;
   imageUrl?: string;
+  photoUrl?: string;
   createdAt: number;
   nutritionStatus?: "verified" | "estimated" | "unresolved" | "mixed";
   hasIncompleteNutrition?: boolean;

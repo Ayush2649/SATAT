@@ -17,6 +17,7 @@ function pickMime(): string {
  */
 export function useAudioRecorder(onComplete: (blob: Blob) => void) {
   const [seconds, setSeconds] = useState(0);
+  const [stream, setStream] = useState<MediaStream | null>(null);
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -35,22 +36,28 @@ export function useAudioRecorder(onComplete: (blob: Blob) => void) {
 
   const start = async (): Promise<string | null> => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
+      const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = s;
+      setStream(s);
       const mime = pickMime();
-      const mr = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+      const mr = new MediaRecorder(s, mime ? { mimeType: mime } : undefined);
       chunksRef.current = [];
-      mr.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      mr.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
       mr.onstop = () => {
-        stream.getTracks().forEach((t) => t.stop());
+        s.getTracks().forEach((t) => t.stop());
+        setStream(null);
         if (timerRef.current) clearInterval(timerRef.current);
-        const blob = new Blob(chunksRef.current, { type: mr.mimeType || mime || "audio/webm" });
+        const blob = new Blob(chunksRef.current, {
+          type: mr.mimeType || mime || "audio/webm",
+        });
         onCompleteRef.current(blob);
       };
       recorderRef.current = mr;
       mr.start();
       setSeconds(0);
-      timerRef.current = setInterval(() => setSeconds((s) => s + 1), 1000);
+      timerRef.current = setInterval(() => setSeconds((sec) => sec + 1), 1000);
       return null;
     } catch {
       return "Microphone access was blocked. Allow mic permission and try again.";
@@ -59,9 +66,10 @@ export function useAudioRecorder(onComplete: (blob: Blob) => void) {
 
   const stop = () => {
     recorderRef.current?.stop();
+    setStream(null);
   };
 
-  return { seconds, start, stop };
+  return { seconds, start, stop, stream };
 }
 
 /** Derive a sensible upload filename extension from a recorded blob's mime type. */
