@@ -243,9 +243,13 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - Symmetrical bars scroll smoothly across the needle: recorded audio on the left in vivid red (`#FF3B30`), incoming audio stream on the right in white (`bg-white/90`).
   - Clean, uncluttered UI: prominent timer, live audio streaming, and circular red stop button with white square.
   - Verified with unit tests in `tests/ui/audioWaveform.test.tsx` (2/2 passing).
+- **Merge Conflict Resolution & Image Compliance Gate (`DietPage.tsx`)**:
+  - Resolved merge conflict markers in `components/diet/DietPage.tsx` from upstream merge commit `0cf69de`.
+  - Added compliant `MealPhotoPreview` component using `next/image` (`fill`, `unoptimized`, `object-cover`), passing `tests/diet/meal-preview-image.test.ts` with 0 warnings.
+  - Zero conflict markers in entire repository.
 - **Test & Build Verification**:
-  - Added unit tests in `tests/diet/dishMatcher.test.ts` (12/12 passing), `tests/diet/macroDonut.test.tsx` (4/4 passing), and `tests/ui/audioWaveform.test.tsx` (2/2 passing).
-  - Full Vitest suite: **43 passed (43 files), 540 passed | 26 skipped (566 total)**.
+  - Added unit tests in `tests/diet/dishMatcher.test.ts` (12/12 passing), `tests/diet/macroDonut.test.tsx` (4/4 passing), `tests/ui/audioWaveform.test.tsx` (2/2 passing), and `tests/diet/meal-preview-image.test.ts` (5/5 passing).
+  - Full Vitest suite: **47 passed (47 files), 564 passed | 26 skipped (590 total)**.
   - Production build: `npm run build` exits with code `0` (all 32 static/dynamic routes compiled).
 
 ---
