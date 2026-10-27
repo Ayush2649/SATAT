@@ -8,9 +8,9 @@ import {
   Edit2, Flag, CalendarCheck,
 } from "lucide-react";
 import { cn, PROJECT_COLORS, todayString, localDateString } from "@/lib/utils";
-import { getTasks, createTask, updateTask, deleteTask, getProjects, createProject, ensureStarterProject } from "@/lib/firestore";
+import { getTasks, getAllTasks, createTask, updateTask, deleteTask, getProjects, createProject, ensureStarterProject } from "@/lib/firestore";
 import { useToast } from "@/components/ui/Toast";
-import { setTaskContext } from "@/lib/orbitContext";
+import { setTaskContext, computeTaskContext } from "@/lib/orbitContext";
 import type { Task, Project, TaskPriority } from "@/types";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -140,28 +140,28 @@ export default function TaskBoard() {
   useEffect(() => {
     if (!userId || !selectedProject || !firebaseUser || !isReady) return;
     setLoading(true);
-    getTasks(userId, selectedProject).then((loaded) => {
-      setTasks(loaded);
-      // Write to Orbit context so chatbot knows the user's tasks
-      const t = todayString();
-      const todayStart = new Date(t + "T00:00:00").getTime();
-      const activeProject = projects.find(p => p.id === selectedProject);
-      setTaskContext({
-        todayDate: t,
-        pendingToday: loaded.filter(tk =>
-          tk.status === "pending" && (tk.dueDate === t || (!tk.dueDate))
-        ).map(tk => ({ title: tk.title, priority: tk.priority ?? undefined, projectName: activeProject?.name })),
-        completedToday: loaded.filter(tk =>
-          tk.status === "completed" && tk.completedAt && tk.completedAt >= todayStart
-        ).map(tk => ({ title: tk.title, completedAt: tk.completedAt })),
-        overdue: loaded.filter(tk =>
-          tk.status === "pending" && tk.dueDate && tk.dueDate < t
-        ).map(tk => ({ title: tk.title, dueDate: tk.dueDate!, priority: tk.priority ?? undefined })),
-        totalPending: loaded.filter(tk => tk.status === "pending").length,
+    let cancelled = false;
+
+    Promise.all([
+      getTasks(userId, selectedProject),
+      getAllTasks(userId),
+    ])
+      .then(([loaded, allTasks]) => {
+        if (cancelled) return;
+        setTasks(loaded);
+        // Write to Orbit context so chatbot knows global tasks across all projects
+        setTaskContext(computeTaskContext(allTasks, projects, todayString()));
+      })
+      .catch((err) => {
+        if (!cancelled) console.error("Error loading tasks:", err);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
       });
-    }).catch((err) => {
-      console.error("Error loading tasks:", err);
-    }).finally(() => setLoading(false));
+
+    return () => {
+      cancelled = true;
+    };
   }, [userId, selectedProject, projects, firebaseUser, isReady]);
 
   // ── Computed ──
@@ -229,6 +229,7 @@ export default function TaskBoard() {
     setTasks(prev => [created, ...prev]);
     setShowAddTask(false);
     toast("Task added!", "success");
+    getAllTasks(userId).then(all => setTaskContext(computeTaskContext(all, projects, todayString()))).catch(console.error);
   };
 
   const handleToggleTask = async (task: Task) => {
@@ -238,12 +239,14 @@ export default function TaskBoard() {
     await updateTask(task.id, updates);
     setTasks(prev => prev.map(t => t.id === task.id ? { ...t, ...updates } : t));
     if (newStatus === "completed") toast("Task completed! 🎉", "success");
+    getAllTasks(userId).then(all => setTaskContext(computeTaskContext(all, projects, todayString()))).catch(console.error);
   };
 
   const handleDeleteTask = async (taskId: string) => {
     await deleteTask(taskId);
     setTasks(prev => prev.filter(t => t.id !== taskId));
     toast("Task deleted", "info");
+    getAllTasks(userId).then(all => setTaskContext(computeTaskContext(all, projects, todayString()))).catch(console.error);
   };
 
   const handleUpdateTask = async (taskId: string, updates: Partial<Task>) => {
@@ -255,6 +258,7 @@ export default function TaskBoard() {
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...clean } : t));
     setEditingTask(null);
     toast("Task updated", "success");
+    getAllTasks(userId).then(all => setTaskContext(computeTaskContext(all, projects, todayString()))).catch(console.error);
   };
 
   const handleAddProject = async (name: string, color: string) => {

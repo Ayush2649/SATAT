@@ -1,6 +1,11 @@
 "use client";
+<<<<<<< HEAD
 
 import React, { useState, useEffect, useRef } from "react";
+=======
+import React, { useState, useEffect, useRef } from 'react';
+import NextImage from "next/image";
+>>>>>>> caa8dee4dbaf531f7ca43252dcf3ed2ca4671606
 import { useSession } from "next-auth/react";
 import { useFirebaseAuth } from "@/components/FirebaseAuthProvider";
 import {
@@ -846,6 +851,7 @@ function AddMealModal({
               DISH NAME / RECIPE *
             </label>
             <input
+<<<<<<< HEAD
               autoFocus
               className="w-full bg-transparent text-sm font-bold text-[#1C1917] outline-none"
               placeholder="e.g. 2 besan cheela with curd"
@@ -853,6 +859,285 @@ function AddMealModal({
               onChange={(e) => {
                 setName(e.target.value);
                 setEstimated(false);
+=======
+              type="text"
+              placeholder="What is this? (optional, e.g. 2 aloo parathas, sugar-free chai)"
+              value={hint}
+              disabled={scanning}
+              onChange={(e) => setHint(e.target.value)}
+              className="input text-sm"
+            />
+          </div>
+          <button
+            type="button"
+            disabled={scanning}
+            onClick={() => fileRef.current?.click()}
+            className="w-full border border-dashed rounded-lg p-6 sm:p-8 text-center transition-colors hover:bg-surface-tertiary disabled:opacity-50 disabled:pointer-events-none"
+            style={{ borderColor: "var(--border)" }}
+          >
+            <div className="w-10 h-10 rounded-md flex items-center justify-center mx-auto mb-3" style={{ background: "var(--accent-soft)" }}>
+              <Camera className="w-5 h-5" style={{ color: "var(--accent)" }} />
+            </div>
+            <p className="text-sm font-medium" style={{ color: "var(--text-1)" }}>Choose a meal photo</p>
+            <p className="text-xs mt-1" style={{ color: "var(--text-3)" }}>JPG, PNG, or HEIC</p>
+          </button>
+          <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden"
+            disabled={scanning}
+            onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="relative w-full h-44 rounded-xl overflow-hidden">
+            <NextImage
+              src={preview}
+              alt="Meal preview"
+              fill
+              unoptimized
+              className="object-cover"
+              onError={() => setError("Image preview not supported. Please select a JPG or PNG.")}
+            />
+            {(scanning || reestimating) && (
+              <div className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center gap-2 text-white z-10">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span className="text-sm font-semibold">
+                  {scanning ? scanStage : "Recalculating macros..."}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {isPhotoUnavailable ? (
+            <div className="rounded-lg p-4 text-center space-y-3 border" style={{ background: "var(--warning-soft)", borderColor: "color-mix(in srgb, var(--warning) 24%, transparent)" }}>
+              <p className="text-sm font-medium" style={{ color: "var(--warning)" }}>
+                Photo scan is busy. Type or speak your meal instead.
+              </p>
+              <div className="flex gap-2 justify-center pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onSwitchToManual?.();
+                  }}
+                  className="btn-secondary min-h-11 text-sm flex items-center gap-1.5 px-3"
+                >
+                  <Edit3 className="w-4 h-4" style={{ color: "var(--accent)" }} /> Type meal
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onSwitchToVoice?.();
+                  }}
+                  className="btn-secondary min-h-11 text-sm flex items-center gap-1.5 px-3"
+                >
+                  <Mic className="w-4 h-4" style={{ color: "var(--accent)" }} /> Speak meal
+                </button>
+              </div>
+            </div>
+          ) : error ? (
+            <div className="rounded-md p-3 text-sm font-medium bg-danger-soft text-danger">
+              {error}
+            </div>
+          ) : null}
+
+          {!scanning && result && (
+            <div className="space-y-3">
+              {/* Unverified / Unknown Foods Alert */}
+              {unverifiedFoods.length > 0 && (
+                <div className="rounded-lg p-3 bg-amber-500/10 border border-amber-500/20 text-xs space-y-2">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold text-amber-600 dark:text-amber-400">
+                        Unverified foods detected:
+                      </span>
+                      <p className="text-[11px] mt-0.5" style={{ color: "var(--text-2)" }}>
+                        Automatic nutrition is not available for these items. Remove them or manually enter calories/macros below to log.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {unverifiedFoods.map((food) => (
+                      <span
+                        key={food}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-amber-500/20 text-amber-700 dark:text-amber-300 font-medium"
+                      >
+                        {food}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveUnverifiedFood(food)}
+                          className="hover:text-red-500 ml-0.5 font-bold"
+                          title={`Remove ${food}`}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex justify-end pt-1">
+                    <button
+                      type="button"
+                      onClick={handleConfirmManualMacros}
+                      disabled={!(Number(editedMacros.calories) > 0)}
+                      className="px-2.5 py-1 text-xs font-semibold rounded bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Confirm manual macros
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Confidence / Ambiguity Badge & Notes */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {isAmbiguous ? (
+                  <span className="text-xs font-medium px-2 py-1 rounded-md badge-warning">
+                    Check this
+                  </span>
+                ) : result?.confidence ? (
+                  <span className={cn("text-xs font-medium px-2 py-1 rounded-md", confidenceColor)}>
+                    {result.confidence} confidence
+                  </span>
+                ) : null}
+                {result.notes && (
+                  <span className="text-xs truncate flex-1" style={{ color: "var(--text-3)" }}>{result.notes}</span>
+                )}
+              </div>
+
+              {/* One-Tap Option Chips */}
+              {optionsToDisplay.length > 0 && (
+                <div className="space-y-1.5 pt-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium" style={{ color: "var(--text-2)" }}>
+                      {result?.needsClarification ? "Choose flatbread type:" : "Suggested options:"}
+                    </span>
+                    {reestimating && (
+                      <span className="text-xs flex items-center gap-1 font-medium" style={{ color: "var(--success)" }}>
+                        <Loader2 className="w-3 h-3 animate-spin" /> Updating...
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {optionsToDisplay.map((opt) => (
+                      <button
+                        key={opt}
+                        type="button"
+                        disabled={reestimating}
+                        onClick={() => handleSelectOption(opt)}
+                        className="min-h-11 px-3 rounded-md border text-sm font-medium transition-colors"
+                        style={selectedOption.toLowerCase() === opt.toLowerCase()
+                          ? { background: "var(--accent)", color: "var(--on-accent)", borderColor: "var(--accent)" }
+                          : { background: "var(--surface-base)", color: "var(--text-2)", borderColor: "var(--border)" }}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="label">Meal name</label>
+                <input
+                  className="input text-sm"
+                  value={editedName}
+                  onChange={(e) => setEditedName(e.target.value)}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <div className="flex justify-between items-baseline mb-1">
+                    <label className="label mb-0">Calories (kcal)</label>
+                    {calorieRange && (
+                      <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                        ≈{editedMacros.calories} kcal ({calorieRange.low}–{calorieRange.high})
+                      </span>
+                    )}
+                  </div>
+                  <input
+                    type="number"
+                    className="input text-sm"
+                    value={editedMacros.calories}
+                    onChange={(e) => setEditedMacros((m) => ({ ...m, calories: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="label">Protein (g)</label>
+                  <input
+                    type="number"
+                    className="input text-sm"
+                    value={editedMacros.protein}
+                    onChange={(e) => setEditedMacros((m) => ({ ...m, protein: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="label">Carbs (g)</label>
+                  <input
+                    type="number"
+                    className="input text-sm"
+                    value={editedMacros.carbs}
+                    onChange={(e) => setEditedMacros((m) => ({ ...m, carbs: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="label">Fat (g)</label>
+                  <input
+                    type="number"
+                    className="input text-sm"
+                    value={editedMacros.fat}
+                    onChange={(e) => setEditedMacros((m) => ({ ...m, fat: e.target.value }))}
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="label">Fiber (g)</label>
+                  <input
+                    type="number"
+                    className="input text-sm"
+                    value={editedMacros.fiber}
+                    placeholder="0"
+                    onChange={(e) => setEditedMacros((m) => ({ ...m, fiber: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              {/* Portion Uncertainty Notice */}
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 italic">
+                Portions are estimated from standard serving sizes. Adjust the portion if your serving was larger or smaller.
+              </p>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setPreview("");
+                    setResult(null);
+                    setError("");
+                    setIsPhotoUnavailable(false);
+                    setCalorieRange(null);
+                    setSelectedOption("");
+                    setUnverifiedFoods([]);
+                  }}
+                  className="btn-secondary flex-1 text-sm"
+                >
+                  Retake
+                </button>
+                <button
+                  onClick={handleLog}
+                  disabled={!canLog}
+                  className="btn-primary flex-1 text-sm flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <CheckCircle2 className="w-4 h-4" /> Log meal
+                </button>
+              </div>
+            </div>
+          )}
+
+          {!scanning && !result && (
+            <button
+              onClick={() => {
+                setPreview("");
+                setError("");
+                setIsPhotoUnavailable(false);
+>>>>>>> caa8dee4dbaf531f7ca43252dcf3ed2ca4671606
               }}
               onKeyDown={(e) => e.key === "Enter" && handleSave()}
             />
