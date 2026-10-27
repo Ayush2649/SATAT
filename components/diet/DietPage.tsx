@@ -1,5 +1,6 @@
 "use client";
 
+import { createPortal } from "react-dom";
 import React, { useState, useEffect, useRef } from "react";
 import NextImage from "next/image";
 import { useSession } from "next-auth/react";
@@ -534,10 +535,10 @@ export default function DietPage() {
                   {/* Top Row: Clickable to toggle expanded drawer */}
                   <div
                     onClick={() => setExpandedMealId(isExpanded ? null : meal.id)}
-                    className="flex items-center gap-3.5 cursor-pointer"
+                    className="flex items-start gap-3.5 cursor-pointer"
                   >
                     {/* Dish Photo */}
-                    <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 shadow-2xs bg-[#EFECE4]">
+                    <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 shadow-2xs bg-[#EFECE4] mt-0.5">
                       <img
                         src={photoUrl}
                         alt={meal.name}
@@ -548,12 +549,52 @@ export default function DietPage() {
 
                     {/* Meal Info */}
                     <div className="min-w-0 flex-1">
-                      <span className="text-[10px] font-mono uppercase text-[#8C857B] block">
-                        {timeLabel} · {categoryLabel}
-                      </span>
-                      <h3 className="font-sans font-bold text-base text-[#1C1917] leading-snug truncate">
-                        {meal.name}
-                      </h3>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <span className="text-[10px] font-mono uppercase text-[#8C857B] block">
+                            {timeLabel} · {categoryLabel}
+                          </span>
+                          <h3 className="line-clamp-1 text-[15px] font-bold text-[#1C1917] leading-snug">
+                            {meal.name}
+                          </h3>
+                        </div>
+
+                        {/* Compact Top-Right Bookmark, Delete, & Chevron */}
+                        <div className="flex items-center gap-1 shrink-0 -mt-0.5">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSavingTemplate({ name: meal.name, macros: meal.macros });
+                            }}
+                            title="Save as a reusable meal"
+                            type="button"
+                            aria-label={`Save ${meal.name} as a reusable meal`}
+                            className="w-7 h-7 rounded-full hover:bg-[#EFECE4] text-[#8C857B] hover:text-[#1C1917] flex items-center justify-center transition-colors cursor-pointer"
+                          >
+                            <BookmarkPlus className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void handleDeleteMeal(meal.id);
+                            }}
+                            type="button"
+                            aria-label={`Delete ${meal.name}`}
+                            className="w-7 h-7 rounded-full hover:bg-[#FADCD5] text-[#8C857B] hover:text-[#E05A47] flex items-center justify-center transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+
+                          <div className="w-5 h-7 flex items-center justify-center text-[#8C857B]">
+                            {isExpanded ? (
+                              <ChevronUp className="w-3.5 h-3.5" />
+                            ) : (
+                              <ChevronDown className="w-3.5 h-3.5" />
+                            )}
+                          </div>
+                        </div>
+                      </div>
 
                       {/* Collapsed Macro Pills */}
                       <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
@@ -569,42 +610,6 @@ export default function DietPage() {
                         <span className="bg-[#EFECE4] text-[#57534E] rounded-full px-2.5 py-0.5 text-[10px] font-semibold whitespace-nowrap shrink-0">
                           {Math.round(meal.macros.fatG)}g F
                         </span>
-                      </div>
-                    </div>
-
-                    {/* Right Action Icons & Chevron */}
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSavingTemplate({ name: meal.name, macros: meal.macros });
-                        }}
-                        title="Save as a reusable meal"
-                        type="button"
-                        aria-label={`Save ${meal.name} as a reusable meal`}
-                        className="w-7 h-7 rounded-full hover:bg-[#EFECE4] text-[#8C857B] hover:text-[#1C1917] flex items-center justify-center transition-colors cursor-pointer"
-                      >
-                        <BookmarkPlus className="w-4 h-4" />
-                      </button>
-
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          void handleDeleteMeal(meal.id);
-                        }}
-                        type="button"
-                        aria-label={`Delete ${meal.name}`}
-                        className="w-7 h-7 rounded-full hover:bg-[#FADCD5] text-[#8C857B] hover:text-[#E05A47] flex items-center justify-center transition-colors cursor-pointer"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-
-                      <div className="w-7 h-7 flex items-center justify-center text-[#8C857B]">
-                        {isExpanded ? (
-                          <ChevronUp className="w-4 h-4" />
-                        ) : (
-                          <ChevronDown className="w-4 h-4" />
-                        )}
                       </div>
                     </div>
                   </div>
@@ -707,16 +712,32 @@ function Modal({
   onClose: () => void;
   children: React.ReactNode;
 }) {
-  return (
-    <div className="fixed inset-0 z-[100] bg-[#191D1A]/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
+
+  if (!mounted || typeof document === "undefined") {
+    return null;
+  }
+
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] bg-[#191D1A]/65 backdrop-blur-xs flex flex-col justify-end sm:justify-center items-center sm:p-4 animate-fade-in">
       <div className="fixed inset-0" onClick={onClose} />
       <div
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="relative bg-[#FCFBF9] text-[#1C1917] rounded-[32px] w-full max-w-md p-5 sm:p-6 shadow-2xl border border-[#1C1917]/[0.08] animate-slide-up max-h-[90dvh] my-auto overflow-y-auto no-scrollbar"
+        className="relative w-full max-w-md bg-[#FCFBF9] text-[#1C1917] rounded-t-[32px] sm:rounded-[32px] max-h-[92dvh] flex flex-col overflow-hidden shadow-2xl border border-[#1C1917]/10 animate-slide-up"
       >
-        <div className="flex items-center justify-between mb-4 pb-2 border-b border-[#1C1917]/[0.05]">
+        {/* Sticky Modal Header (Never scrolls away) */}
+        <div className="shrink-0 px-5 pt-4 pb-3 bg-[#FCFBF9] border-b border-[#1C1917]/[0.06] flex items-center justify-between">
           <h3 className="font-serif text-xl sm:text-2xl text-[#1C1917]">{title}</h3>
           <button
             onClick={onClose}
@@ -727,9 +748,14 @@ function Modal({
             <X className="w-4 h-4" />
           </button>
         </div>
-        {children}
+
+        {/* Independently Scrollable Modal Body */}
+        <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4 space-y-4 no-scrollbar">
+          {children}
+        </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

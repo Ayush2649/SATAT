@@ -339,25 +339,21 @@ export default function HomeView() {
       {/* ── SECTION 1: Greeting Header & 7-Day Week Capsule Strip ── */}
       <div className="space-y-4">
         {/* Prominent Editorial Master Greeting */}
-        <div className="flex items-start justify-between mt-1 gap-3 min-w-0">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
+        <div>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 text-[10px] font-bold tracking-[0.14em] uppercase text-[#8C857B] font-sans">
               <span className="w-1.5 h-1.5 rounded-full bg-[#2D6A4F]" />
-              <span className="text-[11px] font-bold tracking-[0.18em] uppercase text-[#8C857B] font-sans">
-                {formatDateEyebrow()}
-              </span>
+              <span>{formatDateEyebrow()}</span>
             </div>
-            <h1 className="font-serif font-normal text-[1.95rem] xs:text-[2.15rem] sm:text-4xl md:text-5xl leading-[1.08] tracking-tight text-[#1C1917] mt-1 whitespace-nowrap">
-              {getGreetingPrefix()},{" "}
-              <span className="italic text-[#2D6A4F] font-normal">{firstName}</span>
-            </h1>
+            <div className="bg-[#EFECE4] border border-[#1C1917]/[0.06] rounded-full px-2.5 py-0.5 inline-flex items-center gap-1 text-[11px] font-bold text-[#1C1917] shrink-0">
+              <span>🔥</span>
+              <span>{activeStreakDays}d</span>
+            </div>
           </div>
-
-          {/* Premium Dynamic Streak Badge: 🔥 1d */}
-          <div className="bg-[#EFECE4] border border-[#1C1917]/[0.08] rounded-full px-3 py-1.5 inline-flex items-center gap-1.5 text-xs font-bold text-[#1C1917] shrink-0 whitespace-nowrap shadow-xs mt-1">
-            <span className="text-sm">🔥</span>
-            <span className="tabular-nums tracking-wide">{activeStreakDays}d</span>
-          </div>
+          <h1 className="font-serif font-normal text-[1.6rem] sm:text-3xl leading-tight tracking-tight text-[#1C1917] mt-1">
+            {getGreetingPrefix()},{" "}
+            <span className="italic text-[#2D6A4F] font-normal">{firstName}</span>
+          </h1>
         </div>
 
         {/* 7-Day Week Capsule Strip */}
