@@ -118,10 +118,16 @@ export function resolveFoodItem(rawName: string): FoodCompositionItem | null {
     if (item.aliases.some((alias) => alias.toLowerCase() === singular)) return item;
   }
 
-  // 3. Fallback to category base match if specific variant isn't listed
-  for (const item of INDIAN_FOOD_DATABASE) {
-    if (item.aliases.some((alias) => cleaned.includes(alias.toLowerCase()))) {
-      return item;
+  // 3. Fallback to whole-word match ONLY if query is a single-dish phrase (<= 3 words, no compound words)
+  const isCompound = /\b(with|and|plus|along with)\b/i.test(cleaned);
+  if (!isCompound && cleaned.split(/\s+/).length <= 3) {
+    for (const item of INDIAN_FOOD_DATABASE) {
+      for (const alias of item.aliases) {
+        const wordRegex = new RegExp(`(^|\\s)${alias.toLowerCase().replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}(\\s|$)`, "i");
+        if (wordRegex.test(cleaned)) {
+          return item;
+        }
+      }
     }
   }
 

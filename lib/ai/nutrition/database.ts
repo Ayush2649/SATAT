@@ -47,8 +47,8 @@ export const INDIAN_FOOD_DATABASE: FoodCompositionItem[] = [
     aliases: ["roti", "plain roti", "chapati", "phulka", "fulka", "atta roti", "whole wheat roti"],
     category: "flatbread",
     defaultUnit: "piece",
-    gramsPerDefaultUnit: 30, // 1 medium standard roti = 30g
-    per100g: { calories: 267, proteinG: 10.0, carbsG: 50.0, fatG: 3.3, fiberG: 6.7 }, // ~80 kcal / 3g P / 15g C / 1g F / 2g Fib per 30g
+    gramsPerDefaultUnit: 35, // 1 medium standard roti = 35g
+    per100g: { calories: 297, proteinG: 8.86, carbsG: 60.0, fatG: 2.29, fiberG: 3.9 }, // ~104 kcal / 3.1g P / 21g C / 0.8g F per 35g
     verified: true,
   },
   {
@@ -57,8 +57,8 @@ export const INDIAN_FOOD_DATABASE: FoodCompositionItem[] = [
     aliases: ["ghee roti", "roti with ghee", "ghee chapati", "butter roti"],
     category: "flatbread",
     defaultUnit: "piece",
-    gramsPerDefaultUnit: 35,
-    per100g: { calories: 314, proteinG: 8.6, carbsG: 42.9, fatG: 10.0, fiberG: 5.7 }, // ~110 kcal per pc
+    gramsPerDefaultUnit: 35, // 1 medium standard roti = 35g
+    per100g: { calories: 297, proteinG: 8.86, carbsG: 60.0, fatG: 2.29, fiberG: 3.9 }, // ~104 kcal / 3.1g P / 21g C / 0.8g F per 35g
     verified: true,
   },
   {
@@ -614,3 +614,4 @@ export const INDIAN_FOOD_DATABASE: FoodCompositionItem[] = [
     verified: true,
   },
 ];
+

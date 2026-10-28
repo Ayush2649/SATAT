@@ -731,35 +731,94 @@ export function findFoodAnchor(query: string): AnchorLookupResult | null {
   // Search through anchors
   let matchedAnchor: FoodAnchor | null = null;
 
-  for (const anchor of FOOD_ANCHORS) {
-    // Exact name match
-    if (anchor.name.toLowerCase() === normalized) {
-      matchedAnchor = anchor;
-      break;
-    }
-    // Check aliases
-    if (anchor.aliases.some((a) => a.toLowerCase() === normalized)) {
-      matchedAnchor = anchor;
-      break;
+  // 1. High-Priority Dedicated Food Recognizers (Egg, Roti, Paneer, Soya, Rice, Dal)
+  // Ensures typos (e.g. "wgole eggs") or colloquial terms ("anda", "chapatis") reliably resolve.
+  const isEgg = /\b(eggs?|anda|ande|boiled eggs?|whole eggs?|omelette|omlet|bhurji)\b/i.test(normalized);
+  const isEggWhite = /\bwhites?\b/i.test(normalized);
+  if (isEgg) {
+    if (isEggWhite) {
+      matchedAnchor = FOOD_ANCHORS.find((a) => a.id === "egg_white") || null;
+    } else {
+      matchedAnchor = FOOD_ANCHORS.find((a) => a.id === "whole_egg_boiled") || null;
     }
   }
 
-  // If no direct exact alias match, check whole-phrase / keyword match
+  if (!matchedAnchor) {
+    const isRoti = /\b(rotis?|chapatis?|chapattis?|phulkas?|fulkas?)\b/i.test(normalized);
+    if (isRoti) {
+      const isGhee = /\b(ghee|butter|oil)\b/i.test(normalized);
+      matchedAnchor = FOOD_ANCHORS.find((a) => a.id === (isGhee ? "roti_ghee" : "roti_plain")) || null;
+    }
+  }
+
+  if (!matchedAnchor) {
+    const isPaneer = /\b(paneer|cottage cheese)\b/i.test(normalized);
+    if (isPaneer) {
+      matchedAnchor = FOOD_ANCHORS.find((a) => a.id === "paneer_raw") || null;
+    }
+  }
+
+  if (!matchedAnchor) {
+    const isSoya = /\b(soya chunks?|soy chunks?|nutrela)\b/i.test(normalized);
+    if (isSoya) {
+      const isBoiled = /\b(boiled|cooked|soaked)\b/i.test(normalized);
+      matchedAnchor = FOOD_ANCHORS.find((a) => a.id === (isBoiled ? "soya_chunks_boiled" : "soya_chunks_dry")) || null;
+    }
+  }
+
+  if (!matchedAnchor) {
+    const isRice = /\b(rice|chawal|white rice|steamed rice|boiled rice)\b/i.test(normalized);
+    if (isRice && !/\b(fried rice|biryani|pulao)\b/i.test(normalized)) {
+      matchedAnchor = FOOD_ANCHORS.find((a) => a.id === "cooked_white_rice") || null;
+    }
+  }
+
+  if (!matchedAnchor) {
+    const isChicken = /\b(chicken breast)\b/i.test(normalized);
+    if (isChicken) {
+      const isRaw = /\b(raw|uncooked)\b/i.test(normalized);
+      matchedAnchor = FOOD_ANCHORS.find((a) => a.id === (isRaw ? "chicken_breast_raw" : "chicken_breast_cooked")) || null;
+    }
+  }
+
+  if (!matchedAnchor) {
+    const isDal = /\b(dal|daal|yellow dal|dal tadka|moong dal|toor dal)\b/i.test(normalized);
+    if (isDal && !/\b(makhani|dal makhani)\b/i.test(normalized)) {
+      matchedAnchor = FOOD_ANCHORS.find((a) => a.id === "dal_tadka") || null;
+    }
+  }
+
+  // 2. Exact match on name or aliases
+  if (!matchedAnchor) {
+    for (const anchor of FOOD_ANCHORS) {
+      if (anchor.name.toLowerCase() === normalized) {
+        matchedAnchor = anchor;
+        break;
+      }
+      if (anchor.aliases.some((a) => a.toLowerCase() === normalized)) {
+        matchedAnchor = anchor;
+        break;
+      }
+    }
+  }
+
+  // 3. Whole-phrase / keyword match
   if (!matchedAnchor) {
     for (const anchor of FOOD_ANCHORS) {
       for (const a of anchor.aliases) {
         const aliasLower = a.toLowerCase();
-        // Match if normalized equals alias or contains alias with word boundary
-        const wordRegex = new RegExp(`(^|\\s)${aliasLower.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}(\\s|$)`, "i");
+        const wordRegex = new RegExp(`(^|\\s)${aliasLower.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")}(\\s|$)`, "i");
         if (wordRegex.test(normalized)) {
-          // Special case: check raw vs cooked keywords to prevent matching wrong variant
           const isQueryCooked = /boiled|cooked|soaked|grilled|fried/i.test(normalized);
           const isAnchorCooked = anchor.state === "cooked";
 
-          if (isQueryCooked === isAnchorCooked) {
-            matchedAnchor = anchor;
-            break;
-          } else if (!isQueryCooked && !isAnchorCooked) {
+          // If query specifies cooked/raw, enforce match; otherwise accept default common state
+          if (isQueryCooked) {
+            if (isAnchorCooked) {
+              matchedAnchor = anchor;
+              break;
+            }
+          } else {
             matchedAnchor = anchor;
             break;
           }
@@ -854,93 +913,19 @@ export function resolveMultiItemFoodAnchors(query: string): MultiItemAnchorResul
     .map((s) => s.trim())
     .filter(Boolean);
 
-  if (segments.length === 0) return null;
+  if (segments.length <= 1) return null;
 
   const resolvedItems: AnchorLookupResult[] = [];
 
   for (const segment of segments) {
-    // Check segment with findFoodAnchor directly (without re-splitting)
-    const { qty, unit, cleanName } = parseQueryPortion(segment);
-    const normalized = cleanName.toLowerCase().trim();
-
-    let matchedAnchor: FoodAnchor | null = null;
-    for (const anchor of FOOD_ANCHORS) {
-      if (anchor.name.toLowerCase() === normalized) {
-        matchedAnchor = anchor;
-        break;
-      }
-      if (anchor.aliases.some((a) => a.toLowerCase() === normalized)) {
-        matchedAnchor = anchor;
-        break;
-      }
-    }
-
-    if (!matchedAnchor) {
-      for (const anchor of FOOD_ANCHORS) {
-        for (const a of anchor.aliases) {
-          const aliasLower = a.toLowerCase();
-          const wordRegex = new RegExp(`(^|\\s)${aliasLower.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}(\\s|$)`, "i");
-          if (wordRegex.test(normalized)) {
-            const isQueryCooked = /boiled|cooked|soaked|grilled|fried/i.test(normalized);
-            const isAnchorCooked = anchor.state === "cooked";
-            if (isQueryCooked === isAnchorCooked || (!isQueryCooked && !isAnchorCooked)) {
-              matchedAnchor = anchor;
-              break;
-            }
-          }
-        }
-        if (matchedAnchor) break;
-      }
-    }
-
-    // If ANY segment fails to match, reject whole compound resolution
-    // so no ingredient is ever silently dropped!
-    if (!matchedAnchor) {
+    // Resolve each individual segment through findFoodAnchor
+    const res = findFoodAnchor(segment);
+    // If ANY segment fails to match an anchor, reject the deterministic compound match
+    // so no ingredient is ever silently dropped, and allow Gemini AI to estimate all items!
+    if (!res || !res.matched) {
       return null;
     }
-
-    let totalGrams: number;
-    if (unit === "g" || unit === "ml") {
-      totalGrams = qty;
-    } else if (unit === "scoop" && matchedAnchor.id === "whey_isolate") {
-      totalGrams = qty * 30;
-    } else {
-      totalGrams = qty * matchedAnchor.defaultServingGrams;
-    }
-
-    const factor = totalGrams / 100;
-    const p100 = matchedAnchor.per100g;
-
-    const rawProtein = Math.round(p100.proteinG * factor * 10) / 10;
-    const rawCarbs = Math.round(p100.carbsG * factor * 10) / 10;
-    const rawFat = Math.round(p100.fatG * factor * 10) / 10;
-    const rawFiber = Math.round((p100.fiberG || 0) * factor * 10) / 10;
-    const baseCalories = Math.round(p100.calories * factor);
-
-    const enforced = enforceAtwaterMath({
-      calories: baseCalories,
-      proteinG: rawProtein,
-      carbsG: rawCarbs,
-      fatG: rawFat,
-      fiberG: rawFiber,
-    });
-
-    resolvedItems.push({
-      matched: true,
-      anchor: matchedAnchor,
-      name: matchedAnchor.name,
-      quantity: qty,
-      unit,
-      grams: Math.round(totalGrams),
-      macros: {
-        calories: enforced.calories,
-        proteinG: enforced.proteinG,
-        carbsG: enforced.carbsG,
-        fatG: enforced.fatG,
-        fiberG: rawFiber,
-      },
-      notes: matchedAnchor.notes,
-    });
+    resolvedItems.push(res);
   }
 
   // Sum macros across all resolved segments

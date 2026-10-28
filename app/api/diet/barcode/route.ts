@@ -41,10 +41,17 @@ async function lookupOpenFoodFacts(barcode: string): Promise<ExtractedProductIte
   const cleanBarcode = barcode.replace(/\D/g, "");
   if (!cleanBarcode || cleanBarcode.length < 6) return null;
 
-  const endpoints = [
-    `https://world.openfoodfacts.org/api/v2/product/${cleanBarcode}.json`,
-    `https://world.openfoodfacts.org/api/v0/product/${cleanBarcode}.json`,
-  ];
+  const isIndian = cleanBarcode.startsWith("890");
+  const endpoints = isIndian
+    ? [
+        `https://in.openfoodfacts.org/api/v0/product/${cleanBarcode}.json`,
+        `https://world.openfoodfacts.org/api/v2/product/${cleanBarcode}.json`,
+        `https://world.openfoodfacts.org/api/v0/product/${cleanBarcode}.json`,
+      ]
+    : [
+        `https://world.openfoodfacts.org/api/v2/product/${cleanBarcode}.json`,
+        `https://world.openfoodfacts.org/api/v0/product/${cleanBarcode}.json`,
+      ];
 
   for (const url of endpoints) {
     try {
@@ -54,6 +61,7 @@ async function lookupOpenFoodFacts(barcode: string): Promise<ExtractedProductIte
           Accept: "application/json",
         },
         next: { revalidate: 3600 },
+        signal: AbortSignal.timeout(6000),
       });
 
       if (!res.ok) continue;
@@ -115,25 +123,78 @@ async function lookupOpenFoodFacts(barcode: string): Promise<ExtractedProductIte
   return null;
 }
 
+// ── UPCitemdb Lookup Helper (Secondary Barcode Catalog) ───────────────────────
+
+async function lookupUPCitemdb(barcode: string): Promise<ExtractedProductItem | null> {
+  const cleanBarcode = barcode.replace(/\D/g, "");
+  if (!cleanBarcode || cleanBarcode.length < 8) return null;
+
+  try {
+    const res = await fetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${cleanBarcode}`, {
+      headers: {
+        "User-Agent": "SATAT-DailyOS/1.0 (contact: support@satat.fit)",
+        Accept: "application/json",
+      },
+      next: { revalidate: 3600 },
+      signal: AbortSignal.timeout(5000),
+    });
+
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.code === "OK" && Array.isArray(data.items) && data.items.length > 0) {
+      const item = data.items[0];
+      const title = item.title || "";
+      const brand = item.brand || "";
+      if (title) {
+        const anchor = findFoodAnchor(title);
+        if (anchor && anchor.matched) {
+          return {
+            id: `upc-${cleanBarcode}`,
+            name: brand ? `${brand} ${anchor.name}` : anchor.name,
+            brand,
+            servingLabel: anchor.anchor?.servingLabel || "1 serving",
+            calories: anchor.macros.calories,
+            proteinG: anchor.macros.proteinG,
+            carbsG: anchor.macros.carbsG,
+            fatG: anchor.macros.fatG,
+            fiberG: anchor.macros.fiberG,
+            barcode: cleanBarcode,
+            source: "openfoodfacts",
+            confidence: 0.9,
+          };
+        }
+      }
+    }
+  } catch {
+    // fallback
+  }
+
+  return null;
+}
+
 // ── Gemini AI Barcode Inference (For Indian barcodes 890... not in OFF) ────────
 
-async function inferProductFromBarcodeAI(barcodeDigits: string): Promise<ExtractedProductItem> {
+async function inferProductFromBarcodeAI(barcodeDigits: string): Promise<ExtractedProductItem | null> {
   const cleanBarcode = barcodeDigits.replace(/\D/g, "");
   const isIndianPrefix = cleanBarcode.startsWith("890");
 
   const key = process.env.GEMINI_API_KEY;
-  if (key) {
-    try {
-      const ai = new GoogleGenAI({ apiKey: key });
-      const model = process.env.GEMINI_VISION_MODEL || "gemini-2.5-flash";
+  if (!key) return null;
 
-      const prompt = `Identify the packaged food product for barcode ${cleanBarcode} (${
-        isIndianPrefix ? "GS1 prefix 890 = India" : "international barcode"
-      }).
-If you recognize the specific product (e.g. Amul, Britannia, Nestle India, Mother Dairy, Haldirams, Parle, Tata, Dabur, Epigamia, etc.), return its brand, name, serving size, and per-serving nutrition.
-If the exact product is not identifiable from the digits alone, return an estimated typical packaged Indian snack/beverage profile with a title like "Packaged Product (#${cleanBarcode})".
+  try {
+    const ai = new GoogleGenAI({ apiKey: key });
+    const model = process.env.GEMINI_VISION_MODEL || "gemini-2.5-flash";
+
+    const prompt = `Identify the commercial packaged food product for barcode ${cleanBarcode} (${
+      isIndianPrefix ? "GS1 prefix 890 = India" : "international barcode"
+    }).
+If you recognize the specific commercial product from this barcode or manufacturer prefix (e.g. Amul, Britannia, Nestle, Parle, Tata, Mother Dairy, Epigamia, etc.), return its brand, name, serving size, and per-serving nutrition.
+If you CANNOT identify the specific real commercial product from these barcode digits alone, return {"unrecognized": true}.
+DO NOT invent generic fake titles like "Packaged Product".
+
 Return ONLY valid JSON:
 {
+  "unrecognized": false,
   "productName": "<clean product title>",
   "brand": "<brand name or empty>",
   "servingSize": "<e.g. 1 pack or 100g>",
@@ -144,71 +205,49 @@ Return ONLY valid JSON:
   "fiberG": <number>
 }`;
 
-      const res = await ai.models.generateContent({
-        model,
-        contents: [prompt],
-        config: {
-          responseMimeType: "application/json",
-          abortSignal: AbortSignal.timeout(8000),
-        },
-      });
+    const res = await ai.models.generateContent({
+      model,
+      contents: [prompt],
+      config: {
+        responseMimeType: "application/json",
+        abortSignal: AbortSignal.timeout(8000),
+      },
+    });
 
-      const raw = res.text || "";
-      const cleaned = raw.replace(/```(?:json)?\n?/g, "").replace(/\n?```/g, "").trim();
-      const parsed = JSON.parse(cleaned);
+    const raw = res.text || "";
+    const cleaned = raw.replace(/```(?:json)?\n?/g, "").replace(/\n?```/g, "").trim();
+    const parsed = JSON.parse(cleaned);
 
-      if (parsed.productName) {
-        const enforced = enforceAtwaterMath({
-          calories: Math.round(Number(parsed.calories) || 150),
-          proteinG: Math.round((Number(parsed.proteinG) || 4) * 10) / 10,
-          carbsG: Math.round((Number(parsed.carbsG) || 20) * 10) / 10,
-          fatG: Math.round((Number(parsed.fatG) || 6) * 10) / 10,
-          fiberG: Math.round((Number(parsed.fiberG) || 1) * 10) / 10,
-        });
-
-        return {
-          id: `ai-barcode-${cleanBarcode}`,
-          name: parsed.brand ? `${parsed.brand} ${parsed.productName}` : parsed.productName,
-          brand: parsed.brand || "",
-          servingLabel: parsed.servingSize || "1 serving",
-          calories: enforced.calories,
-          proteinG: enforced.proteinG,
-          carbsG: enforced.carbsG,
-          fatG: enforced.fatG,
-          fiberG: enforced.fiberG,
-          barcode: cleanBarcode,
-          source: "ai_inference",
-          confidence: 0.8,
-        };
-      }
-    } catch (aiErr) {
-      console.warn("[barcode] Gemini barcode inference failed:", aiErr);
+    if (parsed.unrecognized || !parsed.productName || parsed.productName.toLowerCase().includes("packaged product")) {
+      return null;
     }
+
+    const enforced = enforceAtwaterMath({
+      calories: Math.round(Number(parsed.calories) || 150),
+      proteinG: Math.round((Number(parsed.proteinG) || 4) * 10) / 10,
+      carbsG: Math.round((Number(parsed.carbsG) || 20) * 10) / 10,
+      fatG: Math.round((Number(parsed.fatG) || 6) * 10) / 10,
+      fiberG: Math.round((Number(parsed.fiberG) || 1) * 10) / 10,
+    });
+
+    return {
+      id: `ai-barcode-${cleanBarcode}`,
+      name: parsed.brand ? `${parsed.brand} ${parsed.productName}` : parsed.productName,
+      brand: parsed.brand || "",
+      servingLabel: parsed.servingSize || "1 serving",
+      calories: enforced.calories,
+      proteinG: enforced.proteinG,
+      carbsG: enforced.carbsG,
+      fatG: enforced.fatG,
+      fiberG: enforced.fiberG,
+      barcode: cleanBarcode,
+      source: "ai_inference",
+      confidence: 0.8,
+    };
+  } catch (aiErr) {
+    console.warn("[barcode] Gemini barcode inference failed:", aiErr);
+    return null;
   }
-
-  // Safe deterministic fallback
-  const enforced = enforceAtwaterMath({
-    calories: 180,
-    proteinG: 5,
-    carbsG: 25,
-    fatG: 7,
-    fiberG: 2,
-  });
-
-  return {
-    id: `barcode-${cleanBarcode}`,
-    name: `Scanned Packaged Item (#${cleanBarcode})`,
-    brand: isIndianPrefix ? "Indian Packaged Food" : "",
-    servingLabel: "1 serving (~50g)",
-    calories: enforced.calories,
-    proteinG: enforced.proteinG,
-    carbsG: enforced.carbsG,
-    fatG: enforced.fatG,
-    fiberG: enforced.fiberG,
-    barcode: cleanBarcode,
-    source: "ai_inference",
-    confidence: 0.7,
-  };
 }
 
 // ── Gemini Vision Nutrition Label, Barcode & Packet OCR ───────────────────────
@@ -232,8 +271,16 @@ Analyze the user's uploaded image. It may fall into ANY of these 4 categories:
    - Identify the dish name and estimate standard per-serving macros.
 
 CRITICAL INSTRUCTION:
-Return ONLY valid JSON matching this exact structure:
+If the image is blurry, blank, or the product/nutrition cannot be identified, return:
 {
+  "unrecognized": true,
+  "barcode": "<numeric barcode string if visible, else empty>"
+}
+DO NOT invent generic fake names like "Scanned Packaged Product".
+
+If recognized, return ONLY valid JSON matching this exact structure:
+{
+  "unrecognized": false,
   "productName": "<clean product or dish name>",
   "brand": "<brand name or empty>",
   "servingSize": "<e.g. 100g, 200ml, or 1 serving>",
@@ -250,28 +297,16 @@ async function ocrUnifiedImageWithGemini(
   cleanBase64: string,
   mimeType: string,
   hintBarcode?: string
-): Promise<ExtractedProductItem> {
+): Promise<ExtractedProductItem | null> {
   const key = process.env.GEMINI_API_KEY;
   if (!key) {
-    // If no API key, return safe fallback
-    const enforced = enforceAtwaterMath({
-      calories: 200,
-      proteinG: 8,
-      carbsG: 24,
-      fatG: 8,
-    });
-    return {
-      id: `ocr-${Date.now()}`,
-      name: "Scanned Packaged Food",
-      brand: "",
-      servingLabel: "1 serving",
-      calories: enforced.calories,
-      proteinG: enforced.proteinG,
-      carbsG: enforced.carbsG,
-      fatG: enforced.fatG,
-      source: "label_ocr",
-      confidence: 0.6,
-    };
+    if (hintBarcode) {
+      const offMatch = await lookupOpenFoodFacts(hintBarcode);
+      if (offMatch) return offMatch;
+      const upcMatch = await lookupUPCitemdb(hintBarcode);
+      if (upcMatch) return upcMatch;
+    }
+    return null;
   }
 
   try {
@@ -279,7 +314,7 @@ async function ocrUnifiedImageWithGemini(
     const model = process.env.GEMINI_VISION_MODEL || "gemini-2.5-flash";
 
     const promptText = hintBarcode
-      ? `${UNIFIED_SCANNER_SYSTEM_PROMPT}\n\nClient detected barcode digits: "${hintBarcode}". Cross-reference this barcode.`
+      ? `${UNIFIED_SCANNER_SYSTEM_PROMPT}\n\nClient decoded barcode digits: "${hintBarcode}". Read the packaging brand, product title, ingredients, and Nutrition Facts table.`
       : UNIFIED_SCANNER_SYSTEM_PROMPT;
 
     const response = await ai.models.generateContent({
@@ -307,13 +342,29 @@ async function ocrUnifiedImageWithGemini(
 
     const detectedBarcode = (data.barcode || hintBarcode || "").replace(/\D/g, "");
 
-    // If barcode was detected, attempt OpenFoodFacts check!
-    if (detectedBarcode.length >= 8) {
+    // If barcode was detected, attempt OpenFoodFacts and UPCitemdb check first!
+    if (detectedBarcode.length >= 6) {
       const offMatch = await lookupOpenFoodFacts(detectedBarcode);
       if (offMatch) return offMatch;
+      const upcMatch = await lookupUPCitemdb(detectedBarcode);
+      if (upcMatch) return upcMatch;
     }
 
-    const productName = data.productName?.trim() || "Scanned Packaged Item";
+    if (data.unrecognized || (!data.productName && !detectedBarcode)) {
+      if (detectedBarcode) {
+        return await inferProductFromBarcodeAI(detectedBarcode);
+      }
+      return null;
+    }
+
+    const productName = data.productName?.trim();
+    if (!productName || productName.toLowerCase().includes("scanned packaged")) {
+      if (detectedBarcode) {
+        return await inferProductFromBarcodeAI(detectedBarcode);
+      }
+      return null;
+    }
+
     const brand = data.brand?.trim() || "";
     const servingLabel = data.servingSize?.trim() || "1 serving";
 
@@ -323,15 +374,16 @@ async function ocrUnifiedImageWithGemini(
     const rawF = Number(data.fatG) || 0;
     const rawFib = Number(data.fiberG) || 0;
 
-    // If all macros were 0 (e.g. only barcode was read without nutrition numbers),
+    // If all macros were 0 (e.g. only barcode lines were visible without nutrition numbers),
     // infer product from the name or barcode!
     if (rawCals === 0 && rawP === 0 && rawC === 0 && rawF === 0) {
       if (detectedBarcode) {
-        return await inferProductFromBarcodeAI(detectedBarcode);
+        const inferred = await inferProductFromBarcodeAI(detectedBarcode);
+        if (inferred) return inferred;
       }
       // Check food anchors by name
       const anchor = findFoodAnchor(productName);
-      if (anchor) {
+      if (anchor && anchor.matched) {
         return {
           id: `ocr-${Date.now()}`,
           name: anchor.name,
@@ -346,6 +398,7 @@ async function ocrUnifiedImageWithGemini(
           confidence: 0.9,
         };
       }
+      return null;
     }
 
     const enforced = enforceAtwaterMath({
@@ -371,28 +424,11 @@ async function ocrUnifiedImageWithGemini(
       confidence: Math.max(0.65, Math.min(0.98, Number(data.confidence) || 0.85)),
     };
   } catch (ocrErr) {
-    console.warn("[barcode] Gemini OCR error, falling back to safe item:", ocrErr);
+    console.warn("[barcode] Gemini OCR error:", ocrErr);
     if (hintBarcode) {
       return await inferProductFromBarcodeAI(hintBarcode);
     }
-    const enforced = enforceAtwaterMath({
-      calories: 160,
-      proteinG: 5,
-      carbsG: 22,
-      fatG: 6,
-    });
-    return {
-      id: `ocr-fallback-${Date.now()}`,
-      name: "Scanned Packaged Product",
-      brand: "",
-      servingLabel: "1 serving",
-      calories: enforced.calories,
-      proteinG: enforced.proteinG,
-      carbsG: enforced.carbsG,
-      fatG: enforced.fatG,
-      source: "label_ocr",
-      confidence: 0.6,
-    };
+    return null;
   }
 }
 
@@ -410,17 +446,33 @@ export async function POST(req: NextRequest) {
 
     const effectiveBarcode = (barcode || barcodeDigits || "").toString().trim();
 
-    // ── Mode 1: Direct Barcode Lookup (from BarcodeDetector or manual input) ──
+    // ── Mode 1: Direct Barcode Lookup (from ZXing, BarcodeDetector, or manual input) ──
     if (effectiveBarcode && !imageBase64) {
       const cleanDigits = effectiveBarcode.replace(/\D/g, "");
       if (cleanDigits.length >= 6) {
+        // 1. OpenFoodFacts
         const offProduct = await lookupOpenFoodFacts(cleanDigits);
         if (offProduct) {
           return NextResponse.json({ success: true, item: offProduct });
         }
-        // Fallback to AI inference instead of failing!
+        // 2. UPCitemdb
+        const upcProduct = await lookupUPCitemdb(cleanDigits);
+        if (upcProduct) {
+          return NextResponse.json({ success: true, item: upcProduct });
+        }
+        // 3. AI inference
         const inferred = await inferProductFromBarcodeAI(cleanDigits);
-        return NextResponse.json({ success: true, item: inferred });
+        if (inferred) {
+          return NextResponse.json({ success: true, item: inferred });
+        }
+        // 4. Barcode detected but unrecognized in public databases
+        return NextResponse.json({
+          success: true,
+          item: null,
+          barcode: cleanDigits,
+          unrecognized: true,
+          message: `Barcode #${cleanDigits} detected — product not in public registry. Search below to add.`,
+        });
       }
     }
 
@@ -428,14 +480,14 @@ export async function POST(req: NextRequest) {
     if (imageBase64 && typeof imageBase64 === "string") {
       const cleanBase64 = imageBase64.replace(/^data:image\/[a-zA-Z+]+;base64,/, "");
 
-      // If client detected barcode digits natively, attempt fast OFF lookup first!
+      // If client detected barcode digits natively via ZXing, attempt fast lookup first!
       if (effectiveBarcode) {
         const cleanDigits = effectiveBarcode.replace(/\D/g, "");
-        if (cleanDigits.length >= 8) {
+        if (cleanDigits.length >= 6) {
           const offMatch = await lookupOpenFoodFacts(cleanDigits);
-          if (offMatch) {
-            return NextResponse.json({ success: true, item: offMatch });
-          }
+          if (offMatch) return NextResponse.json({ success: true, item: offMatch });
+          const upcMatch = await lookupUPCitemdb(cleanDigits);
+          if (upcMatch) return NextResponse.json({ success: true, item: upcMatch });
         }
       }
 
@@ -446,21 +498,47 @@ export async function POST(req: NextRequest) {
         effectiveBarcode || undefined
       );
 
-      return NextResponse.json({ success: true, item: product });
+      if (product) {
+        return NextResponse.json({ success: true, item: product });
+      }
+
+      // Unrecognized image / barcode
+      return NextResponse.json({
+        success: true,
+        item: null,
+        barcode: effectiveBarcode || undefined,
+        unrecognized: true,
+        message: effectiveBarcode
+          ? `Barcode #${effectiveBarcode} detected — product not in public registry. Type product name below to log.`
+          : "Could not clearly read nutrition facts or barcode from this image. Please search for the product below.",
+      });
     }
 
     // ── Mode 3: Packaged Food Search / Query Lookup ──
     if (query && typeof query === "string" && query.trim()) {
       const trimmedQuery = query.trim();
 
-      // If query is 8-14 digits, route as barcode!
-      if (/^\d{8,14}$/.test(trimmedQuery)) {
+      // If query is 6-14 digits, route as barcode!
+      if (/^\d{6,14}$/.test(trimmedQuery)) {
         const offProduct = await lookupOpenFoodFacts(trimmedQuery);
         if (offProduct) {
           return NextResponse.json({ success: true, item: offProduct });
         }
+        const upcProduct = await lookupUPCitemdb(trimmedQuery);
+        if (upcProduct) {
+          return NextResponse.json({ success: true, item: upcProduct });
+        }
         const inferred = await inferProductFromBarcodeAI(trimmedQuery);
-        return NextResponse.json({ success: true, item: inferred });
+        if (inferred) {
+          return NextResponse.json({ success: true, item: inferred });
+        }
+        return NextResponse.json({
+          success: true,
+          item: null,
+          barcode: trimmedQuery,
+          unrecognized: true,
+          message: `Barcode #${trimmedQuery} detected — product not in public registry.`,
+        });
       }
 
       // Fast multi-item or single-item food anchor lookup (<2ms)

@@ -349,6 +349,24 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - Full Vitest suite: **50 passed (50 files), 588 passed | 26 skipped (614 total), 0 failing**.
   - Production build: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
 
+### ✅ Sprint 4.11: Deterministic 1D/2D Barcode Decoder, Fake Fallback Elimination & Robust Multi-Item/Typo Parsing
+- **Elimination of Fake Fallback ("Scanned Packaged Product") (`app/api/diet/barcode/route.ts`)**:
+  - Completely deleted all hardcoded fallback objects (`"Scanned Packaged Product"`, 160 kcal, 180 kcal, etc.).
+  - Unrecognized barcodes return structured payload `{ success: true, item: null, barcode, unrecognized: true, message: ... }` with pre-filled search suggestions.
+- **Client-Side Deterministic 1D/2D Barcode Decoder (`@zxing/library`, `components/diet/MealScannerModal.tsx`)**:
+  - Installed and wired `@zxing/library` (`BrowserMultiFormatReader`) alongside native `window.BarcodeDetector`.
+  - Directly decodes EAN-13, EAN-8, UPC-A, UPC-E, Code-128, and QR codes directly from image uploads on any browser (Chrome, Safari, iOS, Windows) without requiring browser experimental flags.
+  - Multi-database cascade: OpenFoodFacts (Indian & Global catalogs) -> UPCitemdb trial API -> Gemini Vision packaging/label identification.
+- **Robust Multi-Item & Typo Egg Parsing Engine (`lib/nutrition/foodAnchors.ts`, `lib/ai/nutrition/calculator.ts`, `app/api/estimate-meal/route.ts`)**:
+  - Dedicated egg recognizer (`/\b(eggs?|anda|ande|boiled eggs?|whole eggs?|omelette|omlet|bhurji)\b/i` without "white") guarantees `"2 wgole eggs with 2 rotis"` resolves both items to **`352 kcal, 18.8g P, 42.8g C, 11.2g F`** (never 80 kcal).
+  - Dedicated flatbread recognizer matches `"2 rotis"` to **`208 kcal, 6.2g P, 42g C, 1.6g F`** (never 80 kcal).
+  - Eliminated partial-match poisoning on compound queries in `resolveFoodItem` and `calculateMealNutrition` (bypasses single-food resolvers when compound separators are detected, delegating unanchored compound dishes directly to Gemini AI multi-item decomposition).
+  - Updated `roti_plain` in `INDIAN_FOOD_DATABASE` to 35g / 104 kcal standard.
+- **Test & Build Verification**:
+  - Updated `tests/diet/nutrition-accuracy.test.ts` (22/22 passing), `tests/diet/barcode-route.test.ts` (3/3 passing), and `tests/diet/nutrition-engine.test.ts` (26/26 passing).
+  - Full Vitest suite: **50 passed (50 files), 592 passed | 26 skipped (618 total), 0 failing**.
+  - Production build: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
+
 ### ⏳ Sprint 5: Multi-Device Responsive & Final E2E QA
 - **Tablet Optimization**: iPad 10th Gen (1024×768) 2-column bento grid verification.
 - **Desktop Optimization**: Desktop (1440×900) 3-column layout verification.
@@ -358,8 +376,8 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
-- **Vitest Suite**: `588 passed | 26 skipped` across all 50 test suites (0 failing).
-- **Diet Tests**: `184/184 passed` across all 14 test suites in `tests/diet/*`.
+- **Vitest Suite**: `592 passed | 26 skipped` across all 50 test suites (0 failing).
+- **Diet Tests**: `188/188 passed` across all 14 test suites in `tests/diet/*`.
 - **Workout Tests**: `42/42 passed` across `tests/workouts/*`.
 - **Onboarding Tests**: `78/78 passed` across `tests/onboarding/*`.
 - **Landing Tests**: `3/3 passed` across `tests/landing/*`.

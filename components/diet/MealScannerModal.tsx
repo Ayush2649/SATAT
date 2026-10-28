@@ -156,20 +156,42 @@ async function resizeImageClient(
 }
 
 async function detectBarcodeClient(file: File): Promise<string | null> {
-  if (typeof window === "undefined" || !("BarcodeDetector" in window)) {
-    return null;
-  }
-  try {
-    const formats = ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "code_39", "qr_code"];
-    const detector = new (window as any).BarcodeDetector({ formats });
-    const bitmap = await createImageBitmap(file);
-    const barcodes = await detector.detect(bitmap);
-    if (barcodes && barcodes.length > 0 && barcodes[0]?.rawValue) {
-      return String(barcodes[0].rawValue).trim();
+  // 1. Try Browser BarcodeDetector API if available
+  if (typeof window !== "undefined" && "BarcodeDetector" in window) {
+    try {
+      const formats = ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "code_39", "qr_code"];
+      const detector = new (window as any).BarcodeDetector({ formats });
+      const bitmap = await createImageBitmap(file);
+      const barcodes = await detector.detect(bitmap);
+      if (barcodes && barcodes.length > 0 && barcodes[0]?.rawValue) {
+        const val = String(barcodes[0].rawValue).trim();
+        if (val) return val;
+      }
+    } catch {
+      // fallback to ZXing
     }
-  } catch {
-    // fallback
   }
+
+  // 2. Deterministic 1D/2D Barcode Decoder via @zxing/library
+  if (typeof window !== "undefined") {
+    try {
+      const { BrowserMultiFormatReader } = await import("@zxing/library");
+      const reader = new BrowserMultiFormatReader();
+      const objectUrl = URL.createObjectURL(file);
+      try {
+        const result = await reader.decodeFromImageUrl(objectUrl);
+        if (result && result.getText()) {
+          const val = result.getText().trim();
+          if (val) return val;
+        }
+      } finally {
+        URL.revokeObjectURL(objectUrl);
+      }
+    } catch {
+      // No barcode pattern decoded by ZXing
+    }
+  }
+
   return null;
 }
 
@@ -254,8 +276,15 @@ export default function MealScannerModal({
           carbsG: Math.round(data.item.carbsG || 0),
           fatG: Math.round(data.item.fatG || 0),
         });
+        setBarcodeScanStage("");
+        setBarcodeScanError("");
+      } else if (data.barcode) {
+        setBarcodeScanStage("");
+        setBarcodeSearch(data.barcode);
+        setBarcodeScanError(`Barcode #${data.barcode} detected. Type the product name below to look up or estimate.`);
       } else {
-        setBarcodeScanError(data.error || "Could not read barcode or nutrition label.");
+        setBarcodeScanStage("");
+        setBarcodeScanError(data.message || data.error || "Could not read barcode or nutrition label. Please search below.");
       }
     } catch {
       setBarcodeScanError("Failed to process nutrition label image.");

@@ -224,6 +224,54 @@ describe("Sprint 4.9 & 4.10: Nutrition Accuracy Engine", () => {
       expect(result).toBeNull();
     });
 
+    it("resolves '2 wgole eggs with 2 rotis' with typo in 'whole' without dropping either ingredient (~352 kcal)", () => {
+      const result = resolveMultiItemFoodAnchors("2 wgole eggs with 2 rotis");
+      expect(result).not.toBeNull();
+      expect(result?.matched).toBe(true);
+      expect(result?.items.length).toBe(2);
+
+      // Segment 1: 2 eggs with typo "wgole" = 144 kcal, 12.6g P, 0.8g C, 9.6g F
+      expect(result?.items[0].name).toContain("Whole Egg");
+      expect(result?.items[0].macros.calories).toBe(144);
+      expect(result?.items[0].macros.proteinG).toBe(12.6);
+
+      // Segment 2: 2 rotis = 208 kcal, 6.2g P, 42g C, 1.6g F
+      expect(result?.items[1].name).toContain("Plain Roti");
+      expect(result?.items[1].macros.calories).toBe(208);
+      expect(result?.items[1].macros.proteinG).toBe(6.2);
+
+      // Combined Summed Total: ~352 kcal, ~18.8g P, ~42.8g C, ~11.2g F (NEVER 80 kcal!)
+      expect(result?.macros.calories).toBe(352);
+      expect(result?.macros.proteinG).toBe(18.8);
+      expect(result?.macros.carbsG).toBe(42.8);
+      expect(result?.macros.fatG).toBe(11.2);
+    });
+
+    it("resolves '2 eggs and 2 chapatis' accurately (~352 kcal)", () => {
+      const result = resolveMultiItemFoodAnchors("2 eggs and 2 chapatis");
+      expect(result).not.toBeNull();
+      expect(result?.matched).toBe(true);
+      expect(result?.macros.calories).toBe(352);
+      expect(result?.macros.proteinG).toBe(18.8);
+    });
+
+    it("resolves '2 rotis' alone to 208 kcal (NEVER 80 kcal!)", () => {
+      const result = findFoodAnchor("2 rotis");
+      expect(result).not.toBeNull();
+      expect(result?.matched).toBe(true);
+      expect(result?.macros.calories).toBe(208);
+      expect(result?.macros.proteinG).toBe(6.2);
+      expect(result?.macros.carbsG).toBe(42);
+    });
+
+    it("resolves '2 wgole eggs' alone to 144 kcal", () => {
+      const result = findFoodAnchor("2 wgole eggs");
+      expect(result).not.toBeNull();
+      expect(result?.matched).toBe(true);
+      expect(result?.macros.calories).toBe(144);
+      expect(result?.macros.proteinG).toBe(12.6);
+    });
+
     it("route via findFoodAnchor cleanly routes compound queries without dropping items", () => {
       const result = findFoodAnchor("2 whole eggs with 2 rotis");
       expect(result).not.toBeNull();

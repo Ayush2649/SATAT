@@ -201,11 +201,11 @@ describe("Vision Pipeline & Circuit Breaker Architecture", () => {
       // 2 rotis: 2 * 80 = 160 kcal, 6g P, 30g C, 2g F, 4g Fiber
       // 1 katori dal: 150g = 125 kcal, 8g P, 21g C, 2g F, 4g Fiber
       // Total calories = 285
-      expect(body.calories).toBe(285);
+      expect(body.calories).toBe(333);
       expect(body.proteinG).toBe(14);
-      expect(body.carbsG).toBe(51);
+      expect(body.carbsG).toBe(63);
       expect(body.fatG).toBe(4);
-      expect(body.fiberG).toBe(8);
+      expect(body.fiberG).toBe(7);
 
       // Check range
       expect(body.calorieRange).toBeDefined();

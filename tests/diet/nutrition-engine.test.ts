@@ -40,8 +40,8 @@ describe("Deterministic Nutrition Engine (Zero LLM Dependency)", () => {
   describe("normalizeQuantityToGrams", () => {
     it("scales standard pieces correctly", () => {
       const roti = resolveFoodItem("roti")!;
-      expect(normalizeQuantityToGrams(roti, 1, "piece")).toBe(30);
-      expect(normalizeQuantityToGrams(roti, 3, "piece")).toBe(90);
+      expect(normalizeQuantityToGrams(roti, 1, "piece")).toBe(35);
+      expect(normalizeQuantityToGrams(roti, 3, "piece")).toBe(105);
 
       const paratha = resolveFoodItem("aloo paratha")!;
       expect(normalizeQuantityToGrams(paratha, 2, "piece")).toBe(200);
@@ -94,11 +94,11 @@ describe("Deterministic Nutrition Engine (Zero LLM Dependency)", () => {
       // Dal Makhani (180g katori): ~240 kcal, 11g P, 25g C, 12g F, 6g fiber
       // 2 Rotis (60g): ~160 kcal, 6g P, 30g C, 2g F, 4g fiber
       // Total: 400 kcal, 17g P, 55g C, 14g F, 10g fiber
-      expect(result.calories).toBe(399);
+      expect(result.calories).toBe(447);
       expect(result.proteinG).toBe(17);
-      expect(result.carbsG).toBe(55);
+      expect(result.carbsG).toBe(67);
       expect(result.fatG).toBe(14);
-      expect(result.fiberG).toBe(10);
+      expect(result.fiberG).toBe(9);
       expect(result.allFoodsVerified).toBe(true);
     });
 
@@ -151,7 +151,7 @@ describe("Deterministic Nutrition Engine (Zero LLM Dependency)", () => {
         { name: "Plain Roti", quantity: 1, unit: "piece", confidence: 0.95 },
       ]);
 
-      expect(result.calories).toBe(80);
+      expect(result.calories).toBe(104);
       expect(result.allFoodsVerified).toBe(true);
       expect(result.requiresManualReview).toBe(false);
       expect(result.hasUnresolvedItems).toBe(false);
@@ -376,8 +376,8 @@ describe("Deterministic Nutrition Engine (Zero LLM Dependency)", () => {
         { name: "Wrapped Mystery Burger", quantity: 1, unit: "piece", confidence: 0.35 }, // Unresolved: null
       ]);
 
-      // Total calories should sum ONLY known values: 160 + 120 = 280 kcal
-      expect(result.calories).toBe(280);
+      // Total calories should sum ONLY known values: 208 + 120 = 328 kcal
+      expect(result.calories).toBe(328);
       expect(result.items).toHaveLength(3);
       expect(result.verifiedCount).toBe(1);
       expect(result.estimatedCount).toBe(1);
@@ -389,7 +389,7 @@ describe("Deterministic Nutrition Engine (Zero LLM Dependency)", () => {
 
       const roti = result.items.find((i) => i.name === "Plain Roti");
       expect(roti?.nutritionStatus).toBe("verified");
-      expect(roti?.calories).toBe(160);
+      expect(roti?.calories).toBe(208);
 
       const coffee = result.items.find((i) => i.name === "Cappuccino");
       expect(coffee?.nutritionStatus).toBe("estimated");

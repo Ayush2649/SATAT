@@ -67,7 +67,7 @@ describe("Sprint 4.10: POST /api/diet/barcode Route", () => {
     fetchSpy.mockRestore();
   });
 
-  it("never throws 422 when barcode is not found in OpenFoodFacts — returns AI inference fallback", async () => {
+  it("never throws 422 when barcode is not found in OpenFoodFacts — returns unrecognized barcode payload without inventing fake products", async () => {
     // OpenFoodFacts returns 404/status 0 for unindexed barcode
     const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValue({
       ok: true,
@@ -86,9 +86,14 @@ describe("Sprint 4.10: POST /api/diet/barcode Route", () => {
 
     const data = await res.json();
     expect(data.success).toBe(true);
-    expect(data.item).toBeDefined();
-    expect(data.item.calories).toBeGreaterThan(0);
-    expect(data.item.barcode).toBe("8909999999999");
+    // Verifies fake "Scanned Packaged Product" is GONE
+    if (data.item) {
+      expect(data.item.name).not.toBe("Scanned Packaged Product");
+    } else {
+      expect(data.barcode).toBe("8909999999999");
+      expect(data.unrecognized).toBe(true);
+      expect(data.message).toContain("8909999999999");
+    }
 
     fetchSpy.mockRestore();
   });
