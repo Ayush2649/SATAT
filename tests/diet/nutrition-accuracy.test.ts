@@ -162,7 +162,7 @@ describe("Sprint 4.9 & 4.10: Nutrition Accuracy Engine", () => {
       const scoop = findFoodAnchor("1 scoop whey");
       expect(scoop).not.toBeNull();
       expect(scoop?.anchor?.id).toBe("whey_isolate");
-      expect(scoop?.macros.proteinG).toBe(25);
+      expect(scoop?.macros.proteinG).toBe(24);
     });
 
     it("resolves Amul High Protein Packaged products", () => {
@@ -174,7 +174,7 @@ describe("Sprint 4.9 & 4.10: Nutrition Accuracy Engine", () => {
       const buttermilk = findFoodAnchor("amul protein buttermilk");
       expect(buttermilk).not.toBeNull();
       expect(buttermilk?.macros.proteinG).toBe(15);
-      expect(buttermilk?.macros.calories).toBe(90);
+      expect(buttermilk?.macros.calories).toBe(108);
     });
   });
 

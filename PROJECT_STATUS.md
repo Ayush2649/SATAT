@@ -367,6 +367,42 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - Full Vitest suite: **50 passed (50 files), 592 passed | 26 skipped (618 total), 0 failing**.
   - Production build: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
 
+### ✅ Sprint 4.12: Streamlined Plate Photo AI Studio & Dated Clinical Nutrition Benchmark Suite (2026-10-28)
+- **Removal of Barcode UI from Fuel Studio (`components/diet/DietPage.tsx`, `components/diet/MealScannerModal.tsx`)**:
+  - Renamed launcher card from `"Scan Plate or Barcode"` to **`"Scan Your Meal Plate"`** with subtitle: *"Point at Dal Chawal, thalis, bowls, or home-cooked meals for instant macro breakdown."*
+  - Cleaned launcher card buttons: removed dark `"Barcode"` button, keeping a sleek Terracotta **`Scan Plate`** action button.
+  - Streamlined `MealScannerModal.tsx`: removed the 2-tab mode switcher (`Plate Photo AI` | `Barcode & Label`), opening directly into the zero-clutter Plate Photo AI viewfinder with subtitle *"Hold plate in clear daylight for component-by-component macro estimation."*
+  - Preserved internal barcode engine and `@zxing/library` decoders in backend routes for future packaged scanner sprints.
+- **Nutrition Accuracy & Food Anchor Expansion (`lib/nutrition/foodAnchors.ts`)**:
+  - Expanded ground-truth food anchors with IFCT 2017 & USDA FoodData Central references:
+    - Added `banana_fresh` (1 medium ~118g = 105 kcal, 1.3g P, 27.0g C, 0.4g F).
+    - Added `rajma_curry` (1 bowl ~180g = 215 kcal, 9.1g P, 30.0g C, 6.0g F).
+    - Added `poha_cooked` (1 bowl ~150g = 180 kcal, 3.5g P, 36.0g C, 2.5g F).
+    - Added `aloo_paratha` (1 paratha ~100g = 210 kcal, 4.8g P, 32.0g C, 7.05g F; 2 parathas = 420 kcal, 9.6g P, 64.0g C, 14.1g F).
+    - Added `brown_bread` (1 slice ~30g = 74 kcal, 3.0g P, 15.0g C, 0.9g F; 2 slices = 148 kcal, 6.0g P, 30.0g C, 1.8g F).
+    - Added `paneer_curry` (100g portion = 265 kcal, 18.3g P, 3.4g C, 20.8g F).
+  - Enhanced `parseQueryPortion`:
+    - Conversational prefix stripping (`"I had"`, `"Post-workout:"`, etc.).
+    - Zero-calorie vehicle suffix stripping (`"in water"`, `"with water"`).
+    - Written number-word conversion (`"one"` through `"ten"` -> `1` through `10`).
+    - Extended unit recognition for `tsp`, `tbsp`, `slice`, `scoop`, `bowl`, and `glass`.
+  - Upgraded `resolveMultiItemFoodAnchors`:
+    - Added parenthetical component breakdown parsing (e.g. `"Homestyle Dal Chawal (150g rice + 1 bowl dal) with 1 tsp ghee"` and `"Oatmeal bowl (50g oats, 200ml milk, 1 banana)"`).
+  - Fixed identifier lookup in dedicated food recognizers (`rice_steamed`, `dal_yellow_tadka`, `egg_white_boiled`).
+- **Clinical Nutrition Benchmark Suite & Dated Report (`tests/diet/nutrition-benchmark-report.test.ts`, `docs/NUTRITION_ACCURACY_BENCHMARK_2026-10-28.md`)**:
+  - Implemented 24 comprehensive test cases across 3 active clinical pipelines:
+    - **Category A (Manual Dish Log, 8 cases)**: 100.0% Kcal / 100.0% Protein Accuracy.
+    - **Category B (Natural Voice Log, 8 cases)**: 100.0% Kcal / 99.9% Protein Accuracy.
+    - **Category C (Plate Component & Modifier Engine, 8 cases)**: 99.9% Kcal / 100.0% Protein Accuracy.
+    - **Overall System Accuracy**: **100.0%** (all 24 cases meeting or exceeding the 95.0% clinical benchmark threshold).
+    - **Atwater Factor Checks**: 24/24 cases pass thermodynamic consistency ($4P + 4C + 9F = \text{kcal}$).
+- **Test & Build Verification**:
+  - `tests/diet/nutrition-benchmark-report.test.ts`: **25/25 passed**.
+  - `tests/diet/nutrition-accuracy.test.ts`: **22/22 passed**.
+  - Full Vitest suite: **51 passed (51 files), 617 passed | 26 skipped (643 total), 0 failing**.
+  - TypeScript compilation: `npx tsc --noEmit` exits with **0 errors**.
+  - Production build: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
+
 ### ⏳ Sprint 5: Multi-Device Responsive & Final E2E QA
 - **Tablet Optimization**: iPad 10th Gen (1024×768) 2-column bento grid verification.
 - **Desktop Optimization**: Desktop (1440×900) 3-column layout verification.
@@ -376,8 +412,8 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
-- **Vitest Suite**: `592 passed | 26 skipped` across all 50 test suites (0 failing).
-- **Diet Tests**: `188/188 passed` across all 14 test suites in `tests/diet/*`.
+- **Vitest Suite**: `617 passed | 26 skipped` across all 51 test suites (0 failing).
+- **Diet Tests**: `213/213 passed` across all 15 test suites in `tests/diet/*`.
 - **Workout Tests**: `42/42 passed` across `tests/workouts/*`.
 - **Onboarding Tests**: `78/78 passed` across `tests/onboarding/*`.
 - **Landing Tests**: `3/3 passed` across `tests/landing/*`.

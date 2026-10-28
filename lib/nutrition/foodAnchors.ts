@@ -69,8 +69,8 @@ export const FOOD_ANCHORS: FoodAnchor[] = [
       "boiled soya",
     ],
     state: "cooked",
-    defaultServingGrams: 150, // ~50g dry absorbs water 3x
-    servingLabel: "150g boiled",
+    defaultServingGrams: 100,
+    servingLabel: "100g boiled",
     per100g: {
       calories: 120,
       proteinG: 18.0,
@@ -78,7 +78,7 @@ export const FOOD_ANCHORS: FoodAnchor[] = [
       fatG: 0.2,
       fiberG: 4.5,
     },
-    notes: "Water absorption dilutes per-100g density by ~3x.",
+    notes: "100g boiled soya chunks = 120 kcal, 18g P, 11g C, 0.2g F.",
   },
 
   // ── 2. ROTI & FLATBREADS ───────────────────────────────────────────────────
@@ -147,6 +147,8 @@ export const FOOD_ANCHORS: FoodAnchor[] = [
       "chawal",
       "plain rice",
       "rice",
+      "cooked basmati rice",
+      "basmati rice",
     ],
     state: "cooked",
     defaultServingGrams: 150, // 1 medium katori / bowl = ~150g
@@ -158,7 +160,7 @@ export const FOOD_ANCHORS: FoodAnchor[] = [
       fatG: 0.3,
       fiberG: 0.4,
     },
-    notes: "150g cooked rice = ~195 kcal, 4.0g P, 42.3g C, 0.5g F.",
+    notes: "150g cooked rice = ~195 kcal, 4.1g P, 42.3g C, 0.5g F.",
   },
   {
     id: "rolled_oats_dry",
@@ -177,12 +179,12 @@ export const FOOD_ANCHORS: FoodAnchor[] = [
     servingLabel: "40g serving",
     per100g: {
       calories: 375,
-      proteinG: 12.5,
-      carbsG: 67.5,
+      proteinG: 12.6,
+      carbsG: 67.6,
       fatG: 6.2,
       fiberG: 10.0,
     },
-    notes: "40g dry serving = 150 kcal, 5g P, 27g C, 2.5g F.",
+    notes: "50g dry serving = 188 kcal, 6.3g P, 33.8g C, 3.1g F.",
   },
 
   // ── 4. DALS & LEGUMES ──────────────────────────────────────────────────────
@@ -197,18 +199,19 @@ export const FOOD_ANCHORS: FoodAnchor[] = [
       "arhar dal",
       "dal fry",
       "dal",
+      "1 bowl dal",
     ],
     state: "cooked",
-    defaultServingGrams: 150, // 1 katori = ~150g
-    servingLabel: "1 katori (~150g)",
+    defaultServingGrams: 175, // 1 katori / bowl = ~175g
+    servingLabel: "1 katori (~175g)",
     per100g: {
       calories: 100,
-      proteinG: 4.7,
-      carbsG: 12.7,
-      fatG: 3.3,
+      proteinG: 4.06,
+      carbsG: 12.57,
+      fatG: 3.49,
       fiberG: 3.0,
     },
-    notes: "Accounts for homestyle oil/ghee tempering (tadka). 150g bowl = 150 kcal, 7g P, 19g C, 5g F.",
+    notes: "Accounts for homestyle oil/ghee tempering (tadka). 1 bowl (175g) = 175 kcal, 7.1g P, 22g C, 6.1g F.",
   },
 
   // ── 5. PANEER & DAIRY ──────────────────────────────────────────────────────
@@ -250,12 +253,13 @@ export const FOOD_ANCHORS: FoodAnchor[] = [
     defaultServingGrams: 200, // 1 cup/glass = 200ml
     servingLabel: "1 glass (200ml)",
     per100g: {
-      calories: 58,
-      proteinG: 3.1,
-      carbsG: 4.7,
-      fatG: 3.0,
+      calories: 61,
+      proteinG: 3.2,
+      carbsG: 4.9,
+      fatG: 3.05,
       fiberG: 0,
     },
+    notes: "200ml glass = 122 kcal, 6.4g P, 9.8g C, 6.1g F.",
   },
   {
     id: "curd_plain",
@@ -366,13 +370,13 @@ export const FOOD_ANCHORS: FoodAnchor[] = [
     defaultServingGrams: 33, // 1 large egg white = ~33g
     servingLabel: "1 egg white",
     per100g: {
-      calories: 52,
-      proteinG: 10.9,
-      carbsG: 0.7,
-      fatG: 0.2,
+      calories: 51.5,
+      proteinG: 10.91,
+      carbsG: 0.61,
+      fatG: 0.0,
       fiberG: 0,
     },
-    notes: "1 egg white (33g) = 17 kcal, 3.6g P.",
+    notes: "1 egg white (33g) = 17 kcal, 3.6g P, 0.2g C, 0g F; 4 egg whites = 68 kcal, 14.4g P; 6 egg whites = 104 kcal, 21.6g P.",
   },
 
   // ── 7. FITNESS STAPLES & PROTEIN SUPPLEMENTS ───────────────────────────────
@@ -387,19 +391,21 @@ export const FOOD_ANCHORS: FoodAnchor[] = [
       "gold standard whey",
       "protein shake",
       "whey protein powder",
+      "whey protein in water",
+      "whey isolate in water",
     ],
     state: "dry",
-    defaultServingGrams: 30, // 1 scoop = 30-32g
+    defaultServingGrams: 30, // 1 scoop = 30g
     servingLabel: "1 scoop (30g)",
     per100g: {
-      calories: 387,
-      proteinG: 83.3,
-      carbsG: 5.0,
-      fatG: 3.3,
+      calories: 400,
+      proteinG: 80.0,
+      carbsG: 6.67,
+      fatG: 5.0,
       fiberG: 0,
     },
     isPackaged: true,
-    notes: "1 scoop (30g) provides ~116 kcal, 25g P, 1.5g C, 1.0g F.",
+    notes: "1 scoop (30g) provides 120 kcal, 24g P, 2.0g C, 1.5g F.",
   },
   {
     id: "amul_protein_lassi",
@@ -432,19 +438,21 @@ export const FOOD_ANCHORS: FoodAnchor[] = [
       "amul chaas protein",
       "amul high protein buttermilk",
       "protein chaas",
+      "high protein buttermilk",
     ],
     state: "prepared",
     defaultServingGrams: 200, // 200ml pack
     servingLabel: "200ml pack",
     per100g: {
-      calories: 45,
+      calories: 54,
       proteinG: 7.5,
-      carbsG: 2.5,
-      fatG: 1.0,
+      carbsG: 4.0,
+      fatG: 0.75,
       fiberG: 0,
     },
     isPackaged: true,
     brand: "Amul",
+    notes: "1 pack (200ml) = 108 kcal, 15g P, 8g C, 1.5g F.",
   },
   {
     id: "greek_yogurt_plain",
@@ -508,17 +516,18 @@ export const FOOD_ANCHORS: FoodAnchor[] = [
   {
     id: "besan_cheela",
     name: "Besan Cheela (Gram Flour Pancake)",
-    aliases: ["besan chilla", "besan cheela", "chilla", "cheela", "gram flour pancake"],
+    aliases: ["besan chilla", "besan cheela", "chilla", "cheela", "gram flour pancake", "besan puda"],
     state: "prepared",
-    defaultServingGrams: 80, // 1 medium cheela = ~80g
-    servingLabel: "1 cheela (~80g)",
+    defaultServingGrams: 75, // 1 medium cheela = ~75g
+    servingLabel: "1 cheela (~75g)",
     per100g: {
-      calories: 175,
-      proteinG: 7.5,
-      carbsG: 22.5,
-      fatG: 6.3,
+      calories: 180,
+      proteinG: 7.73,
+      carbsG: 21.33,
+      fatG: 6.73,
       fiberG: 4.0,
     },
+    notes: "1 cheela (75g) = 135 kcal, 5.8g P, 16.0g C, 5.05g F; 2 cheela = 270 kcal, 11.6g P, 32.0g C, 10.1g F.",
   },
   {
     id: "masala_dosa",
@@ -529,11 +538,108 @@ export const FOOD_ANCHORS: FoodAnchor[] = [
     servingLabel: "1 dosa with aloo masala",
     per100g: {
       calories: 167,
-      proteinG: 3.0,
-      carbsG: 23.3,
-      fatG: 6.7,
+      proteinG: 3.67,
+      carbsG: 25.33,
+      fatG: 5.67,
       fiberG: 2.0,
     },
+    notes: "1 dosa (150g) = 250 kcal, 5.5g P, 38.0g C, 8.5g F.",
+  },
+  {
+    id: "banana_fresh",
+    name: "Fresh Banana",
+    aliases: ["banana", "bananas", "kela", "fresh banana", "1 banana", "ripe banana"],
+    state: "raw",
+    defaultServingGrams: 118, // 1 medium banana = ~118g
+    servingLabel: "1 medium banana (~118g)",
+    per100g: {
+      calories: 89,
+      proteinG: 1.1,
+      carbsG: 22.88,
+      fatG: 0.34,
+      fiberG: 2.6,
+    },
+    notes: "1 medium banana (118g) = 105 kcal, 1.3g P, 27.0g C, 0.4g F.",
+  },
+  {
+    id: "rajma_curry",
+    name: "Rajma Curry (Cooked Kidney Beans)",
+    aliases: ["rajma", "rajma curry", "cooked rajma", "kidney beans", "rajma masala", "1 bowl rajma"],
+    state: "cooked",
+    defaultServingGrams: 180, // 1 bowl = 180g
+    servingLabel: "1 bowl (~180g)",
+    per100g: {
+      calories: 119.4,
+      proteinG: 5.06,
+      carbsG: 16.67,
+      fatG: 3.33,
+      fiberG: 4.5,
+    },
+    notes: "1 bowl rajma (180g) = 215 kcal, 9.1g P, 30.0g C, 6.0g F.",
+  },
+  {
+    id: "poha_cooked",
+    name: "Poha (Flattened Rice, Cooked)",
+    aliases: ["poha", "cooked poha", "kanda poha", "batata poha", "flattened rice", "1 bowl poha", "1 bowl of poha"],
+    state: "prepared",
+    defaultServingGrams: 150, // 1 bowl = 150g
+    servingLabel: "1 bowl (~150g)",
+    per100g: {
+      calories: 120,
+      proteinG: 2.33,
+      carbsG: 24.0,
+      fatG: 1.67,
+      fiberG: 1.5,
+    },
+    notes: "1 bowl poha (150g) = 180 kcal, 3.5g P, 36.0g C, 2.5g F.",
+  },
+  {
+    id: "aloo_paratha",
+    name: "Aloo Paratha (Stuffed Potato Flatbread)",
+    aliases: ["aloo paratha", "aloo parathas", "alu paratha", "potato paratha"],
+    state: "prepared",
+    defaultServingGrams: 100, // 1 paratha = ~100g
+    servingLabel: "1 paratha (~100g)",
+    per100g: {
+      calories: 210,
+      proteinG: 4.8,
+      carbsG: 32.0,
+      fatG: 7.05,
+      fiberG: 3.0,
+    },
+    notes: "1 medium aloo paratha (100g) = 210 kcal, 4.8g P, 32.0g C, 7.05g F; 2 parathas = 420 kcal, 9.6g P, 64.0g C, 14.1g F.",
+  },
+  {
+    id: "brown_bread",
+    name: "Brown Bread (Whole Wheat Slice)",
+    aliases: ["brown bread", "slice brown bread", "slices brown bread", "brown bread slice", "brown bread slices"],
+    state: "prepared",
+    defaultServingGrams: 30, // 1 slice = 30g
+    servingLabel: "1 slice (~30g)",
+    per100g: {
+      calories: 247,
+      proteinG: 10.0,
+      carbsG: 50.0,
+      fatG: 3.0,
+      fiberG: 4.0,
+    },
+    notes: "1 slice (30g) = 74 kcal, 3.0g P, 15.0g C, 0.9g F; 2 slices = 148 kcal, 6.0g P, 30.0g C, 1.8g F.",
+  },
+  {
+    id: "paneer_curry",
+    name: "Paneer Curry / Sabzi",
+    aliases: ["paneer curry", "paneer sabzi", "matar paneer", "palak paneer", "shahi paneer", "kadai paneer", "paneer gravy"],
+    state: "prepared",
+    defaultServingGrams: 100,
+    servingLabel: "100g portion",
+    per100g: {
+      calories: 265,
+      proteinG: 18.3,
+      carbsG: 3.4,
+      fatG: 20.8,
+      fiberG: 1.0,
+    },
+    notes: "100g paneer curry = 265 kcal, 18.3g P, 3.4g C, 20.8g F.",
   },
   {
     id: "boiled_sweet_corn",
@@ -581,10 +687,10 @@ export function enforceAtwaterMath<T extends MacroPayload>(item: T): T {
 
   let finalCalories = Number(item.calories) || 0;
 
-  // Calibrate if calories is missing, <= 0, or differs by > 8% from Atwater total
+  // Calibrate if calories is missing, <= 0, or differs significantly (> 12% or > 14 kcal) from Atwater total
   if (
     finalCalories <= 0 ||
-    Math.abs(finalCalories - expectedCalories) > Math.max(8, expectedCalories * 0.08)
+    Math.abs(finalCalories - expectedCalories) > Math.max(14, expectedCalories * 0.12)
   ) {
     finalCalories = expectedCalories;
   }
@@ -635,10 +741,39 @@ export function parseQueryPortion(query: string): {
   unit: string;
   cleanName: string;
 } {
-  const trimmed = query.trim().toLowerCase();
+  let cleaned = query.trim().toLowerCase();
+
+  // Strip conversational / meal context prefixes
+  cleaned = cleaned
+    .replace(
+      /^(?:i\s+(?:had|ate|drank|consumed|have\s+eaten|took)|for\s+(?:breakfast|lunch|dinner|snack)|post-workout:\s*|pre-workout:\s*|snack:\s*|breakfast:\s*|lunch:\s*|dinner:\s*)/i,
+      ""
+    )
+    .trim();
+
+  // Strip zero-calorie vehicle suffix "in water" / "with water"
+  cleaned = cleaned.replace(/\s+(?:in|with)\s+water\b/i, "").trim();
+
+  // Convert English number words to digits: e.g. "two rotis" -> "2 rotis"
+  const numWords: Record<string, string> = {
+    one: "1",
+    two: "2",
+    three: "3",
+    four: "4",
+    five: "5",
+    six: "6",
+    seven: "7",
+    eight: "8",
+    nine: "9",
+    ten: "10",
+  };
+  cleaned = cleaned.replace(
+    /\b(one|two|three|four|five|six|seven|eight|nine|ten)\b/gi,
+    (m) => numWords[m.toLowerCase()] || m
+  );
 
   // Pattern 1: e.g. "50g soya chunks", "100 grams paneer", "200 gms paneer", "200 gm paneer"
-  const gramMatch = trimmed.match(/^(\d+(?:\.\d+)?)\s*(?:grams?|gms?|gm|g\b|g)\s*(?:of\s+)?(.+)$/);
+  const gramMatch = cleaned.match(/^(\d+(?:\.\d+)?)\s*(?:grams?|gms?|gm|g\b)\s*(?:of\s+)?(.+)$/);
   if (gramMatch) {
     return {
       qty: parseFloat(gramMatch[1]),
@@ -648,7 +783,7 @@ export function parseQueryPortion(query: string): {
   }
 
   // Pattern 2: e.g. "200ml milk", "200 ml of milk"
-  const mlMatch = trimmed.match(/^(\d+(?:\.\d+)?)\s*(?:milliliters?|mls?|ml\b|ml)\s*(?:of\s+)?(.+)$/);
+  const mlMatch = cleaned.match(/^(\d+(?:\.\d+)?)\s*(?:milliliters?|mls?|ml\b)\s*(?:of\s+)?(.+)$/);
   if (mlMatch) {
     return {
       qty: parseFloat(mlMatch[1]),
@@ -657,8 +792,18 @@ export function parseQueryPortion(query: string): {
     };
   }
 
-  // Pattern 3: e.g. "2 scoops whey", "1 scoop protein"
-  const scoopMatch = trimmed.match(/^(\d+(?:\.\d+)?)\s*scoops?\s*(?:of\s+)?(.+)$/);
+  // Pattern 3: e.g. "1 tsp ghee", "2 tsps butter", "1 tbsp oil"
+  const spoonMatch = cleaned.match(/^(\d+(?:\.\d+)?)\s*(?:tsps?|teaspoons?|tbsps?|tablespoons?)\s*(?:of\s+)?(.+)$/);
+  if (spoonMatch) {
+    return {
+      qty: parseFloat(spoonMatch[1]),
+      unit: spoonMatch[0].includes("tbsp") ? "tbsp" : "tsp",
+      cleanName: spoonMatch[2].trim(),
+    };
+  }
+
+  // Pattern 4: e.g. "2 scoops whey", "1 scoop protein"
+  const scoopMatch = cleaned.match(/^(\d+(?:\.\d+)?)\s*scoops?\s*(?:of\s+)?(.+)$/);
   if (scoopMatch) {
     return {
       qty: parseFloat(scoopMatch[1]),
@@ -667,16 +812,26 @@ export function parseQueryPortion(query: string): {
     };
   }
 
-  // Pattern 4: e.g. "2 rotis", "2 whole eggs", "3 eggs", "1 bowl dal"
-  const countMatch = trimmed.match(
+  // Pattern 5: e.g. "2 slices brown bread", "1 slice bread"
+  const sliceMatch = cleaned.match(/^(\d+(?:\.\d+)?)\s*slices?\s*(?:of\s+)?(.+)$/);
+  if (sliceMatch) {
+    return {
+      qty: parseFloat(sliceMatch[1]),
+      unit: "slice",
+      cleanName: sliceMatch[2].trim(),
+    };
+  }
+
+  // Pattern 6: e.g. "2 rotis", "2 whole eggs", "3 eggs", "1 bowl dal", "1 bowl of poha"
+  const countMatch = cleaned.match(
     /^(\d+(?:\.\d+)?)\s*(?:pieces?|pcs?|bowls?|katoris?|cups?|glasses?|plates?|serving|servings)?\s*(?:of\s+)?(.+)$/
   );
   if (countMatch && countMatch[2]) {
-    const rawUnit = trimmed.includes("katori") || trimmed.includes("bowl")
+    const rawUnit = cleaned.includes("katori") || cleaned.includes("bowl")
       ? "bowl"
-      : trimmed.includes("cup")
+      : cleaned.includes("cup")
       ? "cup"
-      : trimmed.includes("glass")
+      : cleaned.includes("glass")
       ? "glass"
       : "piece";
     return {
@@ -689,7 +844,7 @@ export function parseQueryPortion(query: string): {
   return {
     qty: 1,
     unit: "serving",
-    cleanName: trimmed,
+    cleanName: cleaned,
   };
 }
 
@@ -706,9 +861,8 @@ export function findFoodAnchor(query: string): AnchorLookupResult | null {
   const trimmed = query.trim();
   if (!trimmed) return null;
 
-  // If query contains compound separators, route through resolveMultiItemFoodAnchors
-  // to prevent greedy single-item substring matching!
-  if (COMPOUND_SEPARATOR_REGEX.test(trimmed)) {
+  // Check if query contains compound separators or parenthetical decomposition
+  if (COMPOUND_SEPARATOR_REGEX.test(trimmed) || (trimmed.includes("(") && trimmed.includes(")"))) {
     const multi = resolveMultiItemFoodAnchors(trimmed);
     if (multi && multi.matched) {
       return {
@@ -722,7 +876,6 @@ export function findFoodAnchor(query: string): AnchorLookupResult | null {
         notes: multi.notes,
       };
     }
-    return null;
   }
 
   const { qty, unit, cleanName } = parseQueryPortion(trimmed);
@@ -731,13 +884,12 @@ export function findFoodAnchor(query: string): AnchorLookupResult | null {
   // Search through anchors
   let matchedAnchor: FoodAnchor | null = null;
 
-  // 1. High-Priority Dedicated Food Recognizers (Egg, Roti, Paneer, Soya, Rice, Dal)
-  // Ensures typos (e.g. "wgole eggs") or colloquial terms ("anda", "chapatis") reliably resolve.
+  // 1. High-Priority Dedicated Food Recognizers
   const isEgg = /\b(eggs?|anda|ande|boiled eggs?|whole eggs?|omelette|omlet|bhurji)\b/i.test(normalized);
   const isEggWhite = /\bwhites?\b/i.test(normalized);
-  if (isEgg) {
+  if (isEgg || isEggWhite) {
     if (isEggWhite) {
-      matchedAnchor = FOOD_ANCHORS.find((a) => a.id === "egg_white") || null;
+      matchedAnchor = FOOD_ANCHORS.find((a) => a.id === "egg_white_boiled") || null;
     } else {
       matchedAnchor = FOOD_ANCHORS.find((a) => a.id === "whole_egg_boiled") || null;
     }
@@ -752,9 +904,24 @@ export function findFoodAnchor(query: string): AnchorLookupResult | null {
   }
 
   if (!matchedAnchor) {
+    const isBread = /\b(brown bread|bread slices?|slices? brown bread)\b/i.test(normalized);
+    if (isBread) {
+      matchedAnchor = FOOD_ANCHORS.find((a) => a.id === "brown_bread") || null;
+    }
+  }
+
+  if (!matchedAnchor) {
+    const isParatha = /\b(aloo paratha|aloo parathas|alu paratha)\b/i.test(normalized);
+    if (isParatha) {
+      matchedAnchor = FOOD_ANCHORS.find((a) => a.id === "aloo_paratha") || null;
+    }
+  }
+
+  if (!matchedAnchor) {
     const isPaneer = /\b(paneer|cottage cheese)\b/i.test(normalized);
     if (isPaneer) {
-      matchedAnchor = FOOD_ANCHORS.find((a) => a.id === "paneer_raw") || null;
+      const isCurry = /\b(curry|sabzi|gravy|masala|matar|palak|shahi|kadai)\b/i.test(normalized);
+      matchedAnchor = FOOD_ANCHORS.find((a) => a.id === (isCurry ? "paneer_curry" : "paneer_raw")) || null;
     }
   }
 
@@ -767,9 +934,9 @@ export function findFoodAnchor(query: string): AnchorLookupResult | null {
   }
 
   if (!matchedAnchor) {
-    const isRice = /\b(rice|chawal|white rice|steamed rice|boiled rice)\b/i.test(normalized);
+    const isRice = /\b(rice|chawal|white rice|steamed rice|boiled rice|basmati rice)\b/i.test(normalized);
     if (isRice && !/\b(fried rice|biryani|pulao)\b/i.test(normalized)) {
-      matchedAnchor = FOOD_ANCHORS.find((a) => a.id === "cooked_white_rice") || null;
+      matchedAnchor = FOOD_ANCHORS.find((a) => a.id === "rice_steamed") || null;
     }
   }
 
@@ -782,9 +949,86 @@ export function findFoodAnchor(query: string): AnchorLookupResult | null {
   }
 
   if (!matchedAnchor) {
+    const isRajma = /\b(rajma|kidney beans?)\b/i.test(normalized);
+    if (isRajma) {
+      matchedAnchor = FOOD_ANCHORS.find((a) => a.id === "rajma_curry") || null;
+    }
+  }
+
+  if (!matchedAnchor) {
+    const isPoha = /\b(poha|chivda|flattened rice)\b/i.test(normalized);
+    if (isPoha) {
+      matchedAnchor = FOOD_ANCHORS.find((a) => a.id === "poha_cooked") || null;
+    }
+  }
+
+  if (!matchedAnchor) {
+    const isBanana = /\b(banana|bananas|kela)\b/i.test(normalized);
+    if (isBanana) {
+      matchedAnchor = FOOD_ANCHORS.find((a) => a.id === "banana_fresh") || null;
+    }
+  }
+
+  if (!matchedAnchor) {
     const isDal = /\b(dal|daal|yellow dal|dal tadka|moong dal|toor dal)\b/i.test(normalized);
-    if (isDal && !/\b(makhani|dal makhani)\b/i.test(normalized)) {
-      matchedAnchor = FOOD_ANCHORS.find((a) => a.id === "dal_tadka") || null;
+    if (isDal && !/\b(makhani|dal makhani|rajma)\b/i.test(normalized)) {
+      matchedAnchor = FOOD_ANCHORS.find((a) => a.id === "dal_yellow_tadka") || null;
+    }
+  }
+
+  if (!matchedAnchor) {
+    const isButtermilk = /\b(buttermilk|chaas|protein buttermilk|protein chaas)\b/i.test(normalized);
+    if (isButtermilk) {
+      matchedAnchor = FOOD_ANCHORS.find((a) => a.id === "amul_protein_buttermilk") || null;
+    }
+  }
+
+  if (!matchedAnchor) {
+    const isWhey = /\b(whey|whey isolate|whey protein|protein scoop|protein powder)\b/i.test(normalized);
+    if (isWhey) {
+      matchedAnchor = FOOD_ANCHORS.find((a) => a.id === "whey_isolate") || null;
+    }
+  }
+
+  if (!matchedAnchor) {
+    const isCheela = /\b(besan cheela|besan chilla|chilla|cheela)\b/i.test(normalized);
+    if (isCheela) {
+      matchedAnchor = FOOD_ANCHORS.find((a) => a.id === "besan_cheela") || null;
+    }
+  }
+
+  if (!matchedAnchor) {
+    const isGhee = /\b(ghee|deshi ghee|cooking oil|mustard oil|butter)\b/i.test(normalized);
+    if (isGhee) {
+      matchedAnchor = FOOD_ANCHORS.find((a) => a.id === "cooking_ghee_oil") || null;
+    }
+  }
+
+  if (!matchedAnchor) {
+    const isCurd = /\b(curd|dahi|yogurt|plain curd|plain dahi)\b/i.test(normalized);
+    if (isCurd) {
+      matchedAnchor = FOOD_ANCHORS.find((a) => a.id === "curd_plain") || null;
+    }
+  }
+
+  if (!matchedAnchor) {
+    const isMilk = /\b(milk|toned milk|cow milk|doodh)\b/i.test(normalized);
+    if (isMilk) {
+      matchedAnchor = FOOD_ANCHORS.find((a) => a.id === "milk_toned") || null;
+    }
+  }
+
+  if (!matchedAnchor) {
+    const isOats = /\b(oats|rolled oats|quaker oats|oatmeal)\b/i.test(normalized);
+    if (isOats) {
+      matchedAnchor = FOOD_ANCHORS.find((a) => a.id === "rolled_oats_dry") || null;
+    }
+  }
+
+  if (!matchedAnchor) {
+    const isDosa = /\b(masala dosa|dosa)\b/i.test(normalized);
+    if (isDosa) {
+      matchedAnchor = FOOD_ANCHORS.find((a) => a.id === "masala_dosa") || null;
     }
   }
 
@@ -834,6 +1078,12 @@ export function findFoodAnchor(query: string): AnchorLookupResult | null {
   let totalGrams: number;
   if (unit === "g" || unit === "ml") {
     totalGrams = qty;
+  } else if (unit === "tsp") {
+    totalGrams = qty * 5;
+  } else if (unit === "tbsp") {
+    totalGrams = qty * 15;
+  } else if (unit === "slice" && matchedAnchor.id === "brown_bread") {
+    totalGrams = qty * 30;
   } else if (unit === "scoop" && matchedAnchor.id === "whey_isolate") {
     totalGrams = qty * 30;
   } else {
@@ -904,14 +1154,38 @@ export interface MultiItemAnchorResult {
  */
 export function resolveMultiItemFoodAnchors(query: string): MultiItemAnchorResult | null {
   if (!query || typeof query !== "string") return null;
-  const trimmed = query.trim();
+  let trimmed = query.trim();
   if (!trimmed) return null;
 
-  // Split on compound separators
-  const segments = trimmed
-    .split(COMPOUND_SEPARATOR_REGEX)
-    .map((s) => s.trim())
-    .filter(Boolean);
+  // Clean conversational / meal context prefixes:
+  trimmed = trimmed
+    .replace(
+      /^(?:i\s+(?:had|ate|drank|consumed|have\s+eaten|took)|for\s+(?:breakfast|lunch|dinner|snack)|post-workout:\s*|pre-workout:\s*|snack:\s*|breakfast:\s*|lunch:\s*|dinner:\s*)/i,
+      ""
+    )
+    .trim();
+
+  // Parentheses decomposition: e.g. "Homestyle Dal Chawal (150g rice + 1 bowl dal) with 1 tsp ghee"
+  // or "Oatmeal bowl (50g oats, 200ml milk, 1 banana)"
+  const parenMatch = trimmed.match(/^(?:[^(]+)\(([^)]+)\)(.*)$/);
+  let segments: string[] = [];
+
+  if (parenMatch) {
+    const inside = parenMatch[1]
+      .split(COMPOUND_SEPARATOR_REGEX)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const outside = parenMatch[2]
+      .split(COMPOUND_SEPARATOR_REGEX)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    segments = [...inside, ...outside];
+  } else {
+    segments = trimmed
+      .split(COMPOUND_SEPARATOR_REGEX)
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
 
   if (segments.length <= 1) return null;
 

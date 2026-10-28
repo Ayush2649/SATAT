@@ -26,7 +26,6 @@ import {
   Search,
   Mic,
   Check,
-  Barcode,
 } from "lucide-react";
 import VoiceMealModal from "@/components/diet/VoiceMealModal";
 import MealScannerModal from "@/components/diet/MealScannerModal";
@@ -428,15 +427,15 @@ export default function DietPage() {
               INSTANT AI VISION
             </span>
             <h2 className="font-sans font-bold text-lg text-[#1C1917] leading-snug">
-              Scan Plate or Barcode
+              Scan Your Meal Plate
             </h2>
-            <p className="text-xs text-[#57534E] truncate mt-0.5">
-              Dal Chawal, bowls, or labels for 2-second macros.
+            <p className="text-xs text-[#57534E] mt-0.5 leading-relaxed">
+              Point at Dal Chawal, thalis, bowls, or home-cooked meals for instant macro breakdown.
             </p>
           </div>
         </div>
 
-        {/* Bottom Action Buttons Row */}
+        {/* Bottom Action Button */}
         <div className="flex items-center justify-end gap-2.5 mt-3.5">
           <button
             type="button"
@@ -444,22 +443,10 @@ export default function DietPage() {
               setScannerMode("plate");
               setShowScanner(true);
             }}
-            className="bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full px-4 py-2 text-xs font-semibold inline-flex items-center gap-1.5 shadow-xs transition-all cursor-pointer whitespace-nowrap active:scale-95"
+            className="w-full sm:w-auto bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full px-5 py-2.5 text-xs font-semibold inline-flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer whitespace-nowrap active:scale-95"
           >
-            <Camera className="w-3.5 h-3.5" />
+            <Camera className="w-4 h-4" />
             <span>Scan Plate</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setScannerMode("barcode");
-              setShowScanner(true);
-            }}
-            className="bg-[#191D1A] hover:bg-[#2D6A4F] text-white rounded-full px-4 py-2 text-xs font-semibold inline-flex items-center gap-1.5 shadow-xs transition-all cursor-pointer whitespace-nowrap active:scale-95"
-          >
-            <Barcode className="w-3.5 h-3.5" />
-            <span>Barcode</span>
           </button>
         </div>
       </div>
