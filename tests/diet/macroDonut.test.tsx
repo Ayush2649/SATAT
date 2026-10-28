@@ -63,7 +63,7 @@ describe("MacroDonutBreakdown", () => {
     expect(html).toContain("/150g");
   });
 
-  it("ensures light and dark variants use identical ring arc colors (#14B8A6, #F59E0B, #8B5CF6)", () => {
+  it("ensures light and dark variants use identical ring arc colors (#F59E0B, #E05A47, #2D6A4F)", () => {
     const darkHtml = renderToStaticMarkup(
       React.createElement(MacroDonutBreakdown, {
         variant: "dark",
@@ -83,14 +83,14 @@ describe("MacroDonutBreakdown", () => {
       })
     );
 
-    // Both must use Teal for Carbs, Amber for Fat, and Violet for Protein ring arcs
-    expect(darkHtml).toContain('stroke="#14B8A6"');
+    // Both must use Amber for Carbs, Terracotta for Fat, and Matcha Sage for Protein ring arcs
     expect(darkHtml).toContain('stroke="#F59E0B"');
-    expect(darkHtml).toContain('stroke="#8B5CF6"');
+    expect(darkHtml).toContain('stroke="#E05A47"');
+    expect(darkHtml).toContain('stroke="#2D6A4F"');
 
-    expect(lightHtml).toContain('stroke="#14B8A6"');
     expect(lightHtml).toContain('stroke="#F59E0B"');
-    expect(lightHtml).toContain('stroke="#8B5CF6"');
+    expect(lightHtml).toContain('stroke="#E05A47"');
+    expect(lightHtml).toContain('stroke="#2D6A4F"');
   });
 });
 

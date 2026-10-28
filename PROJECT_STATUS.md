@@ -319,11 +319,35 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - Full Vitest suite: **49 passed (49 files), 582 passed | 26 skipped (608 total)**.
   - Production build: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
 
-### ⏳ Sprint 4.10: Core Companion Alignment (Orbit & Tasks)
-- **Orbit AI Companion** (`components/orbit/OrbitView.tsx`):
-  - Natural conversation interface, context cards, and prompt suggestions.
-- **Tasks & Settings** (`TaskBoard.tsx`, `Settings`):
-  - Alabaster list items, low-cognitive-load habit tracking, and profile preference controls.
+### ✅ Sprint 4.10: Compound Meal Resolution, Resilient Barcode Pipeline & Unified Donut Colors
+- **Compound Multi-Item Meal Splitting Engine (`lib/nutrition/foodAnchors.ts`, `app/api/estimate-meal/route.ts`)**:
+  - Implemented `resolveMultiItemFoodAnchors(query)` splitting on compound separators (`/\s+(?:with|and|plus|along with|&|\+)\s+|\s*,\s*/i`).
+  - Completely fixes dropping items in compound queries (e.g. `"2 whole eggs with 2 rotis"` correctly resolves both eggs and rotis together instead of only rotis).
+  - Accurate ground-truth calibration for fitness and Indian meal anchors:
+    - Standard roti (35g): `104 kcal, 3.1g P, 21g C, 0.8g F` (2 rotis = `208 kcal, 6.2g P, 42g C, 1.6g F`).
+    - Whole boiled egg (50g): `72 kcal, 6.3g P, 0.4g C, 4.8g F` (2 eggs = `144 kcal, 12.6g P, 0.8g C, 9.6g F`).
+    - Combined total for `"2 whole eggs with 2 rotis"`: **`352 kcal, 18.8g P, 42.8g C, 11.2g F`**.
+    - `"200 gms paneer"`: **`530 kcal, 36.6g P, 6.8g C, 41.6g F`**.
+  - If any ingredient in a multi-item query is not found in deterministic anchors, safely falls back to Gemini AI multi-dish decomposition without dropping any items.
+- **Resilient Barcode & Label Pipeline (Zero 422 Errors) (`app/api/diet/barcode/route.ts`, `components/diet/MealScannerModal.tsx`)**:
+  - Eliminated all 422 rejection errors: guarantees a structured `{ success: true, item: { ... } }` payload with editable fallbacks.
+  - Multi-stage resolution: OpenFoodFacts v2 & v0 lookup with fallback to Gemini AI product inference for unindexed Indian `890...` barcodes and food packaging wrappers.
+  - Client-side `BarcodeDetector` integration to read barcode symbologies before upload.
+  - High-contrast client canvas downsampling (`maxDim: 1400`, `quality: 0.9`).
+- **Packaged Food Lookup & Stepper UI Polish (`components/diet/MealScannerModal.tsx`)**:
+  - Relocated quantity stepper (`- 1 +`) to the top right corner of staple and lookup cards.
+  - Added `w-full overflow-hidden` and sanitized button text (`Add to Fuel`), eliminating all horizontal scrolling on mobile viewports (`393x852`).
+- **Unified Macro Donut Ring Colors (`components/diet/MacroDonutBreakdown.tsx`, `tests/diet/macroDonut.test.tsx`)**:
+  - Standardized macro ring arc colors everywhere to match the Daily Nutrition Summary card 1:1:
+    - Carbs: **Warm Amber** (`#F59E0B`)
+    - Fat: **Terracotta Clay** (`#E05A47`)
+    - Protein: **Matcha Sage** (`#2D6A4F`)
+- **Apple Voice Memos 1:1 Live Waveform (`components/ui/AudioWaveformVisualizer.tsx`, `VoiceMealModal.tsx`)**:
+  - Symmetrical dark card with animated vertical audio bars: Apple Red (`#FF3B30`) on the left, bright white (`#FFFFFF/90`) on the right, and electric blue playhead needle (`#0A84FF`) with top and bottom beads.
+- **Test & Build Verification**:
+  - Targeted tests in `tests/diet/nutrition-accuracy.test.ts` (18/18 passing), `tests/diet/barcode-route.test.ts` (3/3 passing), and `tests/diet/macroDonut.test.tsx` (4/4 passing).
+  - Full Vitest suite: **50 passed (50 files), 588 passed | 26 skipped (614 total), 0 failing**.
+  - Production build: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
 
 ### ⏳ Sprint 5: Multi-Device Responsive & Final E2E QA
 - **Tablet Optimization**: iPad 10th Gen (1024×768) 2-column bento grid verification.
@@ -334,8 +358,8 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
-- **Vitest Suite**: `582 passed | 26 skipped` across all 49 test suites.
-- **Diet Tests**: `162/162 passed` across `tests/diet/*`.
+- **Vitest Suite**: `588 passed | 26 skipped` across all 50 test suites (0 failing).
+- **Diet Tests**: `184/184 passed` across all 14 test suites in `tests/diet/*`.
 - **Workout Tests**: `42/42 passed` across `tests/workouts/*`.
 - **Onboarding Tests**: `78/78 passed` across `tests/onboarding/*`.
 - **Landing Tests**: `3/3 passed` across `tests/landing/*`.

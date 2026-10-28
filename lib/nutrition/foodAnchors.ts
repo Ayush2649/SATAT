@@ -9,6 +9,7 @@
  * - Dry staples (soya chunks, rolled oats, raw rice, raw lentils) default
  *   to raw/dry weight unless cooked/boiled is explicitly stated.
  * - Enforces Atwater factor math consistency (4P + 4C + 9F) across all items.
+ * - Supports compound meal resolution ("2 whole eggs with 2 rotis") without dropping items.
  */
 
 export interface FoodAnchor {
@@ -86,47 +87,52 @@ export const FOOD_ANCHORS: FoodAnchor[] = [
     name: "Plain Roti / Chapati",
     aliases: [
       "roti",
+      "rotis",
       "chapati",
+      "chapatis",
       "chappati",
       "phulka",
+      "phulkas",
       "fulka",
       "plain roti",
       "whole wheat roti",
       "atta roti",
     ],
     state: "prepared",
-    defaultServingGrams: 30, // 1 medium roti = ~30-35g cooked
-    servingLabel: "1 roti (~30g)",
+    defaultServingGrams: 35, // 1 medium standard roti = 35g cooked
+    servingLabel: "1 roti (~35g)",
     per100g: {
-      calories: 283,
-      proteinG: 10.0,
+      calories: 297,
+      proteinG: 8.86,
       carbsG: 60.0,
-      fatG: 0.3, // 4 * 10 + 4 * 60 + 9 * 0.3 = 40 + 240 + 2.7 = 282.7 kcal (~85 kcal per 30g roti)
-      fiberG: 6.5,
+      fatG: 2.29,
+      fiberG: 6.0,
     },
-    notes: "1 medium plain phulka (30g) provides ~85 kcal, 3g P, 18g C, 0.1g F.",
+    notes: "1 medium whole wheat roti (35g) provides 104 kcal, 3.1g P, 21g C, 0.8g F; 2 rotis = 208 kcal, 6.2g P, 42g C, 1.6g F.",
   },
   {
     id: "roti_ghee",
     name: "Roti with Ghee",
     aliases: [
       "roti with ghee",
+      "rotis with ghee",
       "ghee roti",
+      "ghee rotis",
       "ghee chapati",
       "butter roti",
       "chapati with ghee",
     ],
     state: "prepared",
-    defaultServingGrams: 35, // 30g roti + 5g ghee
+    defaultServingGrams: 40, // 35g roti + 5g ghee
     servingLabel: "1 roti with ghee",
     per100g: {
-      calories: 371,
-      proteinG: 8.6,
-      carbsG: 51.4,
-      fatG: 15.7, // ~130 kcal per 35g roti
-      fiberG: 5.5,
+      calories: 372,
+      proteinG: 7.75,
+      carbsG: 52.5,
+      fatG: 14.75,
+      fiberG: 5.2,
     },
-    notes: "Includes 1 tsp (5g) ghee addition (+45 kcal, 5g fat).",
+    notes: "Includes 1 tsp (5g) ghee addition (+45 kcal, 5g fat). 1 roti with ghee = ~149 kcal, 3.1g P, 21g C, 5.9g F.",
   },
 
   // ── 3. RICE & GRAINS ───────────────────────────────────────────────────────
@@ -149,10 +155,10 @@ export const FOOD_ANCHORS: FoodAnchor[] = [
       calories: 130,
       proteinG: 2.7,
       carbsG: 28.2,
-      fatG: 0.3, // 4 * 2.7 + 4 * 28.2 + 9 * 0.3 = 10.8 + 112.8 + 2.7 = 126.3 -> 130 kcal
+      fatG: 0.3,
       fiberG: 0.4,
     },
-    notes: "150g cooked rice = ~195 kcal, 4g P, 42g C.",
+    notes: "150g cooked rice = ~195 kcal, 4.0g P, 42.3g C, 0.5g F.",
   },
   {
     id: "rolled_oats_dry",
@@ -173,7 +179,7 @@ export const FOOD_ANCHORS: FoodAnchor[] = [
       calories: 375,
       proteinG: 12.5,
       carbsG: 67.5,
-      fatG: 6.2, // 4 * 12.5 + 4 * 67.5 + 9 * 6.2 = 50 + 270 + 55.8 = 375.8 kcal
+      fatG: 6.2,
       fiberG: 10.0,
     },
     notes: "40g dry serving = 150 kcal, 5g P, 27g C, 2.5g F.",
@@ -199,10 +205,10 @@ export const FOOD_ANCHORS: FoodAnchor[] = [
       calories: 100,
       proteinG: 4.7,
       carbsG: 12.7,
-      fatG: 3.3, // 150g bowl = 150 kcal, 7g P, 19g C, 5g F (includes 1 tsp tadka oil/ghee)
+      fatG: 3.3,
       fiberG: 3.0,
     },
-    notes: "Accounts for homestyle oil/ghee tempering (tadka).",
+    notes: "Accounts for homestyle oil/ghee tempering (tadka). 150g bowl = 150 kcal, 7g P, 19g C, 5g F.",
   },
 
   // ── 5. PANEER & DAIRY ──────────────────────────────────────────────────────
@@ -221,13 +227,13 @@ export const FOOD_ANCHORS: FoodAnchor[] = [
     defaultServingGrams: 100,
     servingLabel: "100g block",
     per100g: {
-      calories: 268,
-      proteinG: 18.0,
-      carbsG: 4.0,
-      fatG: 20.0, // 4 * 18 + 4 * 4 + 9 * 20 = 72 + 16 + 180 = 268 kcal
+      calories: 265,
+      proteinG: 18.3,
+      carbsG: 3.4,
+      fatG: 20.8,
       fiberG: 0,
     },
-    notes: "Standard whole milk paneer per IFCT / NIN 2017.",
+    notes: "Standard whole milk paneer per IFCT / NIN 2017. 200g = 530 kcal, 36.6g P, 6.8g C, 41.6g F.",
   },
   {
     id: "milk_toned",
@@ -247,7 +253,7 @@ export const FOOD_ANCHORS: FoodAnchor[] = [
       calories: 58,
       proteinG: 3.1,
       carbsG: 4.7,
-      fatG: 3.0, // 4 * 3.1 + 4 * 4.7 + 9 * 3 = 12.4 + 18.8 + 27 = 58.2 kcal
+      fatG: 3.0,
       fiberG: 0,
     },
   },
@@ -269,7 +275,7 @@ export const FOOD_ANCHORS: FoodAnchor[] = [
       calories: 60,
       proteinG: 3.5,
       carbsG: 4.5,
-      fatG: 3.1, // 4 * 3.5 + 4 * 4.5 + 9 * 3.1 = 14 + 18 + 27.9 = 59.9 kcal
+      fatG: 3.1,
       fiberG: 0,
     },
   },
@@ -290,7 +296,7 @@ export const FOOD_ANCHORS: FoodAnchor[] = [
       calories: 120,
       proteinG: 23.0,
       carbsG: 0.0,
-      fatG: 2.5, // 4 * 23 + 9 * 2.5 = 92 + 22.5 = 114.5 -> 115-120 kcal
+      fatG: 2.5,
       fiberG: 0,
     },
     notes: "Skinless, boneless raw chicken breast per USDA.",
@@ -312,7 +318,7 @@ export const FOOD_ANCHORS: FoodAnchor[] = [
       calories: 165,
       proteinG: 31.0,
       carbsG: 0.0,
-      fatG: 3.6, // 4 * 31 + 9 * 3.6 = 124 + 32.4 = 156.4 -> 165 kcal (cooking moisture loss)
+      fatG: 3.6,
       fiberG: 0,
     },
     notes: "Moisture loss during cooking concentrates protein to ~31g/100g.",
@@ -322,9 +328,15 @@ export const FOOD_ANCHORS: FoodAnchor[] = [
     name: "Whole Egg (Large, Boiled)",
     aliases: [
       "egg",
-      "boiled egg",
+      "eggs",
       "whole egg",
+      "whole eggs",
+      "boiled egg",
+      "boiled eggs",
+      "boiled whole egg",
+      "boiled whole eggs",
       "hard boiled egg",
+      "hard boiled eggs",
       "1 egg",
       "2 eggs",
     ],
@@ -332,21 +344,22 @@ export const FOOD_ANCHORS: FoodAnchor[] = [
     defaultServingGrams: 50, // 1 large egg = ~50g
     servingLabel: "1 large egg",
     per100g: {
-      calories: 148,
+      calories: 144,
       proteinG: 12.6,
       carbsG: 0.8,
-      fatG: 10.0, // 1 egg (50g) = 74 kcal, 6.3g P, 0.4g C, 5.0g F
+      fatG: 9.6,
       fiberG: 0,
     },
-    notes: "1 large egg (50g) provides 74 kcal, 6.3g P, 5.0g F.",
+    notes: "1 large egg (50g) provides 72 kcal, 6.3g P, 0.4g C, 4.8g F; 2 eggs = 144 kcal, 12.6g P, 0.8g C, 9.6g F.",
   },
   {
     id: "egg_white_boiled",
     name: "Egg White (Boiled)",
     aliases: [
       "egg white",
-      "boiled egg white",
       "egg whites",
+      "boiled egg white",
+      "boiled egg whites",
       "anda safedi",
     ],
     state: "cooked",
@@ -356,7 +369,7 @@ export const FOOD_ANCHORS: FoodAnchor[] = [
       calories: 52,
       proteinG: 10.9,
       carbsG: 0.7,
-      fatG: 0.2, // 1 egg white (33g) = 17 kcal, 3.6g P, 0.2g C, 0.1g F
+      fatG: 0.2,
       fiberG: 0,
     },
     notes: "1 egg white (33g) = 17 kcal, 3.6g P.",
@@ -382,7 +395,7 @@ export const FOOD_ANCHORS: FoodAnchor[] = [
       calories: 387,
       proteinG: 83.3,
       carbsG: 5.0,
-      fatG: 3.3, // 30g scoop = 116 kcal, 25g P, 1.5g C, 1.0g F
+      fatG: 3.3,
       fiberG: 0,
     },
     isPackaged: true,
@@ -404,7 +417,7 @@ export const FOOD_ANCHORS: FoodAnchor[] = [
       calories: 65,
       proteinG: 7.5,
       carbsG: 8.8,
-      fatG: 0.0, // 200ml = 130 kcal, 15g P, 17.6g C, 0g F
+      fatG: 0.0,
       fiberG: 0,
     },
     isPackaged: true,
@@ -427,7 +440,7 @@ export const FOOD_ANCHORS: FoodAnchor[] = [
       calories: 45,
       proteinG: 7.5,
       carbsG: 2.5,
-      fatG: 1.0, // 200ml = 90 kcal, 15g P, 5g C, 2g F
+      fatG: 1.0,
       fiberG: 0,
     },
     isPackaged: true,
@@ -449,7 +462,7 @@ export const FOOD_ANCHORS: FoodAnchor[] = [
       calories: 92,
       proteinG: 10.0,
       carbsG: 6.0,
-      fatG: 3.0, // 4 * 10 + 4 * 6 + 9 * 3 = 40 + 24 + 27 = 91 kcal
+      fatG: 3.0,
       fiberG: 0,
     },
     isPackaged: true,
@@ -470,7 +483,7 @@ export const FOOD_ANCHORS: FoodAnchor[] = [
       calories: 594,
       proteinG: 25.0,
       carbsG: 18.8,
-      fatG: 50.0, // 32g = 190 kcal, 8g P, 6g C, 16g F
+      fatG: 50.0,
       fiberG: 6.0,
     },
     isPackaged: true,
@@ -488,7 +501,7 @@ export const FOOD_ANCHORS: FoodAnchor[] = [
       calories: 900,
       proteinG: 0,
       carbsG: 0,
-      fatG: 100.0, // 5g = 45 kcal, 5g fat
+      fatG: 100.0,
       fiberG: 0,
     },
   },
@@ -503,7 +516,7 @@ export const FOOD_ANCHORS: FoodAnchor[] = [
       calories: 175,
       proteinG: 7.5,
       carbsG: 22.5,
-      fatG: 6.3, // 80g = 140 kcal, 6g P, 18g C, 5g F
+      fatG: 6.3,
       fiberG: 4.0,
     },
   },
@@ -518,7 +531,7 @@ export const FOOD_ANCHORS: FoodAnchor[] = [
       calories: 167,
       proteinG: 3.0,
       carbsG: 23.3,
-      fatG: 6.7, // 150g = 250 kcal, 4.5g P, 35g C, 10g F
+      fatG: 6.7,
       fiberG: 2.0,
     },
   },
@@ -606,13 +619,16 @@ export interface AnchorLookupResult {
   notes?: string;
 }
 
+export const COMPOUND_SEPARATOR_REGEX = /\s+(?:with|and|plus|along with|&|\+)\s+|\s*,\s*/i;
+
 /**
  * Parses quantity and food name from free text query
  * Examples:
  * - "50g soya chunks" -> { qty: 50, unit: "g", cleanName: "soya chunks" }
- * - "2 rotis" -> { qty: 2, unit: "piece", cleanName: "roti" }
+ * - "200 gms paneer" -> { qty: 200, unit: "g", cleanName: "paneer" }
+ * - "2 whole eggs" -> { qty: 2, unit: "piece", cleanName: "whole eggs" }
+ * - "2 rotis" -> { qty: 2, unit: "piece", cleanName: "rotis" }
  * - "1 scoop whey" -> { qty: 1, unit: "scoop", cleanName: "whey" }
- * - "100g paneer" -> { qty: 100, unit: "g", cleanName: "paneer" }
  */
 export function parseQueryPortion(query: string): {
   qty: number;
@@ -621,8 +637,8 @@ export function parseQueryPortion(query: string): {
 } {
   const trimmed = query.trim().toLowerCase();
 
-  // Pattern 1: e.g. "50g soya chunks", "50 grams of chicken"
-  const gramMatch = trimmed.match(/^(\d+(?:\.\d+)?)\s*(?:grams?|g\b|g)\s*(?:of\s+)?(.+)$/);
+  // Pattern 1: e.g. "50g soya chunks", "100 grams paneer", "200 gms paneer", "200 gm paneer"
+  const gramMatch = trimmed.match(/^(\d+(?:\.\d+)?)\s*(?:grams?|gms?|gm|g\b|g)\s*(?:of\s+)?(.+)$/);
   if (gramMatch) {
     return {
       qty: parseFloat(gramMatch[1]),
@@ -631,8 +647,8 @@ export function parseQueryPortion(query: string): {
     };
   }
 
-  // Pattern 2: e.g. "200ml milk"
-  const mlMatch = trimmed.match(/^(\d+(?:\.\d+)?)\s*(?:milliliters?|ml\b|ml)\s*(?:of\s+)?(.+)$/);
+  // Pattern 2: e.g. "200ml milk", "200 ml of milk"
+  const mlMatch = trimmed.match(/^(\d+(?:\.\d+)?)\s*(?:milliliters?|mls?|ml\b|ml)\s*(?:of\s+)?(.+)$/);
   if (mlMatch) {
     return {
       qty: parseFloat(mlMatch[1]),
@@ -651,7 +667,7 @@ export function parseQueryPortion(query: string): {
     };
   }
 
-  // Pattern 4: e.g. "2 rotis", "3 eggs", "1 bowl dal"
+  // Pattern 4: e.g. "2 rotis", "2 whole eggs", "3 eggs", "1 bowl dal"
   const countMatch = trimmed.match(
     /^(\d+(?:\.\d+)?)\s*(?:pieces?|pcs?|bowls?|katoris?|cups?|glasses?|plates?|serving|servings)?\s*(?:of\s+)?(.+)$/
   );
@@ -678,7 +694,7 @@ export function parseQueryPortion(query: string): {
 }
 
 /**
- * Deterministically finds a matching FoodAnchor by alias or name.
+ * Deterministically finds a single matching FoodAnchor by alias or name.
  * Respects raw vs cooked distinctions:
  * - "50g soya chunks" -> soya_chunks_dry (raw/dry weight default)
  * - "boiled soya chunks" -> soya_chunks_boiled
@@ -687,8 +703,29 @@ export function parseQueryPortion(query: string): {
  */
 export function findFoodAnchor(query: string): AnchorLookupResult | null {
   if (!query || typeof query !== "string") return null;
+  const trimmed = query.trim();
+  if (!trimmed) return null;
 
-  const { qty, unit, cleanName } = parseQueryPortion(query);
+  // If query contains compound separators, route through resolveMultiItemFoodAnchors
+  // to prevent greedy single-item substring matching!
+  if (COMPOUND_SEPARATOR_REGEX.test(trimmed)) {
+    const multi = resolveMultiItemFoodAnchors(trimmed);
+    if (multi && multi.matched) {
+      return {
+        matched: true,
+        anchor: multi.items[0]?.anchor || null,
+        name: multi.name,
+        quantity: 1,
+        unit: "serving",
+        grams: multi.items.reduce((acc, i) => acc + i.grams, 0),
+        macros: multi.macros,
+        notes: multi.notes,
+      };
+    }
+    return null;
+  }
+
+  const { qty, unit, cleanName } = parseQueryPortion(trimmed);
   const normalized = cleanName.toLowerCase().trim();
 
   // Search through anchors
@@ -707,22 +744,28 @@ export function findFoodAnchor(query: string): AnchorLookupResult | null {
     }
   }
 
-  // If no direct exact alias match, check substring / keyword match
+  // If no direct exact alias match, check whole-phrase / keyword match
   if (!matchedAnchor) {
     for (const anchor of FOOD_ANCHORS) {
-      if (anchor.aliases.some((a) => normalized.includes(a.toLowerCase()))) {
-        // Special case: check raw vs cooked keywords to prevent matching wrong variant
-        const isQueryCooked = /boiled|cooked|soaked/i.test(normalized);
-        const isAnchorCooked = anchor.state === "cooked";
+      for (const a of anchor.aliases) {
+        const aliasLower = a.toLowerCase();
+        // Match if normalized equals alias or contains alias with word boundary
+        const wordRegex = new RegExp(`(^|\\s)${aliasLower.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}(\\s|$)`, "i");
+        if (wordRegex.test(normalized)) {
+          // Special case: check raw vs cooked keywords to prevent matching wrong variant
+          const isQueryCooked = /boiled|cooked|soaked|grilled|fried/i.test(normalized);
+          const isAnchorCooked = anchor.state === "cooked";
 
-        if (isQueryCooked === isAnchorCooked) {
-          matchedAnchor = anchor;
-          break;
-        } else if (!isQueryCooked && !isAnchorCooked) {
-          matchedAnchor = anchor;
-          break;
+          if (isQueryCooked === isAnchorCooked) {
+            matchedAnchor = anchor;
+            break;
+          } else if (!isQueryCooked && !isAnchorCooked) {
+            matchedAnchor = anchor;
+            break;
+          }
         }
       }
+      if (matchedAnchor) break;
     }
   }
 
@@ -741,13 +784,15 @@ export function findFoodAnchor(query: string): AnchorLookupResult | null {
   const factor = totalGrams / 100;
   const p100 = matchedAnchor.per100g;
 
-  const rawProtein = p100.proteinG * factor;
-  const rawCarbs = p100.carbsG * factor;
-  const rawFat = p100.fatG * factor;
-  const rawFiber = (p100.fiberG || 0) * factor;
+  const rawProtein = Math.round(p100.proteinG * factor * 10) / 10;
+  const rawCarbs = Math.round(p100.carbsG * factor * 10) / 10;
+  const rawFat = Math.round(p100.fatG * factor * 10) / 10;
+  const rawFiber = Math.round((p100.fiberG || 0) * factor * 10) / 10;
+
+  const baseCalories = Math.round(p100.calories * factor);
 
   const enforced = enforceAtwaterMath({
-    calories: Math.round(p100.calories * factor),
+    calories: baseCalories,
     proteinG: rawProtein,
     carbsG: rawCarbs,
     fatG: rawFat,
@@ -766,8 +811,177 @@ export function findFoodAnchor(query: string): AnchorLookupResult | null {
       proteinG: enforced.proteinG,
       carbsG: enforced.carbsG,
       fatG: enforced.fatG,
-      fiberG: Math.round(rawFiber * 10) / 10,
+      fiberG: rawFiber,
     },
     notes: matchedAnchor.notes,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPOUND MULTI-ITEM FOOD ANCHOR RESOLVER
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface MultiItemAnchorResult {
+  matched: boolean;
+  name: string;
+  items: AnchorLookupResult[];
+  macros: {
+    calories: number;
+    proteinG: number;
+    carbsG: number;
+    fatG: number;
+    fiberG: number;
+  };
+  notes?: string;
+}
+
+/**
+ * Resolves compound queries like "2 whole eggs with 2 rotis", "100g paneer and 150g rice".
+ * Splits the query on compound conjunctions (with, and, plus, &, +), resolves each segment
+ * against deterministic food anchors, and sums their macros without dropping any ingredient.
+ *
+ * If ANY segment cannot be resolved by an anchor, returns null to allow full LLM decomposition
+ * rather than returning a partial single-item match.
+ */
+export function resolveMultiItemFoodAnchors(query: string): MultiItemAnchorResult | null {
+  if (!query || typeof query !== "string") return null;
+  const trimmed = query.trim();
+  if (!trimmed) return null;
+
+  // Split on compound separators
+  const segments = trimmed
+    .split(COMPOUND_SEPARATOR_REGEX)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  if (segments.length === 0) return null;
+
+  const resolvedItems: AnchorLookupResult[] = [];
+
+  for (const segment of segments) {
+    // Check segment with findFoodAnchor directly (without re-splitting)
+    const { qty, unit, cleanName } = parseQueryPortion(segment);
+    const normalized = cleanName.toLowerCase().trim();
+
+    let matchedAnchor: FoodAnchor | null = null;
+    for (const anchor of FOOD_ANCHORS) {
+      if (anchor.name.toLowerCase() === normalized) {
+        matchedAnchor = anchor;
+        break;
+      }
+      if (anchor.aliases.some((a) => a.toLowerCase() === normalized)) {
+        matchedAnchor = anchor;
+        break;
+      }
+    }
+
+    if (!matchedAnchor) {
+      for (const anchor of FOOD_ANCHORS) {
+        for (const a of anchor.aliases) {
+          const aliasLower = a.toLowerCase();
+          const wordRegex = new RegExp(`(^|\\s)${aliasLower.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}(\\s|$)`, "i");
+          if (wordRegex.test(normalized)) {
+            const isQueryCooked = /boiled|cooked|soaked|grilled|fried/i.test(normalized);
+            const isAnchorCooked = anchor.state === "cooked";
+            if (isQueryCooked === isAnchorCooked || (!isQueryCooked && !isAnchorCooked)) {
+              matchedAnchor = anchor;
+              break;
+            }
+          }
+        }
+        if (matchedAnchor) break;
+      }
+    }
+
+    // If ANY segment fails to match, reject whole compound resolution
+    // so no ingredient is ever silently dropped!
+    if (!matchedAnchor) {
+      return null;
+    }
+
+    let totalGrams: number;
+    if (unit === "g" || unit === "ml") {
+      totalGrams = qty;
+    } else if (unit === "scoop" && matchedAnchor.id === "whey_isolate") {
+      totalGrams = qty * 30;
+    } else {
+      totalGrams = qty * matchedAnchor.defaultServingGrams;
+    }
+
+    const factor = totalGrams / 100;
+    const p100 = matchedAnchor.per100g;
+
+    const rawProtein = Math.round(p100.proteinG * factor * 10) / 10;
+    const rawCarbs = Math.round(p100.carbsG * factor * 10) / 10;
+    const rawFat = Math.round(p100.fatG * factor * 10) / 10;
+    const rawFiber = Math.round((p100.fiberG || 0) * factor * 10) / 10;
+    const baseCalories = Math.round(p100.calories * factor);
+
+    const enforced = enforceAtwaterMath({
+      calories: baseCalories,
+      proteinG: rawProtein,
+      carbsG: rawCarbs,
+      fatG: rawFat,
+      fiberG: rawFiber,
+    });
+
+    resolvedItems.push({
+      matched: true,
+      anchor: matchedAnchor,
+      name: matchedAnchor.name,
+      quantity: qty,
+      unit,
+      grams: Math.round(totalGrams),
+      macros: {
+        calories: enforced.calories,
+        proteinG: enforced.proteinG,
+        carbsG: enforced.carbsG,
+        fatG: enforced.fatG,
+        fiberG: rawFiber,
+      },
+      notes: matchedAnchor.notes,
+    });
+  }
+
+  // Sum macros across all resolved segments
+  let totalCalories = 0;
+  let totalProteinG = 0;
+  let totalCarbsG = 0;
+  let totalFatG = 0;
+  let totalFiberG = 0;
+
+  for (const item of resolvedItems) {
+    totalCalories += item.macros.calories;
+    totalProteinG += item.macros.proteinG;
+    totalCarbsG += item.macros.carbsG;
+    totalFatG += item.macros.fatG;
+    totalFiberG += item.macros.fiberG;
+  }
+
+  // Enforce Atwater factor consistency on the summed total
+  const enforcedTotal = enforceAtwaterMath({
+    calories: totalCalories,
+    proteinG: Math.round(totalProteinG * 10) / 10,
+    carbsG: Math.round(totalCarbsG * 10) / 10,
+    fatG: Math.round(totalFatG * 10) / 10,
+    fiberG: Math.round(totalFiberG * 10) / 10,
+  });
+
+  const mealName = resolvedItems
+    .map((item) => `${item.quantity > 1 ? `${item.quantity}× ` : ""}${item.name}`)
+    .join(" with ");
+
+  return {
+    matched: true,
+    name: mealName,
+    items: resolvedItems,
+    macros: {
+      calories: enforcedTotal.calories,
+      proteinG: enforcedTotal.proteinG,
+      carbsG: enforcedTotal.carbsG,
+      fatG: enforcedTotal.fatG,
+      fiberG: enforcedTotal.fiberG || 0,
+    },
+    notes: resolvedItems.map((i) => i.notes).filter(Boolean).join(" | "),
   };
 }
