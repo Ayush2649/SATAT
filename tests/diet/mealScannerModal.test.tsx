@@ -21,3 +21,4 @@ describe("Sprint 4.8 Diet Enhancements", () => {
     expect(resolveDishThumbnail("Paneer Bhurji")).not.toContain(fallback);
   });
 });
+

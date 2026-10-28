@@ -546,7 +546,7 @@ describe("Phase 2B: Real AI Nutrition Estimation Pipeline", () => {
       expect(result.items[0].nutritionStatus).toBe("verified");
       expect(result.items[0].source).toBe("canonical");
       expect(result.items[0].verified).toBe(true);
-      expect(result.calories).toBe(160);
+      expect(result.calories).toBe(208);
     });
 
     it("CONFIDENCE < 0.60 (0.59): router marks unresolved, 0 AI calls, manual review = true", async () => {
@@ -705,7 +705,7 @@ describe("Phase 2B: Real AI Nutrition Estimation Pipeline", () => {
 
       // Provider was only called with Cucumber Raita (1 item)
       expect(mockProvider).toHaveBeenCalledTimes(1);
-      expect(result.calories).toBe(235); // 160 + 75 (only sums known!)
+      expect(result.calories).toBe(283); // 208 + 75 (only sums known!)
       expect(result.verifiedCount).toBe(1);
       expect(result.estimatedCount).toBe(1);
       expect(result.unresolvedCount).toBe(1);
@@ -898,7 +898,7 @@ describe("Phase 2B: Real AI Nutrition Estimation Pipeline", () => {
       ]);
 
       const item = result.items[0];
-      expect(item.grams).toBe(60); // 2 * 30g per piece
+      expect(item.grams).toBe(70); // 2 * 35g per piece
       expect(item.nutritionStatus).toBe("verified");
     });
 

@@ -3,8 +3,9 @@ import Groq, { toFile } from "groq-sdk";
 import { z } from "zod";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { callJsonStrict, AiError } from "@/lib/ai/groq";
+import { callJsonStrict } from "@/lib/ai/groq";
 import { TRANSCRIPTION_MODEL, MODELS, MAX_TOKENS } from "@/lib/ai/models";
+import { enforceAtwaterMath } from "@/lib/nutrition/foodAnchors";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -32,7 +33,7 @@ function groqForAudio() {
   return new Groq({ apiKey: key });
 }
 
-// ── Parse prompt (unchanged content) ─────────────────────────────────────────
+// ── Parse prompt (clinical IFCT reference values) ─────────────────────────────
 
 function buildParsePrompt(transcript: string): string {
   return `You are a precise Indian nutrition database. The user spoke what they ate.
@@ -40,18 +41,20 @@ function buildParsePrompt(transcript: string): string {
 TRANSCRIPT: "${transcript}"
 
 REFERENCE VALUES (per item):
-BREADS: Chapati plain 30g=80kcal/3P/15C/1F | Paratha plain=150/3/22/6 | Aloo paratha=200/5/28/8 | Naan=260/8/45/5 | Puri=120/2/14/6
-RICE: Plain rice 150g=195/4/43/0.4 | Veg biryani 200g=280/6/45/8 | Chicken biryani 250g=380/22/45/12
-DAL: Toor dal 200ml=150/10/25/2 | Dal makhani=240/11/25/12 | Rajma=200/13/30/3 | Chole=210/12/32/4
-PANEER: Paneer raw 100g=265/18/3/20 | Palak paneer 200g=280/16/10/20 | Shahi paneer=350/16/12/28
-DAIRY: Curd 100g=60/3/5/3 | Raita 150g=75/3/6/4 | Lassi sweet 250ml=180/7/28/5
-EGGS: Boiled egg=78/6/0.6/5 | Egg bhurji 2eggs=220/13/5/16 | Omelette 2eggs=200/13/4/15
-CHICKEN: Curry 150g=230/28/5/10 | Tikka 100g=160/26/4/5 | Butter chicken 200g=320/26/10/20
-SOUTH INDIAN: Idli 1pc=40/1.5/8/0.2 | Dosa plain=130/3/24/2 | Masala dosa=210/5/32/7
-BREAKFAST: Poha 150g=180/3/36/3 | Upma 150g=190/5/32/5 | Besan chilla 1pc=130/6/17/4
+FITNESS & PROTEIN: Soya chunks dry 50g=173kcal/26P/16.5C/0.3F | Rolled oats 40g=150/5/27/2.5 | Whey isolate 30g scoop=116/25/1.5/1 | Boiled egg white 1pc=17/3.6/0.2/0.1 | Chicken breast grilled 100g=165/31/0/3.6 | Amul protein lassi 200ml=130/15/13/0 | Amul protein buttermilk 200ml=90/15/5/2
+BREADS: Chapati plain 30g=85kcal/3P/18C/0.5F | Roti with ghee=130/3/18/5.5 | Paratha plain=150/3/22/6 | Aloo paratha=200/5/28/8 | Paneer paratha=260/10/28/11 | Naan=260/8/45/5
+RICE: Plain rice cooked 150g=195/4/42/0.4 | Veg biryani 200g=280/6/45/8 | Chicken biryani 250g=380/22/45/12
+DAL: Toor dal 150g=150/7/19/5 | Dal makhani=240/11/25/12 | Rajma=200/13/30/3 | Chole=210/12/32/4
+PANEER: Paneer raw 100g=268/18/4/20 | Paneer bhurji 150g=290/20/5/22 | Palak paneer 200g=280/16/10/20
+DAIRY: Curd/Dahi 100g=60/3.5/4.5/3.1 | Toned milk 200ml=116/6.2/9.4/6 | Greek yogurt 100g=92/10/6/3
+EGGS: Boiled egg 1pc=74/6.3/0.4/5 | Egg bhurji 2eggs=220/13/5/16 | Omelette 2eggs=200/13/4/15
+CHICKEN: Curry 150g=230/28/5/10 | Tikka 100g=160/26/4/5
+SOUTH INDIAN: Idli 1pc=40/1.5/8/0.2 | Dosa plain=130/3/24/2 | Masala dosa=250/4.5/35/10
+BREAKFAST: Poha 150g=180/3/36/3 | Upma 150g=190/5/32/5 | Besan chilla 1pc=140/6/18/5
 
 RULES:
 - Group everything from ONE sitting into a SINGLE meal entry, combining (summing) the macros of all items, with a short descriptive name like "2 roti, dal & curd".
+- For dry staples like soya chunks or oats, always assume the quoted grams refers to raw/dry weight unless cooked/boiled is explicitly stated.
 - Only split into multiple entries if the user clearly describes separate meals (e.g. "breakfast was… and lunch was…").
 - Scale for quantities mentioned. Standard single serving if no quantity given.
 
@@ -104,18 +107,29 @@ export async function POST(req: NextRequest) {
     });
 
     // Response shape unchanged — frontend reads { transcript, meals: [{ name, macros: {...} }] }
+    // Enforce Atwater factor consistency (4P + 4C + 9F) on all meals
     const meals = result.data.meals
       .filter((m) => m.name.trim())
-      .map((m) => ({
-        name: m.name.trim(),
-        macros: {
+      .map((m) => {
+        const enforced = enforceAtwaterMath({
           calories: m.calories,
           proteinG: m.proteinG,
           carbsG:   m.carbsG,
           fatG:     m.fatG,
           fiberG:   m.fiberG,
-        },
-      }));
+        });
+
+        return {
+          name: m.name.trim(),
+          macros: {
+            calories: enforced.calories,
+            proteinG: Math.round(enforced.proteinG),
+            carbsG:   Math.round(enforced.carbsG),
+            fatG:     Math.round(enforced.fatG),
+            fiberG:   Math.round(enforced.fiberG || 0),
+          },
+        };
+      });
 
     return NextResponse.json({ transcript, meals });
   } catch (err: any) {
@@ -126,4 +140,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-
