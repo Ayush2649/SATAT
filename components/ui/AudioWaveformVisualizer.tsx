@@ -18,11 +18,14 @@ export default function AudioWaveformVisualizer({
 }: AudioWaveformVisualizerProps) {
   const centerIndex = Math.floor(barCount / 2);
 
-  // Symmetrical bar heights that scroll from right to left
+  // Generate initial symmetrical ECG waveform (tall peaks around needle tapering at edges)
   const [bars, setBars] = useState<number[]>(() =>
     Array.from({ length: barCount }, (_, i) => {
       const dist = Math.abs(i - centerIndex);
-      return Math.max(10, Math.min(85, 78 - dist * 3.5));
+      // Realistic ECG/audio envelope: peak near center, tapering toward edges
+      const baseEnvelope = Math.max(12, 82 - dist * 3.8);
+      const ripple = Math.sin(i * 0.8) * 8;
+      return Math.max(10, Math.min(88, baseEnvelope + ripple));
     })
   );
 
@@ -46,8 +49,8 @@ export default function AudioWaveformVisualizer({
       audioContextRef.current = audioCtx;
 
       const analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 64;
-      analyser.smoothingTimeConstant = 0.5;
+      analyser.fftSize = 128;
+      analyser.smoothingTimeConstant = 0.4;
       analyserRef.current = analyser;
 
       const source = audioCtx.createMediaStreamSource(stream);
@@ -78,36 +81,50 @@ export default function AudioWaveformVisualizer({
     if (!isRecording) return;
 
     let active = true;
-    const freqData = new Uint8Array(32);
+    const freqData = new Uint8Array(64);
 
     const tick = (now: number) => {
       if (!active) return;
 
-      // Push new bar every ~65ms to scroll smoothly like Apple Voice Memos
-      if (now - lastPushTimeRef.current > 65) {
+      // Update bars smoothly every ~48ms for a fluid, lively 20fps scrolling tape
+      if (now - lastPushTimeRef.current > 48) {
         lastPushTimeRef.current = now;
 
-        let currentAmp = 12;
-        const t = now * 0.005;
-        const organicMotion = Math.sin(t * 2.5) * 8 + Math.cos(t * 1.7) * 5 + 18;
+        let currentAmp = 18;
+        const t = now * 0.006;
+
+        // Rich multi-harmonic organic speech & ECG cadence (peaks between 25% and 88%)
+        const ecgPulse =
+          Math.abs(Math.sin(t * 3.4)) * 36 +
+          Math.abs(Math.sin(t * 1.7 + 0.5)) * 24 +
+          Math.sin(t * 8.2) * 14 +
+          18;
 
         if (analyserRef.current) {
           try {
             analyserRef.current.getByteFrequencyData(freqData);
             let sum = 0;
-            for (let i = 0; i < 16; i++) {
-              sum += freqData[i];
+            let peak = 0;
+            for (let i = 0; i < 32; i++) {
+              const val = freqData[i];
+              sum += val;
+              if (val > peak) peak = val;
             }
-            const avg = sum / 16;
-            const liveLevel = (avg / 255) * 110;
-            currentAmp = Math.max(10, Math.min(95, liveLevel > 14 ? liveLevel * 1.25 : organicMotion));
+            const avg = sum / 32;
+            const liveAvg = (avg / 255) * 125;
+            const livePeak = (peak / 255) * 105;
+            const combinedLive = Math.max(liveAvg, livePeak * 0.9);
+
+            currentAmp = Math.max(
+              12,
+              Math.min(94, combinedLive > 15 ? combinedLive * 1.3 : ecgPulse)
+            );
           } catch {
-            currentAmp = organicMotion;
+            currentAmp = ecgPulse;
           }
         } else {
-          // Clean lively ECG rhythm simulation when running without active mic stream
-          const sim = Math.sin(t) * 0.5 + Math.sin(t * 2.3) * 0.3;
-          currentAmp = Math.max(12, Math.min(90, 22 + Math.abs(sim) * 68));
+          // Dynamic lively ECG simulation when running without active mic stream
+          currentAmp = Math.max(12, Math.min(92, ecgPulse));
         }
 
         // Shift bars from right to left

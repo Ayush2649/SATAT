@@ -403,7 +403,45 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - TypeScript compilation: `npx tsc --noEmit` exits with **0 errors**.
   - Production build: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
 
-### ⏳ Sprint 5: Multi-Device Responsive & Final E2E QA
+### ✅ Sprint 5.0: 1:1 Apple Voice Memos Waveform, YouTube Floating Pill Dock, Global Shimmer Skeletons & Execution Studio Overhaul
+- **Apple Voice Memos 1:1 Waveform & Recording (`AudioWaveformVisualizer.tsx`, `VoiceMealModal.tsx`, `VoiceLogModal.tsx`)**:
+  - Rebuilt `AudioWaveformVisualizer` to match the Apple Voice Memos iOS aesthetic 1:1:
+    - Symmetrical dark card (`bg-[#1C1C1E] rounded-[28px] border border-white/[0.08]`) with 37 responsive audio bars.
+    - Vibrant Apple Red (`#FF3B30`) left of the needle for recorded audio, and pure crisp white (`bg-white/90`) right of the needle for incoming audio.
+    - Iconic Electric Blue (`#0A84FF`) playhead needle with top and bottom circular anchor pins (`shadow-[0_0_12px_rgba(10,132,255,0.85)]`).
+    - Multi-harmonic organic speech cadence & real-time Web Audio API frequency analysis (peaks between 25% and 94% height) ensuring the audio waveform is energetic, fluid, and never looks static or flat.
+  - Unified voice recording experience in both `VoiceMealModal.tsx` and `VoiceLogModal.tsx` with clean monospace recording timer, pulsing red status dot, full-width Apple visualizer, and tactile Stop button.
+  - Portaled both modals to `document.body` (`z-[9999]`) with body scroll locking.
+- **1:1 YouTube-Style Floating Pill Navbar (`components/Navigation.tsx`)**:
+  - Locked dock height to sleek 56px (`h-[56px]`) with responsive widths across phone, tablet, and desktop (`w-[calc(100vw-32px)] max-w-[380px] sm:max-w-[460px] md:max-w-[540px] lg:max-w-[620px]`).
+  - Dark floating capsule: `rounded-full bg-[#141715]/95 backdrop-blur-xl border border-white/[0.08] shadow-[0_12px_32px_rgba(0,0,0,0.35)] px-2`.
+  - Icon-only aesthetic with `sr-only` labels preserving 100% test and accessibility contracts.
+  - Active tab rendered as soft translucent pill (`w-14 h-10 rounded-full bg-white/[0.15] text-white`).
+  - Center `+` button contained completely within column 3 of the 56px capsule (`w-11 h-11 rounded-full bg-white/[0.12] hover:bg-white/[0.20]`).
+- **Global YouTube-Style Shimmer Skeletons (`components/ui/PageSkeletons.tsx`, Next.js Route Loading Boundaries)**:
+  - Created reusable warm stone shimmer skeletons (`TodayPageSkeleton`, `PlanPageSkeleton`, `TrainPageSkeleton`, `FuelPageSkeleton`) using SATAT stone tokens (`#E6E1D6`, `#FCFBF9`).
+  - Wired into Next.js App Router loading boundaries:
+    - `app/dashboard/loading.tsx`
+    - `app/dashboard/tasks/loading.tsx`
+    - `app/dashboard/workout/loading.tsx`
+    - `app/dashboard/diet/loading.tsx`
+  - Integrated into in-component loading states in `HomeView.tsx` and `TaskBoard.tsx`.
+- **Complete `Plan` Execution Studio Overhaul (`components/tasks/TaskBoard.tsx`)**:
+  - Top editorial header: `Instrument Serif` "Execution Studio", subtitle "Design your daily rhythm, rituals, and deep work.", and single primary Terracotta capsule `+ New Task`.
+  - Workspaces horizontal pill strip with scrollbar suppression (`[scrollbar-width:none] [&::-webkit-scrollbar]:hidden`).
+  - **Feature A: Daily Non-Negotiable Rituals Card**: 2×2 grid with daily check-in persistence in `localStorage` keyed by `selectedDate`, 4 default rituals (Deep Work 90m, 3g Creatine & Hydration, 10k Steps / Zone 2, Evening Plan & Wind-Down), and animated progress bar.
+  - **Feature B: Built-in Live Deep Focus Timer**: 25m Pomodoro banner with active task title, countdown, Play/Pause, Reset, and Done triggers.
+  - 7-day date strip + Schedule/History tabs without scrollbar.
+  - Circadian energy badges (`High · Deep Focus`, `Medium · Execution`, `Low · Admin`), circular completion checkboxes, and `▶ Focus` buttons.
+  - Editorial empty state with 1-tap template generators (`Deep Work Sprint (90m)`, `System Review`, `Admin Sweep`).
+  - Portaled `AddTaskModal`, `EditTaskModal`, and `AddProjectModal` to `document.body` (`z-[9999]`) with body scroll locking.
+- **Test & Build Verification**:
+  - Full Vitest suite: **51 passed (51 files), 617 passed | 26 skipped (643 total), 0 failing**.
+  - TypeScript compilation: `npx tsc --noEmit` exits with **0 errors**.
+  - Production build: `npm run build` exits with code **0** (all 33 static/dynamic routes compiled).
+  - Vercel build conflict audit: **0 merge conflict markers** across entire repository.
+
+### ⏳ Sprint 5.1: Multi-Device Responsive & Final E2E QA
 - **Tablet Optimization**: iPad 10th Gen (1024×768) 2-column bento grid verification.
 - **Desktop Optimization**: Desktop (1440×900) 3-column layout verification.
 - **End-to-End Testing**: Full automated test verification and Playwright regression sweep.
