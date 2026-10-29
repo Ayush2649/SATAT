@@ -264,9 +264,9 @@ export default function Navigation() {
         </div>
       </header>
 
-      {/* ── Mobile bottom navigation (YouTube iOS Floating Capsule: Today, Plan, Track FAB, Train, Fuel) ── */}
+      {/* ── Mobile bottom navigation (SATAT Stitch Theme: Today, Plan, Track FAB, Train, Fuel) ── */}
       <nav
-        className="fixed left-1/2 -translate-x-1/2 bottom-[max(12px,env(safe-area-inset-bottom))] z-50 w-[calc(100vw-32px)] max-w-[380px] sm:max-w-[460px] md:max-w-[540px] lg:max-w-[620px] h-[56px] rounded-full bg-[#141715]/95 backdrop-blur-xl border border-white/[0.08] shadow-[0_12px_32px_rgba(0,0,0,0.35)] px-2 flex items-center lg:hidden"
+        className="fixed left-1/2 -translate-x-1/2 bottom-[max(12px,env(safe-area-inset-bottom))] z-50 w-[calc(100vw-28px)] max-w-[390px] sm:max-w-[460px] md:max-w-[560px] lg:max-w-[640px] h-[62px] rounded-full bg-[#191D1A]/95 backdrop-blur-xl border border-white/[0.08] shadow-[0_14px_34px_rgba(0,0,0,0.32)] px-2.5 flex items-center lg:hidden"
         aria-label="Primary navigation"
       >
         <div className="grid grid-cols-5 items-center justify-items-center w-full h-full">
@@ -276,20 +276,27 @@ export default function Navigation() {
             aria-label="Today"
             aria-current={pathname === "/dashboard" ? "page" : undefined}
             className={cn(
-              "w-14 h-10 rounded-full flex items-center justify-center transition-all duration-200 select-none",
+              "transition-all duration-200 select-none",
               pathname === "/dashboard"
-                ? "bg-white/[0.15] text-white"
-                : "text-stone-400 hover:text-white"
+                ? "px-3.5 py-1.5 rounded-full bg-[#2D6A4F] text-white flex flex-col items-center justify-center gap-0.5 shadow-[0_4px_12px_rgba(45,106,79,0.4)]"
+                : "px-3 py-1.5 rounded-full text-stone-400 hover:text-stone-200 flex flex-col items-center justify-center gap-0.5"
             )}
           >
             <LayoutDashboard
               className={cn(
-                "w-[22px] h-[22px]",
+                "w-[18px] h-[18px]",
                 pathname === "/dashboard" ? "stroke-[2.2]" : "stroke-[1.75]"
               )}
               aria-hidden="true"
             />
-            <span className="sr-only">Today</span>
+            <span
+              className={cn(
+                "text-[10px] leading-none tracking-tight",
+                pathname === "/dashboard" ? "font-semibold" : "font-medium"
+              )}
+            >
+              Today
+            </span>
           </Link>
 
           {/* 2. Plan */}
@@ -298,31 +305,38 @@ export default function Navigation() {
             aria-label="Plan"
             aria-current={pathname?.startsWith("/dashboard/tasks") ? "page" : undefined}
             className={cn(
-              "w-14 h-10 rounded-full flex items-center justify-center transition-all duration-200 select-none",
+              "transition-all duration-200 select-none",
               pathname?.startsWith("/dashboard/tasks")
-                ? "bg-white/[0.15] text-white"
-                : "text-stone-400 hover:text-white"
+                ? "px-3.5 py-1.5 rounded-full bg-[#2D6A4F] text-white flex flex-col items-center justify-center gap-0.5 shadow-[0_4px_12px_rgba(45,106,79,0.4)]"
+                : "px-3 py-1.5 rounded-full text-stone-400 hover:text-stone-200 flex flex-col items-center justify-center gap-0.5"
             )}
           >
             <CheckSquare
               className={cn(
-                "w-[22px] h-[22px]",
+                "w-[18px] h-[18px]",
                 pathname?.startsWith("/dashboard/tasks") ? "stroke-[2.2]" : "stroke-[1.75]"
               )}
               aria-hidden="true"
             />
-            <span className="sr-only">Plan</span>
+            <span
+              className={cn(
+                "text-[10px] leading-none tracking-tight",
+                pathname?.startsWith("/dashboard/tasks") ? "font-semibold" : "font-medium"
+              )}
+            >
+              Plan
+            </span>
           </Link>
 
-          {/* 3. Quick Track FAB */}
+          {/* 3. Quick Track FAB (Terracotta Clay #E05A47) */}
           <div className="flex items-center justify-center w-full h-full select-none">
             <button
               type="button"
               onClick={() => setShowTrackSheet(true)}
               aria-label="Quick track"
-              className="w-11 h-11 rounded-full bg-white/[0.12] hover:bg-white/[0.20] active:scale-95 text-white flex items-center justify-center transition-all border border-white/[0.06] cursor-pointer"
+              className="w-11 h-11 rounded-full bg-[#E05A47] hover:bg-[#C94A38] active:scale-95 text-white flex items-center justify-center shadow-[0_4px_14px_rgba(224,90,71,0.45)] transition-all cursor-pointer"
             >
-              <Plus className="w-6 h-6 stroke-[1.8]" />
+              <Plus className="w-5 h-5 stroke-[2.4]" />
               <span className="sr-only">Track</span>
             </button>
           </div>
@@ -333,20 +347,27 @@ export default function Navigation() {
             aria-label="Train"
             aria-current={pathname?.startsWith("/dashboard/workout") ? "page" : undefined}
             className={cn(
-              "w-14 h-10 rounded-full flex items-center justify-center transition-all duration-200 select-none",
+              "transition-all duration-200 select-none",
               pathname?.startsWith("/dashboard/workout")
-                ? "bg-white/[0.15] text-white"
-                : "text-stone-400 hover:text-white"
+                ? "px-3.5 py-1.5 rounded-full bg-[#2D6A4F] text-white flex flex-col items-center justify-center gap-0.5 shadow-[0_4px_12px_rgba(45,106,79,0.4)]"
+                : "px-3 py-1.5 rounded-full text-stone-400 hover:text-stone-200 flex flex-col items-center justify-center gap-0.5"
             )}
           >
             <Dumbbell
               className={cn(
-                "w-[22px] h-[22px]",
+                "w-[18px] h-[18px]",
                 pathname?.startsWith("/dashboard/workout") ? "stroke-[2.2]" : "stroke-[1.75]"
               )}
               aria-hidden="true"
             />
-            <span className="sr-only">Train</span>
+            <span
+              className={cn(
+                "text-[10px] leading-none tracking-tight",
+                pathname?.startsWith("/dashboard/workout") ? "font-semibold" : "font-medium"
+              )}
+            >
+              Train
+            </span>
           </Link>
 
           {/* 5. Fuel */}
@@ -355,20 +376,27 @@ export default function Navigation() {
             aria-label="Fuel"
             aria-current={pathname?.startsWith("/dashboard/diet") ? "page" : undefined}
             className={cn(
-              "w-14 h-10 rounded-full flex items-center justify-center transition-all duration-200 select-none",
+              "transition-all duration-200 select-none",
               pathname?.startsWith("/dashboard/diet")
-                ? "bg-white/[0.15] text-white"
-                : "text-stone-400 hover:text-white"
+                ? "px-3.5 py-1.5 rounded-full bg-[#2D6A4F] text-white flex flex-col items-center justify-center gap-0.5 shadow-[0_4px_12px_rgba(45,106,79,0.4)]"
+                : "px-3 py-1.5 rounded-full text-stone-400 hover:text-stone-200 flex flex-col items-center justify-center gap-0.5"
             )}
           >
             <Utensils
               className={cn(
-                "w-[22px] h-[22px]",
+                "w-[18px] h-[18px]",
                 pathname?.startsWith("/dashboard/diet") ? "stroke-[2.2]" : "stroke-[1.75]"
               )}
               aria-hidden="true"
             />
-            <span className="sr-only">Fuel</span>
+            <span
+              className={cn(
+                "text-[10px] leading-none tracking-tight",
+                pathname?.startsWith("/dashboard/diet") ? "font-semibold" : "font-medium"
+              )}
+            >
+              Fuel
+            </span>
           </Link>
         </div>
       </nav>
