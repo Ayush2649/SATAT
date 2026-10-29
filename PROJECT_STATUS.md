@@ -403,7 +403,98 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - TypeScript compilation: `npx tsc --noEmit` exits with **0 errors**.
   - Production build: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
 
-### ⏳ Sprint 5: Multi-Device Responsive & Final E2E QA
+### ✅ Sprint 5.0: 1:1 Apple Voice Memos Waveform, YouTube Floating Pill Dock, Global Shimmer Skeletons & Execution Studio Overhaul
+- **Apple Voice Memos 1:1 Waveform & Recording (`AudioWaveformVisualizer.tsx`, `VoiceMealModal.tsx`, `VoiceLogModal.tsx`)**:
+  - Rebuilt `AudioWaveformVisualizer` to match the Apple Voice Memos iOS aesthetic 1:1:
+    - Symmetrical dark card (`bg-[#1C1C1E] rounded-[28px] border border-white/[0.08]`) with 37 responsive audio bars.
+    - Vibrant Apple Red (`#FF3B30`) left of the needle for recorded audio, and pure crisp white (`bg-white/90`) right of the needle for incoming audio.
+    - Iconic Electric Blue (`#0A84FF`) playhead needle with top and bottom circular anchor pins (`shadow-[0_0_12px_rgba(10,132,255,0.85)]`).
+    - Multi-harmonic organic speech cadence & real-time Web Audio API frequency analysis (peaks between 25% and 94% height) ensuring the audio waveform is energetic, fluid, and never looks static or flat.
+  - Unified voice recording experience in both `VoiceMealModal.tsx` and `VoiceLogModal.tsx` with clean monospace recording timer, pulsing red status dot, full-width Apple visualizer, and tactile Stop button.
+  - Portaled both modals to `document.body` (`z-[9999]`) with body scroll locking.
+- **1:1 YouTube-Style Floating Pill Navbar (`components/Navigation.tsx`)**:
+  - Locked dock height to sleek 56px (`h-[56px]`) with responsive widths across phone, tablet, and desktop (`w-[calc(100vw-32px)] max-w-[380px] sm:max-w-[460px] md:max-w-[540px] lg:max-w-[620px]`).
+  - Dark floating capsule: `rounded-full bg-[#141715]/95 backdrop-blur-xl border border-white/[0.08] shadow-[0_12px_32px_rgba(0,0,0,0.35)] px-2`.
+  - Icon-only aesthetic with `sr-only` labels preserving 100% test and accessibility contracts.
+  - Active tab rendered as soft translucent pill (`w-14 h-10 rounded-full bg-white/[0.15] text-white`).
+  - Center `+` button contained completely within column 3 of the 56px capsule (`w-11 h-11 rounded-full bg-white/[0.12] hover:bg-white/[0.20]`).
+- **Global YouTube-Style Shimmer Skeletons (`components/ui/PageSkeletons.tsx`, Next.js Route Loading Boundaries)**:
+  - Created reusable warm stone shimmer skeletons (`TodayPageSkeleton`, `PlanPageSkeleton`, `TrainPageSkeleton`, `FuelPageSkeleton`) using SATAT stone tokens (`#E6E1D6`, `#FCFBF9`).
+  - Wired into Next.js App Router loading boundaries:
+    - `app/dashboard/loading.tsx`
+    - `app/dashboard/tasks/loading.tsx`
+    - `app/dashboard/workout/loading.tsx`
+    - `app/dashboard/diet/loading.tsx`
+  - Integrated into in-component loading states in `HomeView.tsx` and `TaskBoard.tsx`.
+- **Complete `Plan` Execution Studio Overhaul (`components/tasks/TaskBoard.tsx`)**:
+  - Top editorial header: `Instrument Serif` "Execution Studio", subtitle "Design your daily rhythm, rituals, and deep work.", and single primary Terracotta capsule `+ New Task`.
+  - Workspaces horizontal pill strip with scrollbar suppression (`[scrollbar-width:none] [&::-webkit-scrollbar]:hidden`).
+  - **Feature A: Daily Non-Negotiable Rituals Card**: 2×2 grid with daily check-in persistence in `localStorage` keyed by `selectedDate`, 4 default rituals (Deep Work 90m, 3g Creatine & Hydration, 10k Steps / Zone 2, Evening Plan & Wind-Down), and animated progress bar.
+  - **Feature B: Built-in Live Deep Focus Timer**: 25m Pomodoro banner with active task title, countdown, Play/Pause, Reset, and Done triggers.
+  - 7-day date strip + Schedule/History tabs without scrollbar.
+  - Circadian energy badges (`High · Deep Focus`, `Medium · Execution`, `Low · Admin`), circular completion checkboxes, and `▶ Focus` buttons.
+  - Editorial empty state with 1-tap template generators (`Deep Work Sprint (90m)`, `System Review`, `Admin Sweep`).
+  - Portaled `AddTaskModal`, `EditTaskModal`, and `AddProjectModal` to `document.body` (`z-[9999]`) with body scroll locking.
+- **Test & Build Verification**:
+  - Full Vitest suite: **51 passed (51 files), 617 passed | 26 skipped (643 total), 0 failing**.
+  - TypeScript compilation: `npx tsc --noEmit` exits with **0 errors**.
+  - Production build: `npm run build` exits with code **0** (all 33 static/dynamic routes compiled).
+  - Vercel build conflict audit: **0 merge conflict markers** across entire repository.
+
+### ✅ Sprint 5.1: Strict 1:1 Stitch Execution Studio, SATAT Bottom Nav (#2D6A4F + #E05A47), & Quick Track Composer
+- **Strict 1:1 Stitch Bottom Navbar (`components/Navigation.tsx` — `image_cc4fd8.jpg`)**:
+  - Capsule geometry: `w-[calc(100vw-28px)] max-w-[390px] sm:max-w-[460px] md:max-w-[560px] lg:max-w-[640px] h-[62px] rounded-full bg-[#191D1A]/95 backdrop-blur-xl border border-white/[0.08] shadow-[0_14px_34px_rgba(0,0,0,0.32)] px-2.5 flex items-center`.
+  - 5-Column even grid distribution across all devices.
+  - Active Tab Highlight: Botanical Matcha Sage pill (`px-3.5 py-1.5 rounded-full bg-[#2D6A4F] text-white flex flex-col items-center justify-center gap-0.5 shadow-[0_4px_12px_rgba(45,106,79,0.4)]`).
+  - Inactive Tab: `text-stone-400 hover:text-stone-200 flex flex-col items-center justify-center gap-0.5`.
+  - Center `+` FAB: Terracotta Clay circular button contained inside capsule (`w-11 h-11 rounded-full bg-[#E05A47] hover:bg-[#C94A38] text-white shadow-[0_4px_14px_rgba(224,90,71,0.45)]`).
+- **Quick Track Composer Modal Sheet (`components/navigation/TrackSheet.tsx` — `image_cc4f9d.jpg` top half)**:
+  - Portaled to `document.body` (`z-[9999]`) with body scroll locking.
+  - Eyebrow: `SATAT INSTANT CAPTURE` + `4 Quick Paths` badge.
+  - Headline in Instrument Serif: `What are we logging right now?`.
+  - 2×2 Photo-Backed Action Grid:
+    1. **Scan Meal Plate** (`Instant AI Vision · Fuel` -> `/dashboard/diet?action=scan`).
+    2. **Start Workout** (`Training Studio · Train` -> `/dashboard/workout`).
+    3. **Deep Work Task** (`Execution Studio · Plan` -> `/dashboard/tasks?action=new`).
+    4. **Water & Biometrics** (`74.1 kg · Daily Log` -> inline weight check-in).
+- **Deterministic Task Photo Matcher (`resolveTaskThumbnail`)**:
+  - Maps any task title/project keyword to high-res, aesthetic Unsplash editorial photography (Code/API, DSA/Study, Design/UI, Video/Script, Workout/Health, Architectural Desk).
+- **Plan View 1: `Schedule` Mode Overhaul (`components/tasks/TaskBoard.tsx` — `image_cc501e.jpg`)**:
+  - Header: `STUDIO V2.4` + green dot + `PLAN · CADENCE`, Instrument Serif `Execution Studio`, subtitle, and Terracotta `+ New Task` capsule.
+  - Workspaces horizontal pill strip with native scrollbar suppression.
+  - **Circadian Deep Work Hero Instrument Card**:
+    - Desk photo background overlay with opacity-15 luminosity.
+    - Duration selector capsule (`25m`, `50m`, `90m`).
+    - Col 7: Active task title, subtitle with cognitive load, Terracotta Flow button (`Enter Flow State` / `Pause Flow`), and reset button.
+    - Col 5: Circular SVG flow dial with dynamic progress arc (`stroke="#6EE7B7"`, 289 circumference), live countdown time, and `FLOW` sub-label.
+  - **2×2 Photo-Backed Non-Negotiable Rituals Bento Grid (ZERO Emojis)**:
+    - 4 default rituals with 44×44 rounded-xl lifestyle photography and green check circles:
+      1. `90m Deep Work` (`COGNITIVE`)
+      2. `3g Creatine & 3L Water` (`CELLULAR FUEL`)
+      3. `8,000 Steps & Zone 2` (`MOVEMENT`)
+      4. `Evening Journal & Plan` (`RESTORATION`)
+    - Daily check-in persistence in `localStorage` keyed by `selectedDate`.
+  - **Photo-Backed Scheduled Task Cards**:
+    - Left 14×14 rounded-2xl photo thumbnail.
+    - Middle: Circadian window eyebrow (`MORNING DEEP`, `AFTERNOON`, `EVENING RESTORATION`) + project name, bold single-line title, `High Impact` priority badge (`whitespace-nowrap`), and time slot label.
+    - Right: Dark Focus pill (`▶ Focus`) to load task directly into flow dial, and green completion check circle.
+- **Plan View 2: `History` Mode Overhaul ("Execution Archive" — `image_cc4fd8.jpg`)**:
+  - Execution Velocity Hero card with 3-column metrics (`TASKS DONE`, `FOCUS TIME`, `RITUAL STREAK`) and Orbit telemetry insight.
+  - Chronological date-grouped archive list with thumbnail + green checkmark badge, completion timestamp, workspace pill, priority pill, and `⏱ 25m Logged` badge.
+  - Editorial footer quote: `“Consistency compounds quietly.”` + `DAILY RITUAL ARCHIVE`.
+- **Plan View 3: Portaled Task Composer Modal (`image_cc4f9d.jpg` bottom half)**:
+  - Portaled to `document.body` (`z-[9999]`) with body scroll locking.
+  - Live auto-matched thumbnail preview with `✓ Matched` badge.
+  - Workspace selector pills.
+  - 3-column Circadian energy window selector cards (`Morning Deep`, `Afternoon`, `Evening`) with Lucide vector icons (`Sunrise`, `Sun`, `Moon`).
+  - Assigned slot date picker & focus target stepper (`{blocks * 25} min`).
+  - Full-width Terracotta submit button (`Schedule into Today's Rhythm →`).
+- **Test & Build Verification**:
+  - TypeScript compilation: `npx tsc --noEmit` exits with **0 errors**.
+  - Vitest suite: **51 passed (51 files), 617 passed | 26 skipped (643 total), 0 failing**.
+  - Next.js production build: `npm run build` exits with code **0** (all 33 static/dynamic routes compiled).
+
+### ⏳ Sprint 5.2: Multi-Device Responsive & Final E2E QA
 - **Tablet Optimization**: iPad 10th Gen (1024×768) 2-column bento grid verification.
 - **Desktop Optimization**: Desktop (1440×900) 3-column layout verification.
 - **End-to-End Testing**: Full automated test verification and Playwright regression sweep.
