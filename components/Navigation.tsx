@@ -276,10 +276,10 @@ export default function Navigation() {
             aria-label="Today"
             aria-current={pathname === "/dashboard" ? "page" : undefined}
             className={cn(
-              "transition-all duration-200 select-none",
+              "w-[64px] sm:w-[72px] h-[44px] rounded-full flex flex-col items-center justify-center gap-0.5 transition-all duration-200 select-none shrink-0",
               pathname === "/dashboard"
-                ? "px-3.5 py-1.5 rounded-full bg-[#2D6A4F] text-white flex flex-col items-center justify-center gap-0.5 shadow-[0_4px_12px_rgba(45,106,79,0.4)]"
-                : "px-3 py-1.5 rounded-full text-stone-400 hover:text-stone-200 flex flex-col items-center justify-center gap-0.5"
+                ? "bg-[#2D6A4F] text-white shadow-[0_4px_12px_rgba(45,106,79,0.4)]"
+                : "text-stone-400 hover:text-stone-200"
             )}
           >
             <LayoutDashboard
@@ -305,10 +305,10 @@ export default function Navigation() {
             aria-label="Plan"
             aria-current={pathname?.startsWith("/dashboard/tasks") ? "page" : undefined}
             className={cn(
-              "transition-all duration-200 select-none",
+              "w-[64px] sm:w-[72px] h-[44px] rounded-full flex flex-col items-center justify-center gap-0.5 transition-all duration-200 select-none shrink-0",
               pathname?.startsWith("/dashboard/tasks")
-                ? "px-3.5 py-1.5 rounded-full bg-[#2D6A4F] text-white flex flex-col items-center justify-center gap-0.5 shadow-[0_4px_12px_rgba(45,106,79,0.4)]"
-                : "px-3 py-1.5 rounded-full text-stone-400 hover:text-stone-200 flex flex-col items-center justify-center gap-0.5"
+                ? "bg-[#2D6A4F] text-white shadow-[0_4px_12px_rgba(45,106,79,0.4)]"
+                : "text-stone-400 hover:text-stone-200"
             )}
           >
             <CheckSquare
@@ -347,10 +347,10 @@ export default function Navigation() {
             aria-label="Train"
             aria-current={pathname?.startsWith("/dashboard/workout") ? "page" : undefined}
             className={cn(
-              "transition-all duration-200 select-none",
+              "w-[64px] sm:w-[72px] h-[44px] rounded-full flex flex-col items-center justify-center gap-0.5 transition-all duration-200 select-none shrink-0",
               pathname?.startsWith("/dashboard/workout")
-                ? "px-3.5 py-1.5 rounded-full bg-[#2D6A4F] text-white flex flex-col items-center justify-center gap-0.5 shadow-[0_4px_12px_rgba(45,106,79,0.4)]"
-                : "px-3 py-1.5 rounded-full text-stone-400 hover:text-stone-200 flex flex-col items-center justify-center gap-0.5"
+                ? "bg-[#2D6A4F] text-white shadow-[0_4px_12px_rgba(45,106,79,0.4)]"
+                : "text-stone-400 hover:text-stone-200"
             )}
           >
             <Dumbbell
@@ -376,10 +376,10 @@ export default function Navigation() {
             aria-label="Fuel"
             aria-current={pathname?.startsWith("/dashboard/diet") ? "page" : undefined}
             className={cn(
-              "transition-all duration-200 select-none",
+              "w-[64px] sm:w-[72px] h-[44px] rounded-full flex flex-col items-center justify-center gap-0.5 transition-all duration-200 select-none shrink-0",
               pathname?.startsWith("/dashboard/diet")
-                ? "px-3.5 py-1.5 rounded-full bg-[#2D6A4F] text-white flex flex-col items-center justify-center gap-0.5 shadow-[0_4px_12px_rgba(45,106,79,0.4)]"
-                : "px-3 py-1.5 rounded-full text-stone-400 hover:text-stone-200 flex flex-col items-center justify-center gap-0.5"
+                ? "bg-[#2D6A4F] text-white shadow-[0_4px_12px_rgba(45,106,79,0.4)]"
+                : "text-stone-400 hover:text-stone-200"
             )}
           >
             <Utensils

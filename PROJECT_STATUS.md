@@ -494,7 +494,57 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - Vitest suite: **51 passed (51 files), 617 passed | 26 skipped (643 total), 0 failing**.
   - Next.js production build: `npm run build` exits with code **0** (all 33 static/dynamic routes compiled).
 
-### ⏳ Sprint 5.2: Multi-Device Responsive & Final E2E QA
+### ✅ Sprint 5.2: Bottom Navbar Active Pill Geometry & Project-First Execution Hierarchy
+- **Locked Active Navbar Pill Geometry (`components/Navigation.tsx`)**:
+  - Replaced variable padding (`px-3.5`) with strict fixed capsule dimensions on all 4 navigation tabs (`Today`, `Plan`, `Train`, `Fuel`):
+    `w-[64px] sm:w-[72px] h-[44px] rounded-full flex flex-col items-center justify-center gap-0.5 transition-all duration-200 select-none shrink-0`.
+  - Active tab receives Matcha Sage pill highlight (`bg-[#2D6A4F] text-white shadow-[0_4px_12px_rgba(45,106,79,0.4)]`).
+  - Active highlight maintains perfectly identical geometry across all tabs regardless of label word length.
+- **Strict Project-First Task Hierarchy (`components/tasks/TaskBoard.tsx`)**:
+  - **Zero Hardcoded Projects**: Completely eliminated all hardcoded strings (`"DailyOS"`, `"ContentStack"`, `"Interview Prep"`). Workspaces and tasks derive 100% from user's live Firestore state.
+  - **Zero-Project Empty State**: When user has 0 workspaces, renders an inviting editorial card with Instrument Serif typography and Terracotta `+ Create First Project` action.
+  - **Real-Time Project Pending Task Badges**: Workspace horizontal pill strip now computes live pending task counts per project (`${p.name} · ${count}`) directly from user tasks.
+  - **Selected Project Scoping**:
+    - Scopes `tasksForDate`, `completedForDate`, `overdueTasks`, and `historyGroups` strictly to `task.projectId === selectedProject`.
+    - Hero Circadian Deep Work instrument card dynamically binds to the first pending task of `selectedProject` (or displays `"No pending tasks in {selectedProject.name}"`).
+    - When selected project has 0 tasks for the date, shows `"No tasks in {selectedProject.name} for this date"` with 1-tap `+ Add Task to {selectedProject.name}` action.
+    - `TaskComposerModal` domain pills populated strictly from real user projects, auto-assigning newly created tasks to `activeProjectId`.
+  - **Preserved Test & Accessibility Invariants**:
+    - Retained all `aria-label`, placeholder, and button contracts (`"New task"`, `"Add task"`, `"What needs to be done?"`, `"Schedule"`, `"History"`).
+- **Test & Build Verification**:
+  - TypeScript compilation: `npx tsc --noEmit` exits with **0 errors**.
+  - Vitest suite: **51 passed (51 files), 617 passed | 26 skipped (643 total), 0 failing**.
+  - Next.js production build: `npm run build` exits with code **0** (all 33 static/dynamic routes compiled).
+
+### ✅ Sprint 5.3: Uncongested Execution Header, Two-Level Architecture (Execution Studio vs Dedicated Project Drill-Down), Workspace Deletion, & Bottom Dock Gap Fix
+- **Uncongested 3-Row Header (`components/tasks/TaskBoard.tsx`)**:
+  - Eliminated header button crowding and premature text wrapping on mobile viewports.
+  - Row 1: Full-width eyebrow (`STUDIO V2.4` + matcha dot + `PLAN · CADENCE`).
+  - Row 2: Editorial title (`Execution Studio`) + Single Terracotta `+ New Task` button (`bg-[#E05A47]`).
+  - Row 3: Full-width subtitle (`Design your daily rhythm, rituals, and deep work.`).
+  - Relocated `+ New Project` button into the `PROJECT WORKSPACES` section header where it logically belongs.
+- **Two-Level UX Architecture (`activeProjectId: string | null`)**:
+  - **VIEW A: Main Execution Studio (`activeProjectId === null`)**:
+    - Default landing view when opening `Plan`.
+    - Hero Circadian Deep Work instrument card (flow timer dynamically bound to active/next task across the day).
+    - Today's Main Tasks & Schedule Section (7-day calendar strip, Today's tasks with compact 48×48 thumbnails and maximum horizontal title room, Schedule/History tabs).
+    - Dedicated Project Workspaces Bento Section with folder cards showing pending/completed task counters, direct deletion, and `Open →` drill-down.
+    - 2×2 Non-Negotiable Daily Rituals Bento Grid placed cleanly below workspaces.
+  - **VIEW B: Dedicated Project Workspace Drill-Down (`activeProjectId !== null`)**:
+    - Focuses 100% on the selected workspace (global timer and daily rituals cleanly hidden).
+    - Header with `← Back to Execution Studio`, project title, workspace deletion, and `+ New Task` scoped to project.
+    - Unified Project Tasks List with both pending (`TO DO IN THIS PROJECT`) and completed (`COMPLETED IN THIS PROJECT`) tasks on one scrollable screen.
+    - Direct task focus button (`▶ Focus`) which jumps to Main Execution Studio and starts flow timer on that task.
+- **Workspace Deletion & Clean Architecture**:
+  - Integrated `deleteProject` from `lib/firestore.ts` with user confirmation dialog, removing project document and cleanly unlinking associated tasks.
+- **Eliminated Bottom Floating Dock Gap**:
+  - Reduced outer wrapper padding from `pb-28` to `pb-4`, ensuring the last card sits cleanly 16px–20px above the floating bottom dock across all viewports.
+- **Test & Build Verification**:
+  - TypeScript compilation: `npx tsc --noEmit` exits with **0 errors**.
+  - Vitest suite: **51 passed (51 files), 617 passed | 26 skipped (643 total), 0 failing**.
+  - Next.js production build: `npm run build` exits with code **0** (all 33 static/dynamic routes compiled).
+
+### ⏳ Sprint 5.4: Multi-Device Responsive & Final E2E QA
 - **Tablet Optimization**: iPad 10th Gen (1024×768) 2-column bento grid verification.
 - **Desktop Optimization**: Desktop (1440×900) 3-column layout verification.
 - **End-to-End Testing**: Full automated test verification and Playwright regression sweep.
