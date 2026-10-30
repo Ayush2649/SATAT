@@ -8,12 +8,9 @@ import {
   AlertCircle,
   Loader2,
   Sparkles,
-  Barcode as BarcodeIcon,
   Plus,
   Minus,
   Check,
-  Search,
-  ScanBarcode,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import MacroDonutBreakdown from "@/components/diet/MacroDonutBreakdown";
@@ -29,73 +26,6 @@ export type MealScannerModalProps = {
   onSwitchToManual?: () => void;
   onSwitchToVoice?: () => void;
 };
-
-interface PackagedStaple {
-  id: string;
-  name: string;
-  servingLabel: string;
-  calories: number;
-  proteinG: number;
-  carbsG: number;
-  fatG: number;
-}
-
-const PACKAGED_STAPLES: PackagedStaple[] = [
-  {
-    id: "greek-yogurt",
-    name: "High-Protein Greek Yogurt",
-    servingLabel: "150g tub",
-    calories: 130,
-    proteinG: 15,
-    carbsG: 8,
-    fatG: 0,
-  },
-  {
-    id: "amul-buttermilk",
-    name: "Amul High Protein Buttermilk",
-    servingLabel: "200ml pack",
-    calories: 90,
-    proteinG: 15,
-    carbsG: 5,
-    fatG: 1.5,
-  },
-  {
-    id: "whey-isolate",
-    name: "Whey Protein Isolate",
-    servingLabel: "1 scoop (33g)",
-    calories: 120,
-    proteinG: 25,
-    carbsG: 2,
-    fatG: 1,
-  },
-  {
-    id: "rolled-oats",
-    name: "Rolled Oats Pouch",
-    servingLabel: "50g serving",
-    calories: 190,
-    proteinG: 6,
-    carbsG: 33,
-    fatG: 3.5,
-  },
-  {
-    id: "paneer-block",
-    name: "Fresh Paneer Block",
-    servingLabel: "100g portion",
-    calories: 265,
-    proteinG: 18,
-    carbsG: 4,
-    fatG: 20,
-  },
-  {
-    id: "peanut-butter",
-    name: "Natural Peanut Butter",
-    servingLabel: "2 tbsp (32g)",
-    calories: 190,
-    proteinG: 8,
-    carbsG: 6,
-    fatG: 16,
-  },
-];
 
 // Client-side image resize helper (max 1024px, JPEG 0.82)
 async function resizeImageClient(
@@ -164,9 +94,7 @@ export default function MealScannerModal({
   onSwitchToManual,
   onSwitchToVoice,
 }: MealScannerModalProps) {
-  const [mode, setMode] = useState<"plate" | "barcode">(initialMode);
   const fileRef = useRef<HTMLInputElement>(null);
-  const barcodeFileRef = useRef<HTMLInputElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // Plate Photo AI state (starts strictly empty - zero fake preloaded photos!)
@@ -189,12 +117,6 @@ export default function MealScannerModal({
       document.body.style.overflow = originalOverflow;
     };
   }, []);
-
-  // Barcode / Packaged Staples state
-  const [barcodeSearch, setBarcodeSearch] = useState("");
-  const [stapleQuantities, setStapleQuantities] = useState<Record<string, number>>({});
-  const [customStapleLookup, setCustomStapleLookup] = useState<PackagedStaple | null>(null);
-  const [lookupLoading, setLookupLoading] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -335,65 +257,7 @@ export default function MealScannerModal({
     });
   };
 
-  const handleLogStaple = (staple: PackagedStaple) => {
-    const qty = stapleQuantities[staple.id] ?? 1;
-    if (qty <= 0) return;
-
-    onSave({
-      userId,
-      date,
-      name: qty === 1 ? staple.name : `${staple.name} (${qty}× ${staple.servingLabel})`,
-      macros: {
-        calories: Math.round(staple.calories * qty),
-        proteinG: Math.round(staple.proteinG * qty),
-        carbsG: Math.round(staple.carbsG * qty),
-        fatG: Math.round(staple.fatG * qty),
-      },
-      createdAt: Date.now(),
-    });
-  };
-
-  const updateStapleQty = (id: string, delta: number) => {
-    setStapleQuantities((prev) => {
-      const current = prev[id] ?? 1;
-      const next = Math.max(1, current + delta);
-      return { ...prev, [id]: next };
-    });
-  };
-
-  const handleLookupCustomStaple = async () => {
-    if (!barcodeSearch.trim()) return;
-    setLookupLoading(true);
-    try {
-      const res = await fetch("/api/estimate-meal", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dishName: barcodeSearch.trim() }),
-      });
-      const data = await res.json();
-      if (!data.error && data.calories > 0) {
-        setCustomStapleLookup({
-          id: `lookup-${Date.now()}`,
-          name: barcodeSearch.trim(),
-          servingLabel: "1 serving",
-          calories: Math.round(data.calories),
-          proteinG: Math.round(data.proteinG || 0),
-          carbsG: Math.round(data.carbsG || 0),
-          fatG: Math.round(data.fatG || 0),
-        });
-      }
-    } catch {
-      // ignore lookup error
-    } finally {
-      setLookupLoading(false);
-    }
-  };
-
-  const filteredStaples = PACKAGED_STAPLES.filter((s) =>
-    s.name.toLowerCase().includes(barcodeSearch.trim().toLowerCase())
-  );
-
-    if (!mounted || typeof document === "undefined") {
+  if (!mounted || typeof document === "undefined") {
     return null;
   }
 
@@ -439,54 +303,12 @@ export default function MealScannerModal({
               Instant Food Intelligence
             </h2>
             <p className="text-xs text-[#57534E] mt-0.5">
-              Hold plate in daylight or scan packaged staples.
+              Hold plate in clear daylight for component-by-component macro estimation.
             </p>
           </div>
 
-          {/* Dual-Mode Segmented Switcher */}
-          <div
-            className="bg-[#EFECE4] p-1 rounded-full grid grid-cols-2 gap-1 mb-2"
-            role="tablist"
-            aria-label="Scanner modes"
-          >
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mode === "plate"}
-              onClick={() => setMode("plate")}
-              className={cn(
-                "rounded-full py-2 text-xs transition-all text-center whitespace-nowrap cursor-pointer flex items-center justify-center gap-1.5",
-                mode === "plate"
-                  ? "bg-[#191D1A] text-[#FCFBF9] font-semibold shadow-xs"
-                  : "text-[#57534E] hover:text-[#1C1917] font-medium"
-              )}
-            >
-              <Camera className="w-3.5 h-3.5" />
-              <span>Plate Photo AI</span>
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mode === "barcode"}
-              onClick={() => setMode("barcode")}
-              className={cn(
-                "rounded-full py-2 text-xs transition-all text-center whitespace-nowrap cursor-pointer flex items-center justify-center gap-1.5",
-                mode === "barcode"
-                  ? "bg-[#191D1A] text-[#FCFBF9] font-semibold shadow-xs"
-                  : "text-[#57534E] hover:text-[#1C1917] font-medium"
-              )}
-            >
-              <ScanBarcode className="w-3.5 h-3.5" />
-              <span>Barcode &amp; Label</span>
-            </button>
-          </div>
-
-          {/* ══════════════════════════════════════════════════════════════════
-              MODE 1: PLATE PHOTO AI
-              ══════════════════════════════════════════════════════════════════ */}
-          {mode === "plate" && (
-            <div className="space-y-4 animate-fade-in">
-              <input
+          <div className="space-y-4 animate-fade-in">
+            <input
                 ref={fileRef}
                 type="file"
                 accept="image/*"
@@ -743,6 +565,25 @@ export default function MealScannerModal({
                     protein={currentProtein}
                   />
 
+                  {/* Detected Components Breakdown */}
+                  {result?.visibleItems && result.visibleItems.length > 0 && (
+                    <div className="pt-2 border-t border-white/10">
+                      <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-stone-400 block mb-1.5">
+                        PLATE COMPONENTS DETECTED
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {result.visibleItems.map((item: string, idx: number) => (
+                          <span
+                            key={idx}
+                            className="bg-white/10 text-stone-200 border border-white/10 rounded-full px-2.5 py-1 text-[11px] font-medium"
+                          >
+                            {item}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Candidate alternatives if multiple */}
                   {result?.candidates && result.candidates.length > 1 && (
                     <div className="pt-1">
@@ -784,240 +625,10 @@ export default function MealScannerModal({
                 </div>
               )}
             </div>
-          )}
-
-          {/* ══════════════════════════════════════════════════════════════════
-              MODE 2: BARCODE & LABEL SCANNER
-              ══════════════════════════════════════════════════════════════════ */}
-          {mode === "barcode" && (
-            <div className="space-y-4 animate-fade-in">
-              <input
-                ref={barcodeFileRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="hidden"
-                onChange={(e) => {
-                  if (e.target.files?.[0]) {
-                    setMode("plate");
-                    handleFile(e.target.files[0]);
-                  }
-                }}
-              />
-
-              {/* Viewfinder Card */}
-              <div className="bg-[#191D1A] rounded-[26px] p-5 text-center relative overflow-hidden shadow-md border border-white/10">
-                <div className="text-[9px] font-mono text-stone-400 flex items-center justify-between tracking-wider mb-2">
-                  <span>BARCODE &amp; NUTRITION LABEL</span>
-                  <span className="text-[#34D399] flex items-center gap-1 font-semibold">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#34D399] animate-pulse" />
-                    READY
-                  </span>
-                </div>
-
-                <div className="relative my-3 flex flex-col items-center justify-center">
-                  <div className="flex items-center gap-1.5 opacity-40">
-                    {[4, 2, 8, 3, 6, 2, 4, 10, 2, 5, 8, 3, 2, 6, 4, 2, 8, 5, 3].map((h, i) => (
-                      <div
-                        key={i}
-                        className="bg-white rounded-xs"
-                        style={{ width: `${(i % 3) + 2}px`, height: `${30 + h}px` }}
-                      />
-                    ))}
-                  </div>
-                  <div className="absolute inset-x-0 h-0.5 bg-[#E05A47] shadow-[0_0_16px_#E05A47] animate-pulse" />
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => barcodeFileRef.current?.click()}
-                  className="w-full bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full px-5 py-3 text-xs font-semibold inline-flex items-center justify-center gap-2 shadow-lg mt-2 cursor-pointer transition-all active:scale-95"
-                >
-                  <Camera className="w-4 h-4" />
-                  <span>Scan Nutrition Label or Barcode</span>
-                </button>
-              </div>
-
-              {/* Barcode / Packaged Food Search Input with Search / Estimate Action Button */}
-              <div className="bg-[#FCFBF9] rounded-[22px] p-3.5 border border-[#1C1917]/[0.06] shadow-2xs">
-                <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#8C857B] block mb-1.5">
-                  LOOKUP PACKAGED FOOD / BARCODE
-                </span>
-                <div className="flex items-center gap-2">
-                  <div className="relative flex-1 min-w-0">
-                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8C857B]" />
-                    <input
-                      type="text"
-                      placeholder="Type product name or barcode (e.g., Amul Lassi, Greek Yogurt, Whey)..."
-                      value={barcodeSearch}
-                      onChange={(e) => setBarcodeSearch(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleLookupCustomStaple()}
-                      className="w-full bg-[#F6F3EC] rounded-xl pl-9 pr-3 py-2 text-xs text-[#1C1917] outline-none border border-[#1C1917]/[0.06]"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleLookupCustomStaple}
-                    disabled={lookupLoading || !barcodeSearch.trim()}
-                    className="bg-[#191D1A] hover:bg-[#2D6A4F] text-white rounded-xl px-3.5 py-2 text-xs font-semibold transition-all cursor-pointer shrink-0 disabled:opacity-40"
-                  >
-                    {lookupLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Search / Estimate"}
-                  </button>
-                </div>
-              </div>
-
-              {/* Custom Lookup Result Card */}
-              {customStapleLookup && (
-                <div className="bg-[#FCFBF9] rounded-[22px] p-3.5 border border-[#2D6A4F]/20 shadow-xs animate-slide-down">
-                  <div className="flex items-start justify-between gap-2.5">
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-[#EFECE4]">
-                        <img
-                          src={resolveDishThumbnail(customStapleLookup.name)}
-                          alt={customStapleLookup.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h4 className="font-bold text-sm text-[#1C1917] leading-snug">
-                          {customStapleLookup.name}
-                        </h4>
-                        {/* Macro Pills - Flex Wrap (Never truncated!) */}
-                        <div className="flex flex-wrap gap-1.5 mt-1.5">
-                          <span className="bg-[#EFECE4] text-[#1C1917] px-2 py-0.5 rounded-md text-[11px] font-semibold">
-                            {customStapleLookup.calories} kcal
-                          </span>
-                          <span className="bg-[#EFECE4] text-[#2D6A4F] px-2 py-0.5 rounded-md text-[11px] font-semibold">
-                            {customStapleLookup.proteinG}g P
-                          </span>
-                          <span className="bg-[#EFECE4] text-[#D97706] px-2 py-0.5 rounded-md text-[11px] font-semibold">
-                            {customStapleLookup.carbsG}g C
-                          </span>
-                          <span className="bg-[#EFECE4] text-[#E05A47] px-2 py-0.5 rounded-md text-[11px] font-semibold">
-                            {customStapleLookup.fatG}g F
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-[#1C1917]/[0.05]">
-                    <span className="text-[10px] font-bold text-[#2D6A4F] bg-[#E0F2E9] px-2 py-0.5 rounded-full">
-                      AI Estimated Product
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleLogStaple(customStapleLookup)}
-                      className="bg-[#191D1A] hover:bg-[#2D6A4F] text-white rounded-full px-3.5 py-1.5 text-xs font-semibold cursor-pointer"
-                    >
-                      Add to Fuel →
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Results ONLY when user searches (Empty by default!) */}
-              {barcodeSearch.trim().length > 0 && (
-                <div className="space-y-2.5 max-h-[42dvh] overflow-y-auto overflow-x-hidden no-scrollbar pr-0.5">
-                  <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#8C857B] block px-1">
-                    MATCHED PACKAGED STAPLES ({filteredStaples.length})
-                  </span>
-
-                  {filteredStaples.length === 0 && !customStapleLookup && !lookupLoading ? (
-                    <div className="text-center py-6 bg-[#FCFBF9] rounded-[22px] border border-[#1C1917]/[0.06] p-4">
-                      <p className="text-xs text-[#57534E]">
-                        No packaged staples match &ldquo;{barcodeSearch}&rdquo;.
-                      </p>
-                      <p className="text-[11px] text-[#8C857B] mt-1">
-                        Tap <strong className="text-[#1C1917]">Search / Estimate</strong> above to calculate nutrition with AI.
-                      </p>
-                    </div>
-                  ) : (
-                    filteredStaples.map((staple) => {
-                      const qty = stapleQuantities[staple.id] ?? 1;
-                      const thumb = resolveDishThumbnail(staple.name);
-
-                      return (
-                        <div
-                          key={staple.id}
-                          className="bg-[#FCFBF9] rounded-[22px] p-3.5 border border-[#1C1917]/[0.06] shadow-xs"
-                        >
-                          <div className="flex items-start justify-between gap-2.5">
-                            <div className="flex items-center gap-3 min-w-0 flex-1">
-                              <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-[#EFECE4]">
-                                <img
-                                  src={thumb}
-                                  alt={staple.name}
-                                  className="w-full h-full object-cover"
-                                  loading="lazy"
-                                />
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <h4 className="font-bold text-sm text-[#1C1917] leading-snug">
-                                  {staple.name}
-                                </h4>
-                                {/* 4 Macro Pills - Clean Flex Wrap (Never truncated!) */}
-                                <div className="flex flex-wrap gap-1.5 mt-1.5">
-                                  <span className="bg-[#EFECE4] text-[#1C1917] px-2 py-0.5 rounded-md text-[11px] font-semibold">
-                                    {Math.round(staple.calories * qty)} kcal
-                                  </span>
-                                  <span className="bg-[#EFECE4] text-[#2D6A4F] px-2 py-0.5 rounded-md text-[11px] font-semibold">
-                                    {Math.round(staple.proteinG * qty)}g P
-                                  </span>
-                                  <span className="bg-[#EFECE4] text-[#D97706] px-2 py-0.5 rounded-md text-[11px] font-semibold">
-                                    {Math.round(staple.carbsG * qty)}g C
-                                  </span>
-                                  <span className="bg-[#EFECE4] text-[#E05A47] px-2 py-0.5 rounded-md text-[11px] font-semibold">
-                                    {Math.round(staple.fatG * qty)}g F
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center gap-1 bg-[#F6F3EC] rounded-full px-2 py-0.5 border border-[#1C1917]/[0.06] shrink-0 self-start mt-0.5">
-                              <button
-                                type="button"
-                                onClick={() => updateStapleQty(staple.id, -1)}
-                                className="w-5 h-5 rounded-full bg-white text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs hover:bg-[#EFECE4] text-[#1C1917] transition-all"
-                                aria-label={`Decrease quantity of ${staple.name}`}
-                              >
-                                -
-                              </button>
-                              <span className="text-xs font-bold w-4 text-center text-[#1C1917]">{qty}</span>
-                              <button
-                                type="button"
-                                onClick={() => updateStapleQty(staple.id, 1)}
-                                className="w-5 h-5 rounded-full bg-white text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs hover:bg-[#EFECE4] text-[#1C1917] transition-all"
-                                aria-label={`Increase quantity of ${staple.name}`}
-                              >
-                                +
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-[#1C1917]/[0.05]">
-                            <span className="text-[10px] font-bold text-[#2D6A4F] bg-[#E0F2E9] px-2 py-0.5 rounded-full whitespace-nowrap">
-                              Verified Nutrition Label
-                            </span>
-
-                            <button
-                              type="button"
-                              onClick={() => handleLogStaple(staple)}
-                              className="bg-[#191D1A] hover:bg-[#2D6A4F] text-white rounded-full px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap transition-all cursor-pointer active:scale-95"
-                            >
-                              Add to Fuel →
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
     </div>,
     document.body
   );
 }
+

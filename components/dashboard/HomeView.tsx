@@ -15,6 +15,7 @@ import {
 } from "@/lib/firestore";
 import ProgressTrendChart from "@/components/dashboard/ProgressTrendChart";
 import ConsistencyHeatmap from "@/components/dashboard/ConsistencyHeatmap";
+import { TodayPageSkeleton } from "@/components/ui/PageSkeletons";
 import { todayString, localDateString } from "@/lib/utils";
 import type { Task, MealEntry, MacroGoals, WorkoutSession, BodyWeightEntry, UserProfileDocument } from "@/types";
 
@@ -311,27 +312,7 @@ export default function HomeView() {
   };
 
   if (loading) {
-    return (
-      <div className="max-w-md mx-auto lg:max-w-5xl px-0 sm:px-2 pt-2 pb-6 space-y-5 animate-pulse select-none">
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <div className="h-3 w-28 bg-[#EFECE4] rounded-md" />
-            <div className="h-8 w-56 bg-[#EFECE4] rounded-xl" />
-          </div>
-          <div className="w-16 h-8 rounded-full bg-[#EFECE4]" />
-        </div>
-        <div className="grid grid-cols-7 gap-2">
-          {Array.from({ length: 7 }).map((_, i) => (
-            <div key={i} className="h-20 rounded-[22px] bg-[#EFECE4]" />
-          ))}
-        </div>
-        <div className="grid grid-cols-12 gap-3">
-          <div className="col-span-7 h-[244px] rounded-[26px] bg-[#EFECE4]" />
-          <div className="col-span-5 h-[244px] rounded-[26px] bg-[#EFECE4]" />
-        </div>
-        <div className="h-20 rounded-[26px] bg-[#EFECE4]" />
-      </div>
-    );
+    return <TodayPageSkeleton />;
   }
 
   return (

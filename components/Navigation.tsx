@@ -264,9 +264,9 @@ export default function Navigation() {
         </div>
       </header>
 
-      {/* ── Mobile bottom navigation (5 Canonical Slots: Today, Plan, Quick Track FAB, Train, Fuel) ── */}
+      {/* ── Mobile bottom navigation (SATAT Stitch Theme: Today, Plan, Track FAB, Train, Fuel) ── */}
       <nav
-        className="fixed left-1/2 -translate-x-1/2 bottom-[max(10px,env(safe-area-inset-bottom))] z-50 w-[calc(100vw-24px)] max-w-[400px] sm:max-w-[480px] md:max-w-[600px] lg:max-w-[720px] h-[58px] sm:h-[62px] rounded-full bg-[#191D1A]/95 backdrop-blur-md border border-white/[0.08] shadow-[0_14px_34px_rgba(0,0,0,0.28)] px-2 sm:px-4 flex items-center lg:hidden"
+        className="fixed left-1/2 -translate-x-1/2 bottom-[max(12px,env(safe-area-inset-bottom))] z-50 w-[calc(100vw-28px)] max-w-[390px] sm:max-w-[460px] md:max-w-[560px] lg:max-w-[640px] h-[62px] rounded-full bg-[#191D1A]/95 backdrop-blur-xl border border-white/[0.08] shadow-[0_14px_34px_rgba(0,0,0,0.32)] px-2.5 flex items-center lg:hidden"
         aria-label="Primary navigation"
       >
         <div className="grid grid-cols-5 items-center justify-items-center w-full h-full">
@@ -276,14 +276,27 @@ export default function Navigation() {
             aria-label="Today"
             aria-current={pathname === "/dashboard" ? "page" : undefined}
             className={cn(
-              "flex flex-col items-center justify-center gap-0.5 w-full h-full select-none transition-colors",
-              pathname === "/dashboard" ? "text-[#E05A47]" : "text-[#8C857B] hover:text-[#FCFBF9]"
+              "w-[64px] sm:w-[72px] h-[44px] rounded-full flex flex-col items-center justify-center gap-0.5 transition-all duration-200 select-none shrink-0",
+              pathname === "/dashboard"
+                ? "bg-[#2D6A4F] text-white shadow-[0_4px_12px_rgba(45,106,79,0.4)]"
+                : "text-stone-400 hover:text-stone-200"
             )}
           >
-            <div className="w-[20px] h-[20px] flex items-center justify-center">
-              <LayoutDashboard className="w-[18px] h-[18px] sm:w-5 sm:h-5" aria-hidden="true" />
-            </div>
-            <span className="text-[10px] sm:text-[11px] font-medium leading-none">Today</span>
+            <LayoutDashboard
+              className={cn(
+                "w-[18px] h-[18px]",
+                pathname === "/dashboard" ? "stroke-[2.2]" : "stroke-[1.75]"
+              )}
+              aria-hidden="true"
+            />
+            <span
+              className={cn(
+                "text-[10px] leading-none tracking-tight",
+                pathname === "/dashboard" ? "font-semibold" : "font-medium"
+              )}
+            >
+              Today
+            </span>
           </Link>
 
           {/* 2. Plan */}
@@ -292,27 +305,40 @@ export default function Navigation() {
             aria-label="Plan"
             aria-current={pathname?.startsWith("/dashboard/tasks") ? "page" : undefined}
             className={cn(
-              "flex flex-col items-center justify-center gap-0.5 w-full h-full select-none transition-colors",
-              pathname?.startsWith("/dashboard/tasks") ? "text-[#E05A47]" : "text-[#8C857B] hover:text-[#FCFBF9]"
+              "w-[64px] sm:w-[72px] h-[44px] rounded-full flex flex-col items-center justify-center gap-0.5 transition-all duration-200 select-none shrink-0",
+              pathname?.startsWith("/dashboard/tasks")
+                ? "bg-[#2D6A4F] text-white shadow-[0_4px_12px_rgba(45,106,79,0.4)]"
+                : "text-stone-400 hover:text-stone-200"
             )}
           >
-            <div className="w-[20px] h-[20px] flex items-center justify-center">
-              <CheckSquare className="w-[18px] h-[18px] sm:w-5 sm:h-5" aria-hidden="true" />
-            </div>
-            <span className="text-[10px] sm:text-[11px] font-medium leading-none">Plan</span>
+            <CheckSquare
+              className={cn(
+                "w-[18px] h-[18px]",
+                pathname?.startsWith("/dashboard/tasks") ? "stroke-[2.2]" : "stroke-[1.75]"
+              )}
+              aria-hidden="true"
+            />
+            <span
+              className={cn(
+                "text-[10px] leading-none tracking-tight",
+                pathname?.startsWith("/dashboard/tasks") ? "font-semibold" : "font-medium"
+              )}
+            >
+              Plan
+            </span>
           </Link>
 
-          {/* 3. Quick Track FAB */}
-          <div className="flex flex-col items-center justify-center w-full h-full relative select-none">
+          {/* 3. Quick Track FAB (Terracotta Clay #E05A47) */}
+          <div className="flex items-center justify-center w-full h-full select-none">
             <button
               type="button"
               onClick={() => setShowTrackSheet(true)}
               aria-label="Quick track"
-              className="w-10 h-10 sm:w-11 sm:h-11 -mt-3 rounded-full bg-[#E05A47] text-white shadow-md flex items-center justify-center transition-transform active:scale-95 border-2 border-[#191D1A]"
+              className="w-11 h-11 rounded-full bg-[#E05A47] hover:bg-[#C94A38] active:scale-95 text-white flex items-center justify-center shadow-[0_4px_14px_rgba(224,90,71,0.45)] transition-all cursor-pointer"
             >
-              <Plus className="w-5 h-5 stroke-[2.5]" style={{ color: "#FFFFFF" }} />
+              <Plus className="w-5 h-5 stroke-[2.4]" />
+              <span className="sr-only">Track</span>
             </button>
-            <span className="text-[10px] leading-none text-stone-400 mt-0.5">Track</span>
           </div>
 
           {/* 4. Train */}
@@ -321,14 +347,27 @@ export default function Navigation() {
             aria-label="Train"
             aria-current={pathname?.startsWith("/dashboard/workout") ? "page" : undefined}
             className={cn(
-              "flex flex-col items-center justify-center gap-0.5 w-full h-full select-none transition-colors",
-              pathname?.startsWith("/dashboard/workout") ? "text-[#E05A47]" : "text-[#8C857B] hover:text-[#FCFBF9]"
+              "w-[64px] sm:w-[72px] h-[44px] rounded-full flex flex-col items-center justify-center gap-0.5 transition-all duration-200 select-none shrink-0",
+              pathname?.startsWith("/dashboard/workout")
+                ? "bg-[#2D6A4F] text-white shadow-[0_4px_12px_rgba(45,106,79,0.4)]"
+                : "text-stone-400 hover:text-stone-200"
             )}
           >
-            <div className="w-[20px] h-[20px] flex items-center justify-center">
-              <Dumbbell className="w-[18px] h-[18px] sm:w-5 sm:h-5" aria-hidden="true" />
-            </div>
-            <span className="text-[10px] sm:text-[11px] font-medium leading-none">Train</span>
+            <Dumbbell
+              className={cn(
+                "w-[18px] h-[18px]",
+                pathname?.startsWith("/dashboard/workout") ? "stroke-[2.2]" : "stroke-[1.75]"
+              )}
+              aria-hidden="true"
+            />
+            <span
+              className={cn(
+                "text-[10px] leading-none tracking-tight",
+                pathname?.startsWith("/dashboard/workout") ? "font-semibold" : "font-medium"
+              )}
+            >
+              Train
+            </span>
           </Link>
 
           {/* 5. Fuel */}
@@ -337,14 +376,27 @@ export default function Navigation() {
             aria-label="Fuel"
             aria-current={pathname?.startsWith("/dashboard/diet") ? "page" : undefined}
             className={cn(
-              "flex flex-col items-center justify-center gap-0.5 w-full h-full select-none transition-colors",
-              pathname?.startsWith("/dashboard/diet") ? "text-[#E05A47]" : "text-[#8C857B] hover:text-[#FCFBF9]"
+              "w-[64px] sm:w-[72px] h-[44px] rounded-full flex flex-col items-center justify-center gap-0.5 transition-all duration-200 select-none shrink-0",
+              pathname?.startsWith("/dashboard/diet")
+                ? "bg-[#2D6A4F] text-white shadow-[0_4px_12px_rgba(45,106,79,0.4)]"
+                : "text-stone-400 hover:text-stone-200"
             )}
           >
-            <div className="w-[20px] h-[20px] flex items-center justify-center">
-              <Utensils className="w-[18px] h-[18px] sm:w-5 sm:h-5" aria-hidden="true" />
-            </div>
-            <span className="text-[10px] sm:text-[11px] font-medium leading-none">Fuel</span>
+            <Utensils
+              className={cn(
+                "w-[18px] h-[18px]",
+                pathname?.startsWith("/dashboard/diet") ? "stroke-[2.2]" : "stroke-[1.75]"
+              )}
+              aria-hidden="true"
+            />
+            <span
+              className={cn(
+                "text-[10px] leading-none tracking-tight",
+                pathname?.startsWith("/dashboard/diet") ? "font-semibold" : "font-medium"
+              )}
+            >
+              Fuel
+            </span>
           </Link>
         </div>
       </nav>

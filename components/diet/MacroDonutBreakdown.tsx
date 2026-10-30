@@ -54,27 +54,27 @@ export default function MacroDonutBreakdown({
   const circumference = 2 * Math.PI * radius; // ~251.3274
 
   // Unified Macro Donut Arc Colors (Exact 1:1 match with Daily Nutrition Summary ring everywhere):
-  //   - Carbs arc: #14B8A6 (Teal-Emerald)
-  //   - Fat arc: #F59E0B (Amber)
-  //   - Protein arc: #8B5CF6 (Vibrant Violet)
+  //   - Carbs arc: #F59E0B (Amber Gold)
+  //   - Fat arc: #E05A47 (Terracotta Clay)
+  //   - Protein arc: #2D6A4F (Matcha Sage)
   const segments = [
     {
       key: "carbs",
       pct: carbPct,
-      arcColor: "#14B8A6",
-      textColor: variant === "dark" ? "#14B8A6" : "#0D9488",
+      arcColor: "#F59E0B",
+      textColor: variant === "dark" ? "#FBBF24" : "#D97706",
     },
     {
       key: "fat",
       pct: fatPct,
-      arcColor: "#F59E0B",
-      textColor: variant === "dark" ? "#F59E0B" : "#D97706",
+      arcColor: "#E05A47",
+      textColor: variant === "dark" ? "#F87171" : "#E05A47",
     },
     {
       key: "protein",
       pct: proteinPct,
-      arcColor: "#8B5CF6",
-      textColor: variant === "dark" ? "#A78BFA" : "#7C3AED",
+      arcColor: "#2D6A4F",
+      textColor: variant === "dark" ? "#4ADE80" : "#2D6A4F",
     },
   ];
 
