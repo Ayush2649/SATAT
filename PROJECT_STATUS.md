@@ -494,7 +494,29 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - Vitest suite: **51 passed (51 files), 617 passed | 26 skipped (643 total), 0 failing**.
   - Next.js production build: `npm run build` exits with code **0** (all 33 static/dynamic routes compiled).
 
-### ⏳ Sprint 5.2: Multi-Device Responsive & Final E2E QA
+### ✅ Sprint 5.2: Bottom Navbar Active Pill Geometry & Project-First Execution Hierarchy
+- **Locked Active Navbar Pill Geometry (`components/Navigation.tsx`)**:
+  - Replaced variable padding (`px-3.5`) with strict fixed capsule dimensions on all 4 navigation tabs (`Today`, `Plan`, `Train`, `Fuel`):
+    `w-[64px] sm:w-[72px] h-[44px] rounded-full flex flex-col items-center justify-center gap-0.5 transition-all duration-200 select-none shrink-0`.
+  - Active tab receives Matcha Sage pill highlight (`bg-[#2D6A4F] text-white shadow-[0_4px_12px_rgba(45,106,79,0.4)]`).
+  - Active highlight maintains perfectly identical geometry across all tabs regardless of label word length.
+- **Strict Project-First Task Hierarchy (`components/tasks/TaskBoard.tsx`)**:
+  - **Zero Hardcoded Projects**: Completely eliminated all hardcoded strings (`"DailyOS"`, `"ContentStack"`, `"Interview Prep"`). Workspaces and tasks derive 100% from user's live Firestore state.
+  - **Zero-Project Empty State**: When user has 0 workspaces, renders an inviting editorial card with Instrument Serif typography and Terracotta `+ Create First Project` action.
+  - **Real-Time Project Pending Task Badges**: Workspace horizontal pill strip now computes live pending task counts per project (`${p.name} · ${count}`) directly from user tasks.
+  - **Selected Project Scoping**:
+    - Scopes `tasksForDate`, `completedForDate`, `overdueTasks`, and `historyGroups` strictly to `task.projectId === selectedProject`.
+    - Hero Circadian Deep Work instrument card dynamically binds to the first pending task of `selectedProject` (or displays `"No pending tasks in {selectedProject.name}"`).
+    - When selected project has 0 tasks for the date, shows `"No tasks in {selectedProject.name} for this date"` with 1-tap `+ Add Task to {selectedProject.name}` action.
+    - `TaskComposerModal` domain pills populated strictly from real user projects, auto-assigning newly created tasks to `activeProjectId`.
+  - **Preserved Test & Accessibility Invariants**:
+    - Retained all `aria-label`, placeholder, and button contracts (`"New task"`, `"Add task"`, `"What needs to be done?"`, `"Schedule"`, `"History"`).
+- **Test & Build Verification**:
+  - TypeScript compilation: `npx tsc --noEmit` exits with **0 errors**.
+  - Vitest suite: **51 passed (51 files), 617 passed | 26 skipped (643 total), 0 failing**.
+  - Next.js production build: `npm run build` exits with code **0** (all 33 static/dynamic routes compiled).
+
+### ⏳ Sprint 5.3: Multi-Device Responsive & Final E2E QA
 - **Tablet Optimization**: iPad 10th Gen (1024×768) 2-column bento grid verification.
 - **Desktop Optimization**: Desktop (1440×900) 3-column layout verification.
 - **End-to-End Testing**: Full automated test verification and Playwright regression sweep.

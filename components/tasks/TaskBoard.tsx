@@ -24,6 +24,7 @@ import {
   Pause,
   RotateCcw,
   Check,
+  CheckSquare,
   Sparkles,
   Sunrise,
   Sun,
@@ -235,6 +236,7 @@ export default function TaskBoard() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<string>("");
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [allTasks, setAllTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState(today);
   const [weekAnchor, setWeekAnchor] = useState(today);
@@ -332,7 +334,7 @@ export default function TaskBoard() {
     setActiveFocusTask({
       id: task.id,
       title: task.title,
-      project: projects.find((p) => p.id === task.projectId)?.name || "DailyOS",
+      project: projects.find((p) => p.id === task.projectId)?.name || activeProject?.name || "Workspace",
     });
     setSecondsRemaining(targetMinutes * 60);
     setIsTimerRunning(true);
@@ -344,14 +346,12 @@ export default function TaskBoard() {
   useEffect(() => {
     if (!userId || !firebaseUser || !isReady) return;
     getProjects(userId)
-      .then(async (ps) => {
-        if (ps.length === 0) {
-          const starter = await ensureStarterProject(userId);
-          setProjects([starter]);
-          setSelectedProject(starter.id);
+      .then((ps) => {
+        setProjects(ps);
+        if (ps.length > 0) {
+          setSelectedProject((prev) => (ps.some((p) => p.id === prev) ? prev : ps[0].id));
         } else {
-          setProjects(ps);
-          setSelectedProject((prev) => prev || ps[0].id);
+          setSelectedProject("");
         }
       })
       .catch((err) => {
@@ -360,15 +360,32 @@ export default function TaskBoard() {
   }, [userId, firebaseUser, isReady]);
 
   useEffect(() => {
-    if (!userId || !selectedProject || !firebaseUser || !isReady) return;
+    if (!userId || !firebaseUser || !isReady) return;
     setLoading(true);
     let cancelled = false;
 
+    if (!selectedProject) {
+      getAllTasks(userId)
+        .then((all) => {
+          if (cancelled) return;
+          setAllTasks(all);
+          setTasks([]);
+        })
+        .catch(console.error)
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+      return () => {
+        cancelled = true;
+      };
+    }
+
     Promise.all([getTasks(userId, selectedProject), getAllTasks(userId)])
-      .then(([loaded, allTasks]) => {
+      .then(([loaded, all]) => {
         if (cancelled) return;
         setTasks(loaded);
-        setTaskContext(computeTaskContext(allTasks, projects, todayString()));
+        setAllTasks(all);
+        setTaskContext(computeTaskContext(all, projects, todayString()));
       })
       .catch((err) => {
         if (!cancelled) console.error("Error loading tasks:", err);
@@ -386,15 +403,29 @@ export default function TaskBoard() {
   const weekDates = getWeekDates(weekAnchor);
   const activeProject = projects.find((p) => p.id === selectedProject);
 
+  const projectPendingCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    allTasks.forEach((t) => {
+      if (t.status === "pending" && t.projectId) {
+        counts[t.projectId] = (counts[t.projectId] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [allTasks]);
+
   const tasksForDate = tasks.filter((t) => {
+    if (selectedProject && t.projectId !== selectedProject) return false;
     if (t.status === "completed") return false;
     if (t.dueDate) return t.dueDate === selectedDate;
     return selectedDate === today;
   });
 
-  const nextPendingTask = tasksForDate[0] || tasks.find((t) => t.status === "pending");
+  const nextPendingTask =
+    tasksForDate[0] ||
+    tasks.find((t) => (!selectedProject || t.projectId === selectedProject) && t.status === "pending");
 
   const completedForDate = tasks.filter((t) => {
+    if (selectedProject && t.projectId !== selectedProject) return false;
     if (t.status !== "completed") return false;
     if (t.dueDate) return t.dueDate === selectedDate;
     if (t.completedAt) return localDateString(new Date(t.completedAt)) === selectedDate;
@@ -403,16 +434,26 @@ export default function TaskBoard() {
 
   const overdueTasks =
     selectedDate === today
-      ? tasks.filter((t) => t.dueDate && t.dueDate < today && t.status === "pending")
+      ? tasks.filter(
+          (t) =>
+            (!selectedProject || t.projectId === selectedProject) &&
+            t.dueDate &&
+            t.dueDate < today &&
+            t.status === "pending"
+        )
       : [];
 
   const pendingByDate: Record<string, number> = {};
   const doneByDate: Record<string, number> = {};
   weekDates.forEach((d) => {
     pendingByDate[d] = tasks.filter(
-      (t) => t.status === "pending" && (t.dueDate ? t.dueDate === d : d === today)
+      (t) =>
+        (!selectedProject || t.projectId === selectedProject) &&
+        t.status === "pending" &&
+        (t.dueDate ? t.dueDate === d : d === today)
     ).length;
     doneByDate[d] = tasks.filter((t) => {
+      if (selectedProject && t.projectId !== selectedProject) return false;
       if (t.status !== "completed") return false;
       if (t.dueDate) return t.dueDate === d;
       if (t.completedAt) return localDateString(new Date(t.completedAt)) === d;
@@ -420,7 +461,12 @@ export default function TaskBoard() {
     }).length;
   });
 
-  const completedAllTime = tasks.filter((t) => t.status === "completed" && t.completedAt);
+  const completedAllTime = tasks.filter(
+    (t) =>
+      (!selectedProject || t.projectId === selectedProject) &&
+      t.status === "completed" &&
+      t.completedAt
+  );
   const historyGroups = groupByCompletionDate(completedAllTime);
 
   // History stats
@@ -431,32 +477,47 @@ export default function TaskBoard() {
     : 85;
 
   // ── Handlers ──
-  const openAddTask = () => setShowAddTask(true);
+  const openAddTask = () => {
+    if (projects.length === 0) {
+      setShowAddProject(true);
+      toast("Create a workspace first to anchor your tasks", "info");
+      return;
+    }
+    setShowAddTask(true);
+  };
 
   const handleAddTask = async (
     title: string,
     desc: string,
     dueDate: string,
-    priority: TaskPriority | "none"
+    priority: TaskPriority | "none",
+    targetProjectId?: string
   ) => {
-    if (!title.trim() || !selectedProject) return;
+    const projId = targetProjectId || selectedProject;
+    if (!title.trim() || !projId) return;
     const newTask: Omit<Task, "id"> = {
       title: title.trim(),
       frequency: "daily",
       dueDate,
       status: "pending",
-      projectId: selectedProject,
+      projectId: projId,
       userId,
       createdAt: Date.now(),
     };
     if (desc.trim()) newTask.description = desc.trim();
     if (priority !== "none") newTask.priority = priority;
     const created = await createTask(newTask);
-    setTasks((prev) => [created, ...prev]);
+    if (projId === selectedProject) {
+      setTasks((prev) => [created, ...prev]);
+    }
+    setAllTasks((prev) => [created, ...prev]);
     setShowAddTask(false);
     toast("Task added!", "success");
     getAllTasks(userId)
-      .then((all) => setTaskContext(computeTaskContext(all, projects, todayString())))
+      .then((all) => {
+        setAllTasks(all);
+        setTaskContext(computeTaskContext(all, projects, todayString()));
+      })
       .catch(console.error);
   };
 
@@ -466,18 +527,26 @@ export default function TaskBoard() {
     if (newStatus === "completed") updates.completedAt = Date.now();
     await updateTask(task.id, updates);
     setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, ...updates } : t)));
+    setAllTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, ...updates } : t)));
     if (newStatus === "completed") toast("Task completed! 🎉", "success");
     getAllTasks(userId)
-      .then((all) => setTaskContext(computeTaskContext(all, projects, todayString())))
+      .then((all) => {
+        setAllTasks(all);
+        setTaskContext(computeTaskContext(all, projects, todayString()));
+      })
       .catch(console.error);
   };
 
   const handleDeleteTask = async (taskId: string) => {
     await deleteTask(taskId);
     setTasks((prev) => prev.filter((t) => t.id !== taskId));
+    setAllTasks((prev) => prev.filter((t) => t.id !== taskId));
     toast("Task deleted", "info");
     getAllTasks(userId)
-      .then((all) => setTaskContext(computeTaskContext(all, projects, todayString())))
+      .then((all) => {
+        setAllTasks(all);
+        setTaskContext(computeTaskContext(all, projects, todayString()));
+      })
       .catch(console.error);
   };
 
@@ -487,10 +556,14 @@ export default function TaskBoard() {
     ) as Partial<Task>;
     await updateTask(taskId, clean);
     setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, ...clean } : t)));
+    setAllTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, ...clean } : t)));
     setEditingTask(null);
     toast("Task updated", "success");
     getAllTasks(userId)
-      .then((all) => setTaskContext(computeTaskContext(all, projects, todayString())))
+      .then((all) => {
+        setAllTasks(all);
+        setTaskContext(computeTaskContext(all, projects, todayString()));
+      })
       .catch(console.error);
   };
 
@@ -498,6 +571,7 @@ export default function TaskBoard() {
     const p = await createProject(userId, name.trim(), color);
     setProjects((prev) => [...prev, p]);
     setSelectedProject(p.id);
+    setShowAddProject(false);
     toast(`Workspace "${p.name}" created`, "success");
   };
 
@@ -540,48 +614,99 @@ export default function TaskBoard() {
           </p>
         </div>
 
-        <button
-          onClick={openAddTask}
-          type="button"
-          className="bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full px-4 py-2 text-xs font-semibold inline-flex items-center gap-1.5 shadow-sm transition-all cursor-pointer shrink-0 active:scale-95"
-        >
-          <Plus className="w-4 h-4" /> New Task
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => setShowAddProject(true)}
+            type="button"
+            aria-label="New Project"
+            className="bg-[#EFECE4] hover:bg-[#E2DDD2] text-[#1C1917] rounded-full px-3.5 py-2 text-xs font-semibold inline-flex items-center gap-1.5 transition-all cursor-pointer shrink-0 active:scale-95"
+          >
+            <Plus className="w-3.5 h-3.5" /> Workspace
+          </button>
+
+          <button
+            onClick={openAddTask}
+            type="button"
+            aria-label="New task"
+            className="bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full px-4 py-2 text-xs font-semibold inline-flex items-center gap-1.5 shadow-sm transition-all cursor-pointer shrink-0 active:scale-95"
+          >
+            <Plus className="w-4 h-4" /> New Task
+          </button>
+        </div>
       </div>
 
-      {/* ── 2. Workspaces Horizontal Pill Bar (no-scrollbar) ── */}
-      <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-1 mb-4">
-        {projects.map((p) => {
-          const active = selectedProject === p.id;
-          return (
+      {projects.length === 0 ? (
+        /* ── Zero-Project Empty State Invitation Card ── */
+        <div className="bg-[#FCFBF9] rounded-[28px] p-8 border border-[#1C1917]/[0.06] text-center shadow-xs my-6">
+          <div className="w-14 h-14 rounded-2xl bg-[#EFECE4] text-[#2D6A4F] flex items-center justify-center mx-auto mb-3">
+            <CheckSquare className="w-7 h-7 stroke-[2]" />
+          </div>
+          <span className="text-[10px] font-bold tracking-[0.16em] uppercase text-[#2D6A4F] block">
+            WORKSPACES ARCHITECTURE
+          </span>
+          <h2 className="font-serif text-2xl sm:text-3xl text-[#1C1917] mt-1 mb-2">
+            Create your first project workspace
+          </h2>
+          <p className="text-xs text-[#57534E] max-w-sm mx-auto mb-6 leading-relaxed">
+            Daily rhythm and deep work are anchored to projects. Define your core domain—whether work, research, or personal mastery—to begin tracking focus blocks.
+          </p>
+          <button
+            onClick={() => setShowAddProject(true)}
+            type="button"
+            aria-label="Create First Project"
+            className="bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full px-6 py-2.5 text-xs font-semibold inline-flex items-center gap-2 shadow-sm transition-all cursor-pointer active:scale-95"
+          >
+            <Plus className="w-4 h-4" />
+            <span>+ Create First Project</span>
+          </button>
+        </div>
+      ) : (
+        <>
+          {/* ── 2. Workspaces Horizontal Pill Bar (no-scrollbar) ── */}
+          <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-1 mb-4">
+            {projects.map((p) => {
+              const active = selectedProject === p.id;
+              const count = projectPendingCounts[p.id] || 0;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => setSelectedProject(p.id)}
+                  type="button"
+                  aria-pressed={active}
+                  className={cn(
+                    "rounded-full px-4 py-1.5 text-xs inline-flex items-center gap-2 shrink-0 transition-all cursor-pointer",
+                    active
+                      ? "bg-[#191D1A] text-white font-semibold shadow-xs"
+                      : "bg-[#EFECE4] text-[#1C1917] hover:bg-[#E4DFD3] font-medium"
+                  )}
+                >
+                  <span
+                    className="w-1.5 h-1.5 rounded-full"
+                    style={{ backgroundColor: active ? "#6EE7B7" : p.color }}
+                  />
+                  <span>{p.name}</span>
+                  <span
+                    className={cn(
+                      "text-[10px] px-1.5 py-0.2 rounded-full font-bold",
+                      active
+                        ? "bg-white/20 text-white"
+                        : "bg-[#1C1917]/10 text-[#57534E]"
+                    )}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
             <button
-              key={p.id}
-              onClick={() => setSelectedProject(p.id)}
+              onClick={() => setShowAddProject(true)}
               type="button"
-              aria-pressed={active}
-              className={cn(
-                "rounded-full px-4 py-1.5 text-xs inline-flex items-center gap-1.5 shrink-0 transition-all cursor-pointer",
-                active
-                  ? "bg-[#191D1A] text-white font-semibold shadow-xs"
-                  : "bg-[#EFECE4] text-[#1C1917] hover:bg-[#E4DFD3] font-medium"
-              )}
+              aria-label="New Project"
+              className="rounded-full px-3.5 py-1.5 text-xs font-medium shrink-0 border border-dashed border-[#1C1917]/25 text-[#57534E] hover:text-[#1C1917] bg-[#FCFBF9] transition-all cursor-pointer inline-flex items-center gap-1"
             >
-              <span
-                className="w-1.5 h-1.5 rounded-full"
-                style={{ backgroundColor: active ? "#6EE7B7" : p.color }}
-              />
-              {p.name}
+              <Plus className="w-3.5 h-3.5" /> Workspace
             </button>
-          );
-        })}
-        <button
-          onClick={() => setShowAddProject(true)}
-          type="button"
-          className="rounded-full px-3.5 py-1.5 text-xs font-medium shrink-0 border border-dashed border-[#1C1917]/25 text-[#57534E] hover:text-[#1C1917] bg-[#FCFBF9] transition-all cursor-pointer inline-flex items-center gap-1"
-        >
-          <Plus className="w-3.5 h-3.5" /> Workspace
-        </button>
-      </div>
+          </div>
 
       {/* ── 3. Hero Card: "Circadian Deep Work" Flow Instrument (image_cc501e.jpg) ── */}
       <div className="relative rounded-[28px] overflow-hidden bg-[#191D1A] text-[#FCFBF9] p-5 shadow-xl mb-6 border border-white/[0.06]">
@@ -624,10 +749,10 @@ export default function TaskBoard() {
           <div className="col-span-7 flex flex-col justify-between">
             <div>
               <h2 className="font-serif text-xl sm:text-2xl text-white leading-snug line-clamp-2">
-                {activeFocusTask?.title || nextPendingTask?.title || "Select a Task to Enter Flow"}
+                {activeFocusTask?.title || nextPendingTask?.title || `No pending tasks in ${activeProject?.name || "workspace"}`}
               </h2>
               <p className="text-[11px] text-stone-300 mt-1.5 flex items-center gap-1.5">
-                <span>{activeFocusTask?.project || activeProject?.name || "DailyOS"}</span>
+                <span>{activeFocusTask?.project || activeProject?.name || "Workspace"}</span>
                 <span className="text-[#2D6A4F]">●</span>
                 <span>High Cognitive Load</span>
               </p>
@@ -905,31 +1030,49 @@ export default function TaskBoard() {
           {tasksForDate.length === 0 && overdueTasks.length === 0 ? (
             <div className="bg-[#FCFBF9] rounded-[28px] p-8 border border-[#1C1917]/[0.06] text-center shadow-xs">
               <Sparkles className="w-7 h-7 text-[#2D6A4F] mx-auto mb-2 opacity-80" />
-              <h3 className="font-serif italic text-2xl text-[#1C1917]">Your day is clear</h3>
+              <h3 className="font-serif italic text-2xl text-[#1C1917]">
+                No tasks in {activeProject?.name || "this workspace"} for this date
+              </h3>
               <p className="text-xs text-[#57534E] max-w-xs mx-auto mt-1 mb-5 leading-relaxed">
-                Add high-cognitive deep work or select a template to maintain cadence.
+                Schedule high-cognitive deep work or execution tasks to maintain cadence.
               </p>
               <div className="flex flex-wrap justify-center gap-2">
                 <button
-                  onClick={() => handleAddTask("Deep Work Sprint (90m)", "Cognitive deep work", selectedDate, "high")}
+                  onClick={openAddTask}
+                  type="button"
+                  className="bg-[#E05A47] hover:bg-[#C94A38] text-white px-4 py-2 rounded-full text-xs font-semibold cursor-pointer transition-all inline-flex items-center gap-1.5 active:scale-95 shadow-xs"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Add Task to {activeProject?.name || "Workspace"}
+                </button>
+                <button
+                  onClick={() =>
+                    handleAddTask(
+                      "Deep Work Sprint (90m)",
+                      "Cognitive deep work",
+                      selectedDate,
+                      "high",
+                      selectedProject
+                    )
+                  }
                   type="button"
                   className="bg-[#EFECE4] hover:bg-[#E2DDD2] text-[#1C1917] px-3.5 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-all"
                 >
                   + Deep Work Sprint (90m)
                 </button>
                 <button
-                  onClick={() => handleAddTask("Architecture & System Review", "Code review", selectedDate, "medium")}
+                  onClick={() =>
+                    handleAddTask(
+                      "Architecture & System Review",
+                      "Code review",
+                      selectedDate,
+                      "medium",
+                      selectedProject
+                    )
+                  }
                   type="button"
                   className="bg-[#EFECE4] hover:bg-[#E2DDD2] text-[#1C1917] px-3.5 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-all"
                 >
                   + System Review
-                </button>
-                <button
-                  onClick={() => handleAddTask("Daily Inbox & Admin Sweep", "Admin block", selectedDate, "low")}
-                  type="button"
-                  className="bg-[#EFECE4] hover:bg-[#E2DDD2] text-[#1C1917] px-3.5 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-all"
-                >
-                  + Admin Sweep
                 </button>
               </div>
             </div>
@@ -1070,7 +1213,7 @@ export default function TaskBoard() {
 
                             <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                               <span className="bg-[#EFECE4] text-[#1C1917] rounded-full px-2.5 py-0.5 text-[10px] font-semibold">
-                                {activeProject?.name || "DailyOS"}
+                                {activeProject?.name || "Workspace"}
                               </span>
                               {task.priority && (
                                 <span className="bg-[#FADCD5]/80 text-[#C94A38] rounded-full px-2 py-0.5 text-[10px] font-bold">
@@ -1111,6 +1254,8 @@ export default function TaskBoard() {
             </p>
           </div>
         </div>
+      )}
+        </>
       )}
 
       {/* ── 7. VIEW 3: Portaled "Schedule Deep Work or Task" Composer (image_cc4f9d.jpg) ── */}
@@ -1200,7 +1345,7 @@ function TaskCardItem({
         onClick={() => !done && onEdit(task)}
       >
         <p className="text-[9px] font-bold tracking-wider uppercase text-[#8C857B] truncate">
-          {energyLabel} · {projectName || "DAILYOS"}
+          {energyLabel} · {projectName ? projectName.toUpperCase() : "WORKSPACE"}
         </p>
         <h3
           className={cn(
@@ -1284,7 +1429,8 @@ function TaskComposerModal({
     title: string,
     desc: string,
     dueDate: string,
-    priority: TaskPriority | "none"
+    priority: TaskPriority | "none",
+    projectId?: string
   ) => void;
   onSave?: (updates: Partial<Task>) => void;
   onClose: () => void;
@@ -1311,7 +1457,7 @@ function TaskComposerModal({
   }, []);
 
   const activeProjectName =
-    projects.find((p) => p.id === activeProjectId)?.name || "DailyOS";
+    projects.find((p) => p.id === activeProjectId)?.name || "Workspace";
 
   // Real-time matched photograph preview
   const matchedPhoto = useMemo(
@@ -1332,7 +1478,7 @@ function TaskComposerModal({
         projectId: activeProjectId,
       });
     } else if (onAdd) {
-      onAdd(title.trim(), desc.trim(), dueDate, priority);
+      onAdd(title.trim(), desc.trim(), dueDate, priority, activeProjectId);
     }
   };
 
@@ -1636,7 +1782,7 @@ function AddProjectModal({
             <input
               autoFocus
               className="w-full bg-[#F6F3EC] rounded-2xl px-4 py-2.5 text-sm font-semibold text-[#1C1917] border border-[#1C1917]/10 focus:outline-none focus:border-[#E05A47]"
-              placeholder="e.g. DailyOS, Vitality, SATAT Ops"
+              placeholder="e.g. SATAT Ops, Core System, Vitality"
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && name.trim() && onAdd(name, color)}
