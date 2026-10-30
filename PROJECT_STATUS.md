@@ -288,10 +288,23 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - Full Vitest suite: **48 passed (48 files), 567 passed | 26 skipped (593 total)**.
   - Production build: `npm run build` exits with code `0` (all 32 static/dynamic routes compiled).
 
----
-
-## 3. Pending / Upcoming Sprints
-
+### ✅ Sprint 4.8.1: Workout Page Restoration & AddCardioModal Integration (`components/workout/WorkoutPage.tsx`)
+- **Restored Complete `WorkoutPage` Export Default**:
+  - Restored full, multi-tab workout tracking architecture (`log`, `templates`, `history`) with full exercise sets, reps, body weight tracking, and Orbit synchronization.
+  - Fixed Next.js build failure in `app/dashboard/workout/page.tsx` (`Module '"@/components/workout/WorkoutPage"' has no exported member 'default'`).
+- **Clean `AddCardioModal` Integration**:
+  - Embedded `AddCardioModal`, `CARDIO_META`, and `calcCardioCals` cleanly as exported helpers above `export default function WorkoutPage()`.
+  - Re-exported `CardioActivity` and `CardioLog` types for backwards-compatible consumers.
+- **Preserved Batch 1 & 2 Fixes**:
+  - Retained `bodyWeightEntriesRef` pattern and `isCancelled` unmount cleanup in `useEffect` (0 ESLint errors/warnings).
+  - Maintained `handleSave` and `handleSaveCardioToday` Orbit context synchronization with `formatSessionForOrbit` without overwriting existing data.
+- **Validation**:
+  - `npm run typecheck` (`tsc --noEmit`): 0 errors.
+  - `npm run lint` (`next lint`): 0 errors, 0 warnings in `WorkoutPage.tsx`.
+  - `npm run build` (`next build`): successfully compiled all 32 static/dynamic routes.
+  - `npx vitest run tests/workouts/orbit-workout-context.test.ts`: 7/7 tests passed.
+  - `npx vitest run tests/workouts`: 42/42 tests passed across all 5 workout test suites.
+  - `git diff --check`: 0 formatting or whitespace errors.
 
 ### ✅ Sprint 4.9: Clinical Nutrition Engine Overhaul & Apple Voice Memo 1:1 Experience
 - **Deterministic Food Anchor & Atwater Engine (`lib/nutrition/foodAnchors.ts`)**:
@@ -544,10 +557,20 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - Vitest suite: **51 passed (51 files), 617 passed | 26 skipped (643 total), 0 failing**.
   - Next.js production build: `npm run build` exits with code **0** (all 33 static/dynamic routes compiled).
 
+---
+
+## 3. Pending / Upcoming Sprints
+
 ### ⏳ Sprint 5.4: Multi-Device Responsive & Final E2E QA
 - **Tablet Optimization**: iPad 10th Gen (1024×768) 2-column bento grid verification.
 - **Desktop Optimization**: Desktop (1440×900) 3-column layout verification.
 - **End-to-End Testing**: Full automated test verification and Playwright regression sweep.
+
+### ⏳ Sprint 5.5: Core Companion Alignment (Orbit & Settings)
+- **Orbit AI Companion** (`components/orbit/OrbitView.tsx`):
+  - Natural conversation interface, context cards, and prompt suggestions matching the Natural Athletic Editorial aesthetic.
+- **Settings & Profile** (`app/dashboard/settings/page.tsx`):
+  - Alabaster preference controls, notification settings, and biometric targets.
 
 ---
 

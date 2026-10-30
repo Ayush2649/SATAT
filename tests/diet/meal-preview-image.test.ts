@@ -35,4 +35,13 @@ describe("BUG-06: Meal Preview Image Optimization & Next.js Image Compliance", (
     // Loading overlay is positioned above the image with z-10
     expect(dietPageSource).toContain('className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center gap-2 text-white z-10"');
   });
+
+  it("6. Memory Hygiene (ARGON-05): Uses base64 data URLs via FileReader/Canvas without unmanaged URL.createObjectURL", () => {
+    // DietPage resizes client-side using FileReader + canvas.toDataURL and sets preview to data: URL.
+    // Confirms it never creates unmanaged blob: URLs with URL.createObjectURL.
+    expect(dietPageSource).toContain("reader.readAsDataURL(file)");
+    expect(dietPageSource).toContain("canvas.toDataURL(");
+    expect(dietPageSource).toContain("setPreview(`data:${mimeType};base64,${base64}`)");
+    expect(dietPageSource).not.toContain("URL.createObjectURL");
+  });
 });
