@@ -597,7 +597,37 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ## 3. Pending / Upcoming Sprints
 
-### ⏳ Sprint 5.5: Multi-Device Responsive & Final E2E QA
+### ✅ Sprint 5.5: Fix Groq 413 Request Too Large via Context Compaction, Strict Domain Pruning, & Automatic Model Fallback
+- **Workouts Compaction (`app/api/aria/route.ts`)**:
+  - Replaced multi-line indented exercise/sets dumps with single ultra-compact session lines:
+    `2026-10-30 | Upper body (50m, ~350 kcal): Bench Press 3x10@60kg, Incline DB 3x10@20kg, Lat Pulldown 3x12@50kg`.
+  - Stripped raw Firestore documents, `aiAnalysis`, internal IDs, image URLs, and duplicate entries.
+- **Meals / Nutrition Compaction (`app/api/aria/route.ts`)**:
+  - Created `formatDailyNutritionSummary` to summarize historical nutrition day-by-day:
+    `2026-10-30: 1,850 kcal, 125g P, 190g C, 55g F [3 meals: Oats, Dal Chawal, Chicken]`.
+  - Completely excluded raw item arrays and photo URLs.
+- **Chat History Truncation & Duplicate JSON Elimination (`app/api/aria/route.ts`)**:
+  - Truncates conversation history to at most the last 4 messages (`slice(-4)`), and truncates previous assistant replies longer than 500 characters to prevent conversation token snowballing.
+  - Removed duplicate `{ role: "system", content: contextJson }` message from LLM prompt, instantly eliminating thousands of redundant JSON tokens.
+- **Strict Domain Pruning (`lib/orbit/contextRequirement.ts` & `app/api/aria/route.ts`)**:
+  - Single-domain queries (such as workouts/training) strictly prune domains to `["workouts", "profile", "goals"]`, completely bypassing unnecessary Firestore queries for meals, nutrition, or tasks.
+  - Diet queries strictly prune domains to `["nutrition", "meals", "profile", "goals"]`.
+- **Hard Token Budget Guard (`app/api/aria/route.ts`)**:
+  - Enforces a strict ceiling of `14,000 characters` (~3,500 tokens) with an automatic 10,000-character context trim threshold, paired with `max_tokens: 1024`, guaranteeing total input + output tokens remain under 4,600 tokens (well below Groq's 8,000 TPM limit).
+- **Automatic Fallback & Token Limit Recovery (`lib/ai/models.ts`, `lib/ai/groq.ts`, & `app/api/aria/route.ts`)**:
+  - Extended `TEXT_FALLBACK` chain to include `llama-3.3-70b-versatile` and `llama-3.1-8b-instant`.
+  - Configured `classifyError` in `lib/ai/groq.ts` to classify HTTP 413 and "Request too large" with `retryAfterMs: 0` for immediate model fallback without sleeping.
+  - Implemented automatic retry with ultra-trimmed context (`slice(-2)` history + compact 500-word prompt) on fallback models and Google Gemini (`@google/genai`).
+- **Test & Build Verification**:
+  - TypeScript compilation: `npx tsc --noEmit` exits with **0 errors**.
+  - Vitest suite: **53 passed (53 files), 638 passed | 26 skipped (664 total), 0 failing**.
+  - Next.js production build: `npm run build` exits with code **0** (all 33 static/dynamic routes compiled).
+
+---
+
+## 3. Pending / Upcoming Sprints
+
+### ⏳ Sprint 5.6: Multi-Device Responsive & Final E2E QA
 - **Tablet Optimization**: iPad 10th Gen (1024×768) 2-column bento grid verification.
 - **Desktop Optimization**: Desktop (1440×900) 3-column layout verification.
 - **End-to-End Testing**: Full automated test verification and Playwright regression sweep.

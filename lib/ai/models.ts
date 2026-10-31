@@ -60,7 +60,8 @@ export const GROQ_VISION_ENABLED: boolean =
 /** Fallback chain for text features only (no vision fallback — qwen is the only option). */
 export const TEXT_FALLBACK: string[] = [
   resolve("GROQ_MODEL_TEXT_PRIMARY",  "openai/gpt-oss-120b"),
-  resolve("GROQ_MODEL_TEXT_FALLBACK", "openai/gpt-oss-20b"),
+  resolve("GROQ_MODEL_TEXT_FALLBACK", "llama-3.3-70b-versatile"),
+  resolve("GROQ_MODEL_TEXT_FALLBACK_INSTANT", "llama-3.1-8b-instant"),
 ];
 
 /** Whisper transcription model. */

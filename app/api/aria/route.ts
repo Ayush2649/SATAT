@@ -16,28 +16,95 @@ function formatDetailedWorkoutSessions(workouts: any[]): string {
   if (!workouts || workouts.length === 0) {
     return "No workout sessions recorded in this period.";
   }
-  return workouts.map((s: any, idx: number) => {
-    let header = `[Session ${idx + 1} — ${s.date}] ${s.summary || s.routineTitle || 'Workout'}${s.durationMinutes > 0 ? ` (${s.durationMinutes} min)` : ''}`;
-    const lines: string[] = [header];
-    if (s.exercises && s.exercises.length > 0) {
-      const exStr = s.exercises.map((e: any) => {
-        let setsStr = "";
+  return workouts.map((s: any) => {
+    const title = s.summary || s.routineTitle || 'Workout';
+    const durPart = s.durationMinutes > 0 ? `${s.durationMinutes}m` : '';
+    const calPart = s.caloriesBurned ? `~${s.caloriesBurned} kcal` : '';
+    const metaParts = [durPart, calPart].filter(Boolean).join(', ');
+    const metaStr = metaParts ? ` (${metaParts})` : '';
+
+    const exParts: string[] = [];
+    if (Array.isArray(s.exercises)) {
+      for (const e of s.exercises) {
+        if (!e?.name) continue;
+        let setStr = "";
         if (Array.isArray(e.sets) && e.sets.length > 0) {
-          setsStr = e.sets.map((set: any, sIdx: number) => {
-            const weightPart = set.weight !== undefined && set.weight !== null ? `${set.weight}${set.unit || 'kg'}` : '';
-            return `Set ${sIdx + 1}: ${set.reps || 0} reps${weightPart ? ` @ ${weightPart}` : ''}`;
-          }).join(', ');
+          const first = e.sets[0];
+          const allSame = e.sets.length > 1 && e.sets.every((st: any) =>
+            st && typeof st === "object" &&
+            st.reps === first.reps && st.weight === first.weight && st.unit === first.unit
+          );
+          if (allSame) {
+            const wtPart = first.weight !== undefined && first.weight !== null ? `@${first.weight}${first.unit || 'kg'}` : '';
+            setStr = `${e.sets.length}x${first.reps || 0}${wtPart}`;
+          } else {
+            setStr = e.sets.map((st: any) => {
+              if (typeof st === "string") return st;
+              if (!st) return "";
+              const wt = st.weight !== undefined && st.weight !== null ? `@${st.weight}${st.unit || 'kg'}` : '';
+              return `${st.reps || 0}${wt}`;
+            }).filter(Boolean).join(', ');
+          }
         }
-        return `    • ${e.name}: ${setsStr || `${e.sets?.length || 0} sets`}`;
-      }).join('\n');
-      lines.push(`  Exercises:\n${exStr}`);
+        exParts.push(`${e.name}${setStr ? ` ${setStr}` : ''}`);
+      }
     }
-    if (s.cardioLogs && s.cardioLogs.length > 0) {
-      const cardioStr = s.cardioLogs.map((c: any) => `    • ${c.activity}: ${c.durationMinutes}min${c.distanceKm ? `, ${c.distanceKm}km` : ''}${c.caloriesBurned ? `, ${c.caloriesBurned}kcal` : ''}`).join('\n');
-      lines.push(`  Cardio:\n${cardioStr}`);
+
+    if (Array.isArray(s.cardioLogs) && s.cardioLogs.length > 0) {
+      for (const c of s.cardioLogs) {
+        if (!c?.activity) continue;
+        const details = [
+          c.durationMinutes ? `${c.durationMinutes}m` : '',
+          c.distanceKm ? `${c.distanceKm}km` : '',
+          c.caloriesBurned ? `${c.caloriesBurned}kcal` : ''
+        ].filter(Boolean).join(', ');
+        exParts.push(`Cardio: ${c.activity}${details ? ` (${details})` : ''}`);
+      }
     }
-    return lines.join('\n');
-  }).join('\n\n');
+
+    return `${s.date || 'Undated'} | ${title}${metaStr}: ${exParts.length > 0 ? exParts.join(', ') : 'Completed session'}`;
+  }).join('\n');
+}
+
+function formatDailyNutritionSummary(meals: any[]): string {
+  if (!meals || meals.length === 0) {
+    return "No meals logged in this period.";
+  }
+  const byDate: Record<string, { cal: number; p: number; c: number; f: number; names: string[] }> = {};
+  for (const m of meals) {
+    const d = m.date || "Unknown";
+    if (!byDate[d]) byDate[d] = { cal: 0, p: 0, c: 0, f: 0, names: [] };
+    byDate[d].cal += m.macros?.calories || 0;
+    byDate[d].p += m.macros?.proteinG || 0;
+    byDate[d].c += m.macros?.carbsG || 0;
+    byDate[d].f += m.macros?.fatG || 0;
+    if (m.name) byDate[d].names.push(m.name);
+  }
+
+  const sortedDates = Object.keys(byDate).sort().reverse();
+  return sortedDates.map((d) => {
+    const data = byDate[d];
+    const mealCount = data.names.length;
+    const namesStr = data.names.length > 0 ? data.names.join(', ') : 'logged meals';
+    return `${d}: ${Math.round(data.cal)} kcal, ${Math.round(data.p)}g P, ${Math.round(data.c)}g C, ${Math.round(data.f)}g F [${mealCount} meal${mealCount > 1 ? 's' : ''}: ${namesStr}]`;
+  }).join('\n');
+}
+
+async function callGeminiTextFallback(prompt: string): Promise<string | null> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return null;
+  try {
+    const { GoogleGenAI } = await import("@google/genai");
+    const ai = new GoogleGenAI({ apiKey });
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+    });
+    return response.text || null;
+  } catch (e: any) {
+    console.warn("[aria] Gemini fallback failed:", e?.message);
+    return null;
+  }
 }
 
 export const maxDuration = 30;
@@ -90,8 +157,38 @@ export async function POST(req: NextRequest) {
   if (mode === "diet") { mergedDomains.add("meals"); mergedDomains.add("nutrition"); }
   if (mode === "tasks") mergedDomains.add("tasks");
 
+  // Strict Domain Pruning: Prevent fetching irrelevant categories
+  const lowerLatest = latestUserMessage.toLowerCase();
+  const hasWorkoutFocus = (
+    mode === "workout" ||
+    /\b(workouts?|training|gym|exercises?|splits?|sets?|reps?|bench|squats?|deadlifts?|shoulders?|arms?|legs?|push|pull|cardio)\b/i.test(lowerLatest)
+  );
+  const hasDietFocus = (
+    mode === "diet" ||
+    /\b(meals?|nutrition|diet|calories|protein|carbs?|fats?|food|eat|breakfast|lunch|dinner|macro|macros)\b/i.test(lowerLatest)
+  );
+  const hasTaskFocus = (
+    mode === "tasks" ||
+    /\b(tasks?|todos?|projects?|deep\s+work|priorit(y|ies))\b/i.test(lowerLatest)
+  );
+
+  let finalDomains: any[];
+  if (mode === "workout" || (hasWorkoutFocus && !hasDietFocus && !hasTaskFocus)) {
+    finalDomains = Array.from(mergedDomains).filter((d) => ["workouts", "profile", "goals"].includes(d));
+    if (!finalDomains.includes("workouts")) finalDomains.push("workouts");
+  } else if (mode === "diet" || (hasDietFocus && !hasWorkoutFocus && !hasTaskFocus)) {
+    finalDomains = Array.from(mergedDomains).filter((d) => ["nutrition", "meals", "profile", "goals"].includes(d));
+    if (!finalDomains.includes("meals")) finalDomains.push("meals");
+    if (!finalDomains.includes("nutrition")) finalDomains.push("nutrition");
+  } else if (mode === "tasks" || (hasTaskFocus && !hasWorkoutFocus && !hasDietFocus)) {
+    finalDomains = Array.from(mergedDomains).filter((d) => ["tasks", "profile"].includes(d));
+    if (!finalDomains.includes("tasks")) finalDomains.push("tasks");
+  } else {
+    finalDomains = Array.from(mergedDomains);
+  }
+
   const requirements = {
-    domains: Array.from(mergedDomains),
+    domains: finalDomains,
     temporalScope: latestReq.temporalScope ?? allUserReq.temporalScope,
   };
   const tTemporal = Date.now();
@@ -226,7 +323,6 @@ Analysis Period: ${startStr} – ${endStr}
 
 === VERIFIED RETRIEVED DATA FOR THIS PERIOD ===
 • Workouts logged: ${workoutCount} session(s)${workoutCount > 0 ? ` (${totalWorkoutMinutes} min total on dates: ${workoutDates.join(', ')})` : ' (No workout sessions logged in this period)'}
-${workouts.slice(0, 5).map((w: any, idx: number) => `  - Session ${idx + 1} (${w.date}): ${w.durationMinutes || 0}m, Exercises: ${(w.exercises || []).map((e: any) => e.name).join(', ') || 'General session'}`).join('\n')}
 • Meals logged: ${mealCount} meal(s) across ${mealDates.length} day(s)${mealCount > 0 ? ` (Logged days avg: ${avgCaloriesPerLoggedDay} kcal/day, ${avgProteinPerLoggedDay}g protein/day)` : ' (No meals logged in this period)'}
 ${goals ? `• Macro targets: ${goals.calories} kcal, ${goals.proteinG}g protein, ${goals.carbsG}g carbs, ${goals.fatG}g fat` : ''}
 • Tasks: ${completedTasks.length} completed, ${pendingTasks.length} pending
@@ -283,6 +379,8 @@ ${goals ? `• Macro targets: ${goals.calories} kcal, ${goals.proteinG}g protein
      • **Progressive Overload & Intensity**: Evaluate loads, rep schemes, and training duration.
      • **Actionable Next Steps / Tomorrow's Recommendation**: If the user asks what to do tomorrow, give a specific recommendation based on what was trained most recently.
 3. Keep your tone encouraging, direct, and like a clinical strength coach.`;
+      } else if (hasDietFocus) {
+        system += `\n\n=== DAILY NUTRITION IN THIS PERIOD ===\n${formatDailyNutritionSummary(meals)}`;
       }
     }
   }
@@ -380,19 +478,52 @@ Focus on task prioritization, habit building, focus strategies, breaking down go
 The user has opened Orbit without selecting a specific mode. Give helpful, grounded advice across fitness, nutrition, and productivity. Suggest they type /workout, /diet, or /tasks for more focused coaching.`;
   }
 
-  // 5. AI model invocation
+  // 5. Chat Conversation History Truncation (last 4 messages, assistant replies capped at 500 chars)
+  const rawMessages = Array.isArray(messages) ? messages : [];
+  const recentMessages = rawMessages.slice(-4);
+  let cleanedMessages = recentMessages.map((m: any) => {
+    let content = typeof m.content === "string" ? m.content : "";
+    if (m.role === "assistant" && content.length > 500) {
+      content = content.slice(0, 500) + "... [truncated]";
+    }
+    return {
+      role: m.role as "user" | "assistant",
+      content,
+    };
+  });
+
+  // 6. Hard Token Budget Guard (14,000 max prompt chars, context trim threshold 10,000)
+  const MAX_PROMPT_CHARS = 14_000;
+  const CONTEXT_TRIM_THRESHOLD = 10_000;
+
+  if (system.length > CONTEXT_TRIM_THRESHOLD) {
+    console.warn(`[aria] System context string exceeded ${CONTEXT_TRIM_THRESHOLD} chars (${system.length}). Trimming historical items.`);
+    system = system.slice(0, CONTEXT_TRIM_THRESHOLD) + "\n\n[Earlier historical records trimmed for token budget]";
+  }
+
+  let totalChars = system.length + cleanedMessages.reduce((sum, m) => sum + m.content.length, 0);
+  if (totalChars > MAX_PROMPT_CHARS) {
+    console.warn(`[aria] Total prompt chars exceeded ${MAX_PROMPT_CHARS} (${totalChars}). Trimming older history.`);
+    cleanedMessages = cleanedMessages.slice(-2);
+    totalChars = system.length + cleanedMessages.reduce((sum, m) => sum + m.content.length, 0);
+  }
+
+  if (totalChars > MAX_PROMPT_CHARS) {
+    const overflow = totalChars - MAX_PROMPT_CHARS;
+    system = system.slice(0, Math.max(2000, system.length - overflow - 100)) + "\n\n[Context trimmed for token budget]";
+  }
+
+  const promptMessages = [
+    { role: "system" as const, content: system },
+    ...cleanedMessages,
+  ];
+
+  // 7. AI model invocation with automatic retry & fallback on token/rate limits
   const tAiStart = Date.now();
   try {
     const result = await callTextWithFallback(TEXT_FALLBACK, {
-      messages: [
-        { role: "system", content: system },
-        { role: "system", content: contextJson },
-        ...messages.map((m: { role: string; content: string }) => ({
-          role: m.role as "user" | "assistant",
-          content: m.content,
-        })),
-      ],
-      maxTokens: MAX_TOKENS.aria,
+      messages: promptMessages,
+      maxTokens: 1024,
       temperature: 0.65,
       feature: "aria",
     });
@@ -404,7 +535,7 @@ The user has opened Orbit without selecting a specific mode. Give helpful, groun
         intent: classifiedIntent.intent,
         temporalScope: requirements.temporalScope,
         domains: requirements.domains,
-        payloadChars: contextJson.length,
+        payloadChars: system.length,
         timings: {
           authMs: tAuth - t0,
           intentMs: tIntent - tAuth,
@@ -419,6 +550,51 @@ The user has opened Orbit without selecting a specific mode. Give helpful, groun
 
     return NextResponse.json({ reply: result.data });
   } catch (err: any) {
+    const isRateOrTokenError = (
+      err?.code === "RATE_LIMITED" ||
+      err?.status === 413 ||
+      err?.status === 429 ||
+      /request\s+too\s+large/i.test(err?.message || "") ||
+      /rate_limit_exceeded/i.test(err?.message || "") ||
+      /tokens?\s+per\s+minute/i.test(err?.message || "") ||
+      /\bTPM\b/.test(err?.message || "")
+    );
+
+    if (isRateOrTokenError) {
+      console.warn("[aria] Primary attempt hit token/rate limit. Retrying with ultra-trimmed context on fallback models...");
+      try {
+        const trimmedHistory = (cleanedMessages || []).slice(-2).map((m: any) => ({
+          role: m.role as "user" | "assistant",
+          content: typeof m.content === "string" ? m.content.slice(0, 300) : "",
+        }));
+
+        const ultraCompactSystem = system.length > 2500
+          ? system.slice(0, 2500) + "\n\n[Context truncated for token recovery. Provide direct coaching.]"
+          : system;
+
+        const fallbackChain = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"];
+        const fallbackResult = await callTextWithFallback(fallbackChain, {
+          messages: [
+            { role: "system", content: ultraCompactSystem },
+            ...trimmedHistory,
+          ],
+          maxTokens: 1024,
+          temperature: 0.65,
+          feature: "aria_fallback",
+        });
+
+        return NextResponse.json({ reply: fallbackResult.data });
+      } catch (retryErr: any) {
+        console.warn("[aria] Groq fallback retry failed, checking Gemini fallback:", retryErr?.message);
+        const geminiReply = await callGeminiTextFallback(
+          `System: ${system.slice(0, 3000)}\n\nUser: ${latestUserMessage}`
+        );
+        if (geminiReply) {
+          return NextResponse.json({ reply: geminiReply });
+        }
+      }
+    }
+
     const tAiEnd = Date.now();
     console.error("[aria] AI error:", err?.code, err?.message);
     console.info(

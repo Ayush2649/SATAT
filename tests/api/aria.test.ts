@@ -501,5 +501,197 @@ describe("/api/aria Route Authentication & Integration", () => {
       expect(systemMessage.content).toContain("Frequency & Consistency");
       expect(systemMessage.content).toContain("Progressive Overload & Intensity");
     });
+
+    it("Sprint 5.5: ensures 7 workout sessions + 4 prior long chat messages produces prompt < 14,000 characters and strictly excludes meals", async () => {
+      vi.mocked(getServerSession).mockResolvedValueOnce({
+        user: { id: mockUserId, name: "Ayush", email: "ayush@example.com" },
+      } as any);
+
+      // 7 workout sessions with multiple exercises and sets
+      const mockWorkouts = [
+        {
+          id: "w1",
+          date: "2026-10-25",
+          routineTitle: "Push Day A",
+          durationMinutes: 55,
+          caloriesBurned: 420,
+          exercises: [
+            { name: "Barbell Bench Press", sets: [{ reps: 10, weight: 80, unit: "kg" }, { reps: 10, weight: 80, unit: "kg" }, { reps: 10, weight: 80, unit: "kg" }] },
+            { name: "Overhead Dumbbell Press", sets: [{ reps: 12, weight: 24, unit: "kg" }, { reps: 10, weight: 26, unit: "kg" }] },
+            { name: "Incline DB Fly", sets: [{ reps: 12, weight: 16, unit: "kg" }] },
+            { name: "Tricep Rope Pushdown", sets: [{ reps: 15, weight: 30, unit: "kg" }] },
+          ],
+        },
+        {
+          id: "w2",
+          date: "2026-10-26",
+          routineTitle: "Pull Day A",
+          durationMinutes: 60,
+          caloriesBurned: 450,
+          exercises: [
+            { name: "Barbell Deadlift", sets: [{ reps: 5, weight: 140, unit: "kg" }, { reps: 5, weight: 140, unit: "kg" }] },
+            { name: "Chest Supported Row", sets: [{ reps: 10, weight: 60, unit: "kg" }, { reps: 10, weight: 60, unit: "kg" }] },
+            { name: "Lat Pulldown", sets: [{ reps: 12, weight: 65, unit: "kg" }] },
+            { name: "EZ Bar Bicep Curl", sets: [{ reps: 12, weight: 30, unit: "kg" }] },
+          ],
+        },
+        {
+          id: "w3",
+          date: "2026-10-27",
+          routineTitle: "Legs Quadriceps & Calves",
+          durationMinutes: 65,
+          caloriesBurned: 510,
+          exercises: [
+            { name: "Barbell Back Squat", sets: [{ reps: 8, weight: 110, unit: "kg" }, { reps: 8, weight: 110, unit: "kg" }, { reps: 8, weight: 110, unit: "kg" }] },
+            { name: "Leg Press", sets: [{ reps: 12, weight: 200, unit: "kg" }] },
+            { name: "Walking Lunges", sets: [{ reps: 12, weight: 20, unit: "kg" }] },
+            { name: "Standing Calf Raise", sets: [{ reps: 15, weight: 70, unit: "kg" }] },
+          ],
+        },
+        {
+          id: "w4",
+          date: "2026-10-28",
+          routineTitle: "Rest / Active Recovery",
+          durationMinutes: 30,
+          caloriesBurned: 150,
+          exercises: [],
+          cardioLogs: [{ activity: "Zone 2 Outdoor Walk", durationMinutes: 30, distanceKm: 2.8, caloriesBurned: 150 }],
+        },
+        {
+          id: "w5",
+          date: "2026-10-29",
+          routineTitle: "Upper Body Hypertrophy",
+          durationMinutes: 50,
+          caloriesBurned: 390,
+          exercises: [
+            { name: "Incline Barbell Bench Press", sets: [{ reps: 8, weight: 70, unit: "kg" }, { reps: 8, weight: 70, unit: "kg" }] },
+            { name: "Cable Seated Row", sets: [{ reps: 12, weight: 60, unit: "kg" }] },
+            { name: "Lateral Raises", sets: [{ reps: 15, weight: 12, unit: "kg" }] },
+            { name: "Skull Crushers", sets: [{ reps: 12, weight: 28, unit: "kg" }] },
+          ],
+        },
+        {
+          id: "w6",
+          date: "2026-10-30",
+          routineTitle: "Lower Body Hamstrings & Glutes",
+          durationMinutes: 55,
+          caloriesBurned: 440,
+          exercises: [
+            { name: "Romanian Deadlift", sets: [{ reps: 10, weight: 100, unit: "kg" }, { reps: 10, weight: 100, unit: "kg" }] },
+            { name: "Bulgarian Split Squat", sets: [{ reps: 10, weight: 22, unit: "kg" }] },
+            { name: "Lying Leg Curl", sets: [{ reps: 12, weight: 50, unit: "kg" }] },
+            { name: "Seated Calf Raise", sets: [{ reps: 15, weight: 45, unit: "kg" }] },
+          ],
+        },
+        {
+          id: "w7",
+          date: "2026-10-31",
+          routineTitle: "Arms & Core Conditioning",
+          durationMinutes: 45,
+          caloriesBurned: 360,
+          exercises: [
+            { name: "Barbell Curl", sets: [{ reps: 10, weight: 35, unit: "kg" }] },
+            { name: "Dips", sets: [{ reps: 12, weight: 0, unit: "kg" }] },
+            { name: "Hanging Leg Raises", sets: [{ reps: 15, weight: 0, unit: "kg" }] },
+            { name: "Plank", sets: [{ reps: 60, weight: 0, unit: "sec" }] },
+          ],
+        },
+      ];
+
+      mockBuildOrbitContext.mockResolvedValueOnce({
+        profile: { id: "p1" },
+        workouts: {
+          all: mockWorkouts,
+          today: mockWorkouts,
+        },
+      } as unknown as OrbitContext);
+
+      // 4 prior messages including 2 long assistant reviews (>1,500 chars each)
+      const longPriorAssistantReply = "### Previous Long Report\n".repeat(80); // ~2,000 chars
+
+      const req = new NextRequest("http://localhost/api/aria", {
+        method: "POST",
+        body: JSON.stringify({
+          messages: [
+            { role: "user", content: "What did I eat on Wednesday?" },
+            { role: "assistant", content: longPriorAssistantReply },
+            { role: "user", content: "Can you give me a full recap of all nutrition targets?" },
+            { role: "assistant", content: longPriorAssistantReply },
+            { role: "user", content: "Analyze my workout from last week and rate me out of 10 on my workout structure and everything" },
+          ],
+        }),
+      });
+
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+
+      // Verify that domains strictly pruned out 'meals' and 'nutrition' despite prior chat messages
+      expect(mockBuildOrbitContext).toHaveBeenCalledWith(
+        expect.objectContaining({
+          domains: expect.not.arrayContaining(["meals", "nutrition"]),
+        })
+      );
+      expect(mockBuildOrbitContext).toHaveBeenCalledWith(
+        expect.objectContaining({
+          domains: expect.arrayContaining(["workouts"]),
+          temporalScope: "lastWeek",
+        })
+      );
+
+      // Verify prompt size sent to model is under 14,000 chars (< 3,500 tokens)
+      const callArgs = mockCallTextWithFallback.mock.calls[0];
+      const payload = callArgs[1];
+      const totalChars = payload.messages.reduce((sum: number, m: any) => sum + m.content.length, 0);
+
+      expect(totalChars).toBeLessThan(14000);
+
+      // Verify assistant message truncation in conversation history to <= 500 characters
+      const assistantMsgs = payload.messages.filter((m: any) => m.role === "assistant");
+      for (const msg of assistantMsgs) {
+        expect(msg.content.length).toBeLessThanOrEqual(520); // 500 chars + suffix
+        expect(msg.content).toContain("[truncated]");
+      }
+
+      // Verify maximum history turns retained is at most 4
+      const nonSystemMsgs = payload.messages.filter((m: any) => m.role !== "system");
+      expect(nonSystemMsgs.length).toBeLessThanOrEqual(4);
+    });
+
+    it("Sprint 5.5: automatically retries and falls back on HTTP 413 / rate limit exceeded error", async () => {
+      vi.mocked(getServerSession).mockResolvedValueOnce({
+        user: { id: mockUserId, name: "Ayush", email: "ayush@example.com" },
+      } as any);
+
+      // Primary call fails with 413 Request too large
+      mockCallTextWithFallback.mockRejectedValueOnce({
+        status: 413,
+        message: "Request too large for model openai/gpt-oss-120b ... on tokens per minute (TPM): Limit 8000, Requested 9772, please reduce your message size and try again.",
+      });
+
+      // Second call (fallback retry with ultra-trimmed context) succeeds
+      mockCallTextWithFallback.mockResolvedValueOnce({
+        data: "Orbit coach recovery reply from fallback model",
+      });
+
+      const req = new NextRequest("http://localhost/api/aria", {
+        method: "POST",
+        body: JSON.stringify({
+          messages: [{ role: "user", content: "Analyze my workout from last week" }],
+        }),
+      });
+
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+
+      const body = await res.json();
+      expect(body.reply).toBe("Orbit coach recovery reply from fallback model");
+      expect(mockCallTextWithFallback).toHaveBeenCalledTimes(2);
+
+      // Verify second call used fallback models chain
+      const secondCallArgs = mockCallTextWithFallback.mock.calls[1];
+      expect(secondCallArgs[0]).toEqual(["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]);
+    });
+
+
   });
 });
