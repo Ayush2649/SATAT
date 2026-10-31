@@ -405,5 +405,101 @@ describe("/api/aria Route Authentication & Integration", () => {
       // Must NOT force the 6-part weekly report template
       expect(systemMessage.content).toContain("Do NOT force the 6-part weekly report template");
     });
+    it("handles 'Analyze my workout from last week and rate me out of 10 on my workout structure and everything' by using rolling 7-day workouts, avoiding canned 6-part weekly template, and providing workout structure rating instructions", async () => {
+      vi.mocked(getServerSession).mockResolvedValueOnce({
+        user: { id: mockUserId, name: "Ayush", email: "ayush@example.com" },
+      } as any);
+
+      const mockWorkouts = [
+        {
+          id: "w-push",
+          date: "2026-10-26",
+          summary: "Upper Body Push",
+          durationMinutes: 45,
+          exercises: [{ name: "Barbell Bench Press", sets: [{ reps: 8, weight: 80, unit: "kg" }] }],
+        },
+        {
+          id: "w-pull",
+          date: "2026-10-27",
+          summary: "Pull & Back",
+          durationMinutes: 50,
+          exercises: [{ name: "Lat Pulldown", sets: [{ reps: 10, weight: 65, unit: "kg" }] }],
+        },
+        {
+          id: "w-legs",
+          date: "2026-10-29",
+          summary: "Lower Body",
+          durationMinutes: 55,
+          exercises: [{ name: "Barbell Squats", sets: [{ reps: 6, weight: 110, unit: "kg" }] }],
+        },
+        {
+          id: "w-arms",
+          date: "2026-10-30",
+          summary: "Upper Body Arms/Shoulders",
+          durationMinutes: 40,
+          exercises: [{ name: "Overhead Dumbbell Press", sets: [{ reps: 10, weight: 22, unit: "kg" }] }],
+        },
+        {
+          id: "w-core",
+          date: "2026-10-31",
+          summary: "Core & Abs",
+          durationMinutes: 30,
+          exercises: [{ name: "Hanging Leg Raises", sets: [{ reps: 15, weight: 0, unit: "bodyweight" }] }],
+        },
+      ];
+
+      mockBuildOrbitContext.mockResolvedValueOnce({
+        profile: { id: "p1" },
+        workouts: {
+          all: mockWorkouts,
+          today: mockWorkouts,
+        },
+      } as unknown as OrbitContext);
+
+      const req = new NextRequest("http://localhost/api/aria", {
+        method: "POST",
+        body: JSON.stringify({
+          messages: [{
+            role: "user",
+            content: "Analyze my workout from last week and rate me out of 10 on my workout structure and everything",
+          }],
+        }),
+      });
+
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+
+      // Verify targeted domain is workouts
+      expect(mockBuildOrbitContext).toHaveBeenCalledWith(
+        expect.objectContaining({
+          domains: expect.arrayContaining(["workouts"]),
+          temporalScope: "lastWeek",
+        })
+      );
+
+      const callArgs = mockCallTextWithFallback.mock.calls[0];
+      const payload = callArgs[1];
+      const systemMessage = payload.messages.find((m: any) => m.role === "system");
+
+      // Must NOT force the canned 6-part weekly report template
+      expect(systemMessage.content).toContain("Do NOT force the 6-part weekly report template");
+      expect(systemMessage.content).not.toContain("### Weekly Review");
+
+      // Must include detailed workout sessions with exercises and sets
+      expect(systemMessage.content).toContain("=== DETAILED WORKOUT SESSIONS IN THIS PERIOD ===");
+      expect(systemMessage.content).toContain("Upper Body Push");
+      expect(systemMessage.content).toContain("Barbell Bench Press");
+      expect(systemMessage.content).toContain("Pull & Back");
+      expect(systemMessage.content).toContain("Lower Body");
+      expect(systemMessage.content).toContain("Upper Body Arms/Shoulders");
+      expect(systemMessage.content).toContain("Core & Abs");
+
+      // Must instruct direct rating evaluation
+      expect(systemMessage.content).toContain("[INSTRUCTIONS FOR WORKOUT & STRUCTURE EVALUATION]");
+      expect(systemMessage.content).toContain("ALWAYS provide a clear, bold score right at the top");
+      expect(systemMessage.content).toContain("Split Balance & Muscle Volume");
+      expect(systemMessage.content).toContain("Frequency & Consistency");
+      expect(systemMessage.content).toContain("Progressive Overload & Intensity");
+    });
   });
 });

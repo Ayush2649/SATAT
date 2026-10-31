@@ -12,6 +12,34 @@ import {
   getSimpleConversationReply,
 } from "@/lib/orbit/intentClassifier";
 
+function formatDetailedWorkoutSessions(workouts: any[]): string {
+  if (!workouts || workouts.length === 0) {
+    return "No workout sessions recorded in this period.";
+  }
+  return workouts.map((s: any, idx: number) => {
+    let header = `[Session ${idx + 1} — ${s.date}] ${s.summary || s.routineTitle || 'Workout'}${s.durationMinutes > 0 ? ` (${s.durationMinutes} min)` : ''}`;
+    const lines: string[] = [header];
+    if (s.exercises && s.exercises.length > 0) {
+      const exStr = s.exercises.map((e: any) => {
+        let setsStr = "";
+        if (Array.isArray(e.sets) && e.sets.length > 0) {
+          setsStr = e.sets.map((set: any, sIdx: number) => {
+            const weightPart = set.weight !== undefined && set.weight !== null ? `${set.weight}${set.unit || 'kg'}` : '';
+            return `Set ${sIdx + 1}: ${set.reps || 0} reps${weightPart ? ` @ ${weightPart}` : ''}`;
+          }).join(', ');
+        }
+        return `    • ${e.name}: ${setsStr || `${e.sets?.length || 0} sets`}`;
+      }).join('\n');
+      lines.push(`  Exercises:\n${exStr}`);
+    }
+    if (s.cardioLogs && s.cardioLogs.length > 0) {
+      const cardioStr = s.cardioLogs.map((c: any) => `    • ${c.activity}: ${c.durationMinutes}min${c.distanceKm ? `, ${c.distanceKm}km` : ''}${c.caloriesBurned ? `, ${c.caloriesBurned}kcal` : ''}`).join('\n');
+      lines.push(`  Cardio:\n${cardioStr}`);
+    }
+    return lines.join('\n');
+  }).join('\n\n');
+}
+
 export const maxDuration = 30;
 
 export async function POST(req: NextRequest) {
@@ -163,16 +191,34 @@ NEVER say you don't know today's date — you always know it.`;
 
     // Check if user is asking for overall weekly assessment vs domain-specific question
     const lowerLatest = latestUserMessage.toLowerCase();
-    const isCategorySpecific = (
-      /\b(workouts?|training|gym|exercises?)\b/i.test(lowerLatest) &&
-      !/\b(all|overall|everything|momentum|consistency|review|summary|assessment|rate|score|nutrition|meals?|tasks?|habits?)\b/i.test(lowerLatest)
-    ) || (
-      /\b(meals?|nutrition|diet|calories|food)\b/i.test(lowerLatest) &&
-      !/\b(all|overall|everything|momentum|consistency|review|summary|assessment|rate|score|workouts?|tasks?|habits?)\b/i.test(lowerLatest)
-    ) || (
-      /\b(tasks?|todos?)\b/i.test(lowerLatest) &&
-      !/\b(all|overall|everything|momentum|consistency|review|summary|assessment|rate|score|workouts?|meals?|habits?)\b/i.test(lowerLatest)
+
+    const hasWorkoutFocus = (
+      mode === "workout" ||
+      /\b(workouts?|training|gym|exercises?|splits?|sets?|reps?|bench|squats?|deadlifts?|shoulders?|arms?|legs?|push|pull|cardio)\b/i.test(lowerLatest)
     );
+    const hasDietFocus = (
+      mode === "diet" ||
+      /\b(meals?|nutrition|diet|calories|protein|carbs?|fats?|food|breakfast|lunch|dinner)\b/i.test(lowerLatest)
+    );
+    const hasTaskFocus = (
+      mode === "tasks" ||
+      /\b(tasks?|todos?|projects?|deep\s+work|priorit(y|ies))\b/i.test(lowerLatest)
+    );
+
+    const categoryCount = (hasWorkoutFocus ? 1 : 0) + (hasDietFocus ? 1 : 0) + (hasTaskFocus ? 1 : 0);
+
+    const isOverallWeeklyReview = (
+      (!mode || mode === "all") &&
+      categoryCount !== 1 &&
+      (
+        /^(weekly\s+review|review\s+my\s+week|my\s+week\s+review)$/i.test(lowerLatest.trim()) ||
+        /\b(give\s+me\s+an\s+honest\s+assessment\s+of\s+my\s+weekly\s+consistency\s+and\s+momentum|honest\s+assessment\s+of\s+my\s+weekly\s+consistency|consistency\s+and\s+momentum|momentum\s+and\s+consistency)\b/i.test(lowerLatest) ||
+        /\b(full\s+weekly\s+review|overall\s+weekly\s+review|weekly\s+review\s+across\s+all\s+domains|rate\s+my\s+overall\s+progress)\b/i.test(lowerLatest) ||
+        (categoryCount >= 2 && /\b(review|summary|assessment|rate|score|momentum|consistency)\b/i.test(lowerLatest))
+      )
+    );
+
+    const isCategorySpecific = !isOverallWeeklyReview;
 
     system += `\n\n[MODE: HISTORICAL PERFORMANCE & WEEKLY ANALYSIS]
 You are conducting a performance and consistency review for ${userName}.
@@ -224,6 +270,20 @@ ${goals ? `• Macro targets: ${goals.calories} kcal, ${goals.proteinG}g protein
 3. [Actionable priority 3]`;
     } else {
       system += `\n\nThe user asked a category-specific question. Provide a direct, focused analysis for that category with concise bullets and clear data. Do NOT force the 6-part weekly report template.`;
+
+      if (hasWorkoutFocus) {
+        system += `\n\n=== DETAILED WORKOUT SESSIONS IN THIS PERIOD ===\n${formatDetailedWorkoutSessions(workouts)}`;
+        system += `\n\n[INSTRUCTIONS FOR WORKOUT & STRUCTURE EVALUATION]
+1. FOCUS: Focus 100% on workouts, training consistency, split balance, and exercise selection. Do NOT dump unrequested task counts or calorie/nutrition numbers unless asked.
+2. DIRECT RATING: If the user asks for a rating or score (e.g. "rate me out of 10", "rate my workout structure", "rate my training"):
+   - ALWAYS provide a clear, bold score right at the top of your response: e.g. **8.5 / 10 — [Concise Split Title or Rationale]**
+   - Follow with a structured, data-grounded breakdown:
+     • **Frequency & Consistency**: Evaluate the number of training sessions (${workoutCount} session(s) logged) and distribution across the rolling 7-day window (${startStr} – ${endStr}).
+     • **Split Balance & Muscle Volume**: Evaluate movement patterns (Push, Pull, Legs, Arms, Core) and whether major muscle groups were hit with appropriate balance.
+     • **Progressive Overload & Intensity**: Evaluate loads, rep schemes, and training duration.
+     • **Actionable Next Steps / Tomorrow's Recommendation**: If the user asks what to do tomorrow, give a specific recommendation based on what was trained most recently.
+3. Keep your tone encouraging, direct, and like a clinical strength coach.`;
+      }
     }
   }
 
@@ -239,24 +299,8 @@ Focus on exercise programming, form, sets/reps, progressive overload, muscle gro
         system += `\n\n=== ${userName.toUpperCase()}'S PROFILE ===\nBody weight: ${profileWeight} kg`;
       }
       if (workouts.length > 0) {
-        system += `\n\n=== RECENT WORKOUT HISTORY (last ${workouts.length} sessions) ===`;
-        workouts.slice(0, 5).forEach((s: any, i: number) => {
-          system += `\n\n[Session ${i + 1} — ${s.date}] ${s.durationMinutes > 0 ? `${s.durationMinutes} min` : ''}`;
-          if (s.exercises?.length > 0) {
-            system += `\nStrength: ` + s.exercises.map((e: any) => {
-              const setsStr = e.sets.map((set: any) => {
-                const weightPart = set.weight !== undefined ? `${set.weight}${set.unit}` : '';
-                return `${set.reps}${weightPart ? `×${weightPart}` : ''}`;
-              }).join(', ');
-              return `${e.name} (${setsStr})`;
-            }).join(', ');
-          }
-          if (s.cardioLogs?.length > 0) {
-            system += `\nCardio: ` + s.cardioLogs.map((c: any) => `${c.activity} ${c.durationMinutes}min${c.distanceKm ? ` / ${c.distanceKm}km` : ''}${c.caloriesBurned ? ` / ${c.caloriesBurned}kcal` : ''}`).join(', ');
-          }
-          if (s.summary) system += `\nCoach note: ${s.summary.slice(0, 120)}...`;
-        });
-        system += `\n\nUse this data to give specific advice — reference their actual exercises, weights, and patterns.`;
+        system += `\n\n=== RECENT WORKOUT HISTORY (${workouts.length} sessions) ===\n${formatDetailedWorkoutSessions(workouts)}`;
+        system += `\n\nUse this data to give specific advice — reference their actual exercises, weights, sets, reps, and patterns.`;
       } else {
         system += `\n\n[No workout history yet — give general programming advice and encourage them to start logging.]`;
       }

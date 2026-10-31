@@ -486,7 +486,7 @@ export function MarkdownText({ text, className }: Props) {
                         <th
                           key={colIdx}
                           className={cn(
-                            "py-2.5 px-3 font-semibold tracking-wide text-xs select-none",
+                            "py-1.5 px-2.5 font-semibold tracking-wide text-xs select-none whitespace-nowrap",
                             align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left",
                             isMeal && "min-w-[140px]"
                           )}
@@ -514,7 +514,7 @@ export function MarkdownText({ text, className }: Props) {
                           <td
                             key={colIdx}
                             className={cn(
-                              "py-2 px-3",
+                              "py-1.5 px-2.5 text-xs",
                               align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left",
                               isMeal ? "whitespace-normal break-words min-w-[140px] leading-snug" : "whitespace-nowrap",
                               isNum && "font-mono tabular-nums text-[11px]"

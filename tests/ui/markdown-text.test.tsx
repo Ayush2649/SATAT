@@ -198,6 +198,23 @@ describe("MarkdownText Component — Rendering & Formatting", () => {
     expect(html).not.toContain("---|---|");
   });
 
+  it("renders workout recap tables with whitespace-nowrap on header cells to prevent 'Durat / ion' wrapping", () => {
+    const tableMarkdown = [
+      "| Date | Session | Duration | Exercises |",
+      "|:---|:---|---:|---:|",
+      "| Oct 26 | Upper Body Push | 45 min | Bench Press, OHP |",
+      "| Oct 27 | Pull & Back | 50 min | Lat Pulldowns, Rows |",
+    ].join("\n");
+
+    const html = renderToStaticMarkup(React.createElement(MarkdownText, { text: tableMarkdown }));
+
+    expect(html).toContain("<th");
+    expect(html).toContain("Duration");
+    expect(html).toContain("whitespace-nowrap");
+    expect(html).toContain("px-2.5");
+    expect(html).toContain("py-1.5");
+  });
+
   it("does not corrupt identifiers with underscores or simple arithmetic with asterisks", () => {
     const markdown = "Check user_profile_data and note that 2 * 3 = 6.";
     const html = renderToStaticMarkup(React.createElement(MarkdownText, { text: markdown }));

@@ -573,12 +573,36 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ## 3. Pending / Upcoming Sprints
 
-### ⏳ Sprint 5.4: Multi-Device Responsive & Final E2E QA
+### ✅ Sprint 5.4: Orbit AI Date-Window Unification & Removal of Rigid Weekly Template Hijacking
+- **Date-Window Unification (`lib/orbit/temporalResolver.ts`)**:
+  - Unified `"last week"`, `"this week"`, `"past week"`, `"previous week"`, and `"last 7 days"` so they consistently resolve to the rolling last 7 days (`today - 6 days` through `today`, e.g. Oct 25 – Oct 31) rather than an outdated calendar Monday–Sunday block.
+- **Context Requirement & Domain Guard (`lib/orbit/contextRequirement.ts`)**:
+  - Fixed `isExplicitOverallReview` so domain-targeted queries containing rating requests (e.g., `"rate me out of 10 on my workout structure"`) are not hijacked into 7-domain multi-system reviews when a specific category like `workouts` is explicitly detected.
+- **Detailed Workout Session Context (`app/api/aria/route.ts`)**:
+  - Implemented `formatDetailedWorkoutSessions` helper that prints all rolling workout sessions with exact dates, titles, duration, full exercise lists, sets, reps, load in kg, and cardio metrics directly into LLM prompt context.
+- **Elimination of Rigid Weekly Review Hijacking (`app/api/aria/route.ts`)**:
+  - Constrained the canned 6-part `### Weekly Review` template strictly to multi-domain broad requests (`!mode || mode === "all"` without a single target category).
+  - Injected targeted workout evaluation directives (`[INSTRUCTIONS FOR WORKOUT & STRUCTURE EVALUATION]`) commanding Orbit to:
+    1. Lead immediately with a bold numerical rating (`**X / 10**`) based on structured parameters.
+    2. Analyze split balance, muscle group coverage, frequency, and progressive overload.
+    3. Provide actionable next steps and recommendations without dumping unrequested nutrition or task bullet points.
+- **Table Cell & Header Wrapping Fix (`components/ui/MarkdownText.tsx`)**:
+  - Added `whitespace-nowrap` and compact `px-2.5 py-1.5 text-xs` padding to `<th>` and `<td>` elements in markdown tables to prevent header fragmentation (e.g. `"Durat / ion"`) on mobile screens.
+- **Test & Build Verification**:
+  - TypeScript compilation: `npx tsc --noEmit` exits with **0 errors**.
+  - Vitest suite: **53 passed (53 files), 636 passed | 26 skipped (662 total), 0 failing**.
+  - Next.js production build: `npm run build` exits with code **0** (all 33 static/dynamic routes compiled).
+
+---
+
+## 3. Pending / Upcoming Sprints
+
+### ⏳ Sprint 5.5: Multi-Device Responsive & Final E2E QA
 - **Tablet Optimization**: iPad 10th Gen (1024×768) 2-column bento grid verification.
 - **Desktop Optimization**: Desktop (1440×900) 3-column layout verification.
 - **End-to-End Testing**: Full automated test verification and Playwright regression sweep.
 
-### ⏳ Sprint 5.5: Core Companion Alignment (Orbit & Settings)
+### ⏳ Sprint 5.6: Core Companion Alignment (Orbit & Settings)
 - **Orbit AI Companion** (`components/orbit/OrbitView.tsx`):
   - Natural conversation interface, context cards, and prompt suggestions matching the Natural Athletic Editorial aesthetic.
 - **Settings & Profile** (`app/dashboard/settings/page.tsx`):
@@ -588,7 +612,8 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
-- **Vitest Suite**: `634 passed | 26 skipped` across all 53 test suites (0 failing).
+- **Vitest Suite**: `636 passed | 26 skipped` across all 53 test suites (0 failing).
+- **Orbit Tests**: `44/44 passed` across `tests/orbit/*` and `tests/api/aria.test.ts`.
 - **Diet Tests**: `213/213 passed` across all 15 test suites in `tests/diet/*`.
 - **Workout Tests**: `42/42 passed` across `tests/workouts/*`.
 - **Onboarding Tests**: `78/78 passed` across `tests/onboarding/*`.

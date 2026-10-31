@@ -110,43 +110,16 @@ export function resolveTemporalReference(
     return { label: 'this morning', start, end, timezone: tz };
   }
 
-  // this week (ISO week starting Monday)
-  if (lower === 'this week' || lower === 'thisweek') {
-    // Compute ISO weekday (Monday=1 .. Sunday=7) for the given timezone
-    const utcMidnight = Date.UTC(year, month - 1, day);
-    const weekdayUtc = new Date(utcMidnight).getUTCDay(); // 0=Sun
-    const isoWeekday = ((weekdayUtc + 6) % 7) + 1; // Monday=1
-    const mondayOffset = isoWeekday === 1 ? 0 : 1 - isoWeekday;
-    const mondayYMD = addDays({ year, month, day }, mondayOffset);
-    const start = new Date(Date.UTC(mondayYMD.year, mondayYMD.month - 1, mondayYMD.day, 0, 0, 0));
-    const nextMondayYMD = addDays(mondayYMD, 7);
-    const end = new Date(Date.UTC(nextMondayYMD.year, nextMondayYMD.month - 1, nextMondayYMD.day, 0, 0, 0));
-    return { label: 'this week', start, end, timezone: tz };
-  }
-
-  // last week
-  if (lower === 'last week' || lower === 'lastweek') {
-    // Compute ISO weekday (Monday=1 .. Sunday=7) for the given timezone
-    const utcMidnight = Date.UTC(year, month - 1, day);
-    const weekdayUtc = new Date(utcMidnight).getUTCDay(); // 0=Sun
-    const isoWeekday = ((weekdayUtc + 6) % 7) + 1; // Monday=1
-    const thisMondayOffset = isoWeekday === 1 ? 0 : 1 - isoWeekday;
-    const thisMondayYMD = addDays({ year, month, day }, thisMondayOffset);
-    const lastMondayYMD = addDays(thisMondayYMD, -7);
-    const start = new Date(Date.UTC(lastMondayYMD.year, lastMondayYMD.month - 1, lastMondayYMD.day, 0, 0, 0));
-    const end = new Date(Date.UTC(thisMondayYMD.year, thisMondayYMD.month - 1, thisMondayYMD.day, 0, 0, 0));
-    return { label: 'last week', start, end, timezone: tz };
-  }
-
-  // two days ago (full day)
-  if (lower === 'two days ago' || lower === 'twodaysago') {
-    const ymd = addDays({ year, month, day }, -2);
-    const { start, end } = dayRange(ymd);
-    return { label: 'two days ago', start, end, timezone: tz };
-  }
-
-  // last 7 days (rolling window: today + 6 previous days = 7 calendar days)
+  // this week, last week, past week, and last 7 days (unified rolling 7-day window: today - 6 days through today)
   if (
+    lower === 'this week' ||
+    lower === 'thisweek' ||
+    lower === 'this_week' ||
+    lower === 'last week' ||
+    lower === 'lastweek' ||
+    lower === 'past week' ||
+    lower === 'pastweek' ||
+    lower === 'previous week' ||
     lower === 'last 7 days' ||
     lower === 'last seven days' ||
     lower === 'past 7 days' ||
@@ -155,10 +128,10 @@ export function resolveTemporalReference(
     lower === 'past7days' ||
     lower === '7 days'
   ) {
-    const startYmd = addDays({ year, month, day }, -6); // include today + 6 previous days
+    const startYmd = addDays({ year, month, day }, -6); // include today + 6 previous days = 7 days
     const { start } = dayRange(startYmd);
     const { end } = dayRange({ year, month, day }); // exclusive end (midnight of next day)
-    return { label: 'last 7 days', start, end, timezone: tz };
+    return { label: lower.includes('this') ? 'this week' : 'last 7 days', start, end, timezone: tz };
   }
 
   // two weeks ago (full day)
