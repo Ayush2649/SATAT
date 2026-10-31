@@ -4,7 +4,10 @@ import path from "path";
 
 describe("BUG-06: Meal Preview Image Optimization & Next.js Image Compliance", () => {
   const dietPagePath = path.resolve(__dirname, "../../components/diet/DietPage.tsx");
+  const modalScannerPath = path.resolve(__dirname, "../../components/diet/MealScannerModal.tsx");
   const dietPageSource = fs.readFileSync(dietPagePath, "utf8");
+  const scannerSource = fs.existsSync(modalScannerPath) ? fs.readFileSync(modalScannerPath, "utf8") : "";
+  const combinedSource = dietPageSource + "\n" + scannerSource;
 
   it("1. Imports Image component from next/image", () => {
     expect(dietPageSource).toMatch(/import\s+(NextImage|Image)\s+from\s+["']next\/image["']/);
@@ -13,6 +16,7 @@ describe("BUG-06: Meal Preview Image Optimization & Next.js Image Compliance", (
   it("2. Eliminates raw <img> element for meal photo preview", () => {
     // The previous bug was: <img src={preview} alt="meal" className="w-full h-44 object-cover rounded-xl" ... />
     expect(dietPageSource).not.toMatch(/<img\s+[^>]*src=\{preview\}/);
+    expect(scannerSource).not.toMatch(/<img\s+[^>]*src=\{preview\}/);
   });
 
   it("3. Configures next/image with fill, unoptimized, and object-cover", () => {
@@ -37,11 +41,11 @@ describe("BUG-06: Meal Preview Image Optimization & Next.js Image Compliance", (
   });
 
   it("6. Memory Hygiene (ARGON-05): Uses base64 data URLs via FileReader/Canvas without unmanaged URL.createObjectURL", () => {
-    // DietPage resizes client-side using FileReader + canvas.toDataURL and sets preview to data: URL.
+    // Diet scanner resizes client-side using FileReader + canvas.toDataURL and sets preview to data: URL.
     // Confirms it never creates unmanaged blob: URLs with URL.createObjectURL.
-    expect(dietPageSource).toContain("reader.readAsDataURL(file)");
-    expect(dietPageSource).toContain("canvas.toDataURL(");
-    expect(dietPageSource).toContain("setPreview(`data:${mimeType};base64,${base64}`)");
-    expect(dietPageSource).not.toContain("URL.createObjectURL");
+    expect(combinedSource).toContain("reader.readAsDataURL(file)");
+    expect(combinedSource).toContain("canvas.toDataURL(");
+    expect(combinedSource).toContain("setPreview(`data:${mimeType};base64,${base64}`)");
+    expect(combinedSource).not.toContain("URL.createObjectURL");
   });
 });

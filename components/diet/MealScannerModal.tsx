@@ -2,6 +2,7 @@
 
 import { createPortal } from "react-dom";
 import React, { useState, useRef, useEffect } from "react";
+import NextImage from "next/image";
 import {
   X,
   Camera,
@@ -350,7 +351,7 @@ export default function MealScannerModal({
               {/* STATE 2 & 3: PHOTO SELECTED */}
               {preview && (
                 <div className="rounded-[26px] overflow-hidden relative aspect-[4/3] bg-[#191D1A] shadow-md border border-white/10 group">
-                  <img src={preview} alt="User plate scan" className="w-full h-full object-cover" />
+                  <NextImage src={preview} alt="User plate scan" fill unoptimized className="object-cover" />
 
                   <div className="absolute top-3.5 left-3.5 w-6 h-6 border-t-2 border-l-2 border-[#E05A47] rounded-tl-lg pointer-events-none" />
                   <div className="absolute top-3.5 right-3.5 w-6 h-6 border-t-2 border-r-2 border-[#E05A47] rounded-tr-lg pointer-events-none" />

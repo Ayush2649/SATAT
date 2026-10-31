@@ -504,8 +504,20 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - Full-width Terracotta submit button (`Schedule into Today's Rhythm →`).
 - **Test & Build Verification**:
   - TypeScript compilation: `npx tsc --noEmit` exits with **0 errors**.
-  - Vitest suite: **51 passed (51 files), 617 passed | 26 skipped (643 total), 0 failing**.
+  - Vitest suite: **53 passed (53 files), 634 passed | 26 skipped (660 total), 0 failing**.
   - Next.js production build: `npm run build` exits with code **0** (all 33 static/dynamic routes compiled).
+
+### ✅ Sprint 5.3.1: Emergency Git Recovery — Restored Training Studio & Unified QA Suite
+- **Restored Training Studio (`components/workout/WorkoutPage.tsx`)**:
+  - Restored 100% of the Natural Athletic Editorial "Training Studio" UI (warm stone canvas `#F6F3EC`, alabaster cards, circadian status, exercise sets/reps logger, cardio drawer, and volume tracking) that was accidentally overwritten by an outdated QA branch merge on `origin/main`.
+  - Replaced raw `<img>` in `MealScannerModal.tsx` with compliant `<NextImage fill unoptimized />`.
+- **Merged & Unified Full QA Test Coverage**:
+  - Fully integrated all QA hardening and test suites from `origin/main` (`tests/api/health-api.test.ts`, `tests/orbit/cold-start-hydration.test.ts`, `tests/workouts/orbit-workout-context.test.ts`, and `tests/diet/meal-preview-image.test.ts`).
+  - Updated `meal-preview-image.test.ts` to inspect both `DietPage.tsx` and `MealScannerModal.tsx` for memory hygiene and Next.js image compliance.
+- **Test & Build Verification**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - `npx vitest run`: **53 passed (53 files), 634 passed | 26 skipped (660 total), 0 failing**.
+  - `npm run build`: exits with code **0** (all 33 static/dynamic routes compiled).
 
 ### ✅ Sprint 5.2: Bottom Navbar Active Pill Geometry & Project-First Execution Hierarchy
 - **Locked Active Navbar Pill Geometry (`components/Navigation.tsx`)**:
@@ -576,7 +588,7 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
-- **Vitest Suite**: `617 passed | 26 skipped` across all 51 test suites (0 failing).
+- **Vitest Suite**: `634 passed | 26 skipped` across all 53 test suites (0 failing).
 - **Diet Tests**: `213/213 passed` across all 15 test suites in `tests/diet/*`.
 - **Workout Tests**: `42/42 passed` across `tests/workouts/*`.
 - **Onboarding Tests**: `78/78 passed` across `tests/onboarding/*`.
