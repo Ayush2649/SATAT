@@ -660,7 +660,30 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ---
 
-### ⏳ Sprint 5.8: Multi-Device Responsive & Final E2E QA
+### ✅ Sprint 5.8: Fix All 6 Orbit UI & Context Retrieval Bugs
+- **Markdown Table Clipping Fix (`MarkdownText.tsx` & `styles/app-shell.css`)**:
+  - Wrapped every table in a scrollable touch container (`overflow-x-auto my-2.5 rounded-xl border border-white/[0.08] bg-white/[0.04] [-webkit-overflow-scrolling:touch]`).
+  - Set `min-w-0` and `overflow-hidden` on AI cards to guarantee smooth horizontal touch scrolling without clipping right-hand columns (`DURATION`, `SETS/REPS`).
+  - Kept `whitespace-nowrap` on headers and short numeric/date cells while allowing exercise/session names to wrap cleanly (`min-w-[110px] whitespace-normal break-words`).
+- **Markdown Backslash Unescaping & High-Contrast Badges (`MarkdownText.tsx` & `styles/app-shell.css`)**:
+  - Added regex unescaping (`text.replace(/\\([*_~`[\]()#+-])/g, "$1")`) so model backslashes like `\*Volume` render as clean markdown without raw slashes.
+  - Styled numbered list badges as high-contrast Matcha Sage / Mint pills (`bg-[#2D6A4F]/45 border border-[#6EE7B7]/35 text-[#6EE7B7]`) for crisp legibility against dark Espresso cards.
+- **Context Filter Bar & Bottom Prompt Chips Optimization (`OrbitView.tsx`)**:
+  - Condensed top context filter pills (`All`, `Workout`, `Diet`, `Tasks`) with compact padding (`px-3 py-1.5 text-xs`) so all 4 fit inside 300px without right-edge cutoff on 393px screens.
+  - Shortened prompt chip labels to punchy 2-word pills (`Rate weekly volume`, `Today's protein gap`, `Tomorrow's split`, `Prioritize tasks`) with horizontal scroll padding (`scroll-px-4 no-scrollbar`).
+  - Shortened input placeholder to `"Ask Orbit about training, diet, or focus..."` to eliminate mobile text cutoff while keeping test contracts intact.
+- **Diet & Tasks Data Retrieval Intelligence (`app/api/aria/route.ts`)**:
+  - Ingests both Firestore Admin DB and client state (`taskContext`, `dietContext`) from request body.
+  - Injects all incomplete tasks across all dates and projects with prioritized deep work coaching directives.
+  - Injects daily macro/protein goals (e.g. 135g P, 2,000 kcal) and past-week favorite meals, instructing Orbit to calculate the exact remaining protein gap and provide a 3-meal action plan rather than refusing with "I don't see any meals logged".
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: 0 errors.
+  - Full Vitest suite: 53 passed (53 files), 638 passed | 26 skipped (664 total), 0 failing.
+  - Production Next.js build: `npm run build` exits with code 0 (all 33 routes compiled).
+
+---
+
+### ⏳ Sprint 5.9: Multi-Device Responsive & Final E2E QA
 - **Tablet Optimization**: iPad 10th Gen (1024×768) 2-column bento grid verification.
 - **Desktop Optimization**: Desktop (1440×900) 3-column layout verification.
 - **Settings & Profile** (`app/dashboard/settings/page.tsx`):

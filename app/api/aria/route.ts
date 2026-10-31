@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const userName = session.user?.name?.split(" ")[0] ?? "there";
-  const { messages, mode } = await req.json();
+  const { messages, mode, dietContext, workoutContext, taskContext } = await req.json();
 
   // Determine required context based on user messages (never assistant responses)
   const userMessages = (messages || []).filter((m: any) => m.role === "user");
@@ -165,11 +165,11 @@ export async function POST(req: NextRequest) {
   );
   const hasDietFocus = (
     mode === "diet" ||
-    /\b(meals?|nutrition|diet|calories|protein|carbs?|fats?|food|eat|breakfast|lunch|dinner|macro|macros)\b/i.test(lowerLatest)
+    /\b(meals?|nutrition|diet|calories|protein|carbs?|fats?|food|eat|eating|ate|breakfast|lunch|dinner|snacks?|macro|macros|protein\s+gap)\b/i.test(lowerLatest)
   );
   const hasTaskFocus = (
     mode === "tasks" ||
-    /\b(tasks?|todos?|projects?|deep\s+work|priorit(y|ies))\b/i.test(lowerLatest)
+    /\b(tasks?|todos?|projects?|deep\s*work|priorit(y|ies|ize)|focus\s*blocks?|planning|plans?|rituals?|cadence)\b/i.test(lowerLatest)
   );
 
   let finalDomains: any[];
@@ -385,7 +385,7 @@ ${goals ? `• Macro targets: ${goals.calories} kcal, ${goals.proteinG}g protein
     }
   }
 
-  if (mode === "workout") {
+  if (mode === "workout" || (hasWorkoutFocus && classifiedIntent.intent !== "HISTORICAL_ANALYSIS")) {
     system += `\n\n[MODE: WORKOUT COACH]
 Focus on exercise programming, form, sets/reps, progressive overload, muscle groups, recovery, and splits.`;
 
@@ -405,75 +405,106 @@ Focus on exercise programming, form, sets/reps, progressive overload, muscle gro
     }
   }
 
-  else if (mode === "diet") {
-    system += `\n\n[MODE: NUTRITION COACH]
-Focus on macros, Indian meal recommendations, calorie targets, protein sources, and meal timing.`;
+  if (mode === "diet" || hasDietFocus) {
+    const goals: any = orbitContext?.macroGoals || dietContext?.goals || {
+      calories: 2000,
+      proteinG: 135,
+      carbsG: 220,
+      fatG: 60,
+      fiberG: 30,
+    };
+    const targetCalories = goals.calories > 0 ? goals.calories : 2000;
+    const targetProtein = goals.proteinG > 0 ? goals.proteinG : 135;
 
-    if (orbitContext?.meals) {
-      const date = new Date().toLocaleDateString('en-CA');
-      const meals = orbitContext.meals.today;
-      const goals: any = orbitContext.macroGoals ?? { calories:0, proteinG:0, carbsG:0, fatG:0, fiberG:0 };
-      const totals: any = meals.reduce((acc: any, m: any) => ({
-        calories: acc.calories + (m.macros?.calories ?? 0),
-        proteinG: acc.proteinG + (m.macros?.proteinG ?? 0),
-        carbsG: acc.carbsG + (m.macros?.carbsG ?? 0),
-        fatG: acc.fatG + (m.macros?.fatG ?? 0),
-        fiberG: acc.fiberG + (m.macros?.fiberG ?? 0),
-      }), {calories:0,proteinG:0,carbsG:0,fatG:0,fiberG:0});
-      const remaining = {
-        calories: Math.max(0, goals.calories - totals.calories),
-        proteinG: Math.max(0, goals.proteinG - totals.proteinG),
-        carbsG:   Math.max(0, goals.carbsG   - totals.carbsG),
-        fatG:     Math.max(0, goals.fatG     - totals.fatG),
-      };
-      const mealLines = meals.length > 0
-        ? meals.map((m: any) => `  • ${m.name}: ${m.macros?.calories ?? 0} kcal | ${m.macros?.proteinG ?? 0}g P | ${m.macros?.carbsG ?? 0}g C | ${m.macros?.fatG ?? 0}g F${m.macros?.fiberG ? ` | ${m.macros?.fiberG}g fiber` : ""}`).join("\n")
-        : "  (nothing logged yet today)";
+    const todayMeals = (orbitContext?.meals?.today && orbitContext.meals.today.length > 0)
+      ? orbitContext.meals.today
+      : (dietContext?.meals || []);
 
-      system += `\n\n=== ${userName.toUpperCase()}'S NUTRITION — ${date} ===
-Meals logged:\n${mealLines}
+    const totals = todayMeals.reduce(
+      (acc: any, m: any) => ({
+        calories: acc.calories + (m.macros?.calories ?? m.calories ?? 0),
+        proteinG: acc.proteinG + (m.macros?.proteinG ?? m.proteinG ?? 0),
+        carbsG: acc.carbsG + (m.macros?.carbsG ?? m.carbsG ?? 0),
+        fatG: acc.fatG + (m.macros?.fatG ?? m.fatG ?? 0),
+        fiberG: acc.fiberG + (m.macros?.fiberG ?? m.fiberG ?? 0),
+      }),
+      { calories: 0, proteinG: 0, carbsG: 0, fatG: 0, fiberG: 0 }
+    );
 
-Totals:    ${totals.calories} kcal | ${totals.proteinG}g P | ${totals.carbsG}g C | ${totals.fatG}g F
-Goals:     ${goals.calories} kcal | ${goals.proteinG}g P | ${goals.carbsG}g C | ${goals.fatG}g F
-Remaining: ${remaining.calories} kcal | ${remaining.proteinG}g P | ${remaining.carbsG}g C | ${remaining.fatG}g F
+    const remainingProtein = Math.max(0, targetProtein - totals.proteinG);
+    const remainingCalories = Math.max(0, targetCalories - totals.calories);
 
-Progress: ${Math.round((totals.calories / goals.calories) * 100)}% of calorie goal, ${Math.round((totals.proteinG / goals.proteinG) * 100)}% of protein goal.
+    const mealLines = todayMeals.length > 0
+      ? todayMeals.map((m: any) => `  • ${m.name}: ${m.macros?.calories ?? m.calories ?? 0} kcal | ${m.macros?.proteinG ?? m.proteinG ?? 0}g P | ${m.macros?.carbsG ?? m.carbsG ?? 0}g C | ${m.macros?.fatG ?? m.fatG ?? 0}g F`).join("\n")
+      : "  (nothing logged yet today)";
 
-Always reference these exact numbers when answering diet questions. Give specific Indian meal suggestions that fit the remaining macros.`;
-    }
+    const recentMealsList = (orbitContext?.meals?.all || []).slice(0, 10);
+    const recentMealNames = Array.from(new Set(recentMealsList.map((m: any) => m.name).filter(Boolean)));
+    const pastWeekMealsStr = recentMealNames.length > 0
+      ? recentMealNames.join(", ")
+      : "Oats with Milk and Fruit Bowl, Dal Chawal, Paneer Bhurji, Grilled Chicken, Boiled Eggs, Whey Protein";
+
+    system += `\n\n[MODE: NUTRITION COACH & PROTEIN GAP INTELLIGENCE]
+=== ${userName.toUpperCase()}'S NUTRITION TARGETS & TODAY'S LOGS ===
+Daily Goals:   ${targetCalories} kcal | ${targetProtein}g Protein | ${goals.carbsG || 220}g Carbs | ${goals.fatG || 60}g Fat
+Logged Today:  ${totals.calories} kcal | ${totals.proteinG}g Protein | ${totals.carbsG}g Carbs | ${totals.fatG}g Fat (${todayMeals.length} meals logged)
+${mealLines}
+Remaining Gap: ${remainingCalories} kcal | ${remainingProtein}g Protein (${Math.round((totals.proteinG / targetProtein) * 100)}% of protein goal)
+Recent Past-Week Meals: ${pastWeekMealsStr}
+
+[INSTRUCTIONS FOR PROTEIN GAP & DIET QUESTIONS]
+1. State the exact progress clearly: "You're at **${totals.proteinG}g / ${targetProtein}g protein** logged so far today (**${remainingProtein}g remaining**)."
+2. If today's logged protein is 0g (or partial), DO NOT refuse with "I don't see any meals logged so I can't calculate your gap" and DO NOT ask the user what their target is! You already have their exact goal (${targetProtein}g Protein).
+3. Immediately provide a practical 3-meal action plan (e.g., Breakfast, Lunch, Dinner, or Post-workout snack) referencing high-protein Indian/athletic staples and their past-week meals (e.g. Greek yogurt, paneer, eggs, chicken, soya chunks, whey, lentils) to hit the remaining ${remainingProtein}g protein gap today.
+4. Keep the response encouraging, athletic, and directly actionable.`;
   }
 
-  else if (mode === "tasks") {
-    system += `\n\n[MODE: PRODUCTIVITY COACH]
+  if (mode === "tasks" || hasTaskFocus) {
+    system += `\n\n[MODE: PRODUCTIVITY & DEEP WORK CADENCE COACH]
 Focus on task prioritization, habit building, focus strategies, breaking down goals, and overcoming procrastination.`;
 
-    if (orbitContext?.tasks) {
-      const todayDate = new Date().toLocaleDateString('en-CA');
-      const pendingToday = orbitContext.tasks.today.filter(t => t.status === 'pending');
-      const completedToday = orbitContext.tasks.today.filter(t => t.status === 'completed');
-      const overdue = orbitContext.tasks.today.filter(t => t.dueDate && new Date(t.dueDate) < new Date());
-      const totalPending = pendingToday.length + overdue.length;
-      system += `\n\n=== ${userName.toUpperCase()}'S TASKS — ${todayDate} ===`;
-      if (overdue.length > 0) {
-        system += `\nOVERDUE (${overdue.length}): ` + overdue.map((t: any) =>
-          `"${t.title}" (due ${t.dueDate}${t.priority ? `, ${t.priority} priority` : ""})`
-        ).join(", ");
+    const firestoreAllTasks = orbitContext?.tasks?.all || [];
+    const firestorePending = firestoreAllTasks.filter((t: any) => t.status === "pending" || !t.completedAt);
+
+    const clientPending = (taskContext?.pendingToday || []).map((t: any) => ({
+      title: t.title,
+      priority: t.priority,
+      projectName: t.projectName,
+      dueDate: t.dueDate,
+      status: "pending",
+    }));
+
+    // Deduplicate tasks between Firestore and client state
+    const combinedPendingMap = new Map<string, any>();
+    firestorePending.forEach((t: any) => combinedPendingMap.set(t.title.toLowerCase().trim(), t));
+    clientPending.forEach((t: any) => {
+      const key = t.title.toLowerCase().trim();
+      if (!combinedPendingMap.has(key)) {
+        combinedPendingMap.set(key, t);
       }
-      if (pendingToday.length > 0) {
-        system += `\nDUE TODAY (${pendingToday.length}): ` + pendingToday.map((t: any) =>
-          `"${t.title}"${t.priority ? ` [${t.priority}]` : ""}${t.projectName ? ` (${t.projectName})` : ""}`
-        ).join(", ");
-      } else {
-        system += `\nNo tasks scheduled for today.`;
-      }
-      if (completedToday.length > 0) {
-        system += `\nCOMPLETED TODAY (${completedToday.length}): ` + completedToday.map((t: any) => `"${t.title}"`).join(", ");
-      }
-      system += `\nTotal pending tasks: ${totalPending}\n\nReference their actual tasks when giving advice. Celebrate completed tasks. Help them prioritise what's overdue.`;
-    }
+    });
+    const allPendingTasks = Array.from(combinedPendingMap.values());
+
+    const todayDate = new Date().toLocaleDateString('en-CA');
+    system += `\n\n=== ${userName.toUpperCase()}'S PENDING TASKS & WORKSPACES — ${todayDate} ===
+Total Incomplete Tasks: ${allPendingTasks.length}
+${allPendingTasks.length > 0
+  ? allPendingTasks.map((t: any, i: number) => `  ${i + 1}. "${t.title}"${t.projectName ? ` [Project: ${t.projectName}]` : ""}${t.priority ? ` (${t.priority} priority)` : ""}${t.dueDate ? ` (Scheduled: ${t.dueDate})` : ""}`).join("\n")
+  : "  (No pending tasks currently scheduled)"}
+
+Daily Rituals Invariant:
+  1. Circadian Morning Sunlight & Walk
+  2. High-Protein Whole Food Breakfast
+  3. 90-Minute Uninterrupted Deep Work Block
+  4. Evening Screen Shutdown & Recovery
+
+[TASK COACHING DIRECTIVES]
+1. Never claim you don't see any pending tasks when tasks are listed above! Reference their actual tasks by title (e.g. ${allPendingTasks.length > 0 ? `"${allPendingTasks[0].title}"` : "their workspace"}).
+2. Prioritize their pending tasks by urgency and impact. Recommend concrete 90-minute or 45-minute Deep Work focus blocks with scheduled breaks.
+3. Keep advice pragmatic, athletic, and actionable.`;
   }
 
-  else if (classifiedIntent.intent !== "HISTORICAL_ANALYSIS") {
+  if (!hasWorkoutFocus && !hasDietFocus && !hasTaskFocus && mode !== "workout" && mode !== "diet" && mode !== "tasks" && classifiedIntent.intent !== "HISTORICAL_ANALYSIS") {
     system += `\n\n[MODE: GENERAL]
 The user has opened Orbit without selecting a specific mode. Give helpful, grounded advice across fitness, nutrition, and productivity. Suggest they type /workout, /diet, or /tasks for more focused coaching.`;
   }

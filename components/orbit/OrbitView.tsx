@@ -24,7 +24,7 @@ interface OrbitViewProps {
 const STORAGE_KEY = "satat_orbit_session_msgs";
 
 const FOCUS_MODES: Array<{ id: OrbitFocusMode; label: string; icon: React.ComponentType<{ className?: string }> }> = [
-  { id: "all", label: "All Domains", icon: Sparkles },
+  { id: "all", label: "All", icon: Sparkles },
   { id: "workout", label: "Workout", icon: Dumbbell },
   { id: "diet", label: "Diet", icon: Utensils },
   { id: "tasks", label: "Tasks", icon: CheckSquare },
@@ -65,25 +65,25 @@ const QUICK_CHIPS = [
   {
     icon: TrendingUp,
     iconColor: "text-[#2D6A4F]",
-    label: "Rate my weekly workout volume",
+    label: "Rate weekly volume",
     query: "Analyze my workout from last week and rate my structure and volume.",
   },
   {
     icon: Utensils,
     iconColor: "text-[#E05A47]",
-    label: "Protein gap analysis for today",
+    label: "Today's protein gap",
     query: "Review my protein intake today and calculate remaining protein gap.",
   },
   {
     icon: Zap,
     iconColor: "text-[#2D6A4F]",
-    label: "Recommend tomorrow's training split",
+    label: "Tomorrow's split",
     query: "Recommend tomorrow's workout split based on muscle groups trained this week.",
   },
   {
     icon: CheckCircle2,
     iconColor: "text-[#191D1A]",
-    label: "Prioritize deep work tasks",
+    label: "Prioritize tasks",
     query: "Prioritize my pending tasks and recommend deep work focus blocks.",
   },
 ];
@@ -510,7 +510,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
         </div>
 
         {/* Active Context Filter Bar (Horizontal Pill Row) */}
-        <div className="flex items-center gap-2 mt-3 overflow-x-auto scrollbar-none py-0.5">
+        <div className="flex items-center gap-1.5 sm:gap-2 mt-3 px-0.5 overflow-x-auto no-scrollbar py-0.5">
           {FOCUS_MODES.map((m) => {
             const isSelected = focusMode === m.id;
             const Icon = m.icon;
@@ -520,7 +520,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                 type="button"
                 onClick={() => setFocusMode(m.id)}
                 className={cn(
-                  "shrink-0 rounded-full px-4 py-1.5 text-xs font-semibold inline-flex items-center gap-1.5 transition-all select-none",
+                  "shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold inline-flex items-center gap-1.5 transition-all select-none",
                   isSelected
                     ? "bg-[#191D1A] text-white shadow-2xs"
                     : "bg-[#EFECE4] text-[#57534E] hover:text-[#1C1917] hover:bg-[#E5E1D8] font-medium"
@@ -531,7 +531,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                 ) : (
                   <Icon className="w-3.5 h-3.5 text-[#57534E]" />
                 )}
-                <span>{m.id === "all" ? "All Domains" : m.label}</span>
+                <span>{m.label}</span>
               </button>
             );
           })}
@@ -639,8 +639,8 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
               </div>
             ) : (
               /* Orbit AI Response Card: Left-aligned Deep Botanical Espresso (#191D1A) */
-              <div className="flex flex-col items-start gap-1 w-full">
-                <div className="w-full max-w-[94%] bg-[#191D1A] text-[#FCFBF9] rounded-[24px] rounded-tl-sm p-4 shadow-xl border border-white/[0.06]">
+              <div className="flex flex-col items-start gap-1 w-full min-w-0">
+                <div className="w-full max-w-[94%] min-w-0 bg-[#191D1A] text-[#FCFBF9] rounded-[24px] rounded-tl-sm p-4 shadow-xl border border-white/[0.06] overflow-hidden">
                   {/* Top Header Row inside Card */}
                   <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-white/[0.08]">
                     <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#2D6A4F]/40 border border-[#6EE7B7]/25 text-[#6EE7B7] text-[9px] font-bold tracking-wider uppercase select-none">
@@ -763,7 +763,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
         }}
       >
         {/* Suggested Quick-Prompt Chips (Zero Emojis — Vector Icons Only) */}
-        <div className="w-full overflow-x-auto scrollbar-none py-1 mb-2.5">
+        <div className="w-full overflow-x-auto no-scrollbar py-1 mb-2 scroll-px-4 px-0.5">
           <div className="flex items-center gap-1.5 w-max">
             {QUICK_CHIPS.map((chip, idx) => {
               const Icon = chip.icon;
@@ -772,7 +772,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                   key={idx}
                   type="button"
                   onClick={() => handleSend(chip.query)}
-                  className="shrink-0 px-3.5 py-1.5 rounded-full bg-[#FCFBF9] hover:bg-[#EFECE4] text-[#191D1A] border border-[#191D1A]/10 text-xs font-semibold tracking-tight shadow-[0_1px_4px_rgba(0,0,0,0.03)] flex items-center gap-1.5 transition-all active:scale-95 select-none"
+                  className="shrink-0 px-3 py-1.5 rounded-full bg-[#FCFBF9] hover:bg-[#EFECE4] text-[#191D1A] border border-[#191D1A]/10 text-xs font-semibold tracking-tight shadow-[0_1px_4px_rgba(0,0,0,0.03)] flex items-center gap-1.5 transition-all active:scale-95 select-none"
                 >
                   <Icon className={cn("w-3.5 h-3.5", chip.iconColor)} />
                   <span>{chip.label}</span>
@@ -791,7 +791,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
             value={input}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            placeholder="Ask Orbit anything about training, diet, or focus..."
+            placeholder="Ask Orbit about training, diet, or focus..."
             className="flex-1 bg-transparent text-xs sm:text-sm resize-none outline-none leading-relaxed scrollbar-none min-h-[22px] max-h-[120px] text-[#1C1917] placeholder-[#8C857B] font-medium py-0.5"
             aria-label="Ask Orbit"
           />

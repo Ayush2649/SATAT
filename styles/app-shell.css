@@ -300,16 +300,36 @@
   color: #FCFBF9;
 }
 
+.orbit-card-content table {
+  width: 100%;
+  min-width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 11px;
+  line-height: 1.375;
+}
+
 .orbit-card-content th {
+  padding: 8px 10px !important;
   white-space: nowrap !important;
   color: rgba(252, 251, 249, 0.75) !important;
-  font-size: 11px !important;
+  font-size: 10px !important;
   text-transform: uppercase !important;
   letter-spacing: 0.05em !important;
 }
 
 .orbit-card-content td {
+  padding: 8px 10px !important;
   font-variant-numeric: tabular-nums;
   color: rgba(252, 251, 249, 0.9) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
+
+.orbit-card-content .markdown-num-badge {
+  background: rgba(45, 106, 79, 0.45) !important;
+  border: 1px solid rgba(110, 231, 183, 0.35) !important;
+  color: #6EE7B7 !important;
+  font-family: var(--font-mono, monospace) !important;
+}
+
 
