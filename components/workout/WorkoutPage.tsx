@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useFirebaseAuth } from "@/components/FirebaseAuthProvider";
 import {
@@ -60,7 +60,7 @@ import {
   getTemplateCoverPhoto,
   getExerciseTargetMuscle,
 } from "@/lib/workouts/workoutMeta";
-import { setWorkoutContext } from "@/lib/orbitContext";
+import { setWorkoutContext, getWorkoutContext } from "@/lib/orbitContext";
 import { useToast } from "@/components/ui/Toast";
 import VoiceLogModal from "@/components/workout/VoiceLogModal";
 import type {
@@ -100,6 +100,26 @@ function newSet(): SetLog {
   return { id: generateId(), reps: 0, weight: 0, unit: "kg", completed: false };
 }
 
+function formatSessionForOrbit(s: WorkoutSession) {
+  return {
+    date: s.date,
+    durationMinutes: s.durationMinutes,
+    exercises: s.exercises.map((ex) => ({
+      name: ex.name,
+      sets: ex.sets.length,
+      topWeight: ex.sets.reduce((max, set) => Math.max(max, set.weight ?? 0), 0) || undefined,
+      unit: ex.sets[0]?.unit,
+    })),
+    cardio: s.cardioLogs?.map((c) => ({
+      activity: c.activity,
+      durationMinutes: c.durationMinutes,
+      distanceKm: c.distanceKm,
+      caloriesBurned: c.caloriesBurned,
+    })),
+    summary: s.summary,
+  };
+}
+
 export default function WorkoutPage() {
   const { data: session } = useSession();
   const { firebaseUser, isReady } = useFirebaseAuth();
@@ -109,6 +129,11 @@ export default function WorkoutPage() {
   const [view, setView] = useState<"log" | "templates" | "history">("log");
   const [pastSessions, setPastSessions] = useState<WorkoutSession[]>([]);
   const [bodyWeightEntries, setBodyWeightEntries] = useState<BodyWeightEntry[]>([]);
+  const bodyWeightEntriesRef = useRef<BodyWeightEntry[]>(bodyWeightEntries);
+
+  useEffect(() => {
+    bodyWeightEntriesRef.current = bodyWeightEntries;
+  }, [bodyWeightEntries]);
 
   // Templates & Routine
   const [userTemplates, setUserTemplates] = useState<WorkoutTemplate[]>([]);
@@ -180,65 +205,62 @@ export default function WorkoutPage() {
 
   // Load database state
   useEffect(() => {
+    let isCancelled = false;
     if (!userId || !firebaseUser || !isReady) return;
+
     getWorkoutSessions(userId)
       .then((sessions) => {
+        if (isCancelled) return;
         setPastSessions(sessions);
+        const current = getWorkoutContext();
         setWorkoutContext({
-          bodyWeightKg: bodyWeightEntries[0]?.weightKg,
-          recentSessions: sessions.slice(0, 5).map((s) => ({
-            date: s.date,
-            durationMinutes: s.durationMinutes,
-            exercises: s.exercises.map((ex) => ({
-              name: ex.name,
-              sets: ex.sets.length,
-              topWeight: ex.sets.reduce((max, set) => Math.max(max, set.weight ?? 0), 0) || undefined,
-              unit: ex.sets[0]?.unit,
-            })),
-            cardio: s.cardioLogs?.map((c) => ({
-              activity: c.activity,
-              durationMinutes: c.durationMinutes,
-              distanceKm: c.distanceKm,
-              caloriesBurned: c.caloriesBurned,
-            })),
-            summary: s.summary,
-          })),
+          bodyWeightKg: current?.bodyWeightKg ?? bodyWeightEntriesRef.current[0]?.weightKg,
+          recentSessions: sessions.slice(0, 5).map(formatSessionForOrbit),
         });
       })
       .catch((err) => {
-        console.error("Error loading workout sessions:", err);
+        if (!isCancelled) console.error("Error loading workout sessions:", err);
       });
 
     getWorkoutTemplates(userId)
-      .then(setUserTemplates)
+      .then((templates) => {
+        if (!isCancelled) setUserTemplates(templates);
+      })
       .catch((err) => {
-        console.error("Error loading workout templates:", err);
+        if (!isCancelled) console.error("Error loading workout templates:", err);
       });
 
     getUserProfile(userId)
       .then((profile) => {
-        if (profile?.workoutPlanAssignment) {
+        if (!isCancelled && profile?.workoutPlanAssignment) {
           setAssignedRoutine(profile.workoutPlanAssignment);
         }
       })
       .catch((err) => {
-        console.error("Error loading profile:", err);
+        if (!isCancelled) console.error("Error loading profile:", err);
       });
 
     getBodyWeightEntries(userId)
       .then((entries) => {
+        if (isCancelled) return;
+        bodyWeightEntriesRef.current = entries;
         setBodyWeightEntries(entries);
         if (entries.length > 0) {
           setBodyWeight(String(entries[0].weightKg));
+          const current = getWorkoutContext();
           setWorkoutContext({
             bodyWeightKg: entries[0].weightKg,
-            recentSessions: [],
+            recentSessions: current?.recentSessions ?? [],
           });
         }
       })
       .catch((err) => {
-        console.error("Error loading body weight entries:", err);
+        if (!isCancelled) console.error("Error loading body weight entries:", err);
       });
+
+    return () => {
+      isCancelled = true;
+    };
   }, [userId, firebaseUser, isReady]);
 
   // Today's session
@@ -545,14 +567,23 @@ export default function WorkoutPage() {
       if (summaryResult) session_data.summary = summaryResult;
 
       let saved: WorkoutSession;
+      let updatedSessions: WorkoutSession[];
       if (isEditingSession && todaySession) {
         await updateWorkoutSession(todaySession.id, session_data);
         saved = { ...session_data, id: todaySession.id };
-        setPastSessions((prev) => prev.map((s) => (s.id === todaySession.id ? saved : s)));
+        updatedSessions = pastSessions.map((s) => (s.id === todaySession.id ? saved : s));
+        setPastSessions(updatedSessions);
       } else {
         saved = await saveWorkoutSession(session_data);
-        setPastSessions((prev) => [saved, ...prev]);
+        updatedSessions = [saved, ...pastSessions];
+        setPastSessions(updatedSessions);
       }
+
+      const current = getWorkoutContext();
+      setWorkoutContext({
+        bodyWeightKg: current?.bodyWeightKg ?? (session_data.bodyWeightKg ?? bodyWeightEntriesRef.current[0]?.weightKg),
+        recentSessions: updatedSessions.slice(0, 5).map(formatSessionForOrbit),
+      });
 
       setExercises([]);
       setCardioLogs([]);
