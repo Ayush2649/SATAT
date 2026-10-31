@@ -4,15 +4,15 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { useSession } from "next-auth/react";
 import {
   ArrowUp, RotateCcw, Dumbbell, Utensils, CheckSquare,
-  TrendingUp, X, Sparkles, AlertCircle, RefreshCw
+  TrendingUp, X, Sparkles, AlertCircle, RefreshCw, Zap, CheckCircle2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { OrbitIcon, OrbitMark, type OrbitState } from "@/components/orbit/OrbitMark";
+import { OrbitIcon, type OrbitState } from "@/components/orbit/OrbitMark";
 import NotificationBell from "@/components/ui/NotificationBell";
 import { MarkdownText } from "@/components/ui/MarkdownText";
 import { OrbitRecommendationCard, OrbitInsightCard } from "@/components/orbit/OrbitActionCard";
 import { getDietContext, getWorkoutContext, getTaskContext } from "@/lib/orbitContext";
-import type { OrbitMessage, OrbitFocusMode, OrbitAction } from "@/types/orbit";
+import type { OrbitMessage, OrbitFocusMode } from "@/types/orbit";
 import { classifyOrbitIntent, type OrbitIntent } from "@/lib/orbit/intentClassifier";
 
 interface OrbitViewProps {
@@ -23,11 +23,69 @@ interface OrbitViewProps {
 
 const STORAGE_KEY = "satat_orbit_session_msgs";
 
-const FOCUS_MODES: Array<{ id: OrbitFocusMode; label: string; icon: any }> = [
-  { id: "all", label: "All", icon: Sparkles },
+const FOCUS_MODES: Array<{ id: OrbitFocusMode; label: string; icon: React.ComponentType<{ className?: string }> }> = [
+  { id: "all", label: "All Domains", icon: Sparkles },
   { id: "workout", label: "Workout", icon: Dumbbell },
   { id: "diet", label: "Diet", icon: Utensils },
   { id: "tasks", label: "Tasks", icon: CheckSquare },
+];
+
+const SUGGESTIONS = [
+  {
+    category: "workout" as const,
+    icon: Dumbbell,
+    label: "Workout Structure",
+    query: "Help me structure today's workout based on my recent sessions.",
+    sub: "Exercise plan & load distribution",
+  },
+  {
+    category: "nutrition" as const,
+    icon: Utensils,
+    label: "Nutrition & Protein",
+    query: "Review my nutrition today and suggest a high-protein dinner idea.",
+    sub: "Macro targets & meal breakdown",
+  },
+  {
+    category: "tasks" as const,
+    icon: CheckSquare,
+    label: "Deep Work Cadence",
+    query: "Help me prioritize my pending tasks and plan deep work.",
+    sub: "Task focus & timing flow",
+  },
+  {
+    category: "momentum" as const,
+    icon: TrendingUp,
+    label: "Consistency Review",
+    query: "Give me an honest assessment of my weekly consistency and momentum.",
+    sub: "Rolling 7-day adherence check",
+  },
+];
+
+const QUICK_CHIPS = [
+  {
+    icon: TrendingUp,
+    iconColor: "text-[#2D6A4F]",
+    label: "Rate my weekly workout volume",
+    query: "Analyze my workout from last week and rate my structure and volume.",
+  },
+  {
+    icon: Utensils,
+    iconColor: "text-[#E05A47]",
+    label: "Protein gap analysis for today",
+    query: "Review my protein intake today and calculate remaining protein gap.",
+  },
+  {
+    icon: Zap,
+    iconColor: "text-[#2D6A4F]",
+    label: "Recommend tomorrow's training split",
+    query: "Recommend tomorrow's workout split based on muscle groups trained this week.",
+  },
+  {
+    icon: CheckCircle2,
+    iconColor: "text-[#191D1A]",
+    label: "Prioritize deep work tasks",
+    query: "Prioritize my pending tasks and recommend deep work focus blocks.",
+  },
 ];
 
 export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewProps) {
@@ -225,7 +283,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
         persistMessages(updated);
         lastFailedMessageRef.current = null;
 
-        // Trigger one gentle glow pulse on response completion, then return to idle
+        // Trigger gentle glow pulse on response completion, then return to idle
         setOrbitState("success");
         transitionTimerRef.current = setTimeout(() => {
           setOrbitState("idle");
@@ -320,7 +378,6 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
       persistMessages(updated);
       lastFailedMessageRef.current = null;
 
-      // Trigger one gentle glow pulse on response completion, then return to idle
       setOrbitState("success");
       transitionTimerRef.current = setTimeout(() => {
         setOrbitState("idle");
@@ -362,274 +419,152 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
     e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
   };
 
-  // Suggestion actions
-  const SUGGESTIONS = [
-    {
-      category: "workout" as const,
-      icon: Dumbbell,
-      label: "Workout",
-      query: "Help me structure today's workout based on my recent sessions.",
-      sub: "Exercise plan & sets",
-    },
-    {
-      category: "nutrition" as const,
-      icon: Utensils,
-      label: "Nutrition",
-      query: "Review my nutrition today and suggest a high-protein dinner idea.",
-      sub: "Macro targets & meals",
-    },
-    {
-      category: "tasks" as const,
-      icon: CheckSquare,
-      label: "Productivity",
-      query: "Help me prioritize my pending tasks and plan deep work.",
-      sub: "Task focus & timing",
-    },
-    {
-      category: "momentum" as const,
-      icon: TrendingUp,
-      label: "Momentum",
-      query: "Give me an honest assessment of my weekly consistency and momentum.",
-      sub: "Weekly adherence check",
-    },
-  ];
-
   return (
     <div
       className={cn(
-        "orbit-view-root flex flex-col h-full w-full max-w-3xl mx-auto select-none bg-surface overflow-hidden min-w-0",
+        "orbit-view-root flex flex-col h-full w-full max-w-4xl mx-auto select-none bg-[#F6F3EC] overflow-hidden min-w-0 relative",
         className
       )}
     >
-      {/* ── 1. ORBIT HEADER (Identity & Actions) ── */}
+      {/* ── 1. ORBIT EDITORIAL HEADER ── */}
       <header
         className={cn(
-          "flex items-center justify-between px-4 sm:px-6 border-b shrink-0 z-10 transition-all",
-          !isOverlay ? "h-[calc(3.5rem+env(safe-area-inset-top,0px))] pt-[env(safe-area-inset-top,0px)] lg:h-[64px] lg:pt-0" : "h-[60px]"
+          "px-4 sm:px-6 pt-3 pb-3 shrink-0 border-b border-[#191D1A]/[0.06] bg-[#F6F3EC] z-20 transition-all",
+          !isOverlay ? "lg:pt-5" : "pt-3"
         )}
-        style={{
-          borderColor: "var(--border, rgba(255,255,255,0.08))",
-          background: "var(--surface, #0D0F11)",
-        }}
       >
-        <div className="flex items-center gap-3">
-          <div
-            className={cn(
-              "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border transition-all duration-300",
-              orbitState === "error"
-                ? "bg-rose-500/10 border-rose-500/30 text-rose-400"
-                : orbitState === "success"
-                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
-                : "border-[rgba(110,139,255,0.25)] bg-[rgba(110,139,255,0.12)] text-[var(--satat-brand,#6E8BFF)]"
-            )}
-            style={{
-              color:
-                orbitState === "error"
-                  ? "var(--peach, #F3A583)"
-                  : orbitState === "success"
-                  ? "var(--mint, #5BC7B2)"
-                  : "var(--satat-brand, #6E8BFF)",
-            }}
-          >
-            <OrbitIcon size={18} state={orbitState} />
+        {/* App Bar Top Row */}
+        <div className="flex items-center justify-between gap-3">
+          {/* Brand Wordmark with Sanskrit Halant */}
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-[#191D1A] text-[#F6F3EC] flex items-center justify-center font-bold text-[11px] shadow-sm select-none">
+              स
+            </div>
+            <span className="text-xs font-bold tracking-[0.16em] uppercase text-[#57534E]">
+              SATAT <span className="text-[#8C857B] font-normal">/</span> ORBIT
+            </span>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1
-                className="text-base font-bold tracking-tight leading-none"
-                style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}
-              >
-                Orbit
-              </h1>
+
+          {/* Right Action Controls */}
+          <div className="flex items-center gap-2">
+            {/* Live AI Active Badge */}
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FCFBF9] border border-[#191D1A]/10 shadow-[0_1px_3px_rgba(0,0,0,0.04)] select-none">
               <span
                 className={cn(
-                  "w-1.5 h-1.5 rounded-full transition-all duration-300",
-                  orbitState === "thinking" || orbitState === "responding" ? "animate-pulse" : ""
+                  "w-1.5 h-1.5 rounded-full",
+                  orbitState === "error"
+                    ? "bg-[#E05A47]"
+                    : orbitState === "thinking" || orbitState === "responding"
+                    ? "bg-[#2D6A4F] animate-pulse"
+                    : "bg-[#2D6A4F]"
                 )}
-                style={{
-                  backgroundColor:
-                    orbitState === "error"
-                      ? "var(--peach, #F3A583)"
-                      : orbitState === "thinking" || orbitState === "responding"
-                      ? "var(--satat-brand, #6E8BFF)"
-                      : "var(--mint, #5BC7B2)",
-                }}
-                title={
-                  orbitState === "thinking"
-                    ? "Thinking..."
-                    : orbitState === "responding"
-                    ? "Responding..."
-                    : orbitState === "error"
-                    ? "Error"
-                    : "Active"
-                }
               />
+              <span className="text-[11px] font-bold text-[#2D6A4F] tracking-wide uppercase">
+                {orbitState === "thinking"
+                  ? "Analyzing..."
+                  : orbitState === "responding"
+                  ? "Responding..."
+                  : orbitState === "error"
+                  ? "Offline"
+                  : "AI Active"}
+              </span>
             </div>
-            <p className="text-[11px] font-medium leading-none mt-1 transition-colors duration-200" style={{ color: "var(--text-secondary)" }}>
-              {orbitState === "thinking"
-                ? pendingIntent === "SIMPLE_CONVERSATION"
-                  ? "Thinking..."
-                  : pendingIntent === "HISTORICAL_ANALYSIS"
-                  ? "Analyzing weekly records..."
-                  : "Analyzing context..."
-                : orbitState === "responding"
-                ? "Generating response..."
-                : orbitState === "error"
-                ? "Connection interrupted"
-                : "Personal AI Companion"}
-            </p>
+
+            {/* Clear conversation button */}
+            {messages.length > 0 && (
+              <button
+                type="button"
+                onClick={handleReset}
+                className="px-2.5 py-1 rounded-full text-xs font-medium text-[#57534E] hover:text-[#191D1A] hover:bg-[#EFECE4] transition-all flex items-center gap-1 border border-[#191D1A]/[0.08]"
+                title="Reset conversation"
+                aria-label="Reset conversation"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span className="hidden sm:inline">Clear</span>
+              </button>
+            )}
+
+            {!isOverlay && <NotificationBell />}
+
+            {isOverlay && onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="p-1.5 rounded-full text-[#57534E] hover:text-[#191D1A] hover:bg-[#EFECE4] transition-all"
+                aria-label="Close Orbit"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5">
-          {messages.length > 0 && (
-            <button
-              type="button"
-              onClick={handleReset}
-              className="p-1.5 sm:p-2 rounded-lg text-muted hover:text-primary hover:bg-white/5 transition-all text-xs flex items-center gap-1.5"
-              title="Reset conversation"
-              aria-label="Reset conversation"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline text-xs">Clear</span>
-            </button>
-          )}
+        {/* Title Row */}
+        <div className="mt-2.5">
+          <h1 className="font-serif text-[24px] sm:text-[28px] font-normal leading-[1.08] text-[#191D1A] tracking-[-0.02em]">
+            Orbit Intelligence
+          </h1>
+          <p className="text-xs text-[#57534E] font-medium tracking-normal mt-0.5">
+            Unified biological &amp; execution copilot.
+          </p>
+        </div>
 
-          {!isOverlay && <NotificationBell />}
-
-          {isOverlay && onClose && (
-            <button
-              type="button"
-              onClick={onClose}
-              className="p-2 rounded-lg text-muted hover:text-primary hover:bg-white/5 transition-all"
-              aria-label="Close Orbit"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
+        {/* Active Context Filter Bar (Horizontal Pill Row) */}
+        <div className="flex items-center gap-2 mt-3 overflow-x-auto scrollbar-none py-0.5">
+          {FOCUS_MODES.map((m) => {
+            const isSelected = focusMode === m.id;
+            const Icon = m.icon;
+            return (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => setFocusMode(m.id)}
+                className={cn(
+                  "shrink-0 rounded-full px-4 py-1.5 text-xs font-semibold inline-flex items-center gap-1.5 transition-all select-none",
+                  isSelected
+                    ? "bg-[#191D1A] text-white shadow-2xs"
+                    : "bg-[#EFECE4] text-[#57534E] hover:text-[#1C1917] hover:bg-[#E5E1D8] font-medium"
+                )}
+              >
+                {isSelected ? (
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7]" />
+                ) : (
+                  <Icon className="w-3.5 h-3.5 text-[#57534E]" />
+                )}
+                <span>{m.id === "all" ? "All Domains" : m.label}</span>
+              </button>
+            );
+          })}
         </div>
       </header>
 
-      {/* ── 2. USEFUL CURRENT CONTEXT (Context Selector & Active State) ── */}
-      <div
-        className="w-full shrink-0 border-b z-10"
-        style={{
-          borderColor: "var(--border, rgba(255,255,255,0.08))",
-          background: "var(--surface, #0D0F11)",
-        }}
-      >
-        <div className="px-4 sm:px-6 py-2 flex items-center justify-between gap-3 overflow-x-auto scrollbar-none">
-          {/* Mode filter pills */}
-          <div className="flex items-center gap-1.5 shrink-0 min-w-max">
-            <span className="text-[10px] uppercase font-bold text-muted mr-1 tracking-wider shrink-0">
-              Context:
-            </span>
-            {FOCUS_MODES.map((m) => {
-              const Icon = m.icon;
-              const isSelected = focusMode === m.id;
-              return (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => setFocusMode(m.id)}
-                  className={cn(
-                    "px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all select-none border shrink-0",
-                    isSelected
-                      ? "border-brand bg-brand/10 text-brand"
-                      : "border-border-subtle bg-surface-elevated text-muted hover:text-primary"
-                  )}
-                  style={
-                    isSelected
-                      ? {
-                          borderColor: "rgba(110, 139, 255, 0.3)",
-                          backgroundColor: "rgba(110, 139, 255, 0.12)",
-                          color: "var(--satat-brand, #6E8BFF)",
-                        }
-                      : {
-                          borderColor: "var(--border-subtle, rgba(255, 255, 255, 0.05))",
-                          backgroundColor: "var(--surface-elevated, #14171A)",
-                          color: "var(--text-muted, #7F8682)",
-                        }
-                  }
-                >
-                  <Icon className="w-3 h-3" />
-                  <span>{m.label}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Quick context summary (if real metrics logged) */}
-          {realMetrics.length > 0 && (
-            <div className="hidden sm:flex items-center gap-2 shrink-0">
-              {realMetrics.map((m, idx) => (
-                <span
-                  key={idx}
-                  className="text-[11px] font-medium px-2 py-0.5 rounded-md border"
-                  style={{
-                    background: "rgba(255,255,255,0.02)",
-                    borderColor: "var(--border-subtle, rgba(255,255,255,0.05))",
-                    color: "var(--text-muted)",
-                  }}
-                >
-                  <strong className="text-primary font-semibold">{m.label}:</strong> {m.value}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── 3. CONVERSATION VIEWPORT / MESSAGES SCROLL AREA ── */}
-      <div className="flex-1 min-h-0 min-w-0 w-full overflow-y-auto overflow-x-hidden px-4 sm:px-6 py-4 space-y-4 scrollbar-none">
+      {/* ── 2. CONVERSATION VIEWPORT / MESSAGES SCROLL AREA ── */}
+      <div className="flex-1 min-h-0 min-w-0 w-full overflow-y-auto overflow-x-hidden px-4 sm:px-6 py-4 space-y-4 scrollbar-none bg-[#F6F3EC]">
         {/* EMPTY STATE */}
         {messages.length === 0 && (
-          <div className="flex flex-col items-center text-center py-6 sm:py-8 max-w-lg mx-auto animate-fade-in">
-            {/* Ambient OrbitIcon */}
+          <div className="flex flex-col items-center text-center py-6 sm:py-10 max-w-lg mx-auto animate-fade-in">
+            {/* Ambient Orbit Icon badge */}
             <div
-              className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 border shadow-sm transition-transform hover:scale-105"
-              style={{
-                background: "rgba(110, 139, 255, 0.10)",
-                borderColor: "rgba(110, 139, 255, 0.25)",
-                color: "var(--satat-brand, #6E8BFF)",
-              }}
+              className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 border border-[#191D1A]/10 bg-[#FCFBF9] text-[#191D1A] shadow-sm transition-transform hover:scale-105"
             >
-              <OrbitIcon size={32} state={orbitState} />
+              <OrbitIcon size={36} state={orbitState} />
             </div>
 
-            <h2
-              className="text-xl sm:text-2xl font-bold tracking-tight"
-              style={{ fontFamily: "var(--font-display)", color: "var(--text-primary)" }}
-            >
+            <h2 className="font-serif text-2xl sm:text-3xl font-normal text-[#191D1A] tracking-tight">
               {greeting}
             </h2>
 
-            <p
-              className="text-xs sm:text-sm mt-2 leading-relaxed max-w-md"
-              style={{ color: "var(--text-secondary)" }}
-            >
+            <p className="text-xs sm:text-sm mt-2 leading-relaxed text-[#57534E] max-w-md">
               I&apos;m Orbit — your personal AI companion in SATAT. I understand your workouts,
               meals, tasks, and daily momentum.
             </p>
 
-            {/* REAL USER CONTEXT PILLS (Never fabricated) */}
+            {/* Real User Context Card (Never fabricated) */}
             {realMetrics.length > 0 ? (
-              <div
-                className="mt-4 p-3 rounded-xl border w-full text-left"
-                style={{
-                  background: "var(--surface-elevated, #14171A)",
-                  borderColor: "var(--border, rgba(255,255,255,0.08))",
-                }}
-              >
+              <div className="mt-5 p-3.5 rounded-2xl border border-[#191D1A]/[0.08] bg-[#FCFBF9] shadow-2xs w-full text-left">
                 <div className="flex items-center gap-2 mb-2">
-                  <div
-                    className="w-1.5 h-1.5 rounded-full"
-                    style={{ backgroundColor: "var(--satat-brand, #6E8BFF)" }}
-                  />
-                  <span
-                    className="text-[10px] font-bold uppercase tracking-wider"
-                    style={{ color: "var(--satat-brand, #6E8BFF)" }}
-                  >
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#2D6A4F]" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#2D6A4F]">
                     Today&apos;s Active Context
                   </span>
                 </div>
@@ -637,35 +572,27 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                   {realMetrics.map((m, idx) => (
                     <div
                       key={idx}
-                      className="px-2.5 py-1 rounded-md text-xs font-medium border flex items-center gap-1.5"
-                      style={{
-                        background: "rgba(255,255,255,0.03)",
-                        borderColor: "var(--border-subtle, rgba(255,255,255,0.05))",
-                        color: "var(--text-primary)",
-                      }}
+                      className="px-2.5 py-1 rounded-full text-xs font-medium border border-[#191D1A]/[0.08] bg-[#EFECE4] text-[#191D1A] flex items-center gap-1.5"
                     >
-                      <span className="text-muted text-[10px] uppercase font-semibold">{m.label}:</span>
+                      <span className="text-[#57534E] text-[10px] uppercase font-bold">{m.label}:</span>
                       <span>{m.value}</span>
                     </div>
                   ))}
                 </div>
               </div>
             ) : (
-              <p className="text-xs mt-3 text-muted">
+              <p className="text-xs mt-3 text-[#8C857B]">
                 Tell me what you&apos;re working on today and I&apos;ll help you organize the next step.
               </p>
             )}
 
-            {/* QUICK CAPABILITY CARDS */}
+            {/* Focus Area Capability Cards (Zero Emojis — Vector Icons Only) */}
             <div className="mt-6 w-full space-y-2 text-left">
-              <span
-                className="text-[10px] font-bold uppercase tracking-wider block px-1"
-                style={{ color: "var(--text-muted)" }}
-              >
+              <span className="text-[10px] font-bold uppercase tracking-wider block px-1 text-[#8C857B]">
                 Start with a focus area
               </span>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {SUGGESTIONS.map((s, idx) => {
                   const Icon = s.icon;
                   return (
@@ -673,30 +600,16 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                       key={idx}
                       type="button"
                       onClick={() => handleSend(s.query)}
-                      className="p-3 rounded-xl border text-left transition-all hover:bg-white/[0.04] active:scale-[0.98] group flex items-start gap-3"
-                      style={{
-                        background: "var(--surface-elevated, #14171A)",
-                        borderColor: "var(--border, rgba(255,255,255,0.08))",
-                      }}
+                      className="p-3.5 rounded-2xl border border-[#191D1A]/[0.08] bg-[#FCFBF9] hover:bg-[#F2EFE8] text-left transition-all active:scale-[0.98] group flex items-start gap-3 shadow-2xs"
                     >
-                      <div
-                        className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 border"
-                        style={{
-                          background: "rgba(110, 139, 255, 0.10)",
-                          borderColor: "rgba(110, 139, 255, 0.20)",
-                          color: "var(--satat-brand, #6E8BFF)",
-                        }}
-                      >
-                        <Icon className="w-3.5 h-3.5" />
+                      <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 bg-[#EFECE4] text-[#191D1A] border border-[#191D1A]/[0.06] group-hover:bg-[#191D1A] group-hover:text-white transition-colors">
+                        <Icon className="w-4 h-4" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <span
-                          className="text-xs font-semibold block group-hover:text-brand transition-colors"
-                          style={{ color: "var(--text-primary)" }}
-                        >
-                          {s.query}
+                        <span className="text-xs font-semibold block text-[#191D1A] group-hover:text-[#2D6A4F] transition-colors">
+                          {s.label}
                         </span>
-                        <span className="text-[11px] block mt-0.5" style={{ color: "var(--text-muted)" }}>
+                        <span className="text-[11px] block mt-0.5 text-[#57534E] line-clamp-1">
                           {s.sub}
                         </span>
                       </div>
@@ -714,143 +627,117 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
             key={m.id}
             className={cn("flex flex-col w-full min-w-0", m.role === "user" ? "items-end" : "items-start")}
           >
-            {/* Assistant Header Badge */}
-            {m.role === "assistant" && (
-              <div className="flex items-center gap-2 mb-1.5 px-0.5">
-                <div
-                  className="w-5 h-5 rounded-md flex items-center justify-center shrink-0"
-                  style={{
-                    background: "rgba(110, 139, 255, 0.12)",
-                    color: "var(--satat-brand, #6E8BFF)",
-                  }}
-                >
-                  <OrbitIcon size={13} />
+            {m.role === "user" ? (
+              /* User Bubble: Right-aligned Pure Cream Alabaster (#FCFBF9) */
+              <div className="flex flex-col items-end gap-1 max-w-[85%]">
+                <div className="w-full bg-[#FCFBF9] text-[#1C1917] rounded-[20px] rounded-br-sm p-3.5 border border-[#1C1917]/[0.06] shadow-2xs text-sm leading-relaxed font-normal">
+                  <p className="whitespace-pre-wrap break-words">{m.content}</p>
                 </div>
-                <span className="text-xs font-bold" style={{ color: "var(--text-primary)" }}>
-                  Orbit
+                <span className="text-[10px] text-[#8C857B] font-medium pr-1">
+                  {new Date(m.timestamp || Date.now()).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })} · Sent
                 </span>
-                <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>
-                  AI Companion
+              </div>
+            ) : (
+              /* Orbit AI Response Card: Left-aligned Deep Botanical Espresso (#191D1A) */
+              <div className="flex flex-col items-start gap-1 w-full">
+                <div className="w-full max-w-[94%] bg-[#191D1A] text-[#FCFBF9] rounded-[24px] rounded-tl-sm p-4 shadow-xl border border-white/[0.06]">
+                  {/* Top Header Row inside Card */}
+                  <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-white/[0.08]">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#2D6A4F]/40 border border-[#6EE7B7]/25 text-[#6EE7B7] text-[9px] font-bold tracking-wider uppercase select-none">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7] animate-pulse" />
+                      ORBIT SYNAPSE ACTIVE
+                    </div>
+                    <span className="text-[10px] text-white/50 font-medium">
+                      {new Date(m.timestamp || Date.now()).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                    </span>
+                  </div>
+
+                  {/* Markdown & Table Rendering */}
+                  <div
+                    className="orbit-card-content text-white/90 text-sm leading-relaxed"
+                    style={{
+                      "--text-primary": "#FCFBF9",
+                      "--text-secondary": "rgba(252, 251, 249, 0.8)",
+                      "--text-muted": "rgba(252, 251, 249, 0.5)",
+                      "--border": "rgba(255, 255, 255, 0.08)",
+                      "--border-subtle": "rgba(255, 255, 255, 0.05)",
+                      "--surface": "rgba(255, 255, 255, 0.04)",
+                      "--satat-brand": "#6EE7B7",
+                    } as React.CSSProperties}
+                  >
+                    <MarkdownText text={m.content} />
+                  </div>
+
+                  {/* Future-Ready Recommendation Card Attachment */}
+                  {m.recommendation && (
+                    <div className="mt-3 pt-2.5 border-t border-white/[0.08]">
+                      <OrbitRecommendationCard
+                        recommendation={m.recommendation}
+                        onExecuteAction={(act) => {
+                          if (act.href) window.location.href = act.href;
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  {/* Future-Ready Insight Card Attachment */}
+                  {m.insight && (
+                    <div className="mt-2.5">
+                      <OrbitInsightCard insight={m.insight} />
+                    </div>
+                  )}
+                </div>
+
+                <span className="text-[10px] text-[#8C857B] font-medium pl-1">
+                  Delivered by Orbit · 100% verified data
                 </span>
               </div>
             )}
-
-            {/* Message Body */}
-            <div
-              className={cn(
-                "rounded-2xl transition-all leading-relaxed break-words [overflow-wrap:anywhere]",
-                m.role === "user"
-                  ? "max-w-[85%] px-4 py-2.5 rounded-br-sm text-sm"
-                  : "w-full max-w-full min-w-0 px-4 py-3 rounded-bl-sm text-sm"
-              )}
-              style={
-                m.role === "user"
-                  ? {
-                      background: "var(--surface-elevated, #14171A)",
-                      border: "1px solid var(--border-subtle, rgba(255,255,255,0.08))",
-                      color: "var(--text-primary, #F2F3F0)",
-                    }
-                  : {
-                      background: "rgba(255, 255, 255, 0.02)",
-                      border: "1px solid var(--border, rgba(255,255,255,0.06))",
-                      color: "var(--text-primary, #F2F3F0)",
-                    }
-              }
-            >
-              {m.role === "assistant" ? (
-                <MarkdownText text={m.content} />
-              ) : (
-                <p className="whitespace-pre-wrap break-words">{m.content}</p>
-              )}
-
-              {/* Future-Ready Recommendation Card Attachment */}
-              {m.recommendation && (
-                <OrbitRecommendationCard
-                  recommendation={m.recommendation}
-                  onExecuteAction={(act) => {
-                    if (act.href) window.location.href = act.href;
-                  }}
-                />
-              )}
-
-              {/* Future-Ready Insight Card Attachment */}
-              {m.insight && (
-                <div className="mt-2.5">
-                  <OrbitInsightCard insight={m.insight} />
-                </div>
-              )}
-            </div>
           </div>
         ))}
 
         {/* THINKING STATE */}
         {loading && (
-          <div className="flex flex-col items-start animate-fade-in">
-            <div className="flex items-center gap-2 mb-1.5 px-0.5">
-              <div
-                className="w-5 h-5 rounded-md flex items-center justify-center shrink-0"
-                style={{
-                  background: "rgba(110, 139, 255, 0.12)",
-                  color: "var(--satat-brand, #6E8BFF)",
-                }}
-              >
-                <OrbitIcon size={13} state={orbitState === "responding" ? "responding" : "thinking"} />
+          <div className="flex flex-col items-start w-full animate-fade-in">
+            <div className="w-full max-w-[94%] bg-[#191D1A] text-[#FCFBF9] rounded-[24px] rounded-tl-sm p-4 shadow-xl border border-white/[0.06]">
+              <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-white/[0.08]">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#2D6A4F]/40 border border-[#6EE7B7]/25 text-[#6EE7B7] text-[9px] font-bold tracking-wider uppercase select-none">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7] animate-pulse" />
+                  ORBIT SYNAPSE ACTIVE
+                </div>
+                <span className="text-[10px] text-white/50 font-medium">Just now</span>
               </div>
-              <span className="text-xs font-bold" style={{ color: "var(--text-primary)" }}>
-                Orbit
-              </span>
-              <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>
-                {orbitState === "responding" ? "synthesizing response..." : "thinking..."}
-              </span>
-            </div>
-
-            <div
-              className="rounded-2xl rounded-bl-sm px-4 py-3 flex items-center gap-3 border"
-              style={{
-                background: "rgba(255, 255, 255, 0.02)",
-                borderColor: "var(--border, rgba(255, 255, 255, 0.06))",
-              }}
-            >
-              <div
-                className="w-5 h-5 flex items-center justify-center shrink-0"
-                style={{ color: "var(--satat-brand, #6E8BFF)" }}
-              >
-                <OrbitIcon size={16} state={orbitState === "responding" ? "responding" : "thinking"} />
+              <div className="flex items-center gap-3 pt-1">
+                <div className="w-5 h-5 flex items-center justify-center shrink-0 text-[#6EE7B7]">
+                  <OrbitIcon size={18} state={orbitState === "responding" ? "responding" : "thinking"} />
+                </div>
+                <span className="text-xs text-white/80 font-medium">
+                  {orbitState === "responding"
+                    ? "Formulating recommendation..."
+                    : pendingIntent === "SIMPLE_CONVERSATION"
+                    ? "Thinking..."
+                    : pendingIntent === "HISTORICAL_ANALYSIS"
+                    ? "Analyzing rolling 7-day records..."
+                    : "Analyzing context..."}
+                </span>
               </div>
-              <span className="text-xs text-muted">
-                {orbitState === "responding" ? "Formulating recommendation..." : pendingIntent === "SIMPLE_CONVERSATION" ? "Thinking..." : pendingIntent === "HISTORICAL_ANALYSIS" ? "Analyzing weekly records..." : "Analyzing context..."}
-              </span>
             </div>
           </div>
         )}
 
         {/* ERROR STATE */}
         {error && (
-          <div
-            className="p-3 rounded-xl border flex items-center justify-between gap-3 text-xs animate-shake"
-            style={{
-              background: "rgba(243, 165, 131, 0.08)",
-              borderColor: "rgba(243, 165, 131, 0.25)",
-              color: "var(--peach, #F3A583)",
-            }}
-          >
+          <div className="p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-xs bg-[#E05A47]/10 border-[#E05A47]/25 text-[#E05A47] shadow-sm animate-shake">
             <div className="flex items-center gap-2">
-              <div
-                className="w-5 h-5 rounded-md flex items-center justify-center shrink-0"
-                style={{
-                  background: "rgba(243, 165, 131, 0.15)",
-                  color: "var(--peach, #F3A583)",
-                }}
-              >
-                <OrbitIcon size={13} state="error" />
+              <div className="w-6 h-6 rounded-lg bg-[#E05A47]/20 flex items-center justify-center shrink-0 text-[#E05A47]">
+                <AlertCircle className="w-3.5 h-3.5" />
               </div>
-              <span>{error}</span>
+              <span className="font-medium text-[#191D1A]">{error}</span>
             </div>
             <button
               type="button"
               onClick={handleRetry}
-              className="px-2.5 py-1 rounded-md font-semibold text-xs border hover:bg-white/5 flex items-center gap-1"
-              style={{ borderColor: "rgba(243, 165, 131, 0.3)" }}
+              className="px-3 py-1 rounded-full font-semibold text-xs border border-[#E05A47]/40 bg-[#FCFBF9] text-[#E05A47] hover:bg-[#E05A47] hover:text-white transition-all flex items-center gap-1 shadow-2xs"
             >
               <RefreshCw className="w-3 h-3" />
               <span>Retry</span>
@@ -863,59 +750,59 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
         <div ref={messagesEndRef} />
       </div>
 
-      {/* ── 4. COMPOSER DOCK (Docked Above Bottom Navigation) ── */}
+      {/* ── 3. COMPOSER DOCK (Docked Above Bottom Navigation) ── */}
       <div
         className={cn(
-          "px-3 sm:px-4 pt-2.5 sm:pt-3 border-t shrink-0 z-20 transition-all duration-150",
+          "px-4 sm:px-6 pt-2 shrink-0 z-30 transition-all duration-150 bg-gradient-to-t from-[#F6F3EC] via-[#F6F3EC]/95 to-transparent",
           !isOverlay
-            ? "pb-[calc(var(--bottom-nav-content-height)+env(safe-area-inset-bottom,0px)+var(--bottom-nav-fab-protrusion,20px)+8px)] lg:pb-4"
-            : "pb-3 sm:pb-4"
+            ? "pb-[calc(56px+max(16px,env(safe-area-inset-bottom,0px))+16px)] lg:pb-6"
+            : "pb-4"
         )}
         style={{
-          borderColor: "var(--border, rgba(255,255,255,0.08))",
-          background: "var(--surface, #0D0F11)",
           transform: keyboardOffset > 0 ? `translateY(-${keyboardOffset}px)` : undefined,
         }}
       >
-        {/* Input Card Container */}
-        <div
-          className="flex items-end gap-2 rounded-2xl px-3.5 py-2.5 transition-all border focus-within:border-brand/40 focus-within:ring-1 focus-within:ring-brand/30"
-          style={{
-            background: "var(--surface-elevated, #14171A)",
-            borderColor: "var(--border, rgba(255,255,255,0.08))",
-          }}
-        >
+        {/* Suggested Quick-Prompt Chips (Zero Emojis — Vector Icons Only) */}
+        <div className="w-full overflow-x-auto scrollbar-none py-1 mb-2.5">
+          <div className="flex items-center gap-1.5 w-max">
+            {QUICK_CHIPS.map((chip, idx) => {
+              const Icon = chip.icon;
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => handleSend(chip.query)}
+                  className="shrink-0 px-3.5 py-1.5 rounded-full bg-[#FCFBF9] hover:bg-[#EFECE4] text-[#191D1A] border border-[#191D1A]/10 text-xs font-semibold tracking-tight shadow-[0_1px_4px_rgba(0,0,0,0.03)] flex items-center gap-1.5 transition-all active:scale-95 select-none"
+                >
+                  <Icon className={cn("w-3.5 h-3.5", chip.iconColor)} />
+                  <span>{chip.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Floating Input Dock (Cream Alabaster #FCFBF9, rounded-full) */}
+        <div className="relative w-full bg-[#FCFBF9] rounded-full pl-4 pr-2 py-2 border border-[#1C1917]/10 shadow-[0_8px_24px_rgba(25,29,26,0.08)] flex items-center gap-2 focus-within:border-[#191D1A]/30 focus-within:shadow-[0_8px_28px_rgba(25,29,26,0.12)] transition-all">
+          <Sparkles className="w-4 h-4 text-[#8C857B] shrink-0" />
           <textarea
             ref={inputRef}
             rows={1}
             value={input}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            placeholder="Tell Orbit what you need..."
-            className="flex-1 bg-transparent text-sm resize-none outline-none leading-relaxed scrollbar-none min-h-[24px] max-h-[120px]"
-            style={{ color: "var(--text-primary, #F2F3F0)" }}
+            placeholder="Ask Orbit anything about training, diet, or focus..."
+            className="flex-1 bg-transparent text-xs sm:text-sm resize-none outline-none leading-relaxed scrollbar-none min-h-[22px] max-h-[120px] text-[#1C1917] placeholder-[#8C857B] font-medium py-0.5"
             aria-label="Ask Orbit"
           />
 
+          {/* Circular Terracotta Send Button (#E05A47) */}
           <button
             type="button"
             onClick={() => handleSend()}
             disabled={!input.trim() || loading}
             aria-label="Send message"
-            className={cn(
-              "w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all select-none active:scale-90",
-              input.trim() && !loading
-                ? "bg-brand text-black shadow-sm"
-                : "bg-white/5 text-muted opacity-40 cursor-not-allowed"
-            )}
-            style={
-              input.trim() && !loading
-                ? {
-                    backgroundColor: "var(--satat-brand, #6E8BFF)",
-                    color: "#000000",
-                  }
-                : undefined
-            }
+            className="w-9 h-9 rounded-full bg-[#E05A47] hover:bg-[#C94A38] disabled:opacity-40 text-white flex items-center justify-center shrink-0 transition-all shadow-[0_4px_12px_rgba(224,90,71,0.35)] active:scale-95"
           >
             <ArrowUp className="w-4 h-4 stroke-[2.5]" />
           </button>
@@ -926,4 +813,3 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
 }
 
 export default OrbitView;
-

@@ -284,3 +284,32 @@
   from { opacity: 0; transform: scale(var(--motion-scale-sm, 0.97)); }
   to { opacity: 1; transform: scale(1); }
 }
+
+/* SATAT Orbit AI Synapse Dark Card Formatting */
+.orbit-card-content {
+  --text-primary: #FCFBF9;
+  --text-secondary: rgba(252, 251, 249, 0.85);
+  --text-muted: rgba(252, 251, 249, 0.55);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --surface: rgba(255, 255, 255, 0.04);
+  --satat-brand: #6EE7B7;
+}
+
+.orbit-card-content strong {
+  color: #FCFBF9;
+}
+
+.orbit-card-content th {
+  white-space: nowrap !important;
+  color: rgba(252, 251, 249, 0.75) !important;
+  font-size: 11px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+.orbit-card-content td {
+  font-variant-numeric: tabular-nums;
+  color: rgba(252, 251, 249, 0.9) !important;
+}
+

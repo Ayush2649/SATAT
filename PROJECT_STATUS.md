@@ -632,9 +632,37 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 - **Desktop Optimization**: Desktop (1440×900) 3-column layout verification.
 - **End-to-End Testing**: Full automated test verification and Playwright regression sweep.
 
-### ⏳ Sprint 5.6: Core Companion Alignment (Orbit & Settings)
-- **Orbit AI Companion** (`components/orbit/OrbitView.tsx`):
-  - Natural conversation interface, context cards, and prompt suggestions matching the Natural Athletic Editorial aesthetic.
+### ✅ Sprint 5.7: Port Mobile Companion Design into Production OrbitView (`components/orbit/OrbitView.tsx`)
+- **Top Editorial Header & Context Filter Pills (`components/orbit/OrbitView.tsx`)**:
+  - Editorial `Instrument Serif` headline: *"Orbit Intelligence"* with subtitle *"Unified biological & execution copilot."*
+  - Sanskrit halant wordmark badge (`स`) and live `● AI Active` Botanical Sage pill (`#2D6A4F`) with animated pulse dot.
+  - Interactive Horizontal Context Filter Bar: `● All Domains`, `Workout`, `Diet`, `Tasks`. Active pill styled in Deep Botanical Espresso (`#191D1A` text-white) with glowing Mint synapse dot (`#6EE7B7`), and inactive pills in Warm Stone (`#EFECE4`) with Lucide vector icons.
+- **Conversational Feed & Message Bubbles**:
+  - **User Message Bubble**: Right-aligned Pure Cream Alabaster (`bg-[#FCFBF9] text-[#1C1917] rounded-[20px] rounded-br-sm p-3.5 border border-[#1C1917]/[0.06] shadow-2xs text-sm`) with sent timestamp.
+  - **Orbit AI Response Card**: Left-aligned Deep Botanical Espresso (`bg-[#191D1A] text-[#FCFBF9] rounded-[24px] rounded-tl-sm p-4 shadow-xl border border-white/[0.06]`):
+    - Top header row with pulsing Matcha Sage badge `● ORBIT SYNAPSE ACTIVE` (`bg-[#2D6A4F]/40 border border-[#6EE7B7]/25 text-[#6EE7B7]`) and formatted timestamp.
+    - Dark glass table formatting with `whitespace-nowrap` on `<th>` headers, tabular figures, and verified delivery footer.
+    - Automatic bold score rating highlights (e.g. `7 / 10`) with Terracotta badge accents (`#E05A47`) via `components/ui/MarkdownText.tsx`.
+- **Suggested Quick-Prompt Chips (Zero Emojis — Vector Icons Only)**:
+  - Scrollable quick-action bar above the input dock using crisp Lucide vector icons (`TrendingUp`, `Utensils`, `Zap`, `CheckCircle2`):
+    - *"Rate my weekly workout volume"*
+    - *"Protein gap analysis for today"*
+    - *"Recommend tomorrow's training split"*
+    - *"Prioritize deep work tasks"*
+  - Clicking any chip immediately triggers analysis without manual typing.
+- **Floating Input Dock Above the Bottom Pill Navbar**:
+  - Cream Alabaster capsule (`bg-[#FCFBF9] rounded-full pl-4 pr-2 py-2 border border-[#1C1917]/10 shadow-[0_8px_24px_rgba(25,29,26,0.08)]`) with `Sparkles` icon, standard `aria-label="Ask Orbit"`, and circular Terracotta send button (`#E05A47`, `w-9 h-9`, white `ArrowUp` icon).
+  - Responsive safe-area bottom offset: `pb-[calc(56px+max(16px,env(safe-area-inset-bottom))+16px)] lg:pb-6` ensuring clean clearance above the floating pill navbar.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: 0 errors.
+  - Full Vitest suite: 53 passed (53 files), 638 passed | 26 skipped (664 total), 0 failing.
+  - Production Next.js build: `npm run build` exits with code 0 (all 33 routes compiled).
+
+---
+
+### ⏳ Sprint 5.8: Multi-Device Responsive & Final E2E QA
+- **Tablet Optimization**: iPad 10th Gen (1024×768) 2-column bento grid verification.
+- **Desktop Optimization**: Desktop (1440×900) 3-column layout verification.
 - **Settings & Profile** (`app/dashboard/settings/page.tsx`):
   - Alabaster preference controls, notification settings, and biometric targets.
 

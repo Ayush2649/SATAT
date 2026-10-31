@@ -115,9 +115,18 @@ function renderInline(text: string): React.ReactNode[] {
       (part.startsWith("**") && part.endsWith("**") && part.length > 4) ||
       (part.startsWith("__") && part.endsWith("__") && part.length > 4)
     ) {
+      const boldContent = part.slice(2, -2);
+      const isRating = /\b(\d+(?:\.\d+)?)\s*\/\s*10\b/.test(boldContent);
       return (
-        <strong key={i} className="font-semibold" style={{ color: "var(--text-primary, #F2F3F0)" }}>
-          {part.slice(2, -2)}
+        <strong
+          key={i}
+          className={cn(
+            "font-semibold",
+            isRating && "inline-flex items-center px-1.5 py-0.5 rounded font-bold text-[#E05A47] bg-[#E05A47]/15 border border-[#E05A47]/30"
+          )}
+          style={!isRating ? { color: "var(--text-primary, #F2F3F0)" } : undefined}
+        >
+          {boldContent}
         </strong>
       );
     }
