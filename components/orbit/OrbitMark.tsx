@@ -153,5 +153,6 @@ export function OrbitIcon({
 
 // Canonical exports and aliases
 export { OrbitLivingOrb };
+export { Orbit3DCore } from "./Orbit3DCore";
 export const OrbitMark = OrbitIcon;
 export default OrbitIcon;

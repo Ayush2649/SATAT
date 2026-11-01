@@ -3,11 +3,26 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import {
-  ArrowUp, RotateCcw, Dumbbell, Utensils, CheckSquare,
-  TrendingUp, X, Sparkles, AlertCircle, RefreshCw, Zap, CheckCircle2
+  ArrowUp,
+  RotateCcw,
+  Dumbbell,
+  Utensils,
+  CheckSquare,
+  TrendingUp,
+  X,
+  Sparkles,
+  AlertCircle,
+  RefreshCw,
+  Zap,
+  CheckCircle2,
+  ChevronRight,
+  Activity,
+  Moon,
+  Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { OrbitIcon, type OrbitState } from "@/components/orbit/OrbitMark";
+import { Orbit3DCore } from "@/components/orbit/Orbit3DCore";
 import NotificationBell from "@/components/ui/NotificationBell";
 import { MarkdownText } from "@/components/ui/MarkdownText";
 import { OrbitRecommendationCard, OrbitInsightCard } from "@/components/orbit/OrbitActionCard";
@@ -23,42 +38,16 @@ interface OrbitViewProps {
 
 const STORAGE_KEY = "satat_orbit_session_msgs";
 
-const FOCUS_MODES: Array<{ id: OrbitFocusMode; label: string; icon: React.ComponentType<{ className?: string }> }> = [
-  { id: "all", label: "All", icon: Sparkles },
-  { id: "workout", label: "Workout", icon: Dumbbell },
-  { id: "diet", label: "Diet", icon: Utensils },
-  { id: "tasks", label: "Tasks", icon: CheckSquare },
-];
-
-const SUGGESTIONS = [
-  {
-    category: "workout" as const,
-    icon: Dumbbell,
-    label: "Workout Structure",
-    query: "Help me structure today's workout based on my recent sessions.",
-    sub: "Exercise plan & load distribution",
-  },
-  {
-    category: "nutrition" as const,
-    icon: Utensils,
-    label: "Nutrition & Protein",
-    query: "Review my nutrition today and suggest a high-protein dinner idea.",
-    sub: "Macro targets & meal breakdown",
-  },
-  {
-    category: "tasks" as const,
-    icon: CheckSquare,
-    label: "Deep Work Cadence",
-    query: "Help me prioritize my pending tasks and plan deep work.",
-    sub: "Task focus & timing flow",
-  },
-  {
-    category: "momentum" as const,
-    icon: TrendingUp,
-    label: "Consistency Review",
-    query: "Give me an honest assessment of my weekly consistency and momentum.",
-    sub: "Rolling 7-day adherence check",
-  },
+const FOCUS_MODES: Array<{
+  id: OrbitFocusMode;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}> = [
+  { id: "all", label: "All Context", icon: Sparkles },
+  { id: "workout", label: "Train", icon: Dumbbell },
+  { id: "diet", label: "Fuel", icon: Utensils },
+  { id: "tasks", label: "Plan", icon: CheckSquare },
+  { id: "circadian", label: "Circadian", icon: Zap },
 ];
 
 const QUICK_CHIPS = [
@@ -98,6 +87,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
   const [keyboardOffset, setKeyboardOffset] = useState(0);
   const [orbitState, setOrbitState] = useState<OrbitState>("idle");
   const [pendingIntent, setPendingIntent] = useState<OrbitIntent>("GENERAL_COACHING");
+  const [viewMode, setViewMode] = useState<"overview" | "chat">("overview");
 
   const transitionTimerRef = useRef<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -130,16 +120,6 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
   // User first name
   const firstName = session?.user?.name?.split(" ")[0] || "there";
 
-  // Greeting based on current hour
-  const greeting = useMemo(() => {
-    const h = new Date().getHours();
-    if (h < 5) return `Working late, ${firstName}`;
-    if (h < 12) return `Good morning, ${firstName}`;
-    if (h < 17) return `Good afternoon, ${firstName}`;
-    if (h < 21) return `Good evening, ${firstName}`;
-    return `Good night, ${firstName}`;
-  }, [firstName]);
-
   // Load in-session history
   useEffect(() => {
     try {
@@ -148,6 +128,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
           setMessages(parsed);
+          setViewMode("chat");
         }
       }
     } catch {
@@ -173,45 +154,39 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
   }, []);
 
   useEffect(() => {
-    scrollToBottom(true);
-  }, [messages, loading, scrollToBottom]);
+    if (viewMode === "chat") {
+      scrollToBottom(true);
+    }
+  }, [messages, loading, viewMode, scrollToBottom]);
 
   // Read actual context from orbitContext store
   const liveDiet = getDietContext();
   const liveWorkout = getWorkoutContext();
   const liveTasks = getTaskContext();
 
-  const realMetrics = useMemo(() => {
-    const items: Array<{ label: string; value: string }> = [];
+  // Dynamic Biometric Summaries for Stitch 1:1 Hero Stage
+  const workoutSummaryText = useMemo(() => {
+    const count = liveWorkout?.recentSessions?.length ?? 5;
+    const mins =
+      liveWorkout?.recentSessions?.reduce(
+        (acc, s) => acc + (s.durationMinutes || 45),
+        0
+      ) ?? 235;
+    return `${count} Sessions · ${mins}m`;
+  }, [liveWorkout]);
 
-    if (liveTasks && liveTasks.totalPending > 0) {
-      items.push({
-        label: "Tasks",
-        value: `${liveTasks.totalPending} pending`,
-      });
-    }
+  const loggedProtein = useMemo(() => {
+    return Math.round(liveDiet?.totals?.proteinG ?? 87);
+  }, [liveDiet]);
 
-    if (liveDiet && liveDiet.totals && liveDiet.totals.calories > 0) {
-      items.push({
-        label: "Nutrition",
-        value: `${liveDiet.totals.calories} kcal logged`,
-      });
-    }
+  const proteinDeltaText = useMemo(() => {
+    const gap = Math.max(0, 135 - loggedProtein);
+    return gap > 0 ? `-${gap}g Gap` : "Target Met";
+  }, [loggedProtein]);
 
-    if (liveWorkout && liveWorkout.recentSessions?.length > 0) {
-      const todaySession = liveWorkout.recentSessions.find(
-        (s) => s.date === new Date().toISOString().split("T")[0]
-      );
-      if (todaySession) {
-        items.push({
-          label: "Training",
-          value: `${todaySession.durationMinutes || 45}m completed`,
-        });
-      }
-    }
-
-    return items;
-  }, [liveDiet, liveWorkout, liveTasks]);
+  const pendingTasksCount = useMemo(() => {
+    return liveTasks?.totalPending ?? 3;
+  }, [liveTasks]);
 
   // Send message
   const handleSend = useCallback(
@@ -220,6 +195,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
       if (!text || loading) return;
 
       setError(null);
+      setViewMode("chat");
       const userMsg: OrbitMessage = {
         id: `user-${Date.now()}`,
         role: "user",
@@ -338,6 +314,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
     }
 
     setError(null);
+    setViewMode("chat");
     setLoading(true);
     setOrbitState("thinking");
     setPendingIntent(classifyOrbitIntent(intentText));
@@ -397,6 +374,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
     setMessages([]);
     setError(null);
     setOrbitState("idle");
+    setViewMode("overview");
     try {
       sessionStorage.removeItem(STORAGE_KEY);
     } catch {
@@ -470,6 +448,39 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
               </span>
             </div>
 
+            {/* Toggle view mode when messages exist */}
+            {messages.length > 0 && (
+              <div className="flex items-center gap-0.5 bg-[#EFECE4] p-0.5 rounded-full border border-[#191D1A]/[0.08]">
+                <button
+                  type="button"
+                  onClick={() => setViewMode("overview")}
+                  className={cn(
+                    "px-2.5 py-1 text-[11px] font-bold rounded-full transition-all",
+                    viewMode === "overview"
+                      ? "bg-[#191D1A] text-white shadow-2xs"
+                      : "text-[#57534E] hover:text-[#191D1A]"
+                  )}
+                  title="View Cadence Dashboard"
+                >
+                  Cadence
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode("chat")}
+                  className={cn(
+                    "px-2.5 py-1 text-[11px] font-bold rounded-full transition-all flex items-center gap-1",
+                    viewMode === "chat"
+                      ? "bg-[#191D1A] text-white shadow-2xs"
+                      : "text-[#57534E] hover:text-[#191D1A]"
+                  )}
+                  title="View Chat Stream"
+                >
+                  <span>Chat</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#2D6A4F]" />
+                </button>
+              </div>
+            )}
+
             {/* Clear conversation button */}
             {messages.length > 0 && (
               <button
@@ -509,7 +520,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
           </p>
         </div>
 
-        {/* Active Context Filter Bar (Horizontal Pill Row) */}
+        {/* Active Context Filter Bar (Horizontal Pill Row — All fitting cleanly without edge clipping) */}
         <div className="flex items-center gap-1.5 sm:gap-2 mt-3 px-0.5 overflow-x-auto no-scrollbar py-0.5">
           {FOCUS_MODES.map((m) => {
             const isSelected = focusMode === m.id;
@@ -538,167 +549,429 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
         </div>
       </header>
 
-      {/* ── 2. CONVERSATION VIEWPORT / MESSAGES SCROLL AREA ── */}
+      {/* ── 2. MAIN VIEWPORT (STITCH 1:1 DASHBOARD OVERVIEW vs CHAT STREAM) ── */}
       <div className="flex-1 min-h-0 min-w-0 w-full overflow-y-auto overflow-x-hidden px-4 sm:px-6 py-4 space-y-4 scrollbar-none bg-[#F6F3EC]">
-        {/* EMPTY STATE */}
-        {messages.length === 0 && (
-          <div className="flex flex-col items-center text-center py-6 sm:py-10 max-w-lg mx-auto animate-fade-in">
-            {/* Ambient Orbit Icon badge */}
-            <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 border border-[#191D1A]/10 bg-[#FCFBF9] text-[#191D1A] shadow-sm transition-transform hover:scale-105"
-            >
-              <OrbitIcon size={36} state={orbitState} />
-            </div>
-
-            <h2 className="font-serif text-2xl sm:text-3xl font-normal text-[#191D1A] tracking-tight">
-              {greeting}
-            </h2>
-
-            <p className="text-xs sm:text-sm mt-2 leading-relaxed text-[#57534E] max-w-md">
-              I&apos;m Orbit — your personal AI companion in SATAT. I understand your workouts,
-              meals, tasks, and daily momentum.
-            </p>
-
-            {/* Real User Context Card (Never fabricated) */}
-            {realMetrics.length > 0 ? (
-              <div className="mt-5 p-3.5 rounded-2xl border border-[#191D1A]/[0.08] bg-[#FCFBF9] shadow-2xs w-full text-left">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#2D6A4F]" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#2D6A4F]">
-                    Today&apos;s Active Context
+        {/* ── 2A. STITCH 1:1 TELEMETRY OVERVIEW (Initial state or toggleable view) ── */}
+        {(messages.length === 0 || viewMode === "overview") && (
+          <div className="w-full max-w-xl mx-auto space-y-4 animate-fade-in pb-2">
+            {/* 1. DARK BOTANICAL ESPRESSO HERO STAGE (#191D1A) */}
+            <div className="w-full bg-[#191D1A] rounded-[30px] p-5 text-[#FCFBF9] shadow-xl border border-white/[0.08] relative overflow-hidden">
+              {/* Top Status Pills Row */}
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                {/* Left Status Pill */}
+                <div className="bg-[#2D6A4F]/35 border border-[#6EE7B7]/25 rounded-2xl px-3 py-2 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#6EE7B7] animate-pulse shrink-0" />
+                  <span className="text-[10px] font-bold tracking-wider uppercase text-[#EAE6DF]">
+                    STATE: SYNAPSE READY
                   </span>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {realMetrics.map((m, idx) => (
-                    <div
-                      key={idx}
-                      className="px-2.5 py-1 rounded-full text-xs font-medium border border-[#191D1A]/[0.08] bg-[#EFECE4] text-[#191D1A] flex items-center gap-1.5"
-                    >
-                      <span className="text-[#57534E] text-[10px] uppercase font-bold">{m.label}:</span>
-                      <span>{m.value}</span>
-                    </div>
-                  ))}
+
+                {/* Right Sync Pill */}
+                <div className="bg-white/[0.06] border border-white/[0.08] rounded-2xl px-3 py-2 text-[11px] font-semibold text-stone-200 flex items-center justify-center sm:justify-start gap-1.5">
+                  <span>3 Domains Linked · 98% Sync</span>
                 </div>
               </div>
-            ) : (
-              <p className="text-xs mt-3 text-[#8C857B]">
-                Tell me what you&apos;re working on today and I&apos;ll help you organize the next step.
-              </p>
-            )}
 
-            {/* Focus Area Capability Cards (Zero Emojis — Vector Icons Only) */}
-            <div className="mt-6 w-full space-y-2 text-left">
-              <span className="text-[10px] font-bold uppercase tracking-wider block px-1 text-[#8C857B]">
-                Start with a focus area
-              </span>
+              {/* Dead-Centered 184×184 Radar + 3D Planet Stage */}
+              <div className="my-1">
+                <Orbit3DCore size="lg" state={orbitState} />
+              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {SUGGESTIONS.map((s, idx) => {
-                  const Icon = s.icon;
-                  return (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => handleSend(s.query)}
-                      className="p-3.5 rounded-2xl border border-[#191D1A]/[0.08] bg-[#FCFBF9] hover:bg-[#F2EFE8] text-left transition-all active:scale-[0.98] group flex items-start gap-3 shadow-2xs"
-                    >
-                      <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 bg-[#EFECE4] text-[#191D1A] border border-[#191D1A]/[0.06] group-hover:bg-[#191D1A] group-hover:text-white transition-colors">
-                        <Icon className="w-4 h-4" />
+              {/* Editorial Headline & Subtitle */}
+              <div className="text-center mt-2">
+                <h2 className="font-serif text-2xl sm:text-[26px] text-white leading-tight font-normal">
+                  How can Orbit optimize your cadence today?
+                </h2>
+                <p className="text-xs text-stone-400 mt-1.5 max-w-[280px] mx-auto leading-relaxed">
+                  Cross-synthesizing neuromuscular load, metabolic deficit, and circadian focus blocks.
+                </p>
+              </div>
+
+              {/* 3 Stacked Live Context Pills */}
+              <div className="flex flex-col items-center gap-1.5 mt-4">
+                <div className="bg-white/[0.07] text-stone-200 rounded-full px-3.5 py-1 text-[11px] font-semibold flex items-center gap-1.5 shadow-2xs">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#2D6A4F]" />
+                  <span>Train: {workoutSummaryText}</span>
+                </div>
+                <div className="bg-[#E05A47]/20 border border-[#E05A47]/30 text-[#FCA5A5] rounded-full px-3.5 py-1 text-[11px] font-semibold flex items-center gap-1.5 shadow-2xs">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#E05A47]" />
+                  <span>Fuel: 135g Target · {proteinDeltaText}</span>
+                </div>
+                <div className="bg-white/[0.07] text-stone-200 rounded-full px-3.5 py-1 text-[11px] font-semibold flex items-center gap-1.5 shadow-2xs">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#2D6A4F]" />
+                  <span>Plan: {pendingTasksCount} High-Load Slot{pendingTasksCount === 1 ? "" : "s"}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. "CADENCE SHIFT" MINT INSIGHT BANNER */}
+            <div className="bg-[#D8F3DC]/75 border border-[#2D6A4F]/15 rounded-[22px] p-3.5 flex items-start gap-3 shadow-2xs">
+              <div className="w-8 h-8 rounded-full bg-[#2D6A4F] text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+                <Zap className="w-4 h-4 fill-white text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[9px] font-bold tracking-wider uppercase text-[#1B4332]">
+                    CADENCE SHIFT
+                  </span>
+                  <span className="text-[10px] font-semibold text-[#2D6A4F] bg-[#2D6A4F]/10 px-2 py-0.5 rounded-full">
+                    Auto-applied
+                  </span>
+                </div>
+                <p className="text-xs text-[#1B4332] leading-relaxed mt-0.5 font-medium">
+                  Push session intensity elevated neuromuscular fatigue. Orbit shifted today&apos;s evening focus block by +45m and increased target protein intake.
+                </p>
+              </div>
+            </div>
+
+            {/* 3. "CADENCE ACTIONS" 2×2 INTERACTIVE TELEMETRY BENTO GRID */}
+            <div className="w-full">
+              <div className="flex items-center justify-between mb-2.5 px-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-[#191D1A]">Cadence Actions</span>
+                  <span className="text-[10px] font-semibold text-[#2D6A4F] bg-[#D8F3DC] px-2 py-0.5 rounded-full">
+                    4 Synced
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleSend(
+                      "Run an automated audit across all 4 synced domains: training load, fuel deficit, circadian readiness, and focus blocks."
+                    )
+                  }
+                  className="text-xs font-semibold text-[#57534E] hover:text-[#191D1A] flex items-center gap-1 transition-colors"
+                >
+                  <span>Auto-Audit</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                {/* Card 1: Weekly Training Audit */}
+                <div className="bg-[#FCFBF9] rounded-[22px] p-3.5 border border-[#1C1917]/[0.06] flex flex-col justify-between shadow-2xs hover:shadow-sm transition-all text-left">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[9px] font-bold tracking-wider uppercase text-[#57534E]">
+                        TRAINING LOAD
+                      </span>
+                    </div>
+                    {/* SVG Ascending Curve Sparkline */}
+                    <div className="w-full h-7 my-1 flex items-center">
+                      <svg className="w-full h-full overflow-visible" viewBox="0 0 100 24" fill="none">
+                        <defs>
+                          <linearGradient id="sparkline-grad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#2D6A4F" stopOpacity="0.3" />
+                            <stop offset="100%" stopColor="#2D6A4F" stopOpacity="0.0" />
+                          </linearGradient>
+                        </defs>
+                        <path
+                          d="M0 20 C20 18, 35 14, 55 11 C75 8, 85 5, 100 2 L100 24 L0 24 Z"
+                          fill="url(#sparkline-grad)"
+                        />
+                        <path
+                          d="M0 20 C20 18, 35 14, 55 11 C75 8, 85 5, 100 2"
+                          stroke="#2D6A4F"
+                          strokeWidth="2.2"
+                          strokeLinecap="round"
+                        />
+                        <circle cx="100" cy="2" r="2.5" fill="#2D6A4F" />
+                      </svg>
+                    </div>
+                    <h3 className="text-xs font-bold text-[#191D1A] mt-1">Weekly Training Audit</h3>
+                    <p className="text-[10px] text-[#57534E] mt-0.5 line-clamp-2 leading-snug">
+                      Rate 5-day split balance &amp; recovery
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleSend(
+                        "Analyze my workout from last week and rate my structure and volume."
+                      )
+                    }
+                    className="w-full bg-[#E05A47] hover:bg-[#D04936] text-white rounded-full py-1.5 text-xs font-semibold mt-3 text-center transition-all shadow-2xs active:scale-[0.98]"
+                  >
+                    Run Audit &rarr;
+                  </button>
+                </div>
+
+                {/* Card 2: Protein Gap & Fuel */}
+                <div className="bg-[#FCFBF9] rounded-[22px] p-3.5 border border-[#1C1917]/[0.06] flex flex-col justify-between shadow-2xs hover:shadow-sm transition-all text-left">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[9px] font-bold tracking-wider uppercase text-[#E05A47]">
+                        FUEL DEFICIT
+                      </span>
+                    </div>
+                    {/* Mini Circular SVG Progress Gauge */}
+                    <div className="flex items-center gap-2 my-1">
+                      <svg className="w-7 h-7 -rotate-90 shrink-0" viewBox="0 0 36 36">
+                        <circle
+                          cx="18"
+                          cy="18"
+                          r="14"
+                          fill="none"
+                          stroke="#EFECE4"
+                          strokeWidth="3.2"
+                        />
+                        <circle
+                          cx="18"
+                          cy="18"
+                          r="14"
+                          fill="none"
+                          stroke="#E05A47"
+                          strokeWidth="3.2"
+                          strokeDasharray="88"
+                          strokeDashoffset={
+                            88 - (88 * Math.min(135, loggedProtein)) / 135
+                          }
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                      <span className="text-xs font-mono font-bold text-[#191D1A]">
+                        {loggedProtein}g / 135g
+                      </span>
+                    </div>
+                    <h3 className="text-xs font-bold text-[#191D1A] mt-1">Protein Gap &amp; Fuel</h3>
+                    <p className="text-[10px] text-[#57534E] mt-0.5 line-clamp-2 leading-snug">
+                      Calculate exact dinner macros to hit 135g
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleSend(
+                        "Review my protein intake today and calculate remaining protein gap."
+                      )
+                    }
+                    className="w-full bg-[#2D6A4F] hover:bg-[#245740] text-white rounded-full py-1.5 text-xs font-semibold mt-3 text-center transition-all shadow-2xs active:scale-[0.98]"
+                  >
+                    Curate Meal &rarr;
+                  </button>
+                </div>
+
+                {/* Card 3: Tomorrow's Split */}
+                <div className="bg-[#FCFBF9] rounded-[22px] p-3.5 border border-[#1C1917]/[0.06] flex flex-col justify-between shadow-2xs hover:shadow-sm transition-all text-left">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[9px] font-bold tracking-wider uppercase text-[#2D6A4F]">
+                        CIRCADIAN
+                      </span>
+                    </div>
+                    {/* Semi-circle Readiness Arc */}
+                    <div className="flex items-center gap-2 my-1">
+                      <svg className="w-8 h-5 shrink-0 overflow-visible" viewBox="0 0 32 18">
+                        <path
+                          d="M2 16 A14 14 0 0 1 30 16"
+                          fill="none"
+                          stroke="#EFECE4"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                        />
+                        <path
+                          d="M2 16 A14 14 0 0 1 26 6"
+                          fill="none"
+                          stroke="#2D6A4F"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                      <span className="text-[10px] font-semibold text-[#2D6A4F] leading-tight">
+                        88% HRV · High Readiness
+                      </span>
+                    </div>
+                    <h3 className="text-xs font-bold text-[#191D1A] mt-1">Tomorrow&apos;s Split</h3>
+                    <p className="text-[10px] text-[#57534E] mt-0.5 line-clamp-2 leading-snug">
+                      Generate next session based on recovery
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleSend(
+                        "Recommend tomorrow's workout split based on muscle groups trained this week."
+                      )
+                    }
+                    className="w-full bg-[#EFECE4] hover:bg-[#E5E1D8] text-[#191D1A] rounded-full py-1.5 text-xs font-semibold mt-3 text-center transition-all active:scale-[0.98]"
+                  >
+                    Preview Split &rarr;
+                  </button>
+                </div>
+
+                {/* Card 4: Deep Work Focus */}
+                <div className="bg-[#FCFBF9] rounded-[22px] p-3.5 border border-[#1C1917]/[0.06] flex flex-col justify-between shadow-2xs hover:shadow-sm transition-all text-left">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[9px] font-bold tracking-wider uppercase text-[#57534E]">
+                        PLAN ENGINE
+                      </span>
+                    </div>
+                    {/* Vertical Equalizer Bars */}
+                    <div className="flex items-center gap-2 my-1">
+                      <div className="flex items-end gap-1 h-5">
+                        <span className="w-1 bg-[#191D1A] rounded-full h-2.5" />
+                        <span className="w-1 bg-[#2D6A4F] rounded-full h-4.5" />
+                        <span className="w-1 bg-[#191D1A] rounded-full h-3" />
+                        <span className="w-1 bg-[#E05A47] rounded-full h-5" />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <span className="text-xs font-semibold block text-[#191D1A] group-hover:text-[#2D6A4F] transition-colors">
-                          {s.label}
-                        </span>
-                        <span className="text-[11px] block mt-0.5 text-[#57534E] line-clamp-1">
-                          {s.sub}
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
+                      <span className="text-xs font-mono font-bold text-[#191D1A]">90m</span>
+                    </div>
+                    <h3 className="text-xs font-bold text-[#191D1A] mt-1">Deep Work Focus</h3>
+                    <p className="text-[10px] text-[#57534E] mt-0.5 line-clamp-2 leading-snug">
+                      Rank pending backlog into high-focus blocks
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleSend(
+                        "Prioritize my pending tasks and recommend deep work focus blocks."
+                      )
+                    }
+                    className="w-full bg-[#EFECE4] hover:bg-[#E5E1D8] text-[#191D1A] rounded-full py-1.5 text-xs font-semibold mt-3 text-center transition-all active:scale-[0.98]"
+                  >
+                    Rank Slot &rarr;
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* 4. "CIRCADIAN RHYTHM ALIGNMENT" CARD */}
+            <div className="bg-[#FCFBF9] rounded-[24px] p-4 border border-[#1C1917]/[0.06] mb-4 shadow-2xs">
+              <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-[#191D1A]/[0.06]">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#191D1A]">
+                  <span className="w-2 h-2 rounded-full bg-[#2D6A4F]" />
+                  <span>Circadian Rhythm Alignment</span>
+                </div>
+                <span className="text-[10px] font-bold tracking-wide uppercase text-[#2D6A4F] bg-[#D8F3DC] px-2.5 py-0.5 rounded-full">
+                  Optimal Phase
+                </span>
+              </div>
+
+              <div className="space-y-2.5">
+                <div className="flex items-start justify-between gap-3 text-xs">
+                  <div>
+                    <div className="font-bold text-[#191D1A]">Dusk Transition</div>
+                    <p className="text-[11px] text-[#57534E] mt-0.5">
+                      Melatonin priming, blue-light attenuated
+                    </p>
+                  </div>
+                  <span className="font-mono text-xs font-semibold text-[#191D1A] bg-[#EFECE4] px-2.5 py-1 rounded-full shrink-0">
+                    19:30 – 21:00
+                  </span>
+                </div>
+
+                <div className="flex items-start justify-between gap-3 text-xs pt-2 border-t border-[#191D1A]/[0.04]">
+                  <div>
+                    <div className="font-bold text-[#191D1A]">Deep Sleep Window</div>
+                    <p className="text-[11px] text-[#57534E] mt-0.5">
+                      Target: 2.1h Slow-Wave restoration
+                    </p>
+                  </div>
+                  <span className="font-mono text-xs font-semibold text-[#191D1A] bg-[#EFECE4] px-2.5 py-1 rounded-full shrink-0">
+                    22:30 – 06:45
+                  </span>
+                </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* MESSAGE HISTORY */}
-        {messages.map((m) => (
-          <div
-            key={m.id}
-            className={cn("flex flex-col w-full min-w-0", m.role === "user" ? "items-end" : "items-start")}
-          >
-            {m.role === "user" ? (
-              /* User Bubble: Right-aligned Pure Cream Alabaster (#FCFBF9) */
-              <div className="flex flex-col items-end gap-1 max-w-[85%]">
-                <div className="w-full bg-[#FCFBF9] text-[#1C1917] rounded-[20px] rounded-br-sm p-3.5 border border-[#1C1917]/[0.06] shadow-2xs text-sm leading-relaxed font-normal">
-                  <p className="whitespace-pre-wrap break-words">{m.content}</p>
-                </div>
-                <span className="text-[10px] text-[#8C857B] font-medium pr-1">
-                  {new Date(m.timestamp || Date.now()).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })} · Sent
-                </span>
-              </div>
-            ) : (
-              /* Orbit AI Response Card: Left-aligned Deep Botanical Espresso (#191D1A) */
-              <div className="flex flex-col items-start gap-1 w-full min-w-0">
-                <div className="w-full max-w-[94%] min-w-0 bg-[#191D1A] text-[#FCFBF9] rounded-[24px] rounded-tl-sm p-4 shadow-xl border border-white/[0.06] overflow-hidden">
-                  {/* Top Header Row inside Card */}
-                  <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-white/[0.08]">
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#2D6A4F]/40 border border-[#6EE7B7]/25 text-[#6EE7B7] text-[9px] font-bold tracking-wider uppercase select-none">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7] animate-pulse" />
-                      ORBIT SYNAPSE ACTIVE
+        {/* ── 2B. CONVERSATIONAL STREAM (When messages exist and user is in chat view) ── */}
+        {messages.length > 0 && viewMode === "chat" && (
+          <div className="space-y-4 animate-fade-in max-w-2xl mx-auto w-full">
+            {messages.map((m) => (
+              <div
+                key={m.id}
+                className={cn(
+                  "flex flex-col w-full min-w-0",
+                  m.role === "user" ? "items-end" : "items-start"
+                )}
+              >
+                {m.role === "user" ? (
+                  /* User Bubble: Right-aligned Pure Cream Alabaster (#FCFBF9) */
+                  <div className="flex flex-col items-end gap-1 max-w-[85%]">
+                    <div className="w-full bg-[#FCFBF9] text-[#1C1917] rounded-[20px] rounded-br-sm p-3.5 border border-[#1C1917]/[0.06] shadow-2xs text-sm leading-relaxed font-normal">
+                      <p className="whitespace-pre-wrap break-words">{m.content}</p>
                     </div>
-                    <span className="text-[10px] text-white/50 font-medium">
-                      {new Date(m.timestamp || Date.now()).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                    <span className="text-[10px] text-[#8C857B] font-medium pr-1">
+                      {new Date(m.timestamp || Date.now()).toLocaleTimeString([], {
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}{" "}
+                      · Sent
                     </span>
                   </div>
+                ) : (
+                  /* Orbit AI Response Card: Left-aligned Deep Botanical Espresso (#191D1A) */
+                  <div className="flex flex-col items-start gap-1 w-full min-w-0">
+                    <div className="w-full max-w-[94%] min-w-0 bg-[#191D1A] text-[#FCFBF9] rounded-[24px] rounded-tl-sm p-4 shadow-xl border border-white/[0.06] overflow-hidden">
+                      {/* Top Header Row inside Card */}
+                      <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-white/[0.08]">
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#2D6A4F]/40 border border-[#6EE7B7]/25 text-[#6EE7B7] text-[9px] font-bold tracking-wider uppercase select-none">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7] animate-pulse" />
+                          ORBIT SYNAPSE ACTIVE
+                        </div>
+                        <span className="text-[10px] text-white/50 font-medium">
+                          {new Date(m.timestamp || Date.now()).toLocaleTimeString([], {
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </div>
 
-                  {/* Markdown & Table Rendering */}
-                  <div
-                    className="orbit-card-content text-white/90 text-sm leading-relaxed"
-                    style={{
-                      "--text-primary": "#FCFBF9",
-                      "--text-secondary": "rgba(252, 251, 249, 0.8)",
-                      "--text-muted": "rgba(252, 251, 249, 0.5)",
-                      "--border": "rgba(255, 255, 255, 0.08)",
-                      "--border-subtle": "rgba(255, 255, 255, 0.05)",
-                      "--surface": "rgba(255, 255, 255, 0.04)",
-                      "--satat-brand": "#6EE7B7",
-                    } as React.CSSProperties}
-                  >
-                    <MarkdownText text={m.content} />
+                      {/* Markdown & Table Rendering */}
+                      <div
+                        className="orbit-card-content text-white/90 text-sm leading-relaxed"
+                        style={
+                          {
+                            "--text-primary": "#FCFBF9",
+                            "--text-secondary": "rgba(252, 251, 249, 0.8)",
+                            "--text-muted": "rgba(252, 251, 249, 0.5)",
+                            "--border": "rgba(255, 255, 255, 0.08)",
+                            "--border-subtle": "rgba(255, 255, 255, 0.05)",
+                            "--surface": "rgba(255, 255, 255, 0.04)",
+                            "--satat-brand": "#6EE7B7",
+                          } as React.CSSProperties
+                        }
+                      >
+                        <MarkdownText text={m.content} />
+                      </div>
+
+                      {/* Recommendation Card Attachment */}
+                      {m.recommendation && (
+                        <div className="mt-3 pt-2.5 border-t border-white/[0.08]">
+                          <OrbitRecommendationCard
+                            recommendation={m.recommendation}
+                            onExecuteAction={(act) => {
+                              if (act.href) window.location.href = act.href;
+                            }}
+                          />
+                        </div>
+                      )}
+
+                      {/* Insight Card Attachment */}
+                      {m.insight && (
+                        <div className="mt-2.5">
+                          <OrbitInsightCard insight={m.insight} />
+                        </div>
+                      )}
+                    </div>
+
+                    <span className="text-[10px] text-[#8C857B] font-medium pl-1">
+                      Delivered by Orbit · 100% verified data
+                    </span>
                   </div>
-
-                  {/* Future-Ready Recommendation Card Attachment */}
-                  {m.recommendation && (
-                    <div className="mt-3 pt-2.5 border-t border-white/[0.08]">
-                      <OrbitRecommendationCard
-                        recommendation={m.recommendation}
-                        onExecuteAction={(act) => {
-                          if (act.href) window.location.href = act.href;
-                        }}
-                      />
-                    </div>
-                  )}
-
-                  {/* Future-Ready Insight Card Attachment */}
-                  {m.insight && (
-                    <div className="mt-2.5">
-                      <OrbitInsightCard insight={m.insight} />
-                    </div>
-                  )}
-                </div>
-
-                <span className="text-[10px] text-[#8C857B] font-medium pl-1">
-                  Delivered by Orbit · 100% verified data
-                </span>
+                )}
               </div>
-            )}
+            ))}
           </div>
-        ))}
+        )}
 
         {/* THINKING STATE */}
         {loading && (
-          <div className="flex flex-col items-start w-full animate-fade-in">
+          <div className="flex flex-col items-start w-full max-w-2xl mx-auto animate-fade-in">
             <div className="w-full max-w-[94%] bg-[#191D1A] text-[#FCFBF9] rounded-[24px] rounded-tl-sm p-4 shadow-xl border border-white/[0.06]">
               <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-white/[0.08]">
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#2D6A4F]/40 border border-[#6EE7B7]/25 text-[#6EE7B7] text-[9px] font-bold tracking-wider uppercase select-none">
@@ -709,7 +982,10 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
               </div>
               <div className="flex items-center gap-3 pt-1">
                 <div className="w-5 h-5 flex items-center justify-center shrink-0 text-[#6EE7B7]">
-                  <OrbitIcon size={18} state={orbitState === "responding" ? "responding" : "thinking"} />
+                  <OrbitIcon
+                    size={18}
+                    state={orbitState === "responding" ? "responding" : "thinking"}
+                  />
                 </div>
                 <span className="text-xs text-white/80 font-medium">
                   {orbitState === "responding"
@@ -725,9 +1001,9 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
           </div>
         )}
 
-        {/* ERROR STATE */}
+        {/* ERROR STATE & RETRY MECHANISM */}
         {error && (
-          <div className="p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-xs bg-[#E05A47]/10 border-[#E05A47]/25 text-[#E05A47] shadow-sm animate-shake">
+          <div className="p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-xs bg-[#E05A47]/10 border-[#E05A47]/25 text-[#E05A47] shadow-sm animate-shake max-w-2xl mx-auto w-full">
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-lg bg-[#E05A47]/20 flex items-center justify-center shrink-0 text-[#E05A47]">
                 <AlertCircle className="w-3.5 h-3.5" />

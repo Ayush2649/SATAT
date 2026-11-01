@@ -51,5 +51,5 @@ export interface OrbitMessage {
   recommendation?: OrbitRecommendation;
 }
 
-export type OrbitFocusMode = "all" | "workout" | "diet" | "tasks";
+export type OrbitFocusMode = "all" | "workout" | "diet" | "tasks" | "circadian";
 

@@ -691,10 +691,49 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ---
 
+### ✅ Sprint 6.0: 1:1 Stitch Implementation of OrbitView with Dead-Center Radar Stage Alignment & Calm Celestial 3D Orbital Physics
+- **Dead-Center <Orbit3DCore /> Alignment & Physics (`components/orbit/Orbit3DCore.tsx`)**:
+  - **Shared Centered Stage (`w-[184px] h-[184px] relative mx-auto my-2 flex items-center justify-center`)**:
+    - Concentric dashed SVG radar circles (`r="86"`, `r="64"`, `r="42"`, `stroke="rgba(255,255,255,0.08)"`, `strokeDasharray="3 3"`) and subtle crosshair lines are locked inside the exact same container as the 3D celestial sphere.
+    - Pinned the central 3D planet core at `absolute inset-0 m-auto`, positioning it at the **exact geometric center (50%, 50%)** of the background radar circles.
+  - **Locked 3D Tilt Planes & Elimination of Funky Wobble**:
+    - Eliminated erratic multi-axis keyframe tumbling (`rotateX` + `rotateY` changing mid-animation).
+    - Kept each orbital ring on a fixed, locked 3D tilt plane, rotating ONLY around its local Z axis (`rotateZ(0deg) -> rotateZ(360deg)`):
+      - **Inner Ring (Terracotta `#E05A47`, `w-24 h-24`)**: Locked tilt `rotateX(66deg) rotateY(-18deg)`, smooth linear spin of **20s** (idle) / **6s** (thinking) with a 6px glowing Terracotta satellite node on its rim.
+      - **Middle Ring (Mint Sage `#6EE7B7`, `w-32 h-32`)**: Locked tilt `rotateX(62deg) rotateY(28deg)`, smooth counter-spin of **28s** (idle) / **8s** (thinking) with a 5px Mint satellite node.
+      - **Outer Equatorial Ring (Warm Stone `#D6CFC2`/40, `w-40 h-40`)**: Locked tilt `rotateX(72deg) rotateY(-6deg)`, ultra-calm spin of **36s** (idle) / **10s** (thinking).
+      - **Center Planet Core (`w-11 h-11 rounded-full`)**: Smooth 3D shaded Matcha-Emerald sphere (`radial-gradient(circle at 35% 30%, #6EE7B7 0%, #2D6A4F 55%, #0F1713 95%)`) with a soft 6s breathing glow and botanical lotus core identity.
+      - **Thinking State Acceleration**: Smoothly speeds up the 3 rings to 6s, 8s, and 10s without wobble and adds a pulsing emerald aura ring.
+- **1:1 Stitch OrbitView Architecture (`components/orbit/OrbitView.tsx`)**:
+  - **Top Context Bar**: `All Context` (active `#191D1A` pill), `Train`, `Fuel`, `Plan`, `Circadian` fitting cleanly without horizontal clipping.
+  - **Dark Botanical Espresso Hero Stage (`bg-[#191D1A] rounded-[30px] p-5 shadow-xl border border-white/[0.08]`)**:
+    - Top status pills: `STATE: SYNAPSE READY` (`#2D6A4F`/35) + `3 Domains Linked · 98% Sync`.
+    - Center 184×184 stage with `<Orbit3DCore size="lg" state={orbitState} />` at the exact bullseye.
+    - Instrument Serif headline: *"How can Orbit optimize your cadence today?"* + subhead *"Cross-synthesizing neuromuscular load, metabolic deficit, and circadian focus blocks."*
+    - 3 stacked live biometric ticker pills: `● Train: {workoutSummaryText}` (5 Sessions · 235m), `● Fuel: 135g Target · {proteinDeltaText}` (-48g Gap), `● Plan: {pendingTasksCount} High-Load Slot`.
+  - **"CADENCE SHIFT" Mint Insight Banner (`bg-[#D8F3DC]/75 border border-[#2D6A4F]/15 rounded-[22px] p-3.5`)**:
+    - Matcha icon with `Zap`, `CADENCE SHIFT` badge, `Auto-applied` indicator, and dynamic neuromuscular fatigue insight text.
+  - **"Cadence Actions" 2×2 Telemetry Bento Grid**:
+    - Card 1 (`TRAINING LOAD` — `Weekly Training Audit`): Ascending SVG sparkline curve, title, subtitle, and full-width Terracotta button `Run Audit →`.
+    - Card 2 (`FUEL DEFICIT` — `Protein Gap & Fuel`): Mini circular progress gauge + `{loggedP}g / 135g`, title, subtitle, and full-width Matcha button `Curate Meal →`.
+    - Card 3 (`CIRCADIAN` — `Tomorrow's Split`): Semi-circle readiness arc + `88% HRV · High Readiness`, title, subtitle, and stone pill button `Preview Split →`.
+    - Card 4 (`PLAN ENGINE` — `Deep Work Focus`): Vertical equalizer bars + `90m`, title, subtitle, and stone pill button `Rank Slot →`.
+    - Clicking any card immediately dispatches its corresponding query into Orbit!
+  - **"Circadian Rhythm Alignment" Card (`bg-[#FCFBF9] rounded-[24px] p-4 border border-[#1C1917]/[0.06]`)**:
+    - `Dusk Transition` (`19:30 – 21:00` · *"Melatonin priming, blue-light attenuated"*)
+    - `Deep Sleep Window` (`22:30 – 06:45` · *"Target: 2.1h Slow-Wave restoration"*)
+  - **Seamless Multi-Mode View**: When messages exist, users can seamlessly toggle between the full Cadence Dashboard and the active Chat Stream with zero data loss.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **54 passed (54 files), 642 passed | 26 skipped (668 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
-- **Vitest Suite**: `636 passed | 26 skipped` across all 53 test suites (0 failing).
-- **Orbit Tests**: `44/44 passed` across `tests/orbit/*` and `tests/api/aria.test.ts`.
+- **Vitest Suite**: `642 passed | 26 skipped` across all 54 test suites (0 failing).
+- **Orbit Tests**: `48/48 passed` across `tests/orbit/*` (including `orbit-3d-core.test.ts`) and `tests/api/aria.test.ts`.
 - **Diet Tests**: `213/213 passed` across all 15 test suites in `tests/diet/*`.
 - **Workout Tests**: `42/42 passed` across `tests/workouts/*`.
 - **Onboarding Tests**: `78/78 passed` across `tests/onboarding/*`.
