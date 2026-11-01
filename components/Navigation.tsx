@@ -177,7 +177,8 @@ export default function Navigation() {
       </aside>
 
       {/* ── Mobile top header (SATAT / <Section>, notification bell, and dark-circle profile) ── */}
-      <header className="app-mobile-header lg:hidden">
+      {pathname !== "/dashboard/orbit" && (
+        <header className="app-mobile-header lg:hidden">
         <div className="app-mobile-context flex items-center gap-2">
           <Logo size={22} className="rounded-md" priority />
           <div className="app-mobile-page-title flex items-center gap-1.5 text-sm tracking-tight">
@@ -270,6 +271,7 @@ export default function Navigation() {
           )}
         </div>
       </header>
+      )}
 
       {/* ── Mobile bottom navigation (SATAT Stitch Theme: Today, Plan, Track FAB, Train, Fuel) ── */}
       <nav
@@ -410,15 +412,6 @@ export default function Navigation() {
 
       {/* Quick Track Sheet Modal */}
       <TrackSheet isOpen={showTrackSheet} onClose={() => setShowTrackSheet(false)} />
-
-      {/* Floating Bottom-Right 3D Orbit Launcher Badge (Right Above the Bottom Pill Taskbar) */}
-      {pathname !== "/dashboard/orbit" && (
-        <OrbitLauncherBadge
-          size="lg"
-          tooltipPosition="top"
-          className="fixed right-4 bottom-[calc(62px+max(14px,env(safe-area-inset-bottom))+12px)] z-40"
-        />
-      )}
     </>
   );
 }

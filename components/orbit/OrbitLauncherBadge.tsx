@@ -35,12 +35,12 @@ export function OrbitLauncherBadge({
 }: OrbitLauncherBadgeProps) {
   const sizeClasses = {
     sm: "w-8 h-8 rounded-xl",
-    md: "w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl",
-    lg: "w-11 h-11 sm:w-12 sm:h-12 rounded-2xl",
+    md: "w-11 h-11 rounded-[14px] sm:rounded-2xl",
+    lg: "w-11 h-11 sm:w-12 sm:h-12 rounded-[14px] sm:rounded-2xl",
   }[size];
 
   const badgeClass = cn(
-    "relative bg-[#191D1A] hover:bg-[#232924] text-[#FCFBF9] border border-white/[0.12] shadow-md hover:shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 group select-none shrink-0 cursor-pointer overflow-visible",
+    "relative bg-[#191D1A] hover:bg-[#232924] text-[#FCFBF9] border border-[#6EE7B7]/30 shadow-[0_6px_18px_rgba(25,29,26,0.25)] flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 group select-none shrink-0 cursor-pointer overflow-visible",
     sizeClasses,
     className
   );

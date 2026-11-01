@@ -771,11 +771,41 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ---
 
+### ✅ Sprint 6.3: Mobile Viewport Optimization, Hero Stage Rescaling, Ultra-Crisp Orbit Core & Markdown Footnote / Table Wrapping
+- **Ultra-Clear, High-Contrast Orbit 3D Core (`components/orbit/Orbit3DCore.tsx`)**:
+  - **85% Container Emblem Framing**: Scaled `size="sm"` to `containerPx = 38` (`scaleRatio = 38 / 184`), making the emblem fill 86.4% (~85%) of the `w-11 h-11` badge container for maximum visibility on mobile screens.
+  - **High-Luminance Orbital Rings**: Thickened ring borders to `1.8px` with vibrant high-contrast colors (`#FF6B57` bright Terracotta, `#6EE7B7` bright Mint Emerald, `#F5F2EB` warm Alabaster) that pop against `#191D1A`.
+  - **Brighter Planet Shading & Glowing Orbiting Beads**: Shaded the small sphere with `radial-gradient(circle at 32% 28%, #A7F3D0 0%, #34D399 45%, #065F46 90%)`, added crisp specular white highlight dot, and enlarged satellite planet beads to `5.5px` with glowing `box-shadow: 0 0 8px currentColor`.
+- **Hero Stage & Card Scaling (`components/orbit/OrbitView.tsx`)**:
+  - Shrunk the Hero radar + 3D stage from `184px × 184px` down to **`132px × 132px`** (`<Orbit3DCore size={132} />`) and reduced card padding to `p-4` with rounded-[28px], ensuring the entire Hero card fits comfortably above the fold on mobile.
+- **Clean Single Header Orbit Badge (`components/navigation/Navigation.tsx` & `OrbitLauncherBadge.tsx`)**:
+  - Maintained the single prominent rounded-square `<OrbitLauncherBadge />` (`w-11 h-11 rounded-[14px] bg-[#191D1A] border border-[#6EE7B7]/30 shadow-[0_6px_18px_rgba(25,29,26,0.25)]`) in the top-right app header.
+  - Removed duplicate floating bottom-right launcher to eliminate visual clutter and avoid covering task completion indicators like `"1 of 3 Done"` in Today's Rhythm.
+  - Conditioned `app-mobile-header` on `pathname !== "/dashboard/orbit"` so OrbitView maintains complete, conflict-free layout control without double-header scrolling issues.
+- **Mobile Viewport & Natural Scroll Flow (`components/orbit/OrbitView.tsx`)**:
+  - **Eliminated Double-Scroll**: Configured main viewport with `overscroll-contain touch-pan-y` and safe-area top padding so only the main feed scrolls.
+  - **Empty-State Quick Prompt Clean-up**: Hidden bottom horizontal prompt chips during empty state (`messages.length === 0`), saving **44px** of vertical screen space.
+  - **Compact Sticky Header When Chatting**: When `messages.length > 0`, collapsed the subtitle and tightened header padding so **75%+ of the screen height** is dedicated to reading responses.
+- **Context Filter Pills Optimization (`components/orbit/OrbitView.tsx`)**:
+  - Focused on 4 core domains (`All Context`, `Train`, `Fuel`, `Plan`) fitting cleanly across all mobile widths (360px–430px) with zero horizontal clipping or cutoff.
+- **Targeted Auto-Scroll to Top of Assistant Response (`components/orbit/OrbitView.tsx`)**:
+  - Anchored auto-scroll so when the AI response arrives, the view smoothly scrolls to the **TOP of the new assistant message card** (`lastAssistantMessageRef`), completely eliminating the bottom yank.
+- **Table Column Wrapping & Dangling Footnotes (`components/ui/MarkdownText.tsx`)**:
+  - **2-Column Table Mobile Wrapping**: Added `table-fixed w-full` for 2-column tables with `w-[75px] whitespace-nowrap` for Day/Date column and `w-auto whitespace-normal break-words` for exercise descriptions.
+  - **Dangling Single-Asterisk Footnotes**: Handled lines starting with `*` or `\*` lacking closing asterisks, rendering them cleanly as `text-[11px] italic text-stone-300` without raw markdown asterisks.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **55 passed (55 files), 650 passed | 26 skipped (676 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
-- **Vitest Suite**: `648 passed | 26 skipped` across all 55 test suites (0 failing).
+- **Vitest Suite**: `650 passed | 26 skipped` across all 55 test suites (0 failing).
+- **Markdown & UI Tests**: `13/13 passed` in `tests/ui/markdown-text.test.tsx`.
 - **Navigation & Launcher Tests**: `5/5 passed` in `tests/navigation/navigation-orbit-launcher.test.ts`.
-- **Orbit Tests**: `49/49 passed` across `tests/orbit/*` (including `orbit-3d-core.test.ts`) and `tests/api/aria.test.ts`.
+- **Orbit Tests**: `49/49 passed` across `tests/orbit/*` and `tests/api/aria.test.ts`.
 - **Diet Tests**: `213/213 passed` across all 15 test suites in `tests/diet/*`.
 - **Workout Tests**: `42/42 passed` across `tests/workouts/*`.
 - **Onboarding Tests**: `78/78 passed` across `tests/onboarding/*`.

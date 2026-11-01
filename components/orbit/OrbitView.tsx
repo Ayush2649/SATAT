@@ -47,7 +47,6 @@ const FOCUS_MODES: Array<{
   { id: "workout", label: "Train", icon: Dumbbell },
   { id: "diet", label: "Fuel", icon: Utensils },
   { id: "tasks", label: "Plan", icon: CheckSquare },
-  { id: "circadian", label: "Circadian", icon: Zap },
 ];
 
 const QUICK_CHIPS = [
@@ -91,8 +90,13 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
 
   const transitionTimerRef = useRef<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const lastAssistantMessageRef = useRef<HTMLDivElement>(null);
+  const lastUserMessageRef = useRef<HTMLDivElement>(null);
+  const loadingCardRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const lastFailedMessageRef = useRef<string | null>(null);
+  const prevLoadingRef = useRef(false);
+  const prevMessagesLengthRef = useRef(0);
 
   // Clean up any pending state transition timers on unmount
   useEffect(() => {
@@ -145,19 +149,37 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
     }
   };
 
-  // Scroll to bottom
-  const scrollToBottom = useCallback((smooth = true) => {
-    messagesEndRef.current?.scrollIntoView({
-      behavior: smooth ? "smooth" : "auto",
-      block: "end",
-    });
-  }, []);
-
+  // Auto-scroll handler:
+  // - When user sends a message (loading starts), scroll user message + loading card into view
+  // - When assistant response arrives (loading finished / assistant message added), scroll to TOP of the assistant response card
   useEffect(() => {
-    if (viewMode === "chat") {
-      scrollToBottom(true);
+    if (viewMode !== "chat") return;
+
+    const hadMessages = prevMessagesLengthRef.current;
+    const currentMessages = messages.length;
+    const wasLoading = prevLoadingRef.current;
+
+    prevMessagesLengthRef.current = currentMessages;
+    prevLoadingRef.current = loading;
+
+    // A. User just sent message & loading started -> scroll to loading card or user message
+    if (loading && !wasLoading) {
+      setTimeout(() => {
+        loadingCardRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }, 50);
+      return;
     }
-  }, [messages, loading, viewMode, scrollToBottom]);
+
+    // B. Loading finished and new assistant message arrived -> scroll to TOP of latest assistant message
+    if (!loading && currentMessages > hadMessages) {
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg && lastMsg.role === "assistant") {
+        setTimeout(() => {
+          lastAssistantMessageRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 60);
+      }
+    }
+  }, [messages, loading, viewMode]);
 
   // Read actual context from orbitContext store
   const liveDiet = getDietContext();
@@ -410,8 +432,12 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
       {/* ── 1. ORBIT EDITORIAL HEADER ── */}
       <header
         className={cn(
-          "px-4 sm:px-6 pt-3 pb-3 shrink-0 border-b border-[#191D1A]/[0.06] bg-[#F6F3EC] z-20 transition-all",
-          !isOverlay ? "lg:pt-5" : "pt-3"
+          "px-4 sm:px-6 shrink-0 border-b border-[#191D1A]/[0.06] bg-[#F6F3EC] z-20 transition-all",
+          messages.length > 0
+            ? "pt-[max(8px,env(safe-area-inset-top))] pb-1.5"
+            : !isOverlay
+            ? "pt-[max(12px,env(safe-area-inset-top))] pb-2.5 lg:pt-5"
+            : "pt-3 pb-3"
         )}
       >
         {/* App Bar Top Row */}
@@ -458,7 +484,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                   type="button"
                   onClick={() => setViewMode("overview")}
                   className={cn(
-                    "px-2.5 py-1 text-[11px] font-bold rounded-full transition-all",
+                    "px-2 py-0.5 text-[10px] sm:text-[11px] font-bold rounded-full transition-all",
                     viewMode === "overview"
                       ? "bg-[#191D1A] text-white shadow-2xs"
                       : "text-[#57534E] hover:text-[#191D1A]"
@@ -471,7 +497,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                   type="button"
                   onClick={() => setViewMode("chat")}
                   className={cn(
-                    "px-2.5 py-1 text-[11px] font-bold rounded-full transition-all flex items-center gap-1",
+                    "px-2 py-0.5 text-[10px] sm:text-[11px] font-bold rounded-full transition-all flex items-center gap-1",
                     viewMode === "chat"
                       ? "bg-[#191D1A] text-white shadow-2xs"
                       : "text-[#57534E] hover:text-[#191D1A]"
@@ -484,21 +510,24 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
               </div>
             )}
 
-            {/* Clear conversation button */}
-            {messages.length > 0 && (
-              <button
-                type="button"
-                onClick={handleReset}
-                className="px-2.5 py-1 rounded-full text-xs font-medium text-[#57534E] hover:text-[#191D1A] hover:bg-[#EFECE4] transition-all flex items-center gap-1 border border-[#191D1A]/[0.08]"
-                title="Reset conversation"
-                aria-label="Reset conversation"
-              >
-                <RotateCcw className="w-3 h-3" />
-                <span className="hidden sm:inline">Clear</span>
-              </button>
-            )}
-
             {!isOverlay && <NotificationBell />}
+
+            {session?.user && (
+              <div className="w-7 h-7 rounded-full flex items-center justify-center bg-[#191D1A] text-white shadow-sm border border-white/10 overflow-hidden shrink-0">
+                {session.user.image ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={session.user.image}
+                    alt={session.user.name || "User"}
+                    className="w-full h-full rounded-full object-cover"
+                  />
+                ) : session.user.name ? (
+                  <span className="text-[10px] font-semibold text-[#FCFBF9]">
+                    {session.user.name.charAt(0).toUpperCase()}
+                  </span>
+                ) : null}
+              </div>
+            )}
 
             {isOverlay && onClose && (
               <button
@@ -514,14 +543,19 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
         </div>
 
         {/* Title Row with New Chat / Reset Action */}
-        <div className="mt-2.5 flex items-start justify-between gap-2">
+        <div className={cn("flex items-start justify-between gap-2", messages.length > 0 ? "mt-1.5" : "mt-2.5")}>
           <div>
-            <h1 className="font-serif text-[24px] sm:text-[28px] font-normal leading-[1.08] text-[#191D1A] tracking-[-0.02em]">
+            <h1 className={cn(
+              "font-serif font-normal leading-[1.08] text-[#191D1A] tracking-[-0.02em]",
+              messages.length > 0 ? "text-[18px] sm:text-[22px]" : "text-[24px] sm:text-[28px]"
+            )}>
               Orbit Intelligence
             </h1>
-            <p className="text-xs text-[#57534E] font-medium tracking-normal mt-0.5">
-              Unified biological &amp; execution copilot.
-            </p>
+            {messages.length === 0 && (
+              <p className="text-xs text-[#57534E] font-medium tracking-normal mt-0.5">
+                Unified biological &amp; execution copilot.
+              </p>
+            )}
           </div>
 
           {/* New Chat / Reset Pill Button */}
@@ -530,16 +564,16 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
               type="button"
               onClick={handleResetChat}
               aria-label="Reset chat"
-              className="bg-[#EFECE4] hover:bg-[#191D1A] hover:text-white text-[#1C1917] rounded-full px-3 py-1.5 text-xs font-semibold inline-flex items-center gap-1.5 transition-all shrink-0 cursor-pointer shadow-2xs active:scale-95"
+              className="bg-[#EFECE4] hover:bg-[#191D1A] hover:text-white text-[#1C1917] rounded-full px-2.5 py-1 text-[11px] font-semibold inline-flex items-center gap-1.5 transition-all shrink-0 cursor-pointer shadow-2xs active:scale-95"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
+              <RotateCcw className="w-3 h-3" />
               <span>New Chat</span>
             </button>
           )}
         </div>
 
         {/* Active Context Filter Bar (Horizontal Pill Row — All fitting cleanly without edge clipping) */}
-        <div className="flex items-center gap-1.5 mt-2.5 px-0.5 overflow-x-auto no-scrollbar py-0.5">
+        <div className={cn("flex items-center gap-1.5 px-0.5 overflow-x-auto no-scrollbar", messages.length > 0 ? "mt-1.5 py-0.5" : "mt-2.5 py-0.5")}>
           {FOCUS_MODES.map((m) => {
             const isSelected = focusMode === m.id;
             const Icon = m.icon;
@@ -568,16 +602,16 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
       </header>
 
       {/* ── 2. MAIN VIEWPORT (STITCH 1:1 DASHBOARD OVERVIEW vs CHAT STREAM) ── */}
-      <div className="flex-1 min-h-0 min-w-0 w-full overflow-y-auto overflow-x-hidden px-4 sm:px-6 pt-3 pb-2 space-y-3 scrollbar-none bg-[#F6F3EC] flex flex-col">
+      <div className="flex-1 min-h-0 min-w-0 w-full overflow-y-auto overflow-x-hidden px-4 sm:px-6 pt-3 pb-2 space-y-3 scrollbar-none bg-[#F6F3EC] flex flex-col overscroll-contain touch-pan-y">
         {/* ── 2A. STITCH 1:1 TELEMETRY OVERVIEW (Initial state or toggleable view) ── */}
         {(messages.length === 0 || viewMode === "overview") && (
-          <div className="w-full max-w-xl mx-auto space-y-4 animate-fade-in pb-2">
+          <div className="w-full max-w-xl mx-auto space-y-3.5 animate-fade-in pb-2">
             {/* 1. DARK BOTANICAL ESPRESSO HERO STAGE (#191D1A) */}
-            <div className="w-full bg-[#191D1A] rounded-[30px] p-5 text-[#FCFBF9] shadow-xl border border-white/[0.08] relative overflow-hidden">
+            <div className="w-full bg-[#191D1A] rounded-[28px] p-4 text-[#FCFBF9] shadow-xl border border-white/[0.08] relative overflow-hidden">
               {/* Top Status Pills Row */}
               <div className="grid grid-cols-2 gap-2 mb-2">
                 {/* Left Status Pill */}
-                <div className="bg-[#2D6A4F]/35 border border-[#6EE7B7]/25 rounded-2xl px-3 py-2 flex items-center gap-2">
+                <div className="bg-[#2D6A4F]/35 border border-[#6EE7B7]/25 rounded-2xl px-3 py-1.5 flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-[#6EE7B7] animate-pulse shrink-0" />
                   <span className="text-[10px] font-bold tracking-wider uppercase text-[#EAE6DF]">
                     STATE: SYNAPSE READY
@@ -585,28 +619,28 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                 </div>
 
                 {/* Right Sync Pill */}
-                <div className="bg-white/[0.06] border border-white/[0.08] rounded-2xl px-3 py-2 text-[11px] font-semibold text-stone-200 flex items-center justify-center sm:justify-start gap-1.5">
+                <div className="bg-white/[0.06] border border-white/[0.08] rounded-2xl px-3 py-1.5 text-[11px] font-semibold text-stone-200 flex items-center justify-center sm:justify-start gap-1.5">
                   <span>3 Domains Linked · 98% Sync</span>
                 </div>
               </div>
 
-              {/* Dead-Centered 184×184 Radar + 3D Planet Stage */}
-              <div className="my-1">
-                <Orbit3DCore size="lg" state={orbitState} />
+              {/* Dead-Centered 132×132 Radar + 3D Planet Stage */}
+              <div className="w-[132px] h-[132px] mx-auto my-1 flex items-center justify-center">
+                <Orbit3DCore size={132} state={orbitState} />
               </div>
 
               {/* Editorial Headline & Subtitle */}
-              <div className="text-center mt-2">
-                <h2 className="font-serif text-2xl sm:text-[26px] text-white leading-tight font-normal">
+              <div className="text-center mt-1.5">
+                <h2 className="font-serif text-xl sm:text-[24px] text-white leading-tight font-normal">
                   How can Orbit optimize your cadence today?
                 </h2>
-                <p className="text-xs text-stone-400 mt-1.5 max-w-[280px] mx-auto leading-relaxed">
+                <p className="text-[11px] sm:text-xs text-stone-400 mt-1 max-w-[280px] mx-auto leading-relaxed">
                   Cross-synthesizing neuromuscular load, metabolic deficit, and circadian focus blocks.
                 </p>
               </div>
 
               {/* 3 Stacked Live Context Pills */}
-              <div className="flex flex-col items-center gap-1.5 mt-4">
+              <div className="flex flex-col items-center gap-1.5 mt-3">
                 <div className="bg-white/[0.07] text-stone-200 rounded-full px-3.5 py-1 text-[11px] font-semibold flex items-center gap-1.5 shadow-2xs">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#2D6A4F]" />
                   <span>Train: {workoutSummaryText}</span>
@@ -899,9 +933,14 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
         {/* ── 2B. CONVERSATIONAL STREAM (When messages exist and user is in chat view) ── */}
         {messages.length > 0 && viewMode === "chat" && (
           <div className="space-y-3 animate-fade-in max-w-2xl mx-auto w-full mt-auto">
-            {messages.map((m) => (
+            {messages.map((m, idx) => {
+              const isLastAssistant = m.role === "assistant" && idx === messages.length - 1;
+              const isLastUser = m.role === "user" && (idx === messages.length - 1 || idx === messages.length - 2);
+
+              return (
               <div
                 key={m.id}
+                ref={isLastAssistant ? lastAssistantMessageRef : isLastUser ? lastUserMessageRef : undefined}
                 className={cn(
                   "flex flex-col w-full min-w-0",
                   m.role === "user" ? "items-end" : "items-start"
@@ -983,13 +1022,17 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                   </div>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
         {/* THINKING STATE */}
         {loading && (
-          <div className="flex flex-col items-start w-full max-w-2xl mx-auto animate-fade-in">
+          <div
+            ref={loadingCardRef}
+            className="flex flex-col items-start w-full max-w-2xl mx-auto animate-fade-in"
+          >
             <div className="w-full max-w-[94%] bg-[#191D1A] text-[#FCFBF9] rounded-[24px] rounded-tl-sm p-4 shadow-xl border border-white/[0.06]">
               <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-white/[0.08]">
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#2D6A4F]/40 border border-[#6EE7B7]/25 text-[#6EE7B7] text-[9px] font-bold tracking-wider uppercase select-none">
@@ -1056,25 +1099,27 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
           transform: keyboardOffset > 0 ? `translateY(-${keyboardOffset}px)` : undefined,
         }}
       >
-        {/* Suggested Quick-Prompt Chips (Zero Emojis — Vector Icons Only) */}
-        <div className="w-full overflow-x-auto no-scrollbar py-0.5 mb-1.5 scroll-px-4 px-0.5">
-          <div className="flex items-center gap-1.5 w-max">
-            {QUICK_CHIPS.map((chip, idx) => {
-              const Icon = chip.icon;
-              return (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => handleSend(chip.query)}
-                  className="shrink-0 px-3 py-1.5 rounded-full bg-[#FCFBF9] hover:bg-[#EFECE4] text-[#191D1A] border border-[#191D1A]/10 text-xs font-semibold tracking-tight shadow-[0_1px_4px_rgba(0,0,0,0.03)] flex items-center gap-1.5 transition-all active:scale-95 select-none"
-                >
-                  <Icon className={cn("w-3.5 h-3.5", chip.iconColor)} />
-                  <span>{chip.label}</span>
-                </button>
-              );
-            })}
+        {/* Suggested Quick-Prompt Chips (Only displayed when messages exist to keep empty state clean) */}
+        {messages.length > 0 && (
+          <div className="w-full overflow-x-auto no-scrollbar py-0.5 mb-1.5 scroll-px-4 px-0.5 animate-fade-in">
+            <div className="flex items-center gap-1.5 w-max">
+              {QUICK_CHIPS.map((chip, idx) => {
+                const Icon = chip.icon;
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleSend(chip.query)}
+                    className="shrink-0 px-3 py-1.5 rounded-full bg-[#FCFBF9] hover:bg-[#EFECE4] text-[#191D1A] border border-[#191D1A]/10 text-xs font-semibold tracking-tight shadow-[0_1px_4px_rgba(0,0,0,0.03)] flex items-center gap-1.5 transition-all active:scale-95 select-none"
+                  >
+                    <Icon className={cn("w-3.5 h-3.5", chip.iconColor)} />
+                    <span>{chip.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Floating Input Dock (Cream Alabaster #FCFBF9, rounded-full) */}
         <div className="relative w-full bg-[#FCFBF9] rounded-full pl-4 pr-2 py-2 border border-[#1C1917]/10 shadow-[0_8px_24px_rgba(25,29,26,0.08)] flex items-center gap-2 focus-within:border-[#191D1A]/30 focus-within:shadow-[0_8px_28px_rgba(25,29,26,0.12)] transition-all">

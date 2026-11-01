@@ -48,8 +48,8 @@ export function Orbit3DCore({
     containerPx = size;
     scaleRatio = size / 184;
   } else if (size === "sm") {
-    containerPx = 30;
-    scaleRatio = 30 / 184;
+    containerPx = 38;
+    scaleRatio = 38 / 184;
   } else if (size === "md") {
     containerPx = 92;
     scaleRatio = 92 / 184;
@@ -183,7 +183,7 @@ export function Orbit3DCore({
           transformStyle: "preserve-3d",
         }}
       >
-        {/* OUTER EQUATORIAL RING (Warm Stone #D6CFC2/40, w-40 h-40 / 160px) */}
+        {/* OUTER EQUATORIAL RING (Warm Stone / Alabaster, w-40 h-40 / 160px) */}
         {/* Locked tilt rotateX(72deg) rotateY(-6deg), ultra-calm 36s spin */}
         <div
           className="absolute inset-0 m-auto pointer-events-none"
@@ -195,14 +195,20 @@ export function Orbit3DCore({
           }}
         >
           <div
-            className="w-full h-full rounded-full border border-[#D6CFC2]/25 relative"
+            className={cn(
+              "w-full h-full rounded-full relative",
+              isSm ? "border-[1.8px] border-[#F5F2EB]/60" : "border border-[#D6CFC2]/25"
+            )}
             style={{
               animation: `orbitSpinZ3 ${outerDuration} linear infinite`,
             }}
           >
-            {/* Subtle stone node marker */}
+            {/* Subtle stone / alabaster node marker */}
             <div
-              className="absolute -top-[2px] left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#D6CFC2]/60"
+              className={cn(
+                "absolute -top-[2px] left-1/2 -translate-x-1/2 rounded-full",
+                isSm ? "w-1 h-1 bg-[#F5F2EB] shadow-[0_0_6px_#F5F2EB]" : "w-1 h-1 bg-[#D6CFC2]/60"
+              )}
             />
           </div>
         </div>
@@ -219,19 +225,27 @@ export function Orbit3DCore({
           }}
         >
           <div
-            className="w-full h-full rounded-full border border-[#6EE7B7]/35 relative"
+            className={cn(
+              "w-full h-full rounded-full relative",
+              isSm ? "border-[1.8px] border-[#6EE7B7]/80" : "border border-[#6EE7B7]/35"
+            )}
             style={{
               animation: `orbitSpinZ2 ${middleDuration} linear infinite`,
             }}
           >
-            {/* 5px Mint satellite node on rim */}
+            {/* 5px-6px Mint satellite node on rim */}
             <div
-              className="absolute -top-[2.5px] left-1/2 -translate-x-1/2 w-[5px] h-[5px] rounded-full bg-[#6EE7B7] shadow-[0_0_8px_#6EE7B7]"
+              className={cn(
+                "absolute left-1/2 -translate-x-1/2 rounded-full",
+                isSm
+                  ? "-top-[2.75px] w-[5.5px] h-[5.5px] bg-[#6EE7B7] shadow-[0_0_8px_#6EE7B7]"
+                  : "-top-[2.5px] w-[5px] h-[5px] bg-[#6EE7B7] shadow-[0_0_8px_#6EE7B7]"
+              )}
             />
           </div>
         </div>
 
-        {/* INNER RING (Terracotta #E05A47, w-24 h-24 / 96px) */}
+        {/* INNER RING (Terracotta #FF6B57 / #E05A47, w-24 h-24 / 96px) */}
         {/* Locked tilt rotateX(66deg) rotateY(-18deg), smooth 20s spin */}
         <div
           className="absolute inset-0 m-auto pointer-events-none"
@@ -243,14 +257,22 @@ export function Orbit3DCore({
           }}
         >
           <div
-            className="w-full h-full rounded-full border border-[#E05A47]/45 relative"
+            className={cn(
+              "w-full h-full rounded-full relative",
+              isSm ? "border-[1.8px] border-[#FF6B57]/90" : "border border-[#E05A47]/45"
+            )}
             style={{
               animation: `orbitSpinZ1 ${innerDuration} linear infinite`,
             }}
           >
-            {/* 6px glowing Terracotta satellite node on rim */}
+            {/* 5.5px-6px glowing Terracotta satellite node on rim */}
             <div
-              className="absolute -top-[3px] left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#E05A47] shadow-[0_0_8px_#E05A47]"
+              className={cn(
+                "absolute left-1/2 -translate-x-1/2 rounded-full",
+                isSm
+                  ? "-top-[2.75px] w-[5.5px] h-[5.5px] bg-[#FF6B57] shadow-[0_0_8px_#FF6B57]"
+                  : "-top-[3px] w-1.5 h-1.5 bg-[#E05A47] shadow-[0_0_8px_#E05A47]"
+              )}
             />
           </div>
         </div>
@@ -286,18 +308,25 @@ export function Orbit3DCore({
                 ? "radial-gradient(circle at 35% 30%, #F87171 0%, #DC2626 55%, #191D1A 95%)"
                 : isSuccess
                 ? "radial-gradient(circle at 35% 30%, #A7F3D0 0%, #2D6A4F 55%, #0F1713 95%)"
+                : isSm
+                ? "radial-gradient(circle at 32% 28%, #A7F3D0 0%, #34D399 45%, #065F46 90%)"
                 : "radial-gradient(circle at 35% 30%, #6EE7B7 0%, #2D6A4F 55%, #0F1713 95%)",
               animation: "orbitCoreBreathe6s 6s ease-in-out infinite",
               boxShadow: isError
                 ? "0 0 28px rgba(220, 38, 38, 0.45)"
                 : isSm
-                ? "0 0 10px rgba(110, 231, 183, 0.3)"
+                ? "0 0 12px rgba(110, 231, 183, 0.45)"
                 : "0 0 28px rgba(110, 231, 183, 0.35)",
             }}
           >
             {/* Specular gloss highlight */}
             <div
-              className="absolute top-1 left-2 w-3.5 h-2 rounded-full bg-white/40 blur-[1px] rotate-[-25deg] pointer-events-none"
+              className={cn(
+                "absolute rounded-full pointer-events-none",
+                isSm
+                  ? "top-0.5 left-1 w-2 h-1 bg-white/70 blur-[0.5px] rotate-[-25deg]"
+                  : "top-1 left-2 w-3.5 h-2 bg-white/40 blur-[1px] rotate-[-25deg]"
+              )}
             />
 
             {/* SATAT Botanical Lotus Core Vector Identity (only on medium/large scale) */}

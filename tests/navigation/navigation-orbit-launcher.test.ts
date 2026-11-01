@@ -19,13 +19,12 @@ describe("Global Orbit 3D Launcher Badge in Navigation (Sprint 6.2)", () => {
     expect(navSource).toContain('import { OrbitLauncherBadge } from "@/components/orbit/OrbitLauncherBadge";');
   });
 
-  it("2. Renders floating bottom-right 3D Orbit launcher badge above taskbar when not on /dashboard/orbit", () => {
+  it("2. Renders clean single top app header Orbit launcher badge without redundant bottom-right overlap (Sprint 6.3)", () => {
     expect(navSource).toContain('pathname !== "/dashboard/orbit"');
-    expect(navSource).toContain(
-      "fixed right-4 bottom-[calc(62px+max(14px,env(safe-area-inset-bottom))+12px)] z-40"
-    );
-    expect(navSource).toContain('<OrbitLauncherBadge');
-    expect(navSource).toContain('size="lg"');
+    expect(navSource).toContain("app-mobile-actions");
+    expect(navSource).toContain('<OrbitLauncherBadge size="md" tooltipPosition="bottom" />');
+    // Does NOT render redundant floating bottom-right launcher that covers task progress
+    expect(navSource).not.toContain("fixed right-4 bottom-[calc(62px+max(14px,env(safe-area-inset-bottom))+12px)]");
   });
 
   it("3. Renders top app header Orbit launcher badge next to bell and avatar", () => {
@@ -38,7 +37,7 @@ describe("Global Orbit 3D Launcher Badge in Navigation (Sprint 6.2)", () => {
     // Rounded square styling
     expect(html).toContain("rounded-2xl");
     expect(html).toContain("bg-[#191D1A]");
-    expect(html).toContain("border-white/[0.12]");
+    expect(html).toContain("border-[#6EE7B7]/30");
     expect(html).toContain("hover:scale-105");
 
     // Must NOT contain text like "Orbit AI" in the visible badge body
