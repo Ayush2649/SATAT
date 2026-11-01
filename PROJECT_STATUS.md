@@ -730,10 +730,28 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ---
 
+### ✅ Sprint 6.1: Global Orbit 3D Launcher, Orbit New Chat / Reset Action, & Zero Vertical Gap
+- **Global 3D Orbit Launcher Across All Screens (`components/Navigation.tsx`)**:
+  - **Floating Bottom-Right 3D Orbit Launcher FAB**: Added floating `Orbit AI` FAB positioned at `fixed right-4 bottom-[calc(62px+max(14px,env(safe-area-inset-bottom))+12px)] z-40` whenever `pathname !== "/dashboard/orbit"` with `<Orbit3DCore size="sm" state="idle" />`, `"Orbit AI"` typography, and pulsing `#6EE7B7` synapse dot.
+  - **Top App Header Orbit Pill**: Rendered compact `Orbit` pill in the top header next to the notification bell and profile avatar with `<Orbit3DCore size="sm" state="idle" />` and link to `/dashboard/orbit`.
+- **"New Chat / Reset" Button & Thread Clearing (`components/orbit/OrbitView.tsx`)**:
+  - Added tactile `New Chat` / `Reset` pill button to the `"Orbit Intelligence"` title row with `<RotateCcw />`, `aria-label="Reset chat"`, and `handleResetChat` action.
+  - Clicking `New Chat` clears `messages`, `error`, and `input`, purges `sessionStorage` and `localStorage`, resets `orbitState` to `"idle"`, and seamlessly restores the centered **3D Orbit Hero Stage**.
+- **Elimination of Vertical Blank Gap Between AI Responses & Prompt Chips (`components/orbit/OrbitView.tsx`)**:
+  - Applied `mt-auto` and `space-y-3` to conversational stream container so short conversations (1 user message + 1 AI card) hug the bottom dock tightly with zero empty void.
+  - Set viewport bottom padding to `pb-2` and reduced composer dock top padding to `pt-1`, ensuring `"Delivered by Orbit · 100% verified data"` sits tightly 8px–12px above prompt chips.
+  - Compacted context filter pills to `px-2.5 py-1 text-[11px] gap-1` so all 5 pills (`All Context`, `Train`, `Fuel`, `Plan`, `Circadian`) fit cleanly without right-edge cutoff.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **55 passed (55 files), 646 passed | 26 skipped (672 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
-- **Vitest Suite**: `642 passed | 26 skipped` across all 54 test suites (0 failing).
-- **Orbit Tests**: `48/48 passed` across `tests/orbit/*` (including `orbit-3d-core.test.ts`) and `tests/api/aria.test.ts`.
+- **Vitest Suite**: `646 passed | 26 skipped` across all 55 test suites (0 failing).
+- **Orbit Tests**: `49/49 passed` across `tests/orbit/*` (including `orbit-3d-core.test.ts`) and `tests/api/aria.test.ts`.
 - **Diet Tests**: `213/213 passed` across all 15 test suites in `tests/diet/*`.
 - **Workout Tests**: `42/42 passed` across `tests/workouts/*`.
 - **Onboarding Tests**: `78/78 passed` across `tests/onboarding/*`.

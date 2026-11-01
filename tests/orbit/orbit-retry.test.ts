@@ -31,5 +31,13 @@ describe("OrbitView Retry Mechanism & Resilience", () => {
     expect(orbitViewSource).toContain("setLoading(true);");
     expect(orbitViewSource).toContain('setOrbitState("thinking");');
   });
+
+  it("5. Provides New Chat / Reset button with handleResetChat action", () => {
+    expect(orbitViewSource).toContain('aria-label="Reset chat"');
+    expect(orbitViewSource).toContain("handleResetChat");
+    expect(orbitViewSource).toContain("New Chat");
+    expect(orbitViewSource).toContain("setMessages([]);");
+    expect(orbitViewSource).toContain('setViewMode("overview");');
+  });
 });
 

@@ -12,6 +12,7 @@ import { useEffect, useRef, useState } from "react";
 import NotificationBell from "@/components/ui/NotificationBell";
 import TrackSheet from "@/components/navigation/TrackSheet";
 import { OrbitMark } from "@/components/orbit/OrbitMark";
+import { Orbit3DCore } from "@/components/orbit/Orbit3DCore";
 import Logo from "@/components/Logo";
 
 export default function Navigation() {
@@ -190,6 +191,19 @@ export default function Navigation() {
         </div>
 
         <div className="app-mobile-actions flex items-center gap-2.5">
+          {/* Top Header Orbit Pill */}
+          {pathname !== "/dashboard/orbit" && (
+            <Link
+              href="/dashboard/orbit"
+              aria-label="Open Orbit AI"
+              className="bg-[#191D1A] hover:bg-[#2D6A4F] text-[#FCFBF9] rounded-full pl-1.5 pr-2.5 py-1 text-[11px] font-semibold inline-flex items-center gap-1.5 shadow-2xs transition-all active:scale-95 border border-white/10"
+            >
+              <Orbit3DCore size="sm" state="idle" />
+              <span>Orbit</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7] animate-pulse shrink-0" />
+            </Link>
+          )}
+
           <NotificationBell />
           {session?.user ? (
             <div ref={profileRef} className="relative">
@@ -403,6 +417,19 @@ export default function Navigation() {
 
       {/* Quick Track Sheet Modal */}
       <TrackSheet isOpen={showTrackSheet} onClose={() => setShowTrackSheet(false)} />
+
+      {/* Floating Bottom-Right 3D Orbit Launcher (Right Above the Bottom Pill Taskbar) */}
+      {pathname !== "/dashboard/orbit" && (
+        <Link
+          href="/dashboard/orbit"
+          aria-label="Open Orbit AI"
+          className="fixed right-4 bottom-[calc(62px+max(14px,env(safe-area-inset-bottom))+12px)] z-40 bg-[#191D1A] hover:bg-[#2D6A4F] text-[#FCFBF9] rounded-full pl-2 pr-3.5 py-2 shadow-[0_10px_28px_rgba(25,29,26,0.32)] border border-white/[0.12] flex items-center gap-2 transition-all active:scale-95 group"
+        >
+          <Orbit3DCore size="sm" state="idle" />
+          <span className="text-xs font-semibold tracking-tight">Orbit AI</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7] animate-pulse shrink-0" />
+        </Link>
+      )}
     </>
   );
 }

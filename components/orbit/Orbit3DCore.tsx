@@ -39,6 +39,7 @@ export function Orbit3DCore({
   const isThinking = state === "thinking" || state === "responding";
   const isSuccess = state === "success";
   const isError = state === "error";
+  const isSm = size === "sm";
 
   // Dimension scaling
   let containerPx = 184;
@@ -47,12 +48,14 @@ export function Orbit3DCore({
     containerPx = size;
     scaleRatio = size / 184;
   } else if (size === "sm") {
-    containerPx = 92;
-    scaleRatio = 0.5;
+    containerPx = 22;
+    scaleRatio = 22 / 184;
   } else if (size === "md") {
-    containerPx = 140;
-    scaleRatio = 140 / 184;
+    containerPx = 92;
+    scaleRatio = 92 / 184;
   }
+
+  const shouldShowRadar = showRadar && !isSm;
 
   // Animation durations
   const innerDuration = isThinking ? "6s" : "20s";
@@ -62,13 +65,15 @@ export function Orbit3DCore({
   return (
     <div
       className={cn(
-        "relative mx-auto my-2 flex items-center justify-center select-none overflow-visible",
+        isSm
+          ? "relative flex items-center justify-center select-none shrink-0"
+          : "relative mx-auto my-2 flex items-center justify-center select-none overflow-visible",
         className
       )}
       style={{
         width: `${containerPx}px`,
         height: `${containerPx}px`,
-        perspective: "800px",
+        perspective: isSm ? "300px" : "800px",
       }}
       role="img"
       aria-label={`Orbit 3D Celestial Core (${state})`}
@@ -105,7 +110,7 @@ export function Orbit3DCore({
       `}</style>
 
       {/* ── 1. BACKGROUND RADAR CONCENTRIC SVG CIRCLES ── */}
-      {showRadar && (
+      {shouldShowRadar && (
         <svg
           className="absolute inset-0 w-full h-full pointer-events-none select-none m-auto"
           viewBox="0 0 184 184"
@@ -285,6 +290,8 @@ export function Orbit3DCore({
               animation: "orbitCoreBreathe6s 6s ease-in-out infinite",
               boxShadow: isError
                 ? "0 0 28px rgba(220, 38, 38, 0.45)"
+                : isSm
+                ? "0 0 10px rgba(110, 231, 183, 0.3)"
                 : "0 0 28px rgba(110, 231, 183, 0.35)",
             }}
           >
@@ -293,35 +300,37 @@ export function Orbit3DCore({
               className="absolute top-1 left-2 w-3.5 h-2 rounded-full bg-white/40 blur-[1px] rotate-[-25deg] pointer-events-none"
             />
 
-            {/* SATAT Botanical Lotus Core Vector Identity */}
-            <svg
-              className="w-5 h-5 text-white/85 relative z-10"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"
-            >
-              {/* Central Petal */}
-              <path
-                d="M12 4C10.5 7.5 9.5 11 12 15C14.5 11 13.5 7.5 12 4Z"
-                fill="currentColor"
-                opacity="0.95"
-              />
-              {/* Left Wing Petal */}
-              <path
-                d="M7.5 8C7 11 8.5 13.5 11.5 14.5C9.5 13.5 8 11 7.5 8Z"
-                fill="currentColor"
-                opacity="0.8"
-              />
-              {/* Right Wing Petal */}
-              <path
-                d="M16.5 8C17 11 15.5 13.5 12.5 14.5C14.5 13.5 16 11 16.5 8Z"
-                fill="currentColor"
-                opacity="0.8"
-              />
-              {/* Base Calyx Anchor */}
-              <ellipse cx="12" cy="16.5" rx="3.5" ry="1.2" fill="currentColor" opacity="0.9" />
-            </svg>
+            {/* SATAT Botanical Lotus Core Vector Identity (only on medium/large scale) */}
+            {!isSm && (
+              <svg
+                className="w-5 h-5 text-white/85 relative z-10"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                {/* Central Petal */}
+                <path
+                  d="M12 4C10.5 7.5 9.5 11 12 15C14.5 11 13.5 7.5 12 4Z"
+                  fill="currentColor"
+                  opacity="0.95"
+                />
+                {/* Left Wing Petal */}
+                <path
+                  d="M7.5 8C7 11 8.5 13.5 11.5 14.5C9.5 13.5 8 11 7.5 8Z"
+                  fill="currentColor"
+                  opacity="0.8"
+                />
+                {/* Right Wing Petal */}
+                <path
+                  d="M16.5 8C17 11 15.5 13.5 12.5 14.5C14.5 13.5 16 11 16.5 8Z"
+                  fill="currentColor"
+                  opacity="0.8"
+                />
+                {/* Base Calyx Anchor */}
+                <ellipse cx="12" cy="16.5" rx="3.5" ry="1.2" fill="currentColor" opacity="0.9" />
+              </svg>
+            )}
           </div>
         </div>
       </div>
@@ -330,3 +339,4 @@ export function Orbit3DCore({
 }
 
 export default Orbit3DCore;
+
