@@ -1,31 +1,56 @@
 import { describe, it, expect } from "vitest";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import fs from "fs";
 import path from "path";
+import { OrbitLauncherBadge } from "@/components/orbit/OrbitLauncherBadge";
 
-describe("Global Orbit 3D Launcher in Navigation", () => {
+describe("Global Orbit 3D Launcher Badge in Navigation (Sprint 6.2)", () => {
   const navSource = fs.readFileSync(
     path.resolve(__dirname, "../../components/Navigation.tsx"),
     "utf8"
   );
+  const badgeSource = fs.readFileSync(
+    path.resolve(__dirname, "../../components/orbit/OrbitLauncherBadge.tsx"),
+    "utf8"
+  );
 
-  it("1. Imports Orbit3DCore in Navigation", () => {
-    expect(navSource).toContain('import { Orbit3DCore } from "@/components/orbit/Orbit3DCore";');
+  it("1. Imports OrbitLauncherBadge in Navigation", () => {
+    expect(navSource).toContain('import { OrbitLauncherBadge } from "@/components/orbit/OrbitLauncherBadge";');
   });
 
-  it("2. Renders floating bottom-right 3D Orbit launcher above taskbar when not on /dashboard/orbit", () => {
+  it("2. Renders floating bottom-right 3D Orbit launcher badge above taskbar when not on /dashboard/orbit", () => {
     expect(navSource).toContain('pathname !== "/dashboard/orbit"');
-    expect(navSource).toContain('href="/dashboard/orbit"');
     expect(navSource).toContain(
       "fixed right-4 bottom-[calc(62px+max(14px,env(safe-area-inset-bottom))+12px)] z-40"
     );
-    expect(navSource).toContain('<Orbit3DCore size="sm" state="idle" />');
-    expect(navSource).toContain("Orbit AI");
-    expect(navSource).toContain("bg-[#6EE7B7]");
+    expect(navSource).toContain('<OrbitLauncherBadge');
+    expect(navSource).toContain('size="lg"');
   });
 
-  it("3. Renders top app header Orbit pill next to bell and avatar", () => {
+  it("3. Renders top app header Orbit launcher badge next to bell and avatar", () => {
     expect(navSource).toContain("app-mobile-actions");
-    expect(navSource).toContain("pl-1.5 pr-2.5 py-1 text-[11px] font-semibold");
-    expect(navSource).toContain("<span>Orbit</span>");
+    expect(navSource).toContain('<OrbitLauncherBadge size="md" tooltipPosition="bottom" />');
+  });
+
+  it("4. OrbitLauncherBadge renders rounded-square container with no text in badge body", () => {
+    const html = renderToStaticMarkup(React.createElement(OrbitLauncherBadge, { size: "lg" }));
+    // Rounded square styling
+    expect(html).toContain("rounded-2xl");
+    expect(html).toContain("bg-[#191D1A]");
+    expect(html).toContain("border-white/[0.12]");
+    expect(html).toContain("hover:scale-105");
+
+    // Must NOT contain text like "Orbit AI" in the visible badge body
+    expect(html).not.toContain(">Orbit AI<");
+    expect(html).not.toContain(">AI<");
+
+    // Tooltip contains Orbit
+    expect(html).toContain('role="tooltip"');
+    expect(html).toContain("Orbit</span>");
+  });
+
+  it("5. Embeds moving 3D orbital core (<Orbit3DCore size=\"sm\" state=\"idle\" />)", () => {
+    expect(badgeSource).toContain('<Orbit3DCore size="sm" state="idle" />');
   });
 });

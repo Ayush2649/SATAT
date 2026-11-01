@@ -748,12 +748,35 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ---
 
+### ✅ Sprint 6.2: Redesign Global Orbit Launchers into Clean, Rounded-Square 3D Emblem Badges with Moving Orbital Rings and Hover Tooltips
+- **Dedicated `<OrbitLauncherBadge />` Component (`components/orbit/OrbitLauncherBadge.tsx`)**:
+  - Created a tactile rounded-square emblem container (`rounded-2xl` / `rounded-xl`, `bg-[#191D1A]`, `border border-white/[0.12]`, `shadow-md`, `hover:scale-105 active:scale-95`).
+  - Available in two calibrated sizes:
+    - `size="md"`: `w-11 h-11` (ideal for top app bar headers).
+    - `size="lg"`: `w-12 h-12` (ideal for floating FABs).
+  - **Zero Badge-Body Text Directives**: Completely eliminated text clutter (`"Orbit"`, `"AI"`) from within the badge body, leaving only the pure, mesmerizing 3D celestial orbital physics core (`<Orbit3DCore size="sm" state="idle" />`).
+  - **Floating Hover Tooltips**: Added smooth, high-contrast dark tooltip (`role="tooltip"`, `bg-[#191D1A] text-white text-[11px] font-semibold px-2 py-0.5 rounded-md border border-white/[0.12] shadow-md pointer-events-none`) with a subtle down/up arrow:
+    - Directional positioning: `tooltipPosition="bottom"` (`top-full mt-2`) for top app header and `tooltipPosition="top"` (`bottom-full mb-2`) for floating bottom FAB.
+- **Global Entry Point Updates (`components/Navigation.tsx`)**:
+  - **Top App Header**: Replaced the pill button with `<OrbitLauncherBadge size="md" tooltipPosition="bottom" />` mounted beside the notification bell and profile avatar.
+  - **Floating Bottom-Right Launcher (FAB)**: Replaced the wide pill with `<OrbitLauncherBadge size="lg" tooltipPosition="top" className="fixed right-4 bottom-[calc(62px+max(14px,env(safe-area-inset-bottom))+12px)] z-40" />` positioned cleanly above the bottom dock whenever `pathname !== "/dashboard/orbit"`.
+- **Mini 3D Orbital Core Calibration (`components/orbit/Orbit3DCore.tsx`)**:
+  - Calibrated `size="sm"` to `containerPx = 30` with `scaleRatio = 30 / 184` and `showRadar = false`, ensuring the 3D rotating planet and its three tilted orbital rings are perfectly framed inside 44px–48px badges with zero boundary clipping.
+- **Comprehensive Vitest Suite Added (`tests/navigation/navigation-orbit-launcher.test.ts`)**:
+  - 5 tests covering component exports, badge rounded-square geometry, absence of badge body text, presence of hover tooltip, and rendering of the 3D core rings.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **55 passed (55 files), 648 passed | 26 skipped (674 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
-- **Vitest Suite**: `646 passed | 26 skipped` across all 55 test suites (0 failing).
+- **Vitest Suite**: `648 passed | 26 skipped` across all 55 test suites (0 failing).
+- **Navigation & Launcher Tests**: `5/5 passed` in `tests/navigation/navigation-orbit-launcher.test.ts`.
 - **Orbit Tests**: `49/49 passed` across `tests/orbit/*` (including `orbit-3d-core.test.ts`) and `tests/api/aria.test.ts`.
 - **Diet Tests**: `213/213 passed` across all 15 test suites in `tests/diet/*`.
 - **Workout Tests**: `42/42 passed` across `tests/workouts/*`.
 - **Onboarding Tests**: `78/78 passed` across `tests/onboarding/*`.
 - **Landing Tests**: `3/3 passed` across `tests/landing/*`.
-

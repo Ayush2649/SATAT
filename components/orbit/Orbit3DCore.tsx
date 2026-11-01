@@ -48,8 +48,8 @@ export function Orbit3DCore({
     containerPx = size;
     scaleRatio = size / 184;
   } else if (size === "sm") {
-    containerPx = 22;
-    scaleRatio = 22 / 184;
+    containerPx = 30;
+    scaleRatio = 30 / 184;
   } else if (size === "md") {
     containerPx = 92;
     scaleRatio = 92 / 184;
