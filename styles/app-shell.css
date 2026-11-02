@@ -332,4 +332,36 @@
   font-family: var(--font-mono, monospace) !important;
 }
 
+/* ──────────────────────────────────────────────────────────────────────────
+   SATAT MOBILE TOUCH-LOCK ARCHITECTURE (§ Strict Breakpoint Boundary)
+   Strict separation ensuring desktop studio grids (lg:grid-cols-12, sidebars)
+   never pollute mobile single-column viewports (<= 767px).
+   ────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .orbit-view-root {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: 100% !important;
+  }
+
+  .orbit-view-root header {
+    padding-top: max(10px, env(safe-area-inset-top, 0px));
+  }
+
+  /* Zero out desktop top clearances on mobile */
+  .app-shell-content:has(.orbit-view-root) {
+    padding-top: 0 !important;
+    padding-inline: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* Hide any desktop studio grids from leaking into mobile */
+  .orbit-desktop-grid {
+    display: none !important;
+  }
+}
+
+
 
