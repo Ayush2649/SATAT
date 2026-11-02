@@ -961,24 +961,16 @@ button:disabled { cursor: not-allowed; }
   max-width: none;
   width: 100%;
   height: 100%;
-  padding-top: 4rem; /* Exactly 64px, clears the top command bar */
+  padding-top: 0;
   padding-inline: 0;
   padding-bottom: 0;
   overflow: hidden;
   min-width: 0;
 }
 
-@media (min-width: 640px) {
+@media (min-width: 768px) {
   .app-shell-content:has(.orbit-view-root) {
-    padding-top: 4rem;
-    padding-inline: 0;
-    padding-bottom: 0;
-  }
-}
-
-@media (min-width: 1024px) {
-  .app-shell-content:has(.orbit-view-root) {
-    padding-top: 4rem;
+    padding-top: 4rem; /* Exactly 64px, clears the desktop top command bar */
     padding-inline: 0;
     padding-bottom: 0;
   }

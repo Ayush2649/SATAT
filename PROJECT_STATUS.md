@@ -868,6 +868,23 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ---
 
+### ✅ Sprint 6.7: Revert Orbit Mobile Header Back to Pristine State & Enforce Absolute Mobile Layout Invariant
+- **Reverted Orbit Mobile Header to Pristine State (`components/orbit/OrbitView.tsx`)**:
+  - Removed unauthorized clutter (`AI ACTIVE` badge on right, `Cadence` and `Chat` view mode split pills) that crammed into the mobile top bar.
+  - Re-anchored Top App Bar: Left features clean brand wordmark `SATAT / ORBIT` with Halant `स` badge and live pulsing Matcha Sage dot with dynamic status (`Rhythm Synced` / `Analyzing...` / `Responding...`); Right strictly houses Notification bell + User avatar (and close `X` when in overlay mode).
+  - Cleaned Title & Reset Row: `"Orbit Intelligence"` in `Instrument Serif` + subtitle `"Unified biological & execution copilot."` on the left, and the clean `New Chat` (`↻`) button on the right.
+  - Restored Clean Single-Row Context Filter: Horizontal scrollable pill row with `● All Context`, `Train`, `Fuel`, `Plan`, and `Circadian` (`FOCUS_MODES`).
+- **Enforced Mobile Touch-Lock Architecture (`styles/app-shell.css` & `app/globals.css`)**:
+  - Scoped `.app-shell-content:has(.orbit-view-root)` with default `padding-top: 0` on mobile, preventing desktop 64px top command bar clearances from shifting mobile screens down.
+  - Applied `@media (min-width: 768px)` constraint for desktop `padding-top: 4rem` (64px) top clearance.
+  - Added strict `@media (max-width: 767px)` touch-lock rules in `styles/app-shell.css` forcing `.orbit-view-root` full viewport bounds and hiding `.orbit-desktop-grid`.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **55 passed (55 files), 650 passed | 26 skipped (676 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
 - **Vitest Suite**: `650 passed | 26 skipped` across all 55 test suites (0 failing).
