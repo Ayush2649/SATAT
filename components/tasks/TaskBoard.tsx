@@ -715,6 +715,9 @@ export default function TaskBoard() {
       ) : (
         /* ── VIEW A: Main Execution Studio (Default View) ── */
         <div>
+        {/* ─── MOBILE VIEW (< 1024px) ─── */}
+        <div className="lg:hidden space-y-5">
+
           {/* ── 1. Uncongested Top Editorial Header (image_4e69be.png) ── */}
           <div className="pt-1 pb-4">
             {/* Row 1 (Full-Width Eyebrow Row) */}
@@ -1160,6 +1163,9 @@ export default function TaskBoard() {
                                     alt=""
                                     className="w-full h-full object-cover"
                                     loading="lazy"
+                                    onError={(e) => {
+                                      (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=300&q=75";
+                                    }}
                                   />
                                   <div className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-[#2D6A4F] text-white flex items-center justify-center">
                                     <Check className="w-2.5 h-2.5 stroke-[3]" />
@@ -1232,7 +1238,7 @@ export default function TaskBoard() {
                 onClick={() => setShowAddProject(true)}
                 type="button"
                 aria-label="New Project"
-                className="bg-[#EFECE4] hover:bg-[#191D1A] hover:text-white text-[#1C1917] rounded-full px-3 py-1 text-xs font-semibold transition-all cursor-pointer inline-flex items-center gap-1"
+                className="bg-[#EFECE4] hover:bg-[#191D1A] hover:text-white text-[#1C1917] rounded-full px-3 py-1 text-xs font-semibold transition-all cursor-pointer inline-flex items-center gap-1 whitespace-nowrap shrink-0"
               >
                 <Plus className="w-3.5 h-3.5" /> New Project
               </button>
@@ -1364,7 +1370,536 @@ export default function TaskBoard() {
               })}
             </div>
           </div>
+        
         </div>
+
+        {/* ─── DESKTOP VIEW (lg: 1024px+) — 12-Column Responsive Studio Architecture (image_49d72c.jpg) ─── */}
+        <div className="hidden lg:grid grid-cols-12 gap-6 items-start">
+          {/* ── LEFT 8 COLUMNS: Schedule, Queue, and Workspaces ── */}
+          <div className="col-span-8 space-y-5">
+            {/* 1. Header & Switcher Row */}
+            <div className="flex items-start justify-between gap-4 bg-[#FCFBF9] rounded-[28px] p-6 border border-[#1C1917]/[0.06] shadow-xs">
+              <div>
+                <div className="flex items-center gap-2 text-[10px] font-bold tracking-[0.16em] uppercase text-[#57534E]">
+                  <span>STUDIO V2.4</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#2D6A4F]" />
+                  <span>PLAN · CADENCE</span>
+                  <span className="bg-[#E0F2E9] text-[#2D6A4F] text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1 ml-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#2D6A4F]" />
+                    <span>Focus Engine Primed</span>
+                  </span>
+                </div>
+                <h1 className="font-serif text-3xl sm:text-4xl text-[#1C1917] tracking-tight leading-tight mt-1.5">
+                  Execution Studio
+                </h1>
+                <p className="text-xs text-[#57534E] mt-1">
+                  Design your daily rhythm, rituals, and high-impact deep work blocks.
+                </p>
+              </div>
+
+              {/* Segmented Pill Switcher & Add Task */}
+              <div className="flex items-center gap-2.5 shrink-0">
+                <div className="bg-[#F6F3EC] p-1 rounded-full flex items-center gap-1 border border-[#1C1917]/[0.06]">
+                  <button
+                    onClick={() => setView("schedule")}
+                    className={cn(
+                      "px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer",
+                      view === "schedule"
+                        ? "bg-[#191D1A] text-white shadow-xs"
+                        : "text-[#57534E] hover:text-[#1C1917]"
+                    )}
+                  >
+                    Schedule
+                  </button>
+                  <button
+                    onClick={() => setView("history")}
+                    className={cn(
+                      "px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer",
+                      view === "history"
+                        ? "bg-[#191D1A] text-white shadow-xs"
+                        : "text-[#57534E] hover:text-[#1C1917]"
+                    )}
+                  >
+                    History
+                  </button>
+                </div>
+
+                <button
+                  onClick={openAddTask}
+                  type="button"
+                  aria-label="New task"
+                  className="bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full px-4 py-2 text-xs font-semibold inline-flex items-center gap-1.5 shadow-sm transition-all cursor-pointer shrink-0 active:scale-95"
+                >
+                  <Plus className="w-4 h-4" /> New Task
+                </button>
+              </div>
+            </div>
+
+            {/* 2. Schedule or History View Content */}
+            {view === "schedule" ? (
+              <div className="space-y-5">
+                {/* 7-Day Week Strip & Project Filter Pills Row */}
+                <div className="bg-[#FCFBF9] rounded-[24px] p-4 border border-[#1C1917]/[0.06] shadow-xs space-y-3">
+                  {/* Week Days Strip */}
+                  <div className="grid grid-cols-7 gap-2">
+                    {weekDates.map((date: string, i: number) => {
+                      const isSelected = date === selectedDate;
+                      const isToday = date === today;
+                      const pending = pendingByDate[date] ?? 0;
+                      const done = doneByDate[date] ?? 0;
+
+                      return (
+                        <button
+                          key={date}
+                          onClick={() => setSelectedDate(date)}
+                          type="button"
+                          className={cn(
+                            "flex flex-col items-center py-2.5 px-1 rounded-2xl transition-all cursor-pointer text-center",
+                            isSelected
+                              ? "bg-[#191D1A] text-white shadow-md font-bold"
+                              : isToday
+                              ? "bg-[#F6F3EC] text-[#1C1917] font-semibold"
+                              : "text-[#57534E] hover:bg-[#F6F3EC]"
+                          )}
+                        >
+                          <span className="text-[10px] font-bold uppercase leading-none opacity-80">
+                            {DAY_LABELS[i]}
+                          </span>
+                          <span className="text-sm font-bold leading-none tabular-nums mt-1.5">
+                            {shortDay(date)}
+                          </span>
+                          <div className="flex gap-1 h-1 mt-1.5">
+                            {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-[#E05A47]" />}
+                            {!isSelected && pending > 0 && <span className="w-1 h-1 rounded-full bg-[#E05A47]" />}
+                            {!isSelected && done > 0 && <span className="w-1 h-1 rounded-full bg-[#2D6A4F]" />}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Project Filter Pills */}
+                  <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pt-2 border-t border-[#1C1917]/[0.05]">
+                    <button
+                      onClick={() => setActiveProjectId(null)}
+                      className={cn(
+                        "rounded-full px-3 py-1 text-xs font-semibold transition-all whitespace-nowrap shrink-0 cursor-pointer",
+                        activeProjectId === null
+                          ? "bg-[#191D1A] text-white"
+                          : "bg-[#EFECE4] text-[#57534E] hover:text-[#1C1917]"
+                      )}
+                    >
+                      All Tasks
+                    </button>
+                    {projects.map((p) => (
+                      <button
+                        key={p.id}
+                        onClick={() => setActiveProjectId(p.id)}
+                        className="bg-[#EFECE4] text-[#57534E] hover:text-[#1C1917] rounded-full px-3 py-1 text-xs font-semibold transition-all whitespace-nowrap shrink-0 flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
+                        <span>{p.name}</span>
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setShowAddProject(true)}
+                      type="button"
+                      aria-label="New Project"
+                      className="bg-[#EFECE4] hover:bg-[#191D1A] hover:text-white text-[#1C1917] rounded-full px-3 py-1 text-xs font-semibold transition-all cursor-pointer inline-flex items-center gap-1 whitespace-nowrap shrink-0 ml-auto"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> New Project
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3. Today's Execution Queue (Task Cards) */}
+                {overdueTasks.length > 0 && (
+                  <div className="bg-rose-50/60 rounded-3xl p-4 border border-rose-200/70">
+                    <div className="flex items-center gap-2 mb-3">
+                      <AlertCircle className="w-4 h-4 text-[#C94A38] shrink-0" />
+                      <span className="text-xs font-bold text-[#C94A38] uppercase tracking-wider">
+                        Overdue · {overdueTasks.length} tasks
+                      </span>
+                    </div>
+                    <div className="space-y-2.5">
+                      {overdueTasks.map((t) => (
+                        <TaskCardItem
+                          key={t.id}
+                          task={t}
+                          projectName={projects.find((p) => p.id === t.projectId)?.name}
+                          onToggle={handleToggleTask}
+                          onDelete={handleDeleteTask}
+                          onEdit={setEditingTask}
+                          onFocus={startFocusOnTask}
+                          isOverdue
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {tasksForDate.length === 0 && overdueTasks.length === 0 ? (
+                  <div className="bg-[#FCFBF9] rounded-[28px] p-8 border border-[#1C1917]/[0.06] text-center shadow-xs">
+                    <Sparkles className="w-7 h-7 text-[#2D6A4F] mx-auto mb-2 opacity-80" />
+                    <h3 className="font-serif italic text-2xl text-[#1C1917]">
+                      No tasks scheduled for this date
+                    </h3>
+                    <p className="text-xs text-[#57534E] max-w-xs mx-auto mt-1 mb-5 leading-relaxed">
+                      Add high-cognitive deep work or choose a sprint template to maintain cadence.
+                    </p>
+                    <div className="flex flex-wrap justify-center gap-2">
+                      <button
+                        onClick={openAddTask}
+                        type="button"
+                        className="bg-[#E05A47] hover:bg-[#C94A38] text-white px-4 py-2 rounded-full text-xs font-semibold cursor-pointer transition-all inline-flex items-center gap-1.5 active:scale-95 shadow-xs"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> + New Task
+                      </button>
+                      <button
+                        onClick={() =>
+                          handleAddTask(
+                            "Deep Work Sprint (90m)",
+                            "Cognitive deep work",
+                            selectedDate,
+                            "high"
+                          )
+                        }
+                        type="button"
+                        className="bg-[#EFECE4] hover:bg-[#E2DDD2] text-[#1C1917] px-3.5 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-all"
+                      >
+                        + Deep Work Sprint (90m)
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {tasksForDate.map((t) => (
+                      <TaskCardItem
+                        key={t.id}
+                        task={t}
+                        projectName={projects.find((p) => p.id === t.projectId)?.name}
+                        onToggle={handleToggleTask}
+                        onDelete={handleDeleteTask}
+                        onEdit={setEditingTask}
+                        onFocus={startFocusOnTask}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {/* 4. Project Workspace Folder Cards Grid (3 Columns) */}
+                <div className="mt-8">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#1C1917]">
+                      PROJECT WORKSPACES
+                    </span>
+                    <button
+                      onClick={() => setShowAddProject(true)}
+                      type="button"
+                      aria-label="New Project"
+                      className="bg-[#EFECE4] hover:bg-[#191D1A] hover:text-white text-[#1C1917] rounded-full px-3 py-1 text-xs font-semibold transition-all cursor-pointer inline-flex items-center gap-1 whitespace-nowrap shrink-0"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> New Project
+                    </button>
+                  </div>
+
+                  {projects.length === 0 ? (
+                    <div className="bg-[#FCFBF9] rounded-[22px] p-6 border border-[#1C1917]/[0.06] text-center shadow-xs">
+                      <p className="font-serif italic text-base text-[#1C1917]">No workspaces created yet</p>
+                      <p className="text-xs text-[#57534E] mt-1 mb-3">Group your deep work tasks into dedicated project domains.</p>
+                      <button
+                        onClick={() => setShowAddProject(true)}
+                        type="button"
+                        className="bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full px-4 py-1.5 text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> + Create First Project
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3.5">
+                      {projects.map((p) => {
+                        const pendingCount = projectPendingCounts[p.id] || 0;
+                        const completedCount = projectCompletedCounts[p.id] || 0;
+                        const total = pendingCount + completedCount;
+                        const pct = total > 0 ? Math.round((completedCount / total) * 100) : 0;
+
+                        return (
+                          <div
+                            key={p.id}
+                            onClick={() => setActiveProjectId(p.id)}
+                            className="bg-[#FCFBF9] rounded-[22px] p-4 border border-[#1C1917]/[0.06] shadow-2xs flex flex-col justify-between cursor-pointer hover:border-[#2D6A4F]/40 hover:shadow-xs transition-all group"
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div
+                                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                                style={{ backgroundColor: `${p.color}15`, color: p.color }}
+                              >
+                                <FolderOpen className="w-5 h-5" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <h3 className="font-bold text-sm text-[#1C1917] truncate group-hover:text-[#2D6A4F] transition-colors">
+                                  {p.name}
+                                </h3>
+                                <p className="text-[11px] text-[#8C857B] truncate">
+                                  {pendingCount} active · {completedCount} completed
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="w-full bg-[#EFECE4] rounded-full h-1.5 mt-3.5 overflow-hidden">
+                              <div
+                                className="h-full rounded-full transition-all duration-500"
+                                style={{ width: `${pct}%`, backgroundColor: p.color || "#2D6A4F" }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* History Tab Content */
+              <div className="bg-[#FCFBF9] rounded-[28px] p-6 border border-[#1C1917]/[0.06] shadow-xs">
+                {historyGroups.length === 0 ? (
+                  <div className="text-center py-10">
+                    <CheckCircle2 className="w-10 h-10 text-[#2D6A4F] mx-auto mb-2 opacity-60" />
+                    <p className="font-serif text-xl text-[#1C1917]">No completed tasks yet</p>
+                    <p className="text-xs text-[#57534E] mt-1">
+                      Complete daily focus blocks to build compounding momentum.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {historyGroups.map(([date, taskList]) => (
+                      <div key={date}>
+                        <div className="flex items-center justify-between mb-2.5">
+                          <h3 className="font-serif text-xl text-[#1C1917]">
+                            {formatGroupDate(date)}
+                          </h3>
+                          <span className="bg-[#EFECE4] text-[#57534E] rounded-full px-3 py-1 text-[10px] font-semibold">
+                            {taskList.length} tasks · {taskList.length * 25}m deep focus
+                          </span>
+                        </div>
+                        <div className="space-y-2.5">
+                          {taskList.map((task) => {
+                            const pName = projects.find((p) => p.id === task.projectId)?.name;
+                            const thumb = resolveTaskThumbnail(task.title, pName);
+                            return (
+                              <div
+                                key={task.id}
+                                className="bg-[#F6F3EC] rounded-[22px] p-3.5 border border-[#1C1917]/[0.04] flex items-center gap-3.5"
+                              >
+                                <div className="w-12 h-12 rounded-xl overflow-hidden relative shrink-0 shadow-2xs bg-[#EFECE4]">
+                                  <img
+                                    src={thumb}
+                                    alt=""
+                                    className="w-full h-full object-cover"
+                                    loading="lazy"
+                                    onError={(e) => {
+                                      (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=300&q=75";
+                                    }}
+                                  />
+                                  <div className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-[#2D6A4F] text-white flex items-center justify-center">
+                                    <Check className="w-2.5 h-2.5 stroke-[3]" />
+                                  </div>
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <p className="text-sm font-bold text-[#1C1917] truncate leading-tight">
+                                      {task.title}
+                                    </p>
+                                    {task.completedAt && (
+                                      <span className="text-[11px] font-mono text-[#8C857B] shrink-0">
+                                        {formatTime(task.completedAt)}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-[#8C857B] mt-0.5">
+                                    {pName ? pName.toUpperCase() : "GENERAL"} · Completed
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* ── RIGHT 4 COLUMNS: Sticky Focus Engine & Rituals (image_49d72c.jpg) ── */}
+          <div className="col-span-4 space-y-5 lg:sticky lg:top-20">
+            {/* 1. Vertical Dark Espresso "Circadian Focus Engine" Timer Card */}
+            <div className="bg-[#191D1A] rounded-[28px] p-5 text-white shadow-xl relative overflow-hidden">
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <div className="bg-[#2D6A4F]/40 border border-[#6EE7B7]/25 text-[#6EE7B7] rounded-full px-3 py-1 text-[9px] font-bold tracking-wider uppercase inline-flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7]" />
+                  <span>CIRCADIAN FOCUS ENGINE</span>
+                </div>
+                <span className="text-[10px] text-stone-300 font-semibold bg-white/10 px-2 py-0.5 rounded-full">
+                  ● Peak Dopamine
+                </span>
+              </div>
+
+              {/* 3 Duration Selector Pills */}
+              <div className="flex items-center gap-1.5 my-3 bg-white/[0.08] p-1 rounded-full text-xs font-semibold">
+                {([25, 50, 90] as const).map((mins) => (
+                  <button
+                    key={mins}
+                    type="button"
+                    onClick={() => handleSelectDuration(mins)}
+                    className={cn(
+                      "flex-1 py-1.5 rounded-full text-center transition-all cursor-pointer",
+                      targetMinutes === mins
+                        ? "bg-[#E05A47] text-white shadow-xs"
+                        : "text-stone-300 hover:text-white"
+                    )}
+                  >
+                    {mins === 25 ? "25m Sprint" : mins === 50 ? "50m Deep" : "90m Flow"}
+                  </button>
+                ))}
+              </div>
+
+              {/* Engaged Task Title */}
+              <div className="text-center my-2">
+                <h3 className="font-serif italic text-xl text-white line-clamp-2">
+                  {activeFocusTask?.title || nextPendingTask?.title || "Select a Task to Enter Flow"}
+                </h3>
+                <p className="text-[11px] text-stone-400 mt-1">
+                  {activeFocusTask?.project || "Daily Cadence"} · High Cognitive Load
+                </p>
+              </div>
+
+              {/* Large 160x160 Progress Ring */}
+              <div className="w-[160px] h-[160px] mx-auto my-3 relative flex items-center justify-center">
+                <svg className="w-full h-full -rotate-90 transform" viewBox="0 0 160 160">
+                  <circle cx="80" cy="80" r="68" stroke="rgba(255,255,255,0.08)" strokeWidth="8" fill="none" />
+                  <circle
+                    cx="80"
+                    cy="80"
+                    r="68"
+                    stroke="#E05A47"
+                    strokeWidth="8"
+                    strokeLinecap="round"
+                    fill="none"
+                    strokeDasharray={2 * Math.PI * 68}
+                    strokeDashoffset={2 * Math.PI * 68 * (1 - flowProgress)}
+                    className="transition-all duration-300"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                  <span className="font-mono text-3xl font-bold text-white tracking-tight leading-none">
+                    {formatFocusTime(secondsRemaining)}
+                  </span>
+                  <span className="text-[10px] font-bold tracking-wider text-stone-400 uppercase mt-1">
+                    FLOW STATE · BLOCK 1/3
+                  </span>
+                </div>
+              </div>
+
+              {/* Enter Flow State Button */}
+              <button
+                type="button"
+                onClick={toggleFlowTimer}
+                className="w-full bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full py-3 text-xs font-semibold flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.98] cursor-pointer"
+              >
+                {isTimerRunning ? (
+                  <>
+                    <Pause className="w-4 h-4 fill-current" />
+                    <span>Pause Flow Session</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-4 h-4 fill-current" />
+                    <span>▷ Enter Flow State</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* 2. Daily Rituals 2×2 Photo-Backed Overlay Grid */}
+            <div className="bg-[#FCFBF9] rounded-[28px] p-5 border border-[#1C1917]/[0.06] shadow-xs">
+              <div className="flex items-center justify-between mb-3.5">
+                <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#1C1917]">
+                  DAILY NON-NEGOTIABLES
+                </span>
+                <span className="text-xs font-semibold text-[#2D6A4F]">
+                  {completedRitualsCount} / {RITUAL_DEFS.length} Done
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                {RITUAL_DEFS.map((ritual) => {
+                  const isDone = !!rituals[ritual.id];
+                  return (
+                    <div
+                      key={ritual.id}
+                      onClick={() => toggleRitual(ritual.id)}
+                      className="h-28 rounded-2xl overflow-hidden relative cursor-pointer group shadow-2xs border border-[#1C1917]/[0.06]"
+                    >
+                      <img
+                        src={ritual.photoUrl}
+                        alt={ritual.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=300&q=75";
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-2.5 flex flex-col justify-between" />
+                      <div className="absolute top-2 right-2 z-10">
+                        <div
+                          className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${
+                            isDone ? "bg-[#2D6A4F] text-white" : "bg-black/40 border border-white/40 text-transparent"
+                          }`}
+                        >
+                          <Check className="w-3 h-3 stroke-[3]" />
+                        </div>
+                      </div>
+                      <div className="absolute bottom-2 left-2 right-2 z-10 text-white">
+                        <span className="text-[8px] font-bold tracking-wider uppercase text-stone-300 block">
+                          {ritual.category}
+                        </span>
+                        <h4 className="text-xs font-bold leading-tight truncate mt-0.5">
+                          {ritual.title}
+                        </h4>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 3. 3-Column Execution Metrics Mini-Card */}
+            <div className="bg-[#FCFBF9] rounded-[24px] p-4 border border-[#1C1917]/[0.06] shadow-xs grid grid-cols-3 gap-2 text-center">
+              <div className="bg-[#F6F3EC] rounded-2xl p-2.5">
+                <div className="text-[9px] font-bold uppercase text-[#8C857B]">TASKS DONE</div>
+                <div className="text-lg font-bold text-[#1C1917] mt-0.5">
+                  {allTasks.filter((t) => t.status === "completed").length}
+                </div>
+              </div>
+              <div className="bg-[#F6F3EC] rounded-2xl p-2.5">
+                <div className="text-[9px] font-bold uppercase text-[#8C857B]">FOCUS TIME</div>
+                <div className="text-lg font-bold text-[#2D6A4F] mt-0.5">
+                  {allTasks.filter((t) => t.status === "completed").length * 25}m
+                </div>
+              </div>
+              <div className="bg-[#F6F3EC] rounded-2xl p-2.5">
+                <div className="text-[9px] font-bold uppercase text-[#8C857B]">STREAK</div>
+                <div className="text-lg font-bold text-[#E05A47] mt-0.5">
+                  🔥 5d
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
       )}
 
       {/* ── 6. Portaled Modals ── */}
@@ -1445,6 +1980,9 @@ function TaskCardItem({
           alt=""
           className="w-full h-full object-cover"
           loading="lazy"
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=300&q=75";
+          }}
         />
       </div>
 

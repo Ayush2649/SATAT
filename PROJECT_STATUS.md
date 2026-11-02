@@ -800,6 +800,40 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ---
 
+### ✅ Sprint 6.4: Responsive Desktop (lg: 1024px+ / xl: 1280px+) & Tablet (md: 768px–1023px) YouTube-Style Architecture Across All 5 SATAT Screens
+- **YouTube-Style Responsive App Shell (`components/Navigation.tsx` & `app/globals.css`)**:
+  - **Collapsible Navigation Rail**: Implemented a responsive left sidebar (`hidden md:flex fixed left-0 top-0 bottom-0 z-40 bg-[#F6F3EC] border-r border-[#1C1917]/[0.08]`) with two states: `w-[76px]` (Tablet / collapsed) and `w-[240px]` (expanded Desktop).
+  - **Brand Header & Dynamic Workspaces**: Features a top brand row with Menu hamburger toggle, `SATAT` serif wordmark, and `OS v2.4` status pill, plus a live `WORKSPACES` section rendering dynamic Firestore user projects (`getProjects(userId)`).
+  - **Unified Sticky Top Command Bar**: Implemented `h-16 fixed top-0 right-0 z-30` header for Tablet/Desktop with breadcrumb trail, live synced mint badge, centered `⌘K` command/orbit search bar, context-aware primary Terracotta CTA pill (`+ Quick Track` / `+ New Task` / `+ Scan Meal` / `↻ New Chat`), `<OrbitLauncherBadge size="md" />`, bell, and avatar.
+  - **Responsive Layout Tokens**: Added `@media (min-width: 768px)` and `@media (min-width: 1024px)` padding rules to `.app-shell-main` and `.app-shell-content`, with specialized zero-padding overrides for `.orbit-view-root`.
+
+- **Screen 1: `Today` Responsive 12-Column Grid (`components/dashboard/HomeView.tsx`)**:
+  - **Left 8 Columns**: Top Greeting + 7-Day Calendar row, 2-Column Hero Row (Dark `#191D1A` Training Split Card + Calorie Budget & Target Protein Synthesis Cards), Today's Rhythm with category filter pills (`All Timeline`, `Meals`, `Movement`, `Deep Work`) and photo-backed cards, plus `ProgressTrendChart` and `ConsistencyHeatmap`.
+  - **Right 4 Columns (Sticky Top-20)**: Orbit Adaptive Whisper Card (editorial italic quote with "Open in Orbit AI →"), Daily Rituals 2×2 Photo-Backed Grid with live toggle state, and Circadian Telemetry Card (HRV Readiness, Restful Sleep, Peak Dopamine Window).
+
+- **Screen 2: `Plan` Execution Studio 12-Column Grid (`components/tasks/TaskBoard.tsx`)**:
+  - **Left 8 Columns**: Studio Header & Switcher Row (`STUDIO V2.4 · PLAN · CADENCE` + `● Focus Engine Primed`), 7-Day Week Strip & Project Filter Pills (with `+ New Project` having `whitespace-nowrap shrink-0` preventing clipping), Today's Execution Queue (with `onError` fallback on all task thumbnails), and 3-column Project Workspace Folder Cards Grid (`grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3.5`).
+  - **Right 4 Columns (Sticky Top-20)**: Vertical Dark Espresso "Circadian Focus Engine" Timer Card (`bg-[#191D1A] rounded-[28px] p-5 text-white`) with 3 duration selector pills (`25m Sprint`, `50m Deep`, `90m Flow`), engaged task title, centered `160px × 160px` circular SVG progress ring, full-width `#E05A47` button (`▷ Enter Flow State`), Daily Rituals 2×2 Photo-Backed Overlay Grid with interactive checkboxes, and 3-Column Execution Metrics Mini-Card (`TASKS DONE` | `FOCUS TIME` | `STREAK`).
+
+- **Screen 3: `Train` Training Studio 12-Column Grid (`components/workout/WorkoutPage.tsx`)**:
+  - **Left 5 Columns**: Dark Espresso Assigned Split Hero Card (`bg-[#191D1A] rounded-[28px] p-5 text-white`) with top badges (`● ASSIGNED SPLIT · 5 DAYS/WK`, `Target Strain: 14.5`), wide `h-40` gym dumbbell photo banner with `UPPER HYPERTROPHY BIAS` badge, `primarySession.name` title, full-width `Load Compound Upper A →` `#E05A47` button, quick-switch template pills, 2-column Session Date & Duration row, and Weekly Muscle Recovery & Volume Telemetry Card (Chest 85%, Back 92%, Shoulders 78%, Posterior Chain 64% + Orbit readiness whisper).
+  - **Right 7 Columns**: Strength Movements Header Row (`STRENGTH MOVEMENTS`, `+ Add Movement`, `Voice Log`), Tabular Exercise Set Cards with 6-column desktop set table (`SET` | `PREVIOUS` | `WEIGHT (KG)` | `REPS` | `RPE` | `STATUS`) + `Rest Timer: 90s`, and Full-Width Botanical Matcha Sage Save Banner (`bg-[#2D6A4F]` with `Complete & Save Training Session →` and `≈ 380 kcal · Strain 14.2` badge).
+
+- **Screen 4: `Fuel` Nourishment Studio 12-Column Grid (`components/diet/DietPage.tsx`)**:
+  - **Left 5 Columns**: Dark Espresso "Circadian Fuel Balance" Macro Card with centered `w-28 h-28` (`112px × 112px`) SVG progress ring (eliminating calorie number green stroke overlap bug), 3 horizontal macro progress bars (Protein `#E05A47`, Carbs `#6EE7B7`, Fats `#D6CFC2`), restorative biological ceiling callout, Orbit Vision Instant Meal Scanner Card, and Cellular Hydration & Creatine Card.
+  - **Right 7 Columns**: Chronological Meal Log Header, photo-backed meal cards with `resolveDishThumbnail` and `onError` fallback, and Orbit Autonomous Recommendation ("Adaptive Protein-Gap Dinner") Card with options and 1-tap `+ Log This Recommended Dinner →` button.
+
+- **Screen 5: `Orbit` AI Companion Studio Split Copilot (`components/orbit/OrbitView.tsx`)**:
+  - **Left 5 Columns**: Persistent 3D Orbit Core & Biological Telemetry card (`STATE: SYNAPSE READY`, `3 Domains Linked · 98% Sync`, centered `148px × 148px` `<Orbit3DCore size={148} />`, editorial headline, 3 stacked live context pills), Cadence Shift mint insight banner, 2×2 Cadence Actions Bento Grid (`Weekly Training Audit`, `Protein Gap & Fuel`, `Tomorrow's Split`, `Deep Work Focus`), and Circadian Rhythm Alignment Card.
+  - **Right 7 Columns**: Studio Top Header with title, context filter pills (`All Context`, `Train`, `Fuel`, `Plan`), and Reset/New Chat button, Conversational Stream (welcoming empty state or Alabaster user bubbles & Espresso Orbit cards with `MarkdownText`, `OrbitRecommendationCard`, and `OrbitInsightCard`), loading thinking state, error retry banner, and Studio Input Dock with Camera, Mic, Paperclip action buttons, auto-resizing textarea, and Terracotta send button.
+
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **55 passed (55 files), 650 passed | 26 skipped (676 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
 - **Vitest Suite**: `650 passed | 26 skipped` across all 55 test suites (0 failing).

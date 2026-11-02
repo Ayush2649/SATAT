@@ -645,7 +645,7 @@ export default function WorkoutPage() {
   }, [pastSessions, bwKg]);
 
   return (
-    <div className="w-full max-w-md mx-auto lg:max-w-5xl pb-6 animate-fade-in text-[#1C1917]">
+    <div className="w-full max-w-7xl mx-auto pb-8 animate-fade-in text-[#1C1917]">
       {/* ── SHARED TOP HEADER ROW ── */}
       <div className="flex items-start justify-between pt-1 pb-3">
         <div>
@@ -985,6 +985,9 @@ export default function WorkoutPage() {
                VIEW 1A: ACTIVE LOGGING STATE (image_7939bf.jpg)
                ════════════════════════════════════════════════════════════════════ */
             <div className="space-y-4 animate-fade-in">
+        {/* ─── MOBILE VIEW (< 1024px) ─── */}
+        <div className="lg:hidden space-y-4">
+
               {/* 1. Assigned Split Hero Launcher Card OR Editing Status Bar */}
               {isEditingSession && todaySession ? (
                 <div className="bg-[#EFECE4] border border-[#1C1917]/[0.08] rounded-2xl p-3.5 mb-4 flex items-center justify-between animate-fade-in">
@@ -1409,7 +1412,399 @@ export default function WorkoutPage() {
                   </p>
                 </div>
               )}
+            
+        </div>
+
+        {/* ─── DESKTOP VIEW (lg: 1024px+) — 12-Column Responsive Studio Architecture (image_49d467.jpg) ─── */}
+        <div className="hidden lg:grid grid-cols-12 gap-6 items-start">
+          {/* ── LEFT 5 COLUMNS: Hero Split, Date & Recovery Telemetry ── */}
+          <div className="col-span-5 space-y-4">
+            {/* 1. Dark Espresso Assigned Split Hero Card */}
+            <div className="bg-[#191D1A] text-[#FCFBF9] rounded-[28px] p-5 shadow-xl border border-white/[0.08] relative overflow-hidden">
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <span className="bg-[#2D6A4F]/30 border border-[#6EE7B7]/20 text-[#6EE7B7] rounded-full px-3 py-1 text-[10px] font-bold tracking-wider uppercase inline-flex items-center gap-1.5 whitespace-nowrap">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7]" />
+                  ASSIGNED SPLIT · {assignedRoutine?.daysPerWeek || 5} DAYS/WK
+                </span>
+                <span className="text-[10px] text-stone-300 font-semibold bg-white/10 px-2 py-0.5 rounded-full">
+                  Target Strain: 14.5
+                </span>
+              </div>
+
+              {/* Wide h-40 gym photography banner with badge */}
+              <div className="h-40 rounded-2xl overflow-hidden relative border border-white/10 mb-3.5">
+                <img
+                  src="https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?auto=format&fit=crop&w=600&q=75"
+                  alt="Dumbbell workout studio"
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent flex items-end p-3.5">
+                  <span className="bg-[#E05A47] text-white text-[9px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-md shadow-xs">
+                    UPPER HYPERTROPHY BIAS
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <h2 className="font-serif text-2xl text-white leading-tight">
+                  {primarySession.name}
+                </h2>
+                <p className="text-xs text-stone-400 mt-1">
+                  {primarySession.muscleSummary} · {primarySession.exercises.length} prescribed movements
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleLoadTemplate(primarySession.rawTemplate)}
+                className="w-full bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full py-3 px-4 text-xs font-semibold flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.98] cursor-pointer mt-4"
+              >
+                Load {primarySession.name} →
+              </button>
+
+              {/* Quick Template Switch Pills */}
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar mt-3.5 pt-3 border-t border-white/[0.08]">
+                {assignedTemplates.slice(1).map((tpl) => (
+                  <button
+                    key={tpl.id}
+                    type="button"
+                    onClick={() => handleLoadTemplate(tpl)}
+                    className="bg-white/[0.07] hover:bg-white/[0.14] text-stone-200 rounded-full px-3 py-1 text-[11px] whitespace-nowrap shrink-0 transition-all cursor-pointer"
+                  >
+                    <strong className="text-white">{tpl.name}</strong> · {tpl.exercises.length}m
+                  </button>
+                ))}
+                {assignedTemplates.length <= 1 &&
+                  starterLibrary.slice(1, 4).map((tpl) => (
+                    <button
+                      key={tpl.id}
+                      type="button"
+                      onClick={() => handleLoadTemplate(tpl)}
+                      className="bg-white/[0.07] hover:bg-white/[0.14] text-stone-200 rounded-full px-3 py-1 text-[11px] whitespace-nowrap shrink-0 transition-all cursor-pointer"
+                    >
+                      <strong className="text-white">{tpl.name}</strong>
+                    </button>
+                  ))}
+              </div>
             </div>
+
+            {/* 2. Session Date & Duration 2-Column Row */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-[#FCFBF9] rounded-[24px] p-3.5 border border-[#1C1917]/[0.06] shadow-2xs">
+                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#8C857B]">
+                  SESSION DATE
+                </div>
+                <div className="flex items-center gap-2 mt-1.5">
+                  <Calendar className="w-4 h-4 text-[#2D6A4F] shrink-0" />
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="bg-transparent text-sm font-bold text-[#1C1917] outline-none w-full cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-[#FCFBF9] rounded-[24px] p-3.5 border border-[#1C1917]/[0.06] shadow-2xs flex flex-col justify-between">
+                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#8C857B]">
+                  DURATION
+                </div>
+                <div className="flex items-center justify-between gap-1 mt-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="w-4 h-4 text-[#2D6A4F] shrink-0" />
+                    <span className="text-sm font-bold text-[#1C1917]">{duration || 45} min</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setDuration((prev) => Math.max(10, (prev || 45) - 5))}
+                      className="w-7 h-7 rounded-full bg-[#EFECE4] hover:bg-[#E2DDD2] text-[#1C1917] text-xs font-bold flex items-center justify-center transition-all cursor-pointer"
+                    >
+                      -
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDuration((prev) => Math.min(240, (prev || 45) + 5))}
+                      className="w-7 h-7 rounded-full bg-[#EFECE4] hover:bg-[#E2DDD2] text-[#1C1917] text-xs font-bold flex items-center justify-center transition-all cursor-pointer"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Weekly Recovery & Volume Telemetry Card */}
+            <div className="bg-[#FCFBF9] rounded-[24px] p-5 border border-[#1C1917]/[0.06] shadow-xs space-y-3.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#1C1917]">
+                  WEEKLY MUSCLE RECOVERY & VOLUME
+                </span>
+                <span className="text-[10px] font-semibold text-[#2D6A4F] bg-[#E0F2E9] px-2 py-0.5 rounded-full">
+                  Neuromuscular Telemetry
+                </span>
+              </div>
+
+              <div className="space-y-2.5">
+                {[
+                  { muscle: "Chest / Pecs", pct: 85, status: "Ready" },
+                  { muscle: "Upper Back / Lats", pct: 92, status: "Optimal" },
+                  { muscle: "Shoulders / Delts", pct: 78, status: "Primed" },
+                  { muscle: "Posterior Chain", pct: 64, status: "Rebuilding" },
+                ].map((item) => (
+                  <div key={item.muscle}>
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="font-semibold text-[#1C1917]">{item.muscle}</span>
+                      <span className="text-[10px] text-[#2D6A4F] font-bold">
+                        {item.status} ({item.pct}%)
+                      </span>
+                    </div>
+                    <div className="w-full bg-[#EFECE4] rounded-full h-1.5 overflow-hidden">
+                      <div
+                        className="h-full bg-[#2D6A4F] rounded-full transition-all duration-500"
+                        style={{ width: `${item.pct}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="pt-2 border-t border-[#1C1917]/[0.06] flex items-center gap-2 text-xs text-[#57534E]">
+                <Sparkles className="w-3.5 h-3.5 text-[#E05A47] shrink-0" />
+                <span>Orbit Readiness: 91% primed for Upper Hypertrophy.</span>
+              </div>
+            </div>
+          </div>
+
+          {/* ── RIGHT 7 COLUMNS: Exercises, Sets Table, and Save Banner ── */}
+          <div className="col-span-7 space-y-4">
+            {/* 1. Strength Movements Header Row */}
+            <div className="flex items-center justify-between gap-2 bg-[#FCFBF9] rounded-[24px] p-4 border border-[#1C1917]/[0.06] shadow-xs">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#1C1917]">
+                  STRENGTH MOVEMENTS
+                </span>
+                <span className="bg-[#EFECE4] text-[#57534E] rounded-full px-2.5 py-0.5 text-[10px] font-semibold whitespace-nowrap shrink-0">
+                  {exercises.length} Exercises
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddExercise(true)}
+                  className="bg-[#EFECE4] hover:bg-[#191D1A] hover:text-white text-[#1C1917] rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 inline-flex items-center gap-1"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Add Movement
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowVoice(true)}
+                  className="bg-[#EFECE4] hover:bg-[#191D1A] hover:text-white text-[#1C1917] rounded-full px-3.5 py-1.5 text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer whitespace-nowrap shrink-0"
+                >
+                  <Mic className="w-3.5 h-3.5 text-[#E05A47]" /> Voice Log
+                </button>
+              </div>
+            </div>
+
+            {/* Exercise Add Prompt Input */}
+            {showAddExercise && (
+              <div className="bg-[#FCFBF9] p-3.5 rounded-[22px] border border-[#1C1917]/[0.08] shadow-xs flex items-center gap-2 animate-slide-down">
+                <input
+                  autoFocus
+                  type="text"
+                  placeholder="Movement name (e.g. Incline Dumbbell Press)"
+                  value={newExerciseName}
+                  onChange={(e) => setNewExerciseName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && addExercise()}
+                  className="bg-[#F6F3EC] rounded-xl px-3 py-2 text-xs font-semibold text-[#1C1917] flex-1 outline-none border border-[#1C1917]/[0.06]"
+                />
+                <button
+                  type="button"
+                  onClick={addExercise}
+                  className="bg-[#191D1A] hover:bg-[#2D6A4F] text-white rounded-xl px-4 py-2 text-xs font-semibold transition-all cursor-pointer"
+                >
+                  Add
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddExercise(false)}
+                  className="text-[#8C857B] hover:text-[#1C1917] p-2 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            {/* Empty State */}
+            {exercises.length === 0 && !showAddExercise && (
+              <div className="bg-[#FCFBF9] rounded-[26px] p-8 text-center border border-[#1C1917]/[0.06] shadow-xs">
+                <Dumbbell className="w-10 h-10 text-[#8C857B] mx-auto mb-2 opacity-60" />
+                <p className="font-serif text-xl text-[#1C1917]">No Movements Loaded Yet</p>
+                <p className="text-xs text-[#57534E] max-w-xs mx-auto mt-1 mb-4 leading-relaxed">
+                  Tap "Load {primarySession.name} →" on the left or add movements individually.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => handleLoadTemplate(primarySession.rawTemplate)}
+                  className="bg-[#191D1A] hover:bg-[#2D6A4F] text-white rounded-full px-5 py-2 text-xs font-semibold transition-all cursor-pointer"
+                >
+                  Load Assigned Split
+                </button>
+              </div>
+            )}
+
+            {/* 2. Tabular Exercise Set Cards */}
+            <div className="space-y-4">
+              {exercises.map((ex) => (
+                <div
+                  key={ex.id}
+                  className="bg-[#FCFBF9] rounded-[26px] p-5 border border-[#1C1917]/[0.06] shadow-xs"
+                >
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="w-10 h-10 rounded-xl bg-[#E0F2E9] text-[#2D6A4F] flex items-center justify-center shrink-0">
+                        <Dumbbell className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-sans font-bold text-base text-[#1C1917] truncate">
+                          {ex.name}
+                        </h3>
+                        <p className="text-[11px] text-[#8C857B] truncate">
+                          {getExerciseTargetMuscle(ex.name)} · Progressive Hypertrophy
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="bg-[#FADCD5] text-[#C94A38] text-[10px] font-bold px-2 py-0.5 rounded-full">
+                        Target PR: 34kg
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeExercise(ex.id)}
+                        aria-label={`Remove ${ex.name}`}
+                        className="text-[#8C857B] hover:text-[#E05A47] p-1.5 transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Desktop 6-Column Set Table */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead>
+                        <tr className="border-b border-[#1C1917]/[0.06] text-[10px] font-bold tracking-wider uppercase text-[#8C857B]">
+                          <th className="py-2 px-2 text-center w-12">SET</th>
+                          <th className="py-2 px-3 text-center">PREVIOUS</th>
+                          <th className="py-2 px-3 text-center">WEIGHT (KG)</th>
+                          <th className="py-2 px-3 text-center">REPS</th>
+                          <th className="py-2 px-3 text-center">RPE</th>
+                          <th className="py-2 px-2 text-right w-16">STATUS</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#1C1917]/[0.04]">
+                        {ex.sets.map((set, setIdx) => {
+                          const prevSet = ex.sets[setIdx - 1];
+                          const prevText = prevSet ? `${prevSet.weight || 0}kg × ${prevSet.reps}` : "—";
+                          return (
+                            <tr key={set.id} className="hover:bg-black/[0.01]">
+                              <td className="py-2.5 px-2 text-center">
+                                <span className="w-6 h-6 rounded-full bg-[#EFECE4] text-[#1C1917] text-[11px] font-bold inline-flex items-center justify-center">
+                                  {setIdx + 1}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3 text-center font-mono text-[#8C857B]">
+                                {prevText}
+                              </td>
+                              <td className="py-2.5 px-3 text-center">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.5"
+                                  value={set.weight || ""}
+                                  onChange={(e) =>
+                                    updateSet(ex.id, set.id, { weight: parseFloat(e.target.value) || 0 })
+                                  }
+                                  placeholder="0"
+                                  className="w-20 bg-[#F6F3EC] rounded-xl py-1 px-2 text-center font-bold text-[#1C1917] border border-[#1C1917]/[0.06] outline-none"
+                                />
+                              </td>
+                              <td className="py-2.5 px-3 text-center">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={set.reps || ""}
+                                  onChange={(e) =>
+                                    updateSet(ex.id, set.id, { reps: parseInt(e.target.value) || 0 })
+                                  }
+                                  placeholder="0"
+                                  className="w-16 bg-[#F6F3EC] rounded-xl py-1 px-2 text-center font-bold text-[#1C1917] border border-[#1C1917]/[0.06] outline-none"
+                                />
+                              </td>
+                              <td className="py-2.5 px-3 text-center">
+                                <span className="bg-[#EFECE4] text-[#57534E] text-[11px] font-semibold px-2 py-0.5 rounded-md">
+                                  @ 8.5
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-2 text-right">
+                                <button
+                                  type="button"
+                                  onClick={() => updateSet(ex.id, set.id, { completed: !set.completed })}
+                                  className={`w-7 h-7 rounded-full inline-flex items-center justify-center transition-all cursor-pointer ${
+                                    set.completed
+                                      ? "bg-[#2D6A4F] text-white"
+                                      : "bg-[#EFECE4] hover:bg-[#E2DDD2] text-stone-400"
+                                  }`}
+                                >
+                                  <Check className="w-3.5 h-3.5 stroke-[3]" />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-3 mt-2 border-t border-[#1C1917]/[0.06]">
+                    <button
+                      type="button"
+                      onClick={() => addSet(ex.id)}
+                      className="bg-[#EFECE4] hover:bg-[#E2DDD2] text-[#1C1917] text-xs font-semibold px-3 py-1.5 rounded-full inline-flex items-center gap-1 cursor-pointer transition-colors"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Add Set
+                    </button>
+                    <span className="text-[11px] text-[#8C857B] bg-[#EFECE4] px-2.5 py-0.5 rounded-full">
+                      Rest Timer: 90s
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* 3. Full-Width Botanical Matcha Sage Save Banner */}
+            {hasAnything && (
+              <div
+                onClick={handleSave}
+                className="bg-[#2D6A4F] hover:bg-[#1B4332] text-white rounded-2xl p-4 flex items-center justify-between font-semibold shadow-lg transition-all cursor-pointer group"
+              >
+                <div className="flex items-center gap-2">
+                  <Check className="w-5 h-5 text-[#6EE7B7]" />
+                  <span className="text-sm">
+                    {saving ? "Saving Training Session..." : "Complete & Save Training Session →"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-xs font-mono">
+                  <span>🔥 ~{Math.round((duration || 45) * 7.5)} kcal</span>
+                  <span>· Strain 14.2</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+      </div>
           )}
         </>
       )}

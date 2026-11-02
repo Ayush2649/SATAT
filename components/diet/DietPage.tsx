@@ -191,6 +191,16 @@ export default function DietPage() {
     }
   };
 
+  const handleAddManualMeal = (name: string, macros: MealMacros) => {
+    handleAddMeal({
+      userId,
+      date,
+      name,
+      macros,
+      createdAt: Date.now(),
+    });
+  };
+
   const handleDeleteMeal = async (mealId: string) => {
     try {
       await (deleteMeal as any)(mealId, userId);
@@ -297,7 +307,7 @@ export default function DietPage() {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto lg:max-w-5xl pb-6 animate-fade-in text-[#1C1917]">
+    <div className="w-full max-w-md mx-auto lg:max-w-7xl pb-8 animate-fade-in text-[#1C1917]">
       {/* ── 1. TOP HEADER & QUICK-ACTION ICON PILLS ── */}
       <div className="flex items-start justify-between pt-1 pb-3">
         <div>
@@ -377,7 +387,9 @@ export default function DietPage() {
         </button>
       </div>
 
-      {/* ── 3. HERO DARK BOTANICAL NUTRITION SUMMARY CARD ── */}
+      {/* ── MOBILE VIEW (< 1024px) ── */}
+      <div className="lg:hidden space-y-4">
+        {/* ── 3. HERO DARK BOTANICAL NUTRITION SUMMARY CARD ── */}
       <div className="bg-[#191D1A] text-[#FCFBF9] rounded-[28px] p-5 shadow-xl mb-4">
         {/* Top Row */}
         <div className="flex items-center justify-between gap-2 mb-4">
@@ -623,6 +635,356 @@ export default function DietPage() {
           </div>
         )}
       </div>
+      </div>
+
+      {/* ─── DESKTOP VIEW (lg: 1024px+) — 12-Column Responsive Studio Architecture (image_49d42c.jpg) ─── */}
+        <div className="hidden lg:grid grid-cols-12 gap-6 items-start">
+          {/* ── LEFT 5 COLUMNS: Circadian Fuel Macro Card, Scanner & Hydration ── */}
+          <div className="col-span-5 space-y-5">
+            {/* 1. Dark Espresso "Circadian Fuel Balance" Macro Card */}
+            <div className="bg-[#191D1A] rounded-[28px] p-5 text-white shadow-xl relative overflow-hidden border border-white/[0.08]">
+              <div className="flex items-center justify-between gap-2 mb-4">
+                <span className="bg-[#2D6A4F]/30 border border-[#6EE7B7]/20 text-[#6EE7B7] rounded-full px-3 py-1 text-[10px] font-bold tracking-wider uppercase inline-flex items-center gap-1.5 whitespace-nowrap">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7]" />
+                  CIRCADIAN FUEL BALANCE
+                </span>
+                <span className="text-[10px] text-stone-300 font-semibold bg-white/10 px-2 py-0.5 rounded-full">
+                  ● High Nutrient Density
+                </span>
+              </div>
+
+              {/* CRITICAL FIX for image_49d42c.jpg: Clean w-28 h-28 (112px x 112px) SVG Progress Ring */}
+              <div className="w-28 h-28 mx-auto my-3 relative flex items-center justify-center">
+                <svg className="w-full h-full -rotate-90 transform" viewBox="0 0 112 112">
+                  <circle
+                    cx="56"
+                    cy="56"
+                    r="46"
+                    stroke="rgba(255,255,255,0.08)"
+                    strokeWidth="8"
+                    fill="none"
+                  />
+                  <circle
+                    cx="56"
+                    cy="56"
+                    r="46"
+                    stroke="#2D6A4F"
+                    strokeWidth="8"
+                    strokeLinecap="round"
+                    fill="none"
+                    strokeDasharray={2 * Math.PI * 46}
+                    strokeDashoffset={2 * Math.PI * 46 * (1 - Math.min(1, totals.calories / targetCalories))}
+                    className="transition-all duration-700 ease-out"
+                  />
+                </svg>
+                {/* Center Calorie Readout Inside SVG Ring */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+                  <span className="text-2xl font-serif font-bold text-white leading-none">
+                    {totals.calories.toLocaleString()}
+                  </span>
+                  <span className="text-[10px] text-stone-400 mt-1 font-medium leading-none">
+                    / {targetCalories.toLocaleString()} kcal
+                  </span>
+                </div>
+              </div>
+
+              {/* 3 Horizontal Macro Progress Bars Below Ring */}
+              <div className="space-y-2.5 mt-4 pt-3 border-t border-white/[0.08]">
+                {/* Protein Bar */}
+                <div>
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <span className="text-stone-300 font-semibold">Protein</span>
+                    <span className="font-mono text-[#E05A47] font-bold">
+                      {totals.proteinG}g / {goals?.proteinG || 150}g
+                    </span>
+                  </div>
+                  <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className="h-full bg-[#E05A47] rounded-full transition-all duration-500"
+                      style={{ width: `${Math.min(100, (totals.proteinG / (goals?.proteinG || 150)) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Carbs Bar */}
+                <div>
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <span className="text-stone-300 font-semibold">Carbs</span>
+                    <span className="font-mono text-[#6EE7B7] font-bold">
+                      {totals.carbsG}g / {goals?.carbsG || 200}g
+                    </span>
+                  </div>
+                  <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className="h-full bg-[#6EE7B7] rounded-full transition-all duration-500"
+                      style={{ width: `${Math.min(100, (totals.carbsG / (goals?.carbsG || 200)) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Fats Bar */}
+                <div>
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <span className="text-stone-300 font-semibold">Fats</span>
+                    <span className="font-mono text-[#D6CFC2] font-bold">
+                      {totals.fatG}g / {goals?.fatG || 65}g
+                    </span>
+                  </div>
+                  <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className="h-full bg-[#D6CFC2] rounded-full transition-all duration-500"
+                      style={{ width: `${Math.min(100, (totals.fatG / (goals?.fatG || 65)) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Restorative Biological Ceiling Callout */}
+              <div className="bg-white/[0.06] border border-white/[0.06] rounded-2xl p-3 text-xs text-stone-300 mt-4 flex items-center justify-between">
+                <span>Restorative biological ceiling</span>
+                <span className="text-[#6EE7B7] font-bold">{remainingCalories} kcal deficit</span>
+              </div>
+            </div>
+
+            {/* 2. Orbit Vision · Instant Meal Scanner Card */}
+            <div className="bg-[#FCFBF9] rounded-[26px] p-5 border border-[#1C1917]/[0.06] shadow-xs space-y-4">
+              <div className="flex items-center gap-3.5">
+                <div className="w-16 h-16 rounded-2xl overflow-hidden relative shrink-0 shadow-xs bg-[#EFECE4]">
+                  <img
+                    src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=300&q=75"
+                    alt="Meal scanning viewfinder"
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                  <div className="absolute top-1 left-1 w-3 h-3 border-t-2 border-l-2 border-[#E05A47]" />
+                  <div className="absolute top-1 right-1 w-3 h-3 border-t-2 border-r-2 border-[#E05A47]" />
+                  <div className="absolute bottom-1 left-1 w-3 h-3 border-b-2 border-l-2 border-[#E05A47]" />
+                  <div className="absolute bottom-1 right-1 w-3 h-3 border-b-2 border-r-2 border-[#E05A47]" />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <span className="text-[9px] font-bold tracking-[0.15em] uppercase text-[#E05A47] block">
+                    INSTANT AI VISION
+                  </span>
+                  <h3 className="font-sans font-bold text-base text-[#1C1917] leading-snug">
+                    Scan Plate with AI Vision
+                  </h3>
+                  <p className="text-xs text-[#57534E] mt-0.5 leading-relaxed">
+                    Point camera at bowls, thalis, or snacks for automated macro recognition.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setScannerMode("plate");
+                  setShowScanner(true);
+                }}
+                className="w-full bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full py-3 px-4 text-xs font-semibold inline-flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer active:scale-95"
+              >
+                <Camera className="w-4 h-4" />
+                <span>Scan Plate with AI Vision →</span>
+              </button>
+
+              <div className="pt-2 border-t border-[#1C1917]/[0.06] flex items-center justify-between text-[11px] text-[#8C857B]">
+                <span>Digital Scale · Portion Mode</span>
+                <span className="text-[#2D6A4F] font-semibold">Camera Primed</span>
+              </div>
+            </div>
+
+            {/* 3. Cellular Hydration & Creatine Card */}
+            <div className="bg-[#FCFBF9] rounded-[24px] p-4 border border-[#1C1917]/[0.06] shadow-xs flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[#E0F2E9] text-[#2D6A4F] flex items-center justify-center shrink-0">
+                  <span className="text-sm">💧</span>
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold uppercase text-[#8C857B]">CELLULAR HYDRATION</div>
+                  <div className="text-xs font-bold text-[#1C1917]">2.4L / 3.0L Target</div>
+                </div>
+              </div>
+              <div className="bg-[#EFECE4] text-[#2D6A4F] rounded-full px-2.5 py-1 text-[10px] font-bold flex items-center gap-1">
+                <Check className="w-3 h-3 stroke-[3]" />
+                <span>3g Creatine</span>
+              </div>
+            </div>
+          </div>
+
+          {/* ── RIGHT 7 COLUMNS: Chronological Meal Log & Orbit Adaptive Recommendation ── */}
+          <div className="col-span-7 space-y-4">
+            {/* 1. Chronological Meal Log Header */}
+            <div className="bg-[#FCFBF9] rounded-[24px] p-4 border border-[#1C1917]/[0.06] shadow-xs flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#1C1917]">
+                  TODAY&apos;S NOURISHMENT LOG
+                </span>
+                <span className="bg-[#EFECE4] text-[#1C1917] text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+                  {meals.length} Meals Logged
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowAddMeal(true)}
+                  type="button"
+                  className="bg-[#EFECE4] hover:bg-[#191D1A] hover:text-white text-[#1C1917] rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer inline-flex items-center gap-1"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Custom Food
+                </button>
+              </div>
+            </div>
+
+            {/* 2. Photo-Backed Meal Cards */}
+            {meals.length === 0 ? (
+              <div className="bg-[#FCFBF9] rounded-[28px] p-8 text-center border border-[#1C1917]/[0.06] shadow-xs">
+                <Utensils className="w-10 h-10 text-[#8C857B] mx-auto mb-2 opacity-60" />
+                <p className="font-serif text-xl text-[#1C1917]">No Meals Logged Today</p>
+                <p className="text-xs text-[#57534E] max-w-xs mx-auto mt-1 mb-4 leading-relaxed">
+                  Snap a plate with instant AI vision or log a custom dish to track macros.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setScannerMode("plate");
+                    setShowScanner(true);
+                  }}
+                  className="bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full px-5 py-2.5 text-xs font-semibold cursor-pointer shadow-xs active:scale-95"
+                >
+                  Scan Plate Now
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {meals.map((meal) => {
+                  const photoUrl = resolveDishThumbnail(meal.name, meal.photoUrl);
+                  const { timeLabel, categoryLabel } = formatMealTimeAndCategory(meal.createdAt);
+
+                  return (
+                    <div
+                      key={meal.id}
+                      className="bg-[#FCFBF9] rounded-[24px] p-4 border border-[#1C1917]/[0.06] shadow-xs flex items-center justify-between gap-4"
+                    >
+                      <div className="flex items-center gap-4 min-w-0 flex-1">
+                        <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0 bg-[#EFECE4] border border-[#1C1917]/[0.06]">
+                          <img
+                            src={photoUrl}
+                            alt={meal.name}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=300&q=75";
+                            }}
+                          />
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <span className="text-[10px] font-mono uppercase text-[#8C857B] block">
+                            {timeLabel} · {categoryLabel}
+                          </span>
+                          <h4 className="font-bold text-base text-[#1C1917] truncate mt-0.5">
+                            {meal.name}
+                          </h4>
+                          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                            <span className="bg-[#E0F2E9] text-[#2D6A4F] text-[10px] font-bold px-2 py-0.5 rounded-md">
+                              {meal.macros?.calories || 0} kcal
+                            </span>
+                            <span className="text-[10px] text-[#57534E] font-medium">
+                              P: {meal.macros?.proteinG || 0}g
+                            </span>
+                            <span className="text-[10px] text-[#8C857B]">
+                              C: {meal.macros?.carbsG || 0}g
+                            </span>
+                            <span className="text-[10px] text-[#8C857B]">
+                              F: {meal.macros?.fatG || 0}g
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => setSavingTemplate({ name: meal.name, macros: meal.macros })}
+                          type="button"
+                          title="Save as reusable template"
+                          className="w-8 h-8 rounded-full hover:bg-[#EFECE4] text-[#8C857B] hover:text-[#1C1917] flex items-center justify-center transition-colors cursor-pointer"
+                        >
+                          <BookmarkPlus className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => void handleDeleteMeal(meal.id)}
+                          type="button"
+                          title="Delete meal"
+                          className="w-8 h-8 rounded-full hover:bg-rose-50 text-[#8C857B] hover:text-[#E05A47] flex items-center justify-center transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* 3. Orbit Autonomous Recommendation ("Adaptive Protein-Gap Dinner") Card */}
+            <div className="bg-[#F2F9F5] border border-[#2D6A4F]/25 rounded-[26px] p-5 shadow-xs space-y-3.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#1B4332]">
+                  ORBIT AUTONOMOUS RECOMMENDATION · ADAPTIVE DINNER
+                </span>
+                <span className="bg-[#2D6A4F] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+                  {Math.max(0, (goals?.proteinG || 150) - totals.proteinG)}g Gap Detected
+                </span>
+              </div>
+
+              <p className="text-xs text-[#1B4332] leading-relaxed">
+                To close today&apos;s protein window before your sleep cycle, Orbit synthesized 2 high-protein options tailored to your circadian timing:
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="bg-white rounded-2xl p-3.5 border border-[#2D6A4F]/15 flex flex-col justify-between">
+                  <div>
+                    <span className="text-[10px] font-bold text-[#2D6A4F] uppercase">Option A</span>
+                    <h5 className="font-bold text-xs text-[#1C1917] mt-0.5">Paneer Bhurji & 2 Rotis</h5>
+                    <p className="text-[11px] text-[#57534E] mt-0.5">38g Protein · 480 kcal · Low GI</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleAddManualMeal(
+                        "Paneer Bhurji with 2 Rotis",
+                        { calories: 480, proteinG: 38, carbsG: 45, fatG: 18 }
+                      )
+                    }
+                    className="w-full mt-3 bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full py-1.5 text-xs font-semibold text-center transition-all cursor-pointer shadow-2xs"
+                  >
+                    + Log This Recommended Dinner →
+                  </button>
+                </div>
+
+                <div className="bg-white rounded-2xl p-3.5 border border-[#2D6A4F]/15 flex flex-col justify-between">
+                  <div>
+                    <span className="text-[10px] font-bold text-[#2D6A4F] uppercase">Option B</span>
+                    <h5 className="font-bold text-xs text-[#1C1917] mt-0.5">Grilled Tofu & Quinoa Bowl</h5>
+                    <p className="text-[11px] text-[#57534E] mt-0.5">34g Protein · 420 kcal · High Fiber</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleAddManualMeal(
+                        "Grilled Tofu & Quinoa Bowl",
+                        { calories: 420, proteinG: 34, carbsG: 40, fatG: 14 }
+                      )
+                    }
+                    className="w-full mt-3 bg-[#191D1A] hover:bg-[#2D6A4F] text-white rounded-full py-1.5 text-xs font-semibold text-center transition-all cursor-pointer shadow-2xs"
+                  >
+                    + Log Option B →
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
       {/* ── DUAL-MODE SCANNER MODAL ── */}
       {showScanner && (
