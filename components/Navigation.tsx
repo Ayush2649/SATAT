@@ -63,6 +63,22 @@ export default function Navigation() {
     };
   }, [userId, firebaseUser, isReady]);
 
+  // Synchronize CSS variable --sidebar-width with collapsed state
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof document === "undefined") return;
+    const updateWidth = () => {
+      const w = window.innerWidth >= 1024
+        ? (collapsed ? "76px" : "240px")
+        : window.innerWidth >= 768
+        ? "76px"
+        : "0px";
+      document.documentElement.style.setProperty("--sidebar-width", w);
+    };
+    updateWidth();
+    window.addEventListener("resize", updateWidth);
+    return () => window.removeEventListener("resize", updateWidth);
+  }, [collapsed]);
+
   // Global Orbit trigger
   useEffect(() => {
     const handleOrbitTrigger = () => {

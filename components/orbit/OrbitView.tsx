@@ -432,8 +432,8 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
         className
       )}
     >
-      {/* ── MOBILE VIEW (< 1024px) ── */}
-      <div className="lg:hidden flex flex-col h-full w-full max-w-4xl mx-auto overflow-hidden min-w-0 relative">
+      {/* ── MOBILE & COMPACT OVERLAY VIEW ── */}
+      <div className={cn("flex flex-col h-full w-full max-w-4xl mx-auto overflow-hidden min-w-0 relative", !isOverlay && "lg:hidden")}>
         {/* ── 1. ORBIT EDITORIAL HEADER ── */}
       <header
         className={cn(
@@ -1155,7 +1155,8 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
       </div>
 
       {/* ── DESKTOP & TABLET VIEW (lg: 1024px+) — 12-Column Responsive Studio Architecture (image_49d750.jpg) ── */}
-      <div className="hidden lg:grid grid-cols-12 gap-6 items-start h-full max-w-7xl mx-auto w-full px-6 py-4 overflow-hidden">
+      {!isOverlay && (
+        <div className="hidden lg:grid grid-cols-12 gap-6 items-start h-full max-w-7xl mx-auto w-full px-6 py-4 overflow-hidden">
         {/* ── LEFT 5 COLUMNS: Persistent 3D Orbit Core & Biological Telemetry ── */}
         <div className="col-span-5 h-[calc(100vh-6rem)] overflow-y-auto no-scrollbar space-y-4 pr-1">
           {/* 1. DARK BOTANICAL ESPRESSO HERO STAGE (#191D1A) */}
@@ -1765,6 +1766,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }

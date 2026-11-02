@@ -834,6 +834,40 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ---
 
+### ✅ Sprint 6.6: Fix All 7 Desktop Layout, Clipping, and Drawer Bugs Captured in Live Desktop Recording
+- **Bug 1: Fixed Drawer Overflow & Orbit 12-Column Grid Splitting (`OrbitView.tsx` & `AriaChatbot.tsx`)**:
+  - Top-right `<OrbitLauncherBadge />` and `AriaChatbot` trigger now navigate cleanly to `/dashboard/orbit` via Next.js `useRouter().push('/dashboard/orbit')` (or focus the chat prompt if already on the route).
+  - Guarded `<OrbitView />` 12-column grid behind `{!isOverlay && ...}` and mobile single-column wrapper behind `!isOverlay && "lg:hidden"`, guaranteeing Orbit never splits into crushed columns inside slide-over drawers or overlay containers.
+- **Bug 2: Fixed Sticky Top Command Bar Overlap Across All Studio Screens (`app/globals.css`)**:
+  - Added responsive top clearance to `.app-shell-content`: `padding-top: calc(4rem + 2rem)` (`96px`) on `md:` and `lg:` viewports, providing 32px of clean breathing space below the 64px fixed command bar.
+  - Added targeted `.app-shell-content:has(.orbit-view-root)` rule resetting `padding-top: 4rem` (64px) with zero inline/bottom padding for the full-bleed Orbit Copilot layout.
+- **Bug 3: Fixed Left Sidebar Overlap on Full-Bleed Desktop Orbit (`Navigation.tsx` & `app/globals.css`)**:
+  - Added CSS custom property `--sidebar-width: 0px` (mobile), `76px` (tablet / collapsed), and `240px` (expanded desktop).
+  - Attached `padding-left: var(--sidebar-width)` to `.app-shell-main` with smooth `transition: padding-left 0.2s cubic-bezier(0.16, 1, 0.3, 1)`.
+  - Added `useEffect` in `components/Navigation.tsx` synchronizing `--sidebar-width` dynamically based on `collapsed` state and viewport resize events.
+- **Bug 4: Upgraded Landing Page to Responsive Widescreen 12-Column Desktop Architecture (`components/landing/*`)**:
+  - Expanded all landing section containers from `max-w-md` to `max-w-[1280px] w-full mx-auto`.
+  - `LandingNav.tsx`: Full-width responsive navigation bar with links and Google sign-in triggers.
+  - `Hero.tsx` & `HeroProductScene.tsx`: 12-column grid with left 6 columns for editorial typography & dual CTAs and right 6 columns for the physical athlete/oatmeal collage.
+  - `ProblemSection.tsx`: Preserves mobile vertical sinusoidal timeline while presenting a 3-column horizontal bento grid (`lg:grid-cols-3`) on desktop.
+  - `ProgressSection.tsx`: Desktop 12-column split (Left 5 cols for headline, copy, and comparative pills; Right 7 cols for the 28-day stone continuity matrix).
+  - `OrbitSection.tsx`, `FinalCTA.tsx`, `Footer.tsx`: Converted to full-bleed responsive cards with desktop dual-column layouts and preserved `rounded-[32px]` styling.
+- **Bug 5: Fixed Daily Non-Negotiable Ritual Cards Contrast & Truncation (`HomeView.tsx` & `TaskBoard.tsx`)**:
+  - Replaced white text over white image cards with tactile Cream Alabaster cards (`bg-[#FCFBF9] p-3.5 rounded-[22px] border border-[#1C1917]/[0.08]`).
+  - Rendered 44×44 photo thumbnail top-left, dark interactive checkmark button top-right, uppercase stone category tag, and non-truncating 2-line title (`line-clamp-2 text-[12px] font-semibold text-[#1C1917] leading-snug`).
+- **Bug 6: Strict Dynamic User Workspaces (`Navigation.tsx` & `TaskBoard.tsx`)**:
+  - Verified 100% absence of hardcoded fallback mock projects (`["DailyOS", "ContentStack", "Interview Prep"]`). Workspaces strictly load and render from dynamic Firestore user collections (`getProjects(userId)`).
+- **Bug 7: Eliminated Fuel Telemetry and Meal Log Flash (`DietPage.tsx`)**:
+  - Initialized `loading` to `true` by default and eliminated premature `setMeals([])` wipes during session checks.
+  - Added warm stone shimmer pulse skeletons for macro telemetry and meal cards during data retrieval.
+  - Guarded empty states strictly behind `!loading && meals.length === 0`.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **55 passed (55 files), 650 passed | 26 skipped (676 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
 - **Vitest Suite**: `650 passed | 26 skipped` across all 55 test suites (0 failing).

@@ -58,7 +58,7 @@ export default function DietPage() {
   const [date, setDate] = useState(todayString());
   const [meals, setMeals] = useState<MealEntry[]>([]);
   const [goals, setGoals] = useState<MacroGoals | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // Modals state
   const [showAddMeal, setShowAddMeal] = useState(false);
@@ -398,8 +398,14 @@ export default function DietPage() {
             DAILY NUTRITION SUMMARY
           </span>
           <span className="text-xs text-stone-300 font-medium text-right truncate">
-            <strong className="text-white font-bold">{remainingCalories.toLocaleString()} kcal</strong>{" "}
-            remaining · Target {targetCalories.toLocaleString()}
+            {loading && meals.length === 0 ? (
+              <span className="text-stone-400 animate-pulse">Calculating nutrition...</span>
+            ) : (
+              <>
+                <strong className="text-white font-bold">{remainingCalories.toLocaleString()} kcal</strong>{" "}
+                remaining · Target {targetCalories.toLocaleString()}
+              </>
+            )}
           </span>
         </div>
 
@@ -836,7 +842,19 @@ export default function DietPage() {
             </div>
 
             {/* 2. Photo-Backed Meal Cards */}
-            {meals.length === 0 ? (
+            {loading ? (
+              <div className="space-y-3 animate-pulse">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-24 bg-[#FCFBF9] rounded-[24px] border border-[#1C1917]/[0.06] p-4 flex items-center gap-3.5">
+                    <div className="w-16 h-16 rounded-xl bg-[#EFECE4] shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <div className="w-1/3 h-4 bg-[#EFECE4] rounded" />
+                      <div className="w-1/4 h-3 bg-[#EFECE4] rounded" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : meals.length === 0 ? (
               <div className="bg-[#FCFBF9] rounded-[28px] p-8 text-center border border-[#1C1917]/[0.06] shadow-xs">
                 <Utensils className="w-10 h-10 text-[#8C857B] mx-auto mb-2 opacity-60" />
                 <p className="font-serif text-xl text-[#1C1917]">No Meals Logged Today</p>

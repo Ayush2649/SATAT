@@ -5,7 +5,7 @@ import React from "react";
 
 export default function HeroProductScene() {
   return (
-    <div className="relative w-full max-w-md mx-auto mt-6 mb-4 select-none">
+    <div className="relative w-full w-full max-w-md lg:max-w-xl mx-auto mt-6 mb-4 select-none">
       {/* 1. Floating Tilted Dark Botanical Pill (Top-Right) */}
       <div className="relative z-30 flex justify-end pr-1 -mb-3.5">
         <div className="-rotate-2 bg-[#191D1A] text-[#FCFBF9] rounded-full px-4 py-2 text-[11px] sm:text-xs shadow-[0_12px_28px_rgba(25,29,26,0.28)] border border-white/10 inline-flex items-center gap-2">

@@ -12,7 +12,7 @@ export default function OrbitSection() {
       id="orbit"
       className="py-16 sm:py-24 px-5 sm:px-6 bg-[#F6F3EC] text-center relative overflow-hidden"
     >
-      <div className="max-w-md mx-auto flex flex-col items-center">
+      <div className="max-w-md lg:max-w-[1280px] mx-auto flex flex-col items-center">
         {/* Eyebrow */}
         <span className="text-[10px] font-bold tracking-[0.16em] uppercase text-[#2D6A4F]">
           QUIET GUIDANCE

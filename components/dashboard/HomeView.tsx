@@ -17,7 +17,7 @@ import {
 import ProgressTrendChart from "@/components/dashboard/ProgressTrendChart";
 import ConsistencyHeatmap from "@/components/dashboard/ConsistencyHeatmap";
 import { TodayPageSkeleton } from "@/components/ui/PageSkeletons";
-import { todayString, localDateString } from "@/lib/utils";
+import { cn, todayString, localDateString } from "@/lib/utils";
 import type { Task, MealEntry, MacroGoals, WorkoutSession, BodyWeightEntry, UserProfileDocument } from "@/types";
 
 /* ── Date Helpers ── */
@@ -1043,38 +1043,39 @@ export default function HomeView() {
                   <div
                     key={ritual.id}
                     onClick={() => toggleRitual(ritual.id)}
-                    className="h-28 rounded-2xl overflow-hidden relative cursor-pointer group shadow-2xs border border-[#1C1917]/[0.06]"
+                    className="bg-[#FCFBF9] hover:bg-[#F6F3EC] p-3.5 rounded-[22px] border border-[#1C1917]/[0.08] shadow-2xs cursor-pointer transition-all flex flex-col justify-between min-h-[118px] group"
                   >
-                    {/* Background photo */}
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={ritual.photo}
-                      alt={ritual.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      loading="lazy"
-                    />
-                    {/* Dark gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-2.5 flex flex-col justify-between" />
-
-                    {/* Top checkbox */}
-                    <div className="absolute top-2 right-2 z-10">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0 border border-[#1C1917]/10 bg-stone-100 shadow-2xs">
+                        <img
+                          src={ritual.photo}
+                          alt={ritual.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=300&q=75";
+                          }}
+                        />
+                      </div>
                       <div
-                        className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${
-                          isDone ? "bg-[#2D6A4F] text-white" : "bg-black/40 border border-white/40 text-transparent"
-                        }`}
+                        className={cn(
+                          "w-5 h-5 rounded-full flex items-center justify-center transition-colors shrink-0",
+                          isDone
+                            ? "bg-[#2D6A4F] text-white"
+                            : "border-2 border-[#1C1917]/20 bg-white"
+                        )}
                       >
-                        <Check className="w-3 h-3 stroke-[3]" />
+                        {isDone && <Check className="w-3 h-3 stroke-[3]" />}
                       </div>
                     </div>
 
-                    {/* Bottom label */}
-                    <div className="absolute bottom-2 left-2 right-2 z-10 text-white">
-                      <span className="text-[8px] font-bold tracking-wider uppercase text-stone-300 block">
+                    <div className="mt-2">
+                      <span className="text-[9px] font-bold tracking-wider uppercase text-[#8C857B] block truncate">
                         {ritual.category}
                       </span>
-                      <h4 className="text-xs font-bold leading-tight truncate mt-0.5">
+                      <h5 className="font-bold text-xs text-[#1C1917] mt-0.5 leading-snug line-clamp-2">
                         {ritual.title}
-                      </h4>
+                      </h5>
                     </div>
                   </div>
                 );
