@@ -968,6 +968,33 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ---
 
+### ✅ Sprint 6.10: Restore Exact origin/main Mobile Landing Page (< 768px) & Strictly Split from Desktop Widescreen Layout
+- **Verbatim Mobile Component Extraction from origin/main (`components/landing/mobile/*`)**:
+  - Extracted exact JSX tree, styling, and animations from `origin/main` (2 commits ago) into dedicated mobile modules with zero desktop overrides:
+    - `MobileLandingNav.tsx`: Original compact mobile header with logo, `#rhythm` / `#orbit` links, and sign-in button.
+    - `MobileHero.tsx`: Original mobile hero with stacked typography, pill badges, and dual action buttons.
+    - `MobileProblemSection.tsx`: Original single-column sinusoidal vertical timeline with SVG connectors and natural cadence nodes.
+    - `MobileOrbitSection.tsx`: Original mobile Orbit companion section with breathing orb and prompt pills.
+    - `MobileProgressSection.tsx`: Original mobile 28-day continuity matrix with scenario switcher and Sanskrit etymology card.
+    - `MobileFinalCTA.tsx` & `MobileFooter.tsx`: Original grounded footer card and brand lineage.
+    - `MobileLandingPage.tsx`: Aggregator rendering the complete mobile experience cleanly.
+- **Widescreen Desktop Component Architecture (`components/landing/DesktopLandingPage.tsx`)**:
+  - Preserved widescreen desktop landing components (`max-w-[1440px] xl:max-w-[1600px]`):
+    - Floating Alabaster capsule navbar.
+    - 3-column studio grid with uncropped photography and floating badges.
+    - Interactive 28-day streak tabs (`Day 7 · Start`, `Day 14 · Rested`, `Day 28 · Flow`) with 4-week matrix.
+    - Single-line inline footer tagline.
+- **Strict Viewport Partitioning (`app/page.tsx`)**:
+  - `<div className="block md:hidden"><MobileLandingPage /></div>`
+  - `<div className="hidden md:block"><DesktopLandingPage /></div>`
+  - Guaranteed zero CSS bleed between mobile (`< 768px`) and desktop (`md:` / `>= 768px`) screens.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **55 passed (55 files), 650 passed | 26 skipped (676 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
 - **Vitest Suite**: `650 passed | 26 skipped` across all 55 test suites (0 failing).
