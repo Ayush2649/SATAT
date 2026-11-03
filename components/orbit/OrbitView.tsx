@@ -27,6 +27,8 @@ import { cn } from "@/lib/utils";
 import { OrbitIcon, type OrbitState } from "@/components/orbit/OrbitMark";
 import { Orbit3DCore } from "@/components/orbit/Orbit3DCore";
 import NotificationBell from "@/components/ui/NotificationBell";
+import Logo from "@/components/ui/Logo";
+import { OrbitLauncherBadge } from "@/components/orbit/OrbitLauncherBadge";
 import { MarkdownText } from "@/components/ui/MarkdownText";
 import { OrbitRecommendationCard, OrbitInsightCard } from "@/components/orbit/OrbitActionCard";
 import { getDietContext, getWorkoutContext, getTaskContext } from "@/lib/orbitContext";
@@ -434,49 +436,26 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
       {/* ── MOBILE & COMPACT OVERLAY VIEW ── */}
       <div className={cn("orbit-mobile-stage flex flex-col h-full w-full max-w-4xl mx-auto overflow-hidden min-w-0 relative", !isOverlay && "lg:hidden")}>
         {/* ── 1. ORBIT EDITORIAL HEADER ── */}
-      <header
-        className={cn(
-          "px-4 sm:px-6 shrink-0 border-b border-[#191D1A]/[0.06] bg-[#F6F3EC] z-20 transition-all",
-          messages.length > 0
-            ? "pt-[max(8px,env(safe-area-inset-top))] pb-2"
-            : !isOverlay
-            ? "pt-[max(12px,env(safe-area-inset-top))] pb-3 lg:pt-5"
-            : "pt-3 pb-3"
-        )}
-      >
-        {/* App Bar Top Row */}
-        <div className="flex items-center justify-between gap-3">
-          {/* Brand Wordmark with Sanskrit Halant & Pulsing Status */}
+      <header className="shrink-0 bg-[#F6F3EC] z-20 transition-all">
+        {/* App Bar Top Row (1:1 with SATAT / Today - image_23a8f9.png) */}
+        <div className="h-14 px-4 flex items-center justify-between border-b border-[#1C1917]/[0.06] bg-[#FCFBF9] shrink-0">
+          {/* Left: Circular emblem container with geometric S mark + SATAT / Orbit */}
           <div className="flex items-center gap-2 min-w-0">
-            <div className="w-6 h-6 rounded-full bg-[#191D1A] text-[#F6F3EC] flex items-center justify-center font-bold text-[11px] shadow-sm select-none shrink-0">
-              स
+            <Logo size={22} className="rounded-md shrink-0" priority />
+            <div className="flex items-center gap-1.5 text-sm tracking-tight select-none">
+              <span className="font-bold tracking-tight text-[#1C1917]">SATAT</span>
+              <span className="text-[#8C857B] font-light">/</span>
+              <span className="font-normal text-[#57534E]">Orbit</span>
             </div>
-            <span className="text-xs font-bold tracking-[0.16em] uppercase text-[#57534E] shrink-0">
-              SATAT <span className="text-[#8C857B] font-normal">/</span> ORBIT
-            </span>
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#E6F2EC] text-[#2D6A4F] text-[10px] font-semibold border border-[#2D6A4F]/15 select-none shrink-0">
-              <span
-                className={cn(
-                  "w-1.5 h-1.5 rounded-full bg-[#2D6A4F]",
-                  (orbitState === "thinking" || orbitState === "responding") && "animate-pulse"
-                )}
-              />
-              <span>
-                {orbitState === "thinking"
-                  ? "Analyzing..."
-                  : orbitState === "responding"
-                  ? "Responding..."
-                  : "Rhythm Synced"}
-              </span>
-            </span>
           </div>
 
-          {/* Right Action Controls: Notification Bell + User Avatar (or close if overlay) */}
+          {/* Right: OrbitLauncherBadge + terracotta NotificationBell + circular user profile avatar */}
           <div className="flex items-center gap-2 shrink-0">
-            {!isOverlay && <NotificationBell />}
+            <OrbitLauncherBadge size="md" tooltipPosition="bottom" />
+            <NotificationBell />
 
             {session?.user ? (
-              <div className="w-7 h-7 rounded-full flex items-center justify-center bg-[#191D1A] text-white shadow-sm border border-white/10 overflow-hidden shrink-0">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-[#191D1A] text-white shadow-sm border border-white/10 overflow-hidden shrink-0">
                 {session.user.image ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img
@@ -485,14 +464,18 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                     className="w-full h-full rounded-full object-cover"
                   />
                 ) : session.user.name ? (
-                  <span className="text-[10px] font-semibold text-[#FCFBF9]">
+                  <span className="text-xs font-semibold text-[#FCFBF9]">
                     {session.user.name.charAt(0).toUpperCase()}
                   </span>
                 ) : (
-                  <span className="text-[10px] font-semibold text-[#FCFBF9]">A</span>
+                  <span className="text-xs font-semibold text-[#FCFBF9]">A</span>
                 )}
               </div>
-            ) : null}
+            ) : (
+              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-[#191D1A] text-white/60 border border-white/10 shrink-0">
+                <span className="text-xs font-semibold text-[#FCFBF9]">A</span>
+              </div>
+            )}
 
             {isOverlay && onClose && (
               <button
@@ -507,55 +490,58 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
           </div>
         </div>
 
-        {/* Title Row with New Chat / Reset Action */}
-        <div className="flex items-start justify-between gap-2 mt-2">
-          <div>
-            <h1 className="font-serif font-normal text-[22px] sm:text-[26px] leading-[1.08] text-[#191D1A] tracking-[-0.02em]">
-              Orbit Intelligence
-            </h1>
-            <p className="text-xs text-[#57534E] font-medium tracking-normal mt-0.5">
-              Unified biological &amp; execution copilot.
-            </p>
+        {/* Orbit Title Row & Context Filter Pills */}
+        <div className="px-4 pt-3 pb-2.5 border-b border-[#1C1917]/[0.06] flex flex-col gap-2.5 bg-[#F6F3EC]">
+          {/* Title Row with New Chat / Reset Action */}
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <h1 className="font-serif font-normal text-[22px] sm:text-[26px] leading-[1.08] text-[#191D1A] tracking-[-0.02em]">
+                Orbit Intelligence
+              </h1>
+              <p className="text-xs text-[#57534E] font-medium tracking-normal mt-0.5">
+                Unified biological &amp; execution copilot.
+              </p>
+            </div>
+
+            {/* Clean New Chat / Reset Pill Button */}
+            <button
+              type="button"
+              onClick={handleResetChat}
+              aria-label="Reset chat"
+              className="bg-[#EFECE4] hover:bg-[#191D1A] hover:text-white text-[#1C1917] rounded-full px-3 py-1.5 text-xs font-semibold inline-flex items-center gap-1.5 transition-all shrink-0 cursor-pointer shadow-2xs active:scale-95"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>New Chat</span>
+            </button>
           </div>
 
-          {/* Clean New Chat / Reset Pill Button */}
-          <button
-            type="button"
-            onClick={handleResetChat}
-            aria-label="Reset chat"
-            className="bg-[#EFECE4] hover:bg-[#191D1A] hover:text-white text-[#1C1917] rounded-full px-3 py-1.5 text-xs font-semibold inline-flex items-center gap-1.5 transition-all shrink-0 cursor-pointer shadow-2xs active:scale-95"
-          >
-            <RotateCcw className="w-3 h-3" />
-            <span>New Chat</span>
-          </button>
-        </div>
-
-        {/* Active Context Filter Bar (Horizontal Pill Row — All fitting cleanly without edge clipping) */}
-        <div className="flex items-center gap-1.5 px-0.5 overflow-x-auto no-scrollbar mt-2.5 py-0.5">
-          {FOCUS_MODES.map((m) => {
-            const isSelected = focusMode === m.id;
-            const Icon = m.icon;
-            return (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => setFocusMode(m.id)}
-                className={cn(
-                  "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold inline-flex items-center gap-1 transition-all select-none cursor-pointer",
-                  isSelected
-                    ? "bg-[#191D1A] text-white shadow-2xs"
-                    : "bg-[#EFECE4] text-[#57534E] hover:text-[#1C1917] hover:bg-[#E5E1D8] font-medium"
-                )}
-              >
-                {isSelected ? (
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7]" />
-                ) : (
-                  <Icon className="w-3 h-3 text-[#57534E]" />
-                )}
-                <span>{m.label}</span>
-              </button>
-            );
-          })}
+          {/* Active Context Filter Bar (Horizontal Pill Row — No scrollbar & tightened padding) */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] py-0.5">
+            {FOCUS_MODES.map((m) => {
+              const isSelected = focusMode === m.id;
+              const Icon = m.icon;
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => setFocusMode(m.id)}
+                  className={cn(
+                    "shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold inline-flex items-center gap-1.5 transition-all select-none cursor-pointer whitespace-nowrap",
+                    isSelected
+                      ? "bg-[#191D1A] text-white shadow-2xs"
+                      : "bg-[#EFECE4] text-[#57534E] hover:text-[#1C1917] hover:bg-[#E5E1D8] font-medium"
+                  )}
+                >
+                  {isSelected ? (
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7]" />
+                  ) : (
+                    <Icon className="w-3.5 h-3.5 text-[#57534E]" />
+                  )}
+                  <span>{m.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </header>
 

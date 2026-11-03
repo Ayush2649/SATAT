@@ -10,7 +10,7 @@ export default function OrbitSection() {
   return (
     <section
       id="orbit"
-      className="py-16 sm:py-24 px-5 sm:px-6 bg-[#F6F3EC] text-center relative overflow-hidden"
+      className="py-16 sm:py-24 px-6 md:px-12 lg:px-16 bg-[#F6F3EC] text-center relative overflow-hidden w-full max-w-[1360px] xl:max-w-[1480px] mx-auto"
     >
       <div className="max-w-md lg:max-w-[1280px] mx-auto flex flex-col items-center">
         {/* Eyebrow */}
@@ -23,8 +23,8 @@ export default function OrbitSection() {
           A companion, <span className="italic text-[#E05A47]">not a dashboard</span>
         </h2>
 
-        {/* Living Botanical Orb */}
-        <div className="my-2">
+        {/* Living Botanical Orb with Subtle Hover Lift */}
+        <div className="my-2 hover:-translate-y-1 transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer rounded-full p-2">
           <OrbitLivingOrb
             size="lg"
             mood={status === "accepted" ? "speaking" : "idle"}
@@ -42,7 +42,7 @@ export default function OrbitSection() {
           <button
             type="button"
             onClick={() => setStatus("accepted")}
-            className="w-full bg-[#2D6A4F] hover:bg-[#23533D] text-white rounded-full py-3.5 px-6 text-xs font-semibold shadow-sm transition-all"
+            className="w-full bg-[#2D6A4F] hover:bg-[#23533D] text-white rounded-full py-3.5 px-6 text-xs font-semibold shadow-sm transition-all cursor-pointer"
           >
             {status === "accepted" ? "Adjustment applied ✓" : "Accept adjustment ✓"}
           </button>
@@ -50,7 +50,7 @@ export default function OrbitSection() {
           <button
             type="button"
             onClick={() => setStatus("deferred")}
-            className="block w-full py-1.5 text-xs text-[#57534E] hover:text-[#1C1917] transition-colors"
+            className="block w-full py-1.5 text-xs text-[#57534E] hover:text-[#1C1917] transition-colors cursor-pointer"
           >
             {status === "deferred" ? "Kept dinner as is" : "Keep dinner as is"}
           </button>

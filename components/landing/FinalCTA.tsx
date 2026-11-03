@@ -53,12 +53,6 @@ export default function FinalCTA() {
           { y: 12, opacity: 0.3, scale: 0.98 },
           { y: 0, opacity: 1, scale: 1, duration: 0.4, clearProps: "all" },
           "-=0.2"
-        )
-        .fromTo(
-          ".cta-subtext",
-          { opacity: 0.3 },
-          { opacity: 1, duration: 0.4, clearProps: "all" },
-          "-=0.1"
         );
 
       // Ambient radial glow breathing — paused when offscreen
@@ -117,51 +111,50 @@ export default function FinalCTA() {
   };
 
   return (
-    <section className="py-12 sm:py-16 px-6 lg:px-12 max-w-[1280px] mx-auto">
-      {/* Single rounded dark botanical card */}
-      <div className="bg-[#191D1A] text-[#FCFBF9] rounded-[32px] p-8 sm:p-12 lg:p-16 text-left shadow-2xl relative overflow-hidden">
+    <section ref={sectionRef} className="py-16 sm:py-24 px-6 md:px-12 lg:px-16 w-full max-w-[1360px] xl:max-w-[1480px] mx-auto">
+      {/* Single rounded dark botanical card (Expanded to max-w-[1480px]) */}
+      <div className="bg-[#191D1A] text-[#FCFBF9] rounded-[32px] p-8 sm:p-16 lg:p-20 text-center shadow-2xl relative overflow-hidden w-full">
         {/* Subtle warm terracotta radial glow in top-right corner */}
         <div
-          className="absolute -top-12 -right-12 w-48 h-48 rounded-full pointer-events-none opacity-25 blur-2xl"
+          ref={glowRef}
+          className="absolute -top-12 -right-12 w-64 h-64 rounded-full pointer-events-none opacity-25 blur-3xl"
           style={{
             background: "radial-gradient(circle, #E05A47 0%, transparent 70%)",
           }}
           aria-hidden="true"
         />
 
-        <div className="relative z-10 lg:flex lg:items-center lg:justify-between lg:gap-12">
-          {/* Eyebrow (Left-aligned) */}
-          <span className="text-[10px] font-bold tracking-[0.16em] uppercase text-[#E05A47] block mb-3">
-            START YOUR PRACTICE
+        <div className="relative z-10 max-w-2xl mx-auto">
+          {/* Eyebrow (Centered) */}
+          <span className="text-[10px] sm:text-xs font-bold tracking-[0.18em] uppercase text-[#6EE7B7] block mb-3.5 cta-eyebrow">
+            ● START YOUR PRACTICE
           </span>
 
-          {/* Headline (Left-aligned in Instrument Serif) */}
-          <h2 className="font-serif text-3xl sm:text-4xl text-[#FCFBF9] leading-[1.15] tracking-tight">
+          {/* Headline (Centered in Instrument Serif) */}
+          <h2 className="font-serif text-3xl sm:text-5xl lg:text-6xl text-[#FCFBF9] leading-[1.12] tracking-tight cta-headline">
             Build a body and routine you can{" "}
             <span className="italic text-[#6EE7B7]">actually keep.</span>
           </h2>
 
-          {/* Body copy (Left-aligned) */}
-          <p className="text-xs sm:text-sm text-stone-300 mt-3 max-w-sm leading-relaxed font-normal">
+          {/* Body copy (Centered) */}
+          <p className="text-xs sm:text-sm lg:text-base text-stone-300 mt-4 max-w-lg mx-auto leading-relaxed font-normal cta-copy">
             No rigid streaks, no guilt, no isolated numbers. Just your daily life, moving in conscious rhythm.
           </p>
 
-          {/* CTA Button: Full-width Terracotta pill */}
+          {/* CTA Button: Centered Terracotta pill */}
+          <div className="mt-8 flex justify-center cta-button-wrapper">
+            <button
+              ref={buttonRef}
+              type="button"
+              onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+              onPointerMove={handlePointerMove}
+              onPointerLeave={handlePointerLeave}
+              className="bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full px-8 py-4 text-xs sm:text-sm font-semibold inline-flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 cursor-pointer min-h-[44px] hover:scale-105"
+            >
+              <span>Begin in 60 seconds</span>
+              <span>→</span>
+            </button>
           </div>
-        <div className="relative z-10 shrink-0 mt-6 lg:mt-0 lg:w-[320px]">
-          <button
-            type="button"
-            onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-            className="w-full bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full py-4 text-sm font-semibold mt-6 flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
-          >
-            <span>Begin in 60 seconds</span>
-            <span>→</span>
-          </button>
-
-          {/* Footer Line (Inside the bottom of this dark card, centered) */}
-          <p className="text-[10px] text-stone-400 text-center mt-5 mb-0 font-mono tracking-tight">
-            © satat. mindful physical longevity. all rights reserved.
-          </p>
         </div>
       </div>
     </section>

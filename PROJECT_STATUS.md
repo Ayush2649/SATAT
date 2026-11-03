@@ -885,6 +885,116 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ---
 
+### ✅ Sprint 6.8: Unify Orbit Mobile Header with Today & Build Responsive Desktop Landing Page
+- **Unify `/dashboard/orbit` Mobile Header with `SATAT / Today` (`components/orbit/OrbitView.tsx`)**:
+  - **Shared App Bar Brand Cluster**: Upgraded mobile top bar to match `SATAT / Today` 1:1 (`h-14 px-4 bg-[#FCFBF9] border-b border-[#1C1917]/[0.06]`).
+    - Left: White circular emblem container housing geometric `S` mark (`<Logo size={22} />`) + **`SATAT`** (`font-bold text-[#1C1917]`) + **`/ Orbit`** (`font-normal text-[#57534E]`).
+    - Right: Exact same cluster as Today: 3D `<OrbitLauncherBadge size="md" />` + terracotta `<NotificationBell />` + circular user avatar photo.
+  - **Clean Title & Reset Hierarchy**: Scoped Orbit title (`Orbit Intelligence` in `Instrument Serif` + `Unified biological & execution copilot.`) and the `↻ New Chat` button below the top bar.
+  - **Eliminated Scrollbar Clutter**: Added `no-scrollbar` utility and hidden webkit scrollbar directives to the context filter row with tightened pill padding (`px-3 py-1.5 text-xs whitespace-nowrap`).
+- **Responsive Widescreen Desktop Landing Page Overhaul (`components/landing/*`)**:
+  - **Floating Alabaster Capsule Navbar (`LandingNav.tsx`)**: Aligned to `max-w-[920px] mx-auto mt-6 bg-[#FCFBF9] rounded-full px-6 py-3 shadow-[0_8px_30px_rgba(28,25,23,0.05)] border border-[#1C1917]/[0.06]` with `स satat.` brand mark, anchor links (`#rhythm`, `#orbit`, `#proof`), `Sign in`, and terracotta `Start free →` button.
+  - **Centered Hero & Desktop Widescreen Card (`Hero.tsx` & `HeroProductScene.tsx`)**:
+    - Centered typography (`max-w-[960px] mx-auto text-center`) with `● A GENTLER WAY TO STAY CONTINUOUS` eyebrow, `Your body doesn't live in five separate apps.` headline, and dual CTAs.
+    - Widescreen Hero Visual Card: `aspect-[16/10] sm:aspect-[16/9] max-w-[900px] mx-auto rounded-[32px] overflow-hidden shadow-2xl border border-[#1C1917]/[0.08]` with full-bleed atmospheric gym photo, top-right floating dark pill (`Upper Body moved to 6PM · Sleep was light`), and bottom-right floating Alabaster meal card (`Oatmeal & Whey`, `420 kcal · 34g Protein`).
+    - Mobile visual scene preserved under `sm:hidden`.
+  - **Rhythmic Cadence 3-Column Studio Grid (`ProblemSection.tsx`)**:
+    - Responsive 3-column photo cards (`grid grid-cols-1 md:grid-cols-3 gap-6 mt-10 text-left`) for Morning check-in, Mindful nourishment, and Adaptive recalibration with uncropped photos and live signal pills.
+    - Mobile sinusoidal vertical timeline preserved under `md:hidden`.
+  - **Living Evidence 28-Day Continuity Calendar (`ProgressSection.tsx`)**:
+    - Desktop Alabaster Calendar Card (`hidden md:block bg-[#FCFBF9] rounded-[32px] p-6 sm:p-10`) with top milestone header (`Day 7 · Start` | active dark pill `Day 14 · Rested` | `Day 28 · Flow`), 7-column grid of days 1-21 (completed Matcha Sage, rested Mint, and active Terracotta), and bottom comparative bar (`✕ Traditional Apps: Streak Reset to 0` vs `✓ Satat Rhythm: 28 Days Unbroken`).
+    - Mobile 28-day matrix card with scenario switcher preserved under `md:hidden`.
+  - **Final CTA & Minimalist Grounded Footer (`FinalCTA.tsx` & `Footer.tsx`)**:
+    - Dark Botanical Espresso card (`max-w-[920px] mx-auto bg-[#191D1A] rounded-[32px] px-6 py-12 sm:p-14 text-center text-white`) with `● START YOUR PRACTICE` in `#6EE7B7`, centered headline, and `Begin in 60 seconds →` terracotta button.
+    - Clean footer below card (`max-w-[920px] mx-auto`) with Sanskrit etymology attribution and anchor links.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **55 passed (55 files), 650 passed | 26 skipped (676 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
+### ✅ Sprint 6.9: Full-Bleed Desktop Width Overhaul, Broken Image Fixes, Floating Tag Keyframes & Interactive Streak Tabs
+- **Full-Bleed Desktop Widescreen Layout (`max-w-[1440px] xl:max-w-[1600px]`)**:
+  - `LandingNav.tsx`: Floating pill navbar expanded to `w-[calc(100%-2rem)] sm:w-[calc(100%-3rem)] max-w-[1440px] xl:max-w-[1600px] mx-auto px-6 sm:px-8 py-3.5`.
+  - `Hero.tsx`: Outer container expanded to `max-w-[1440px] xl:max-w-[1600px] mx-auto px-6 md:px-12 lg:px-16`. Hero visual card expanded to `w-full max-w-[1440px] xl:max-w-[1560px] mx-auto aspect-[16/9] lg:aspect-[21/9] max-h-[680px]` with high-res training photography.
+  - `ProblemSection.tsx`: 3-column studio grid container expanded to `w-full max-w-[1440px] xl:max-w-[1600px] mx-auto px-6 md:px-12 lg:px-16` with taller card image headers (`h-56 lg:h-64`).
+  - `ProgressSection.tsx`, `OrbitSection.tsx`, `FinalCTA.tsx`, `Footer.tsx`: Expanded containers to `w-full max-w-[1360px] xl:max-w-[1480px] mx-auto px-6 md:px-12 lg:px-16`.
+- **Card 1 Image Fix & Safe Fallback Preventions (`ProblemSection.tsx`)**:
+  - Replaced 404ing image URL in Card 1 with high-resolution sunlit desk photography (`photo-1499750310107-5fef28a66643`).
+  - Attached robust `onError` fallbacks on all 3 desktop card images and mobile timeline thumbnails preventing broken image icons.
+- **Physical Floating Animations & Hover Lifts (`app/globals.css`, `Hero.tsx`, `ProblemSection.tsx`, `OrbitSection.tsx`)**:
+  - Defined `@keyframes satatFloatSlow` and `@keyframes satatFloatDelayed` in `app/globals.css`.
+  - Applied `animate-[satatFloatSlow_4.2s_ease-in-out_infinite]` to the top-right dark pill (`Upper Body moved to 6PM · Sleep was light`).
+  - Applied `animate-[satatFloatDelayed_5s_ease-in-out_0.8s_infinite]` to the bottom-right Alabaster meal card (`Oatmeal & Whey · 420 kcal · 34g Protein`).
+  - Added subtle hover lift (`hover:-translate-y-1 transition-all duration-300 shadow-sm hover:shadow-md`) to status badge pills in all 3 cards and the Orbit core orb.
+- **Interactive Streak Tabs & Clean Comparison Banner (`ProgressSection.tsx`)**:
+  - Added `activeMilestone` state (`7 | 14 | 28`) with clickable pill buttons (`Day 7 · Start`, `Day 14 · Rested`, `Day 28 · Flow`).
+  - Dynamically calculates the 21-day calendar grid (Day 7 baseline, Day 14 rest auto-bridge, Day 28 flow).
+  - Dynamically updates bottom comparison banner:
+    - Day 7: `✓ Satat Rhythm: Week 1 Baseline Locked · 100% Cadence Sync`
+    - Day 14: `✓ Satat Rhythm: 14 Days Unbroken · Auto-Bridged 2 Rest Days`
+    - Day 28: `✓ Satat Rhythm: 28 Days Unbroken · +18.4% Strength ✓`
+  - Simplified eyebrow to `LIVING STREAKS` and eliminated duplicate strength text strings.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **55 passed (55 files), 650 passed | 26 skipped (676 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
+### ✅ Sprint 6.9.1 & 6.9.2: 28-Day Calendar Grid (Days 1–28), Inline Footer, Mathematical Timeline Centering & Large CTA Buttons
+- **Full 28-Day Calendar Grid (`ProgressSection.tsx`)**:
+  - Replaced 21-day grid with complete 28-day matrix (`Array.from({ length: 28 })` in 4 rows of 7 columns).
+  - Bridge rest days highlighted in soft Mint (`Rested`) for days `9, 10, 17, 18, 24`.
+  - When `activeMilestone === 7`: Days 1–6 Matcha Sage, Day 7 highlighted as `Today` in Terracotta, Days 8–28 upcoming.
+  - When `activeMilestone === 14`: Days 1–8 & 11–13 Matcha Sage, Days 9–10 Mint (`Rested`), Day 14 highlighted as `Today` in Terracotta, Days 15–28 upcoming.
+  - When `activeMilestone === 28`: Days 1–27 unbroken flow, Day 28 highlighted in Terracotta (`#E05A47 ring-4 ring-[#E05A47]/20`) with sub-label `Flow`!
+  - Removed duplicate checkmarks: kept single clean checkmark at end (`Satat Rhythm: 28 Days Unbroken · +18.4% Strength ✓`).
+- **Single-Line Inline Footer Tagline (`Footer.tsx`)**:
+  - Inlined the Sanskrit lineage note (`— Rooted in सतत् (Satat) — the Sanskrit principle of continuous, unbroken flow.`) horizontally right beside `सतत्` inside the brand cluster on desktop.
+  - Aligned navigation links (`Rhythm`, `Orbit`, `Proof`, `Sign in`) cleanly on the same row.
+- **Mathematical Centering of Timeline Logos (`ProblemSection.tsx`)**:
+  - Re-architected vertical cadence timeline nodes with `relative flex flex-col items-center shrink-0 w-12`.
+  - Positioned vertical spine rail line dead-center (`absolute top-6 bottom-0 left-1/2 -translate-x-1/2 w-[2.5px]`).
+  - Wrapped circular nodes (`w-10 h-10 border-2 border-white shadow-md ring-[3px] ring-[#F6F3EC]`) in centered `w-12 h-12 flex items-center justify-center relative z-10` container.
+- **Large & Prominent CTA Buttons (`LandingNav.tsx`, `Hero.tsx`, `FinalCTA.tsx`)**:
+  - Enhanced `"Sign in"` buttons with `px-5 py-2.5 text-xs sm:text-sm font-semibold rounded-full min-h-[44px]`.
+  - Enhanced `"Start free"` and `"Begin in 60 seconds"` buttons with `px-7 sm:px-8 py-3.5 sm:py-4 text-xs sm:text-sm font-semibold min-h-[44px] shadow-md hover:shadow-lg hover:scale-105 active:scale-95`.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **55 passed (55 files), 650 passed | 26 skipped (676 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
+### ✅ Sprint 6.10: Restore Exact origin/main Mobile Landing Page (< 768px) & Strictly Split from Desktop Widescreen Layout
+- **Verbatim Mobile Component Extraction from origin/main (`components/landing/mobile/*`)**:
+  - Extracted exact JSX tree, styling, and animations from `origin/main` (2 commits ago) into dedicated mobile modules with zero desktop overrides:
+    - `MobileLandingNav.tsx`: Original compact mobile header with logo, `#rhythm` / `#orbit` links, and sign-in button.
+    - `MobileHero.tsx`: Original mobile hero with stacked typography, pill badges, and dual action buttons.
+    - `MobileProblemSection.tsx`: Original single-column sinusoidal vertical timeline with SVG connectors and natural cadence nodes.
+    - `MobileOrbitSection.tsx`: Original mobile Orbit companion section with breathing orb and prompt pills.
+    - `MobileProgressSection.tsx`: Original mobile 28-day continuity matrix with scenario switcher and Sanskrit etymology card.
+    - `MobileFinalCTA.tsx` & `MobileFooter.tsx`: Original grounded footer card and brand lineage.
+    - `MobileLandingPage.tsx`: Aggregator rendering the complete mobile experience cleanly.
+- **Widescreen Desktop Component Architecture (`components/landing/DesktopLandingPage.tsx`)**:
+  - Preserved widescreen desktop landing components (`max-w-[1440px] xl:max-w-[1600px]`):
+    - Floating Alabaster capsule navbar.
+    - 3-column studio grid with uncropped photography and floating badges.
+    - Interactive 28-day streak tabs (`Day 7 · Start`, `Day 14 · Rested`, `Day 28 · Flow`) with 4-week matrix.
+    - Single-line inline footer tagline.
+- **Strict Viewport Partitioning (`app/page.tsx`)**:
+  - `<div className="block md:hidden"><MobileLandingPage /></div>`
+  - `<div className="hidden md:block"><DesktopLandingPage /></div>`
+  - Guaranteed zero CSS bleed between mobile (`< 768px`) and desktop (`md:` / `>= 768px`) screens.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **55 passed (55 files), 650 passed | 26 skipped (676 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
 - **Vitest Suite**: `650 passed | 26 skipped` across all 55 test suites (0 failing).
