@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { OrbitMark } from "@/components/orbit/OrbitMark";
@@ -14,6 +14,7 @@ import { OrbitView } from "@/components/orbit/OrbitView";
  */
 export default function AriaChatbot() {
   const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -86,7 +87,15 @@ export default function AriaChatbot() {
 
       {/* Floating desktop trigger button */}
       <button
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          if (pathname !== "/dashboard/orbit") {
+            router.push("/dashboard/orbit");
+          } else {
+            const inputEl = (document.querySelector('textarea[aria-label="Ask Orbit desktop"]') ||
+              document.querySelector('textarea[aria-label="Ask Orbit"]')) as HTMLTextAreaElement | null;
+            inputEl?.focus();
+          }
+        }}
         title="Ask Orbit"
         aria-label="Open Orbit AI Companion"
         className={cn(

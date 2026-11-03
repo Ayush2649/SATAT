@@ -79,14 +79,24 @@ function classifyError(err: unknown, timeoutMs = CALL_TIMEOUT_MS): AiError {
   const status = typeof e["status"] === "number" ? e["status"] : 0;
   const msg = String(e["message"] ?? e["error"] ?? err);
 
-  if (status === 429) {
+  const isRequestTooLarge = (
+    status === 413 ||
+    /request\s+too\s+large/i.test(msg) ||
+    /reduce\s+your\s+message\s+size/i.test(msg)
+  );
+
+  if (status === 429 || isRequestTooLarge) {
     let retryAfterMs: number | undefined;
     const headers = e["headers"] as Record<string, string> | undefined;
     if (headers?.["retry-after"]) {
       const secs = parseFloat(headers["retry-after"]);
       if (!Number.isNaN(secs)) retryAfterMs = Math.min(secs * 1000, MAX_RETRY_AFTER_MS);
     }
-    return new AiError("RATE_LIMITED", `Rate limited: ${msg}`, retryAfterMs ?? MAX_RETRY_AFTER_MS);
+    return new AiError(
+      "RATE_LIMITED",
+      `Rate limited: ${msg}`,
+      isRequestTooLarge ? 0 : (retryAfterMs ?? MAX_RETRY_AFTER_MS)
+    );
   }
 
   if (
@@ -268,6 +278,7 @@ export async function callText(opts: TextCallOptions): Promise<AiResult<string>>
       const ae = classifyError(err, opts.timeoutMs);
       lastErr = ae;
       if (ae.code === "RATE_LIMITED" && attempt === 0) {
+        if (ae.retryAfterMs === 0) throw ae;
         await new Promise((r) => setTimeout(r, ae.retryAfterMs ?? MAX_RETRY_AFTER_MS));
         continue;
       }
@@ -392,6 +403,7 @@ export async function callJsonStrict<T>(opts: JsonCallOptions<T>): Promise<AiRes
       const ae = classifyError(err);
       lastErr = ae;
       if (ae.code === "RATE_LIMITED" && attempt === 0) {
+        if (ae.retryAfterMs === 0) throw ae;
         await new Promise((r) => setTimeout(r, ae.retryAfterMs ?? MAX_RETRY_AFTER_MS));
         continue;
       }

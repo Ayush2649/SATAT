@@ -573,24 +573,325 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ## 3. Pending / Upcoming Sprints
 
-### ⏳ Sprint 5.4: Multi-Device Responsive & Final E2E QA
+### ✅ Sprint 5.4: Orbit AI Date-Window Unification & Removal of Rigid Weekly Template Hijacking
+- **Date-Window Unification (`lib/orbit/temporalResolver.ts`)**:
+  - Unified `"last week"`, `"this week"`, `"past week"`, `"previous week"`, and `"last 7 days"` so they consistently resolve to the rolling last 7 days (`today - 6 days` through `today`, e.g. Oct 25 – Oct 31) rather than an outdated calendar Monday–Sunday block.
+- **Context Requirement & Domain Guard (`lib/orbit/contextRequirement.ts`)**:
+  - Fixed `isExplicitOverallReview` so domain-targeted queries containing rating requests (e.g., `"rate me out of 10 on my workout structure"`) are not hijacked into 7-domain multi-system reviews when a specific category like `workouts` is explicitly detected.
+- **Detailed Workout Session Context (`app/api/aria/route.ts`)**:
+  - Implemented `formatDetailedWorkoutSessions` helper that prints all rolling workout sessions with exact dates, titles, duration, full exercise lists, sets, reps, load in kg, and cardio metrics directly into LLM prompt context.
+- **Elimination of Rigid Weekly Review Hijacking (`app/api/aria/route.ts`)**:
+  - Constrained the canned 6-part `### Weekly Review` template strictly to multi-domain broad requests (`!mode || mode === "all"` without a single target category).
+  - Injected targeted workout evaluation directives (`[INSTRUCTIONS FOR WORKOUT & STRUCTURE EVALUATION]`) commanding Orbit to:
+    1. Lead immediately with a bold numerical rating (`**X / 10**`) based on structured parameters.
+    2. Analyze split balance, muscle group coverage, frequency, and progressive overload.
+    3. Provide actionable next steps and recommendations without dumping unrequested nutrition or task bullet points.
+- **Table Cell & Header Wrapping Fix (`components/ui/MarkdownText.tsx`)**:
+  - Added `whitespace-nowrap` and compact `px-2.5 py-1.5 text-xs` padding to `<th>` and `<td>` elements in markdown tables to prevent header fragmentation (e.g. `"Durat / ion"`) on mobile screens.
+- **Test & Build Verification**:
+  - TypeScript compilation: `npx tsc --noEmit` exits with **0 errors**.
+  - Vitest suite: **53 passed (53 files), 636 passed | 26 skipped (662 total), 0 failing**.
+  - Next.js production build: `npm run build` exits with code **0** (all 33 static/dynamic routes compiled).
+
+---
+
+## 3. Pending / Upcoming Sprints
+
+### ✅ Sprint 5.5: Fix Groq 413 Request Too Large via Context Compaction, Strict Domain Pruning, & Automatic Model Fallback
+- **Workouts Compaction (`app/api/aria/route.ts`)**:
+  - Replaced multi-line indented exercise/sets dumps with single ultra-compact session lines:
+    `2026-10-30 | Upper body (50m, ~350 kcal): Bench Press 3x10@60kg, Incline DB 3x10@20kg, Lat Pulldown 3x12@50kg`.
+  - Stripped raw Firestore documents, `aiAnalysis`, internal IDs, image URLs, and duplicate entries.
+- **Meals / Nutrition Compaction (`app/api/aria/route.ts`)**:
+  - Created `formatDailyNutritionSummary` to summarize historical nutrition day-by-day:
+    `2026-10-30: 1,850 kcal, 125g P, 190g C, 55g F [3 meals: Oats, Dal Chawal, Chicken]`.
+  - Completely excluded raw item arrays and photo URLs.
+- **Chat History Truncation & Duplicate JSON Elimination (`app/api/aria/route.ts`)**:
+  - Truncates conversation history to at most the last 4 messages (`slice(-4)`), and truncates previous assistant replies longer than 500 characters to prevent conversation token snowballing.
+  - Removed duplicate `{ role: "system", content: contextJson }` message from LLM prompt, instantly eliminating thousands of redundant JSON tokens.
+- **Strict Domain Pruning (`lib/orbit/contextRequirement.ts` & `app/api/aria/route.ts`)**:
+  - Single-domain queries (such as workouts/training) strictly prune domains to `["workouts", "profile", "goals"]`, completely bypassing unnecessary Firestore queries for meals, nutrition, or tasks.
+  - Diet queries strictly prune domains to `["nutrition", "meals", "profile", "goals"]`.
+- **Hard Token Budget Guard (`app/api/aria/route.ts`)**:
+  - Enforces a strict ceiling of `14,000 characters` (~3,500 tokens) with an automatic 10,000-character context trim threshold, paired with `max_tokens: 1024`, guaranteeing total input + output tokens remain under 4,600 tokens (well below Groq's 8,000 TPM limit).
+- **Automatic Fallback & Token Limit Recovery (`lib/ai/models.ts`, `lib/ai/groq.ts`, & `app/api/aria/route.ts`)**:
+  - Extended `TEXT_FALLBACK` chain to include `llama-3.3-70b-versatile` and `llama-3.1-8b-instant`.
+  - Configured `classifyError` in `lib/ai/groq.ts` to classify HTTP 413 and "Request too large" with `retryAfterMs: 0` for immediate model fallback without sleeping.
+  - Implemented automatic retry with ultra-trimmed context (`slice(-2)` history + compact 500-word prompt) on fallback models and Google Gemini (`@google/genai`).
+- **Test & Build Verification**:
+  - TypeScript compilation: `npx tsc --noEmit` exits with **0 errors**.
+  - Vitest suite: **53 passed (53 files), 638 passed | 26 skipped (664 total), 0 failing**.
+  - Next.js production build: `npm run build` exits with code **0** (all 33 static/dynamic routes compiled).
+
+---
+
+## 3. Pending / Upcoming Sprints
+
+### ⏳ Sprint 5.6: Multi-Device Responsive & Final E2E QA
 - **Tablet Optimization**: iPad 10th Gen (1024×768) 2-column bento grid verification.
 - **Desktop Optimization**: Desktop (1440×900) 3-column layout verification.
 - **End-to-End Testing**: Full automated test verification and Playwright regression sweep.
 
-### ⏳ Sprint 5.5: Core Companion Alignment (Orbit & Settings)
-- **Orbit AI Companion** (`components/orbit/OrbitView.tsx`):
-  - Natural conversation interface, context cards, and prompt suggestions matching the Natural Athletic Editorial aesthetic.
+### ✅ Sprint 5.7: Port Mobile Companion Design into Production OrbitView (`components/orbit/OrbitView.tsx`)
+- **Top Editorial Header & Context Filter Pills (`components/orbit/OrbitView.tsx`)**:
+  - Editorial `Instrument Serif` headline: *"Orbit Intelligence"* with subtitle *"Unified biological & execution copilot."*
+  - Sanskrit halant wordmark badge (`स`) and live `● AI Active` Botanical Sage pill (`#2D6A4F`) with animated pulse dot.
+  - Interactive Horizontal Context Filter Bar: `● All Domains`, `Workout`, `Diet`, `Tasks`. Active pill styled in Deep Botanical Espresso (`#191D1A` text-white) with glowing Mint synapse dot (`#6EE7B7`), and inactive pills in Warm Stone (`#EFECE4`) with Lucide vector icons.
+- **Conversational Feed & Message Bubbles**:
+  - **User Message Bubble**: Right-aligned Pure Cream Alabaster (`bg-[#FCFBF9] text-[#1C1917] rounded-[20px] rounded-br-sm p-3.5 border border-[#1C1917]/[0.06] shadow-2xs text-sm`) with sent timestamp.
+  - **Orbit AI Response Card**: Left-aligned Deep Botanical Espresso (`bg-[#191D1A] text-[#FCFBF9] rounded-[24px] rounded-tl-sm p-4 shadow-xl border border-white/[0.06]`):
+    - Top header row with pulsing Matcha Sage badge `● ORBIT SYNAPSE ACTIVE` (`bg-[#2D6A4F]/40 border border-[#6EE7B7]/25 text-[#6EE7B7]`) and formatted timestamp.
+    - Dark glass table formatting with `whitespace-nowrap` on `<th>` headers, tabular figures, and verified delivery footer.
+    - Automatic bold score rating highlights (e.g. `7 / 10`) with Terracotta badge accents (`#E05A47`) via `components/ui/MarkdownText.tsx`.
+- **Suggested Quick-Prompt Chips (Zero Emojis — Vector Icons Only)**:
+  - Scrollable quick-action bar above the input dock using crisp Lucide vector icons (`TrendingUp`, `Utensils`, `Zap`, `CheckCircle2`):
+    - *"Rate my weekly workout volume"*
+    - *"Protein gap analysis for today"*
+    - *"Recommend tomorrow's training split"*
+    - *"Prioritize deep work tasks"*
+  - Clicking any chip immediately triggers analysis without manual typing.
+- **Floating Input Dock Above the Bottom Pill Navbar**:
+  - Cream Alabaster capsule (`bg-[#FCFBF9] rounded-full pl-4 pr-2 py-2 border border-[#1C1917]/10 shadow-[0_8px_24px_rgba(25,29,26,0.08)]`) with `Sparkles` icon, standard `aria-label="Ask Orbit"`, and circular Terracotta send button (`#E05A47`, `w-9 h-9`, white `ArrowUp` icon).
+  - Responsive safe-area bottom offset: `pb-[calc(56px+max(16px,env(safe-area-inset-bottom))+16px)] lg:pb-6` ensuring clean clearance above the floating pill navbar.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: 0 errors.
+  - Full Vitest suite: 53 passed (53 files), 638 passed | 26 skipped (664 total), 0 failing.
+  - Production Next.js build: `npm run build` exits with code 0 (all 33 routes compiled).
+
+---
+
+### ✅ Sprint 5.8: Fix All 6 Orbit UI & Context Retrieval Bugs
+- **Markdown Table Clipping Fix (`MarkdownText.tsx` & `styles/app-shell.css`)**:
+  - Wrapped every table in a scrollable touch container (`overflow-x-auto my-2.5 rounded-xl border border-white/[0.08] bg-white/[0.04] [-webkit-overflow-scrolling:touch]`).
+  - Set `min-w-0` and `overflow-hidden` on AI cards to guarantee smooth horizontal touch scrolling without clipping right-hand columns (`DURATION`, `SETS/REPS`).
+  - Kept `whitespace-nowrap` on headers and short numeric/date cells while allowing exercise/session names to wrap cleanly (`min-w-[110px] whitespace-normal break-words`).
+- **Markdown Backslash Unescaping & High-Contrast Badges (`MarkdownText.tsx` & `styles/app-shell.css`)**:
+  - Added regex unescaping (`text.replace(/\\([*_~`[\]()#+-])/g, "$1")`) so model backslashes like `\*Volume` render as clean markdown without raw slashes.
+  - Styled numbered list badges as high-contrast Matcha Sage / Mint pills (`bg-[#2D6A4F]/45 border border-[#6EE7B7]/35 text-[#6EE7B7]`) for crisp legibility against dark Espresso cards.
+- **Context Filter Bar & Bottom Prompt Chips Optimization (`OrbitView.tsx`)**:
+  - Condensed top context filter pills (`All`, `Workout`, `Diet`, `Tasks`) with compact padding (`px-3 py-1.5 text-xs`) so all 4 fit inside 300px without right-edge cutoff on 393px screens.
+  - Shortened prompt chip labels to punchy 2-word pills (`Rate weekly volume`, `Today's protein gap`, `Tomorrow's split`, `Prioritize tasks`) with horizontal scroll padding (`scroll-px-4 no-scrollbar`).
+  - Shortened input placeholder to `"Ask Orbit about training, diet, or focus..."` to eliminate mobile text cutoff while keeping test contracts intact.
+- **Diet & Tasks Data Retrieval Intelligence (`app/api/aria/route.ts`)**:
+  - Ingests both Firestore Admin DB and client state (`taskContext`, `dietContext`) from request body.
+  - Injects all incomplete tasks across all dates and projects with prioritized deep work coaching directives.
+  - Injects daily macro/protein goals (e.g. 135g P, 2,000 kcal) and past-week favorite meals, instructing Orbit to calculate the exact remaining protein gap and provide a 3-meal action plan rather than refusing with "I don't see any meals logged".
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: 0 errors.
+  - Full Vitest suite: 53 passed (53 files), 638 passed | 26 skipped (664 total), 0 failing.
+  - Production Next.js build: `npm run build` exits with code 0 (all 33 routes compiled).
+
+---
+
+### ⏳ Sprint 5.9: Multi-Device Responsive & Final E2E QA
+- **Tablet Optimization**: iPad 10th Gen (1024×768) 2-column bento grid verification.
+- **Desktop Optimization**: Desktop (1440×900) 3-column layout verification.
 - **Settings & Profile** (`app/dashboard/settings/page.tsx`):
   - Alabaster preference controls, notification settings, and biometric targets.
 
 ---
 
+### ✅ Sprint 6.0: 1:1 Stitch Implementation of OrbitView with Dead-Center Radar Stage Alignment & Calm Celestial 3D Orbital Physics
+- **Dead-Center <Orbit3DCore /> Alignment & Physics (`components/orbit/Orbit3DCore.tsx`)**:
+  - **Shared Centered Stage (`w-[184px] h-[184px] relative mx-auto my-2 flex items-center justify-center`)**:
+    - Concentric dashed SVG radar circles (`r="86"`, `r="64"`, `r="42"`, `stroke="rgba(255,255,255,0.08)"`, `strokeDasharray="3 3"`) and subtle crosshair lines are locked inside the exact same container as the 3D celestial sphere.
+    - Pinned the central 3D planet core at `absolute inset-0 m-auto`, positioning it at the **exact geometric center (50%, 50%)** of the background radar circles.
+  - **Locked 3D Tilt Planes & Elimination of Funky Wobble**:
+    - Eliminated erratic multi-axis keyframe tumbling (`rotateX` + `rotateY` changing mid-animation).
+    - Kept each orbital ring on a fixed, locked 3D tilt plane, rotating ONLY around its local Z axis (`rotateZ(0deg) -> rotateZ(360deg)`):
+      - **Inner Ring (Terracotta `#E05A47`, `w-24 h-24`)**: Locked tilt `rotateX(66deg) rotateY(-18deg)`, smooth linear spin of **20s** (idle) / **6s** (thinking) with a 6px glowing Terracotta satellite node on its rim.
+      - **Middle Ring (Mint Sage `#6EE7B7`, `w-32 h-32`)**: Locked tilt `rotateX(62deg) rotateY(28deg)`, smooth counter-spin of **28s** (idle) / **8s** (thinking) with a 5px Mint satellite node.
+      - **Outer Equatorial Ring (Warm Stone `#D6CFC2`/40, `w-40 h-40`)**: Locked tilt `rotateX(72deg) rotateY(-6deg)`, ultra-calm spin of **36s** (idle) / **10s** (thinking).
+      - **Center Planet Core (`w-11 h-11 rounded-full`)**: Smooth 3D shaded Matcha-Emerald sphere (`radial-gradient(circle at 35% 30%, #6EE7B7 0%, #2D6A4F 55%, #0F1713 95%)`) with a soft 6s breathing glow and botanical lotus core identity.
+      - **Thinking State Acceleration**: Smoothly speeds up the 3 rings to 6s, 8s, and 10s without wobble and adds a pulsing emerald aura ring.
+- **1:1 Stitch OrbitView Architecture (`components/orbit/OrbitView.tsx`)**:
+  - **Top Context Bar**: `All Context` (active `#191D1A` pill), `Train`, `Fuel`, `Plan`, `Circadian` fitting cleanly without horizontal clipping.
+  - **Dark Botanical Espresso Hero Stage (`bg-[#191D1A] rounded-[30px] p-5 shadow-xl border border-white/[0.08]`)**:
+    - Top status pills: `STATE: SYNAPSE READY` (`#2D6A4F`/35) + `3 Domains Linked · 98% Sync`.
+    - Center 184×184 stage with `<Orbit3DCore size="lg" state={orbitState} />` at the exact bullseye.
+    - Instrument Serif headline: *"How can Orbit optimize your cadence today?"* + subhead *"Cross-synthesizing neuromuscular load, metabolic deficit, and circadian focus blocks."*
+    - 3 stacked live biometric ticker pills: `● Train: {workoutSummaryText}` (5 Sessions · 235m), `● Fuel: 135g Target · {proteinDeltaText}` (-48g Gap), `● Plan: {pendingTasksCount} High-Load Slot`.
+  - **"CADENCE SHIFT" Mint Insight Banner (`bg-[#D8F3DC]/75 border border-[#2D6A4F]/15 rounded-[22px] p-3.5`)**:
+    - Matcha icon with `Zap`, `CADENCE SHIFT` badge, `Auto-applied` indicator, and dynamic neuromuscular fatigue insight text.
+  - **"Cadence Actions" 2×2 Telemetry Bento Grid**:
+    - Card 1 (`TRAINING LOAD` — `Weekly Training Audit`): Ascending SVG sparkline curve, title, subtitle, and full-width Terracotta button `Run Audit →`.
+    - Card 2 (`FUEL DEFICIT` — `Protein Gap & Fuel`): Mini circular progress gauge + `{loggedP}g / 135g`, title, subtitle, and full-width Matcha button `Curate Meal →`.
+    - Card 3 (`CIRCADIAN` — `Tomorrow's Split`): Semi-circle readiness arc + `88% HRV · High Readiness`, title, subtitle, and stone pill button `Preview Split →`.
+    - Card 4 (`PLAN ENGINE` — `Deep Work Focus`): Vertical equalizer bars + `90m`, title, subtitle, and stone pill button `Rank Slot →`.
+    - Clicking any card immediately dispatches its corresponding query into Orbit!
+  - **"Circadian Rhythm Alignment" Card (`bg-[#FCFBF9] rounded-[24px] p-4 border border-[#1C1917]/[0.06]`)**:
+    - `Dusk Transition` (`19:30 – 21:00` · *"Melatonin priming, blue-light attenuated"*)
+    - `Deep Sleep Window` (`22:30 – 06:45` · *"Target: 2.1h Slow-Wave restoration"*)
+  - **Seamless Multi-Mode View**: When messages exist, users can seamlessly toggle between the full Cadence Dashboard and the active Chat Stream with zero data loss.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **54 passed (54 files), 642 passed | 26 skipped (668 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
+### ✅ Sprint 6.1: Global Orbit 3D Launcher, Orbit New Chat / Reset Action, & Zero Vertical Gap
+- **Global 3D Orbit Launcher Across All Screens (`components/Navigation.tsx`)**:
+  - **Floating Bottom-Right 3D Orbit Launcher FAB**: Added floating `Orbit AI` FAB positioned at `fixed right-4 bottom-[calc(62px+max(14px,env(safe-area-inset-bottom))+12px)] z-40` whenever `pathname !== "/dashboard/orbit"` with `<Orbit3DCore size="sm" state="idle" />`, `"Orbit AI"` typography, and pulsing `#6EE7B7` synapse dot.
+  - **Top App Header Orbit Pill**: Rendered compact `Orbit` pill in the top header next to the notification bell and profile avatar with `<Orbit3DCore size="sm" state="idle" />` and link to `/dashboard/orbit`.
+- **"New Chat / Reset" Button & Thread Clearing (`components/orbit/OrbitView.tsx`)**:
+  - Added tactile `New Chat` / `Reset` pill button to the `"Orbit Intelligence"` title row with `<RotateCcw />`, `aria-label="Reset chat"`, and `handleResetChat` action.
+  - Clicking `New Chat` clears `messages`, `error`, and `input`, purges `sessionStorage` and `localStorage`, resets `orbitState` to `"idle"`, and seamlessly restores the centered **3D Orbit Hero Stage**.
+- **Elimination of Vertical Blank Gap Between AI Responses & Prompt Chips (`components/orbit/OrbitView.tsx`)**:
+  - Applied `mt-auto` and `space-y-3` to conversational stream container so short conversations (1 user message + 1 AI card) hug the bottom dock tightly with zero empty void.
+  - Set viewport bottom padding to `pb-2` and reduced composer dock top padding to `pt-1`, ensuring `"Delivered by Orbit · 100% verified data"` sits tightly 8px–12px above prompt chips.
+  - Compacted context filter pills to `px-2.5 py-1 text-[11px] gap-1` so all 5 pills (`All Context`, `Train`, `Fuel`, `Plan`, `Circadian`) fit cleanly without right-edge cutoff.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **55 passed (55 files), 646 passed | 26 skipped (672 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
+### ✅ Sprint 6.2: Redesign Global Orbit Launchers into Clean, Rounded-Square 3D Emblem Badges with Moving Orbital Rings and Hover Tooltips
+- **Dedicated `<OrbitLauncherBadge />` Component (`components/orbit/OrbitLauncherBadge.tsx`)**:
+  - Created a tactile rounded-square emblem container (`rounded-2xl` / `rounded-xl`, `bg-[#191D1A]`, `border border-white/[0.12]`, `shadow-md`, `hover:scale-105 active:scale-95`).
+  - Available in two calibrated sizes:
+    - `size="md"`: `w-11 h-11` (ideal for top app bar headers).
+    - `size="lg"`: `w-12 h-12` (ideal for floating FABs).
+  - **Zero Badge-Body Text Directives**: Completely eliminated text clutter (`"Orbit"`, `"AI"`) from within the badge body, leaving only the pure, mesmerizing 3D celestial orbital physics core (`<Orbit3DCore size="sm" state="idle" />`).
+  - **Floating Hover Tooltips**: Added smooth, high-contrast dark tooltip (`role="tooltip"`, `bg-[#191D1A] text-white text-[11px] font-semibold px-2 py-0.5 rounded-md border border-white/[0.12] shadow-md pointer-events-none`) with a subtle down/up arrow:
+    - Directional positioning: `tooltipPosition="bottom"` (`top-full mt-2`) for top app header and `tooltipPosition="top"` (`bottom-full mb-2`) for floating bottom FAB.
+- **Global Entry Point Updates (`components/Navigation.tsx`)**:
+  - **Top App Header**: Replaced the pill button with `<OrbitLauncherBadge size="md" tooltipPosition="bottom" />` mounted beside the notification bell and profile avatar.
+  - **Floating Bottom-Right Launcher (FAB)**: Replaced the wide pill with `<OrbitLauncherBadge size="lg" tooltipPosition="top" className="fixed right-4 bottom-[calc(62px+max(14px,env(safe-area-inset-bottom))+12px)] z-40" />` positioned cleanly above the bottom dock whenever `pathname !== "/dashboard/orbit"`.
+- **Mini 3D Orbital Core Calibration (`components/orbit/Orbit3DCore.tsx`)**:
+  - Calibrated `size="sm"` to `containerPx = 30` with `scaleRatio = 30 / 184` and `showRadar = false`, ensuring the 3D rotating planet and its three tilted orbital rings are perfectly framed inside 44px–48px badges with zero boundary clipping.
+- **Comprehensive Vitest Suite Added (`tests/navigation/navigation-orbit-launcher.test.ts`)**:
+  - 5 tests covering component exports, badge rounded-square geometry, absence of badge body text, presence of hover tooltip, and rendering of the 3D core rings.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **55 passed (55 files), 648 passed | 26 skipped (674 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
+### ✅ Sprint 6.3: Mobile Viewport Optimization, Hero Stage Rescaling, Ultra-Crisp Orbit Core & Markdown Footnote / Table Wrapping
+- **Ultra-Clear, High-Contrast Orbit 3D Core (`components/orbit/Orbit3DCore.tsx`)**:
+  - **85% Container Emblem Framing**: Scaled `size="sm"` to `containerPx = 38` (`scaleRatio = 38 / 184`), making the emblem fill 86.4% (~85%) of the `w-11 h-11` badge container for maximum visibility on mobile screens.
+  - **High-Luminance Orbital Rings**: Thickened ring borders to `1.8px` with vibrant high-contrast colors (`#FF6B57` bright Terracotta, `#6EE7B7` bright Mint Emerald, `#F5F2EB` warm Alabaster) that pop against `#191D1A`.
+  - **Brighter Planet Shading & Glowing Orbiting Beads**: Shaded the small sphere with `radial-gradient(circle at 32% 28%, #A7F3D0 0%, #34D399 45%, #065F46 90%)`, added crisp specular white highlight dot, and enlarged satellite planet beads to `5.5px` with glowing `box-shadow: 0 0 8px currentColor`.
+- **Hero Stage & Card Scaling (`components/orbit/OrbitView.tsx`)**:
+  - Shrunk the Hero radar + 3D stage from `184px × 184px` down to **`132px × 132px`** (`<Orbit3DCore size={132} />`) and reduced card padding to `p-4` with rounded-[28px], ensuring the entire Hero card fits comfortably above the fold on mobile.
+- **Clean Single Header Orbit Badge (`components/navigation/Navigation.tsx` & `OrbitLauncherBadge.tsx`)**:
+  - Maintained the single prominent rounded-square `<OrbitLauncherBadge />` (`w-11 h-11 rounded-[14px] bg-[#191D1A] border border-[#6EE7B7]/30 shadow-[0_6px_18px_rgba(25,29,26,0.25)]`) in the top-right app header.
+  - Removed duplicate floating bottom-right launcher to eliminate visual clutter and avoid covering task completion indicators like `"1 of 3 Done"` in Today's Rhythm.
+  - Conditioned `app-mobile-header` on `pathname !== "/dashboard/orbit"` so OrbitView maintains complete, conflict-free layout control without double-header scrolling issues.
+- **Mobile Viewport & Natural Scroll Flow (`components/orbit/OrbitView.tsx`)**:
+  - **Eliminated Double-Scroll**: Configured main viewport with `overscroll-contain touch-pan-y` and safe-area top padding so only the main feed scrolls.
+  - **Empty-State Quick Prompt Clean-up**: Hidden bottom horizontal prompt chips during empty state (`messages.length === 0`), saving **44px** of vertical screen space.
+  - **Compact Sticky Header When Chatting**: When `messages.length > 0`, collapsed the subtitle and tightened header padding so **75%+ of the screen height** is dedicated to reading responses.
+- **Context Filter Pills Optimization (`components/orbit/OrbitView.tsx`)**:
+  - Focused on 4 core domains (`All Context`, `Train`, `Fuel`, `Plan`) fitting cleanly across all mobile widths (360px–430px) with zero horizontal clipping or cutoff.
+- **Targeted Auto-Scroll to Top of Assistant Response (`components/orbit/OrbitView.tsx`)**:
+  - Anchored auto-scroll so when the AI response arrives, the view smoothly scrolls to the **TOP of the new assistant message card** (`lastAssistantMessageRef`), completely eliminating the bottom yank.
+- **Table Column Wrapping & Dangling Footnotes (`components/ui/MarkdownText.tsx`)**:
+  - **2-Column Table Mobile Wrapping**: Added `table-fixed w-full` for 2-column tables with `w-[75px] whitespace-nowrap` for Day/Date column and `w-auto whitespace-normal break-words` for exercise descriptions.
+  - **Dangling Single-Asterisk Footnotes**: Handled lines starting with `*` or `\*` lacking closing asterisks, rendering them cleanly as `text-[11px] italic text-stone-300` without raw markdown asterisks.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **55 passed (55 files), 650 passed | 26 skipped (676 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
+### ✅ Sprint 6.4: Responsive Desktop (lg: 1024px+ / xl: 1280px+) & Tablet (md: 768px–1023px) YouTube-Style Architecture Across All 5 SATAT Screens
+- **YouTube-Style Responsive App Shell (`components/Navigation.tsx` & `app/globals.css`)**:
+  - **Collapsible Navigation Rail**: Implemented a responsive left sidebar (`hidden md:flex fixed left-0 top-0 bottom-0 z-40 bg-[#F6F3EC] border-r border-[#1C1917]/[0.08]`) with two states: `w-[76px]` (Tablet / collapsed) and `w-[240px]` (expanded Desktop).
+  - **Brand Header & Dynamic Workspaces**: Features a top brand row with Menu hamburger toggle, `SATAT` serif wordmark, and `OS v2.4` status pill, plus a live `WORKSPACES` section rendering dynamic Firestore user projects (`getProjects(userId)`).
+  - **Unified Sticky Top Command Bar**: Implemented `h-16 fixed top-0 right-0 z-30` header for Tablet/Desktop with breadcrumb trail, live synced mint badge, centered `⌘K` command/orbit search bar, context-aware primary Terracotta CTA pill (`+ Quick Track` / `+ New Task` / `+ Scan Meal` / `↻ New Chat`), `<OrbitLauncherBadge size="md" />`, bell, and avatar.
+  - **Responsive Layout Tokens**: Added `@media (min-width: 768px)` and `@media (min-width: 1024px)` padding rules to `.app-shell-main` and `.app-shell-content`, with specialized zero-padding overrides for `.orbit-view-root`.
+
+- **Screen 1: `Today` Responsive 12-Column Grid (`components/dashboard/HomeView.tsx`)**:
+  - **Left 8 Columns**: Top Greeting + 7-Day Calendar row, 2-Column Hero Row (Dark `#191D1A` Training Split Card + Calorie Budget & Target Protein Synthesis Cards), Today's Rhythm with category filter pills (`All Timeline`, `Meals`, `Movement`, `Deep Work`) and photo-backed cards, plus `ProgressTrendChart` and `ConsistencyHeatmap`.
+  - **Right 4 Columns (Sticky Top-20)**: Orbit Adaptive Whisper Card (editorial italic quote with "Open in Orbit AI →"), Daily Rituals 2×2 Photo-Backed Grid with live toggle state, and Circadian Telemetry Card (HRV Readiness, Restful Sleep, Peak Dopamine Window).
+
+- **Screen 2: `Plan` Execution Studio 12-Column Grid (`components/tasks/TaskBoard.tsx`)**:
+  - **Left 8 Columns**: Studio Header & Switcher Row (`STUDIO V2.4 · PLAN · CADENCE` + `● Focus Engine Primed`), 7-Day Week Strip & Project Filter Pills (with `+ New Project` having `whitespace-nowrap shrink-0` preventing clipping), Today's Execution Queue (with `onError` fallback on all task thumbnails), and 3-column Project Workspace Folder Cards Grid (`grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3.5`).
+  - **Right 4 Columns (Sticky Top-20)**: Vertical Dark Espresso "Circadian Focus Engine" Timer Card (`bg-[#191D1A] rounded-[28px] p-5 text-white`) with 3 duration selector pills (`25m Sprint`, `50m Deep`, `90m Flow`), engaged task title, centered `160px × 160px` circular SVG progress ring, full-width `#E05A47` button (`▷ Enter Flow State`), Daily Rituals 2×2 Photo-Backed Overlay Grid with interactive checkboxes, and 3-Column Execution Metrics Mini-Card (`TASKS DONE` | `FOCUS TIME` | `STREAK`).
+
+- **Screen 3: `Train` Training Studio 12-Column Grid (`components/workout/WorkoutPage.tsx`)**:
+  - **Left 5 Columns**: Dark Espresso Assigned Split Hero Card (`bg-[#191D1A] rounded-[28px] p-5 text-white`) with top badges (`● ASSIGNED SPLIT · 5 DAYS/WK`, `Target Strain: 14.5`), wide `h-40` gym dumbbell photo banner with `UPPER HYPERTROPHY BIAS` badge, `primarySession.name` title, full-width `Load Compound Upper A →` `#E05A47` button, quick-switch template pills, 2-column Session Date & Duration row, and Weekly Muscle Recovery & Volume Telemetry Card (Chest 85%, Back 92%, Shoulders 78%, Posterior Chain 64% + Orbit readiness whisper).
+  - **Right 7 Columns**: Strength Movements Header Row (`STRENGTH MOVEMENTS`, `+ Add Movement`, `Voice Log`), Tabular Exercise Set Cards with 6-column desktop set table (`SET` | `PREVIOUS` | `WEIGHT (KG)` | `REPS` | `RPE` | `STATUS`) + `Rest Timer: 90s`, and Full-Width Botanical Matcha Sage Save Banner (`bg-[#2D6A4F]` with `Complete & Save Training Session →` and `≈ 380 kcal · Strain 14.2` badge).
+
+- **Screen 4: `Fuel` Nourishment Studio 12-Column Grid (`components/diet/DietPage.tsx`)**:
+  - **Left 5 Columns**: Dark Espresso "Circadian Fuel Balance" Macro Card with centered `w-28 h-28` (`112px × 112px`) SVG progress ring (eliminating calorie number green stroke overlap bug), 3 horizontal macro progress bars (Protein `#E05A47`, Carbs `#6EE7B7`, Fats `#D6CFC2`), restorative biological ceiling callout, Orbit Vision Instant Meal Scanner Card, and Cellular Hydration & Creatine Card.
+  - **Right 7 Columns**: Chronological Meal Log Header, photo-backed meal cards with `resolveDishThumbnail` and `onError` fallback, and Orbit Autonomous Recommendation ("Adaptive Protein-Gap Dinner") Card with options and 1-tap `+ Log This Recommended Dinner →` button.
+
+- **Screen 5: `Orbit` AI Companion Studio Split Copilot (`components/orbit/OrbitView.tsx`)**:
+  - **Left 5 Columns**: Persistent 3D Orbit Core & Biological Telemetry card (`STATE: SYNAPSE READY`, `3 Domains Linked · 98% Sync`, centered `148px × 148px` `<Orbit3DCore size={148} />`, editorial headline, 3 stacked live context pills), Cadence Shift mint insight banner, 2×2 Cadence Actions Bento Grid (`Weekly Training Audit`, `Protein Gap & Fuel`, `Tomorrow's Split`, `Deep Work Focus`), and Circadian Rhythm Alignment Card.
+  - **Right 7 Columns**: Studio Top Header with title, context filter pills (`All Context`, `Train`, `Fuel`, `Plan`), and Reset/New Chat button, Conversational Stream (welcoming empty state or Alabaster user bubbles & Espresso Orbit cards with `MarkdownText`, `OrbitRecommendationCard`, and `OrbitInsightCard`), loading thinking state, error retry banner, and Studio Input Dock with Camera, Mic, Paperclip action buttons, auto-resizing textarea, and Terracotta send button.
+
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **55 passed (55 files), 650 passed | 26 skipped (676 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
+### ✅ Sprint 6.6: Fix All 7 Desktop Layout, Clipping, and Drawer Bugs Captured in Live Desktop Recording
+- **Bug 1: Fixed Drawer Overflow & Orbit 12-Column Grid Splitting (`OrbitView.tsx` & `AriaChatbot.tsx`)**:
+  - Top-right `<OrbitLauncherBadge />` and `AriaChatbot` trigger now navigate cleanly to `/dashboard/orbit` via Next.js `useRouter().push('/dashboard/orbit')` (or focus the chat prompt if already on the route).
+  - Guarded `<OrbitView />` 12-column grid behind `{!isOverlay && ...}` and mobile single-column wrapper behind `!isOverlay && "lg:hidden"`, guaranteeing Orbit never splits into crushed columns inside slide-over drawers or overlay containers.
+- **Bug 2: Fixed Sticky Top Command Bar Overlap Across All Studio Screens (`app/globals.css`)**:
+  - Added responsive top clearance to `.app-shell-content`: `padding-top: calc(4rem + 2rem)` (`96px`) on `md:` and `lg:` viewports, providing 32px of clean breathing space below the 64px fixed command bar.
+  - Added targeted `.app-shell-content:has(.orbit-view-root)` rule resetting `padding-top: 4rem` (64px) with zero inline/bottom padding for the full-bleed Orbit Copilot layout.
+- **Bug 3: Fixed Left Sidebar Overlap on Full-Bleed Desktop Orbit (`Navigation.tsx` & `app/globals.css`)**:
+  - Added CSS custom property `--sidebar-width: 0px` (mobile), `76px` (tablet / collapsed), and `240px` (expanded desktop).
+  - Attached `padding-left: var(--sidebar-width)` to `.app-shell-main` with smooth `transition: padding-left 0.2s cubic-bezier(0.16, 1, 0.3, 1)`.
+  - Added `useEffect` in `components/Navigation.tsx` synchronizing `--sidebar-width` dynamically based on `collapsed` state and viewport resize events.
+- **Bug 4: Upgraded Landing Page to Responsive Widescreen 12-Column Desktop Architecture (`components/landing/*`)**:
+  - Expanded all landing section containers from `max-w-md` to `max-w-[1280px] w-full mx-auto`.
+  - `LandingNav.tsx`: Full-width responsive navigation bar with links and Google sign-in triggers.
+  - `Hero.tsx` & `HeroProductScene.tsx`: 12-column grid with left 6 columns for editorial typography & dual CTAs and right 6 columns for the physical athlete/oatmeal collage.
+  - `ProblemSection.tsx`: Preserves mobile vertical sinusoidal timeline while presenting a 3-column horizontal bento grid (`lg:grid-cols-3`) on desktop.
+  - `ProgressSection.tsx`: Desktop 12-column split (Left 5 cols for headline, copy, and comparative pills; Right 7 cols for the 28-day stone continuity matrix).
+  - `OrbitSection.tsx`, `FinalCTA.tsx`, `Footer.tsx`: Converted to full-bleed responsive cards with desktop dual-column layouts and preserved `rounded-[32px]` styling.
+- **Bug 5: Fixed Daily Non-Negotiable Ritual Cards Contrast & Truncation (`HomeView.tsx` & `TaskBoard.tsx`)**:
+  - Replaced white text over white image cards with tactile Cream Alabaster cards (`bg-[#FCFBF9] p-3.5 rounded-[22px] border border-[#1C1917]/[0.08]`).
+  - Rendered 44×44 photo thumbnail top-left, dark interactive checkmark button top-right, uppercase stone category tag, and non-truncating 2-line title (`line-clamp-2 text-[12px] font-semibold text-[#1C1917] leading-snug`).
+- **Bug 6: Strict Dynamic User Workspaces (`Navigation.tsx` & `TaskBoard.tsx`)**:
+  - Verified 100% absence of hardcoded fallback mock projects (`["DailyOS", "ContentStack", "Interview Prep"]`). Workspaces strictly load and render from dynamic Firestore user collections (`getProjects(userId)`).
+- **Bug 7: Eliminated Fuel Telemetry and Meal Log Flash (`DietPage.tsx`)**:
+  - Initialized `loading` to `true` by default and eliminated premature `setMeals([])` wipes during session checks.
+  - Added warm stone shimmer pulse skeletons for macro telemetry and meal cards during data retrieval.
+  - Guarded empty states strictly behind `!loading && meals.length === 0`.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **55 passed (55 files), 650 passed | 26 skipped (676 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
+### ✅ Sprint 6.7: Revert Orbit Mobile Header Back to Pristine State & Enforce Absolute Mobile Layout Invariant
+- **Reverted Orbit Mobile Header to Pristine State (`components/orbit/OrbitView.tsx`)**:
+  - Removed unauthorized clutter (`AI ACTIVE` badge on right, `Cadence` and `Chat` view mode split pills) that crammed into the mobile top bar.
+  - Re-anchored Top App Bar: Left features clean brand wordmark `SATAT / ORBIT` with Halant `स` badge and live pulsing Matcha Sage dot with dynamic status (`Rhythm Synced` / `Analyzing...` / `Responding...`); Right strictly houses Notification bell + User avatar (and close `X` when in overlay mode).
+  - Cleaned Title & Reset Row: `"Orbit Intelligence"` in `Instrument Serif` + subtitle `"Unified biological & execution copilot."` on the left, and the clean `New Chat` (`↻`) button on the right.
+  - Restored Clean Single-Row Context Filter: Horizontal scrollable pill row with `● All Context`, `Train`, `Fuel`, `Plan`, and `Circadian` (`FOCUS_MODES`).
+- **Enforced Mobile Touch-Lock Architecture (`styles/app-shell.css` & `app/globals.css`)**:
+  - Scoped `.app-shell-content:has(.orbit-view-root)` with default `padding-top: 0` on mobile, preventing desktop 64px top command bar clearances from shifting mobile screens down.
+  - Applied `@media (min-width: 768px)` constraint for desktop `padding-top: 4rem` (64px) top clearance.
+  - Added strict `@media (max-width: 767px)` touch-lock rules in `styles/app-shell.css` forcing `.orbit-view-root` full viewport bounds and hiding `.orbit-desktop-grid`.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **55 passed (55 files), 650 passed | 26 skipped (676 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
-- **Vitest Suite**: `634 passed | 26 skipped` across all 53 test suites (0 failing).
+- **Vitest Suite**: `650 passed | 26 skipped` across all 55 test suites (0 failing).
+- **Markdown & UI Tests**: `13/13 passed` in `tests/ui/markdown-text.test.tsx`.
+- **Navigation & Launcher Tests**: `5/5 passed` in `tests/navigation/navigation-orbit-launcher.test.ts`.
+- **Orbit Tests**: `49/49 passed` across `tests/orbit/*` and `tests/api/aria.test.ts`.
 - **Diet Tests**: `213/213 passed` across all 15 test suites in `tests/diet/*`.
 - **Workout Tests**: `42/42 passed` across `tests/workouts/*`.
 - **Onboarding Tests**: `78/78 passed` across `tests/onboarding/*`.
 - **Landing Tests**: `3/3 passed` across `tests/landing/*`.
-

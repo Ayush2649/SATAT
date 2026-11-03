@@ -99,12 +99,15 @@ export function inferContextRequirements(message: string): ContextRequirements {
     // Check whether the user specifically restricted the query to a specific domain:
     // e.g. "Summarize my workouts from the last seven days" has workouts explicitly
     // "Analyze my meals from the last seven days" has meals explicitly
-    const specificDomains = domains.filter((d) => ["meals", "workouts", "tasks", "habits"].includes(d));
+    const specificDomains = domains.filter((d) => ["meals", "workouts", "tasks"].includes(d));
+    const asksAllDomains = specificDomains.length >= 2 || /\b(all\s+(domains|categories)|workouts,\s*nutrition|everything\s+across\s+the\s+board)\b/i.test(lower);
 
-    // Only inject ALL categories when the user is asking for an overall assessment across their week/progress
-    // without restricting to one specific category.
-    const isExplicitOverallReview =
-      /\b(review\s+my\s+week|rate\s+my\s+week|rate\s+my\s+progress|weekly\s+review|honest\s+assessment|assessment\s+of|consistency\s+and\s+momentum|momentum\s+and\s+consistency|overall\s+progress|rate\s+.*?\bout\s+of\s+10|score\s+.*?\bout\s+of\s+10)\b/i.test(lower);
+    // Only inject ALL categories when the user is asking for an overall assessment across all domains / progress,
+    // NOT when asking specifically about one domain (e.g. workout structure).
+    const isExplicitOverallReview = (
+      (specificDomains.length === 0 && /\b(review\s+my\s+week|rate\s+my\s+week|rate\s+my\s+progress|weekly\s+review|honest\s+assessment|assessment\s+of|consistency\s+and\s+momentum|momentum\s+and\s+consistency|overall\s+progress)\b/i.test(lower)) ||
+      (/\boverall\s+progress\b/i.test(lower) && asksAllDomains)
+    );
 
     if (specificDomains.length === 0 || isExplicitOverallReview) {
       const allHistoricalDomains: ContextDomain[] = [
@@ -126,7 +129,31 @@ export function inferContextRequirements(message: string): ContextRequirements {
     }
   }
 
-  // 4. Fallback: if no domains detected, include a minimal safe set
+  // 4. Strict Domain Pruning for single-domain queries
+  const hasWorkoutFocus = /\b(workouts?|exercises?|train|training|gym|runs?|running|cardio|splits?|sets?|reps?|bench|squats?|deadlifts?|shoulders?|arms?|legs?|push|pull)\b/i.test(lower);
+  const hasDietFocus = /\b(meals?|eat|eating|ate|food|breakfast|lunch|dinner|snacks?|nutrition|nutrients|calories?|proteins?|carbs?|fats?|macro|macros)\b/i.test(lower);
+  const hasTaskFocus = /\b(tasks?|todos?|projects?|deep\s+work|priorit(y|ies))\b/i.test(lower);
+
+  if (hasWorkoutFocus && !hasDietFocus && !hasTaskFocus) {
+    const pruned = domains.filter((d) => !["meals", "nutrition", "tasks", "habits", "dailyPlan"].includes(d));
+    if (!pruned.includes("workouts")) pruned.push("workouts");
+    return { domains: pruned, temporalScope: temporal };
+  }
+
+  if (hasDietFocus && !hasWorkoutFocus && !hasTaskFocus) {
+    const pruned = domains.filter((d) => !["workouts", "tasks", "habits", "dailyPlan"].includes(d));
+    if (!pruned.includes("meals")) pruned.push("meals");
+    if (!pruned.includes("nutrition")) pruned.push("nutrition");
+    return { domains: pruned, temporalScope: temporal };
+  }
+
+  if (hasTaskFocus && !hasWorkoutFocus && !hasDietFocus) {
+    const pruned = domains.filter((d) => !["workouts", "meals", "nutrition", "habits"].includes(d));
+    if (!pruned.includes("tasks")) pruned.push("tasks");
+    return { domains: pruned, temporalScope: temporal };
+  }
+
+  // 5. Fallback: if no domains detected, include a minimal safe set
   if (domains.length === 0) {
     domains.push("profile", "goals", "preferences");
   }

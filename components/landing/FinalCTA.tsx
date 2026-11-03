@@ -117,9 +117,9 @@ export default function FinalCTA() {
   };
 
   return (
-    <section className="py-6 sm:py-8 max-w-md sm:max-w-lg mx-auto">
+    <section className="py-12 sm:py-16 px-6 lg:px-12 max-w-[1280px] mx-auto">
       {/* Single rounded dark botanical card */}
-      <div className="bg-[#191D1A] text-[#FCFBF9] rounded-[32px] p-7 sm:p-10 mx-4 mb-6 text-left shadow-xl relative overflow-hidden">
+      <div className="bg-[#191D1A] text-[#FCFBF9] rounded-[32px] p-8 sm:p-12 lg:p-16 text-left shadow-2xl relative overflow-hidden">
         {/* Subtle warm terracotta radial glow in top-right corner */}
         <div
           className="absolute -top-12 -right-12 w-48 h-48 rounded-full pointer-events-none opacity-25 blur-2xl"
@@ -129,7 +129,7 @@ export default function FinalCTA() {
           aria-hidden="true"
         />
 
-        <div className="relative z-10">
+        <div className="relative z-10 lg:flex lg:items-center lg:justify-between lg:gap-12">
           {/* Eyebrow (Left-aligned) */}
           <span className="text-[10px] font-bold tracking-[0.16em] uppercase text-[#E05A47] block mb-3">
             START YOUR PRACTICE
@@ -147,6 +147,8 @@ export default function FinalCTA() {
           </p>
 
           {/* CTA Button: Full-width Terracotta pill */}
+          </div>
+        <div className="relative z-10 shrink-0 mt-6 lg:mt-0 lg:w-[320px]">
           <button
             type="button"
             onClick={() => signIn("google", { callbackUrl: "/dashboard" })}

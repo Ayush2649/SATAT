@@ -82,20 +82,20 @@ export default function ProblemSection() {
   ];
 
   return (
-    <section id="problem" className="py-12 sm:py-16 px-5 sm:px-6 text-left">
-      <div className="max-w-md sm:max-w-lg mx-auto">
+    <section id="problem" className="py-16 sm:py-24 px-6 lg:px-12 text-left">
+      <div className="max-w-md lg:max-w-[1280px] mx-auto">
         {/* Header (Left-Aligned) */}
         <div className="mb-8">
           <span className="text-[10px] font-bold tracking-[0.16em] uppercase text-[#E05A47] block">
             RHYTHMIC CADENCE
           </span>
-          <h2 className="font-serif text-2xl sm:text-3xl text-[#1C1917] mt-1 mb-0">
+          <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl text-[#1C1917] mt-1 mb-0">
             A single day, in seamless motion
           </h2>
         </div>
 
-        {/* Inter-Node Segment Architecture (Zero Dangling Line) */}
-        <div className="flex flex-col">
+        {/* Mobile Timeline View */}
+        <div className="lg:hidden flex flex-col">
           {milestones.map((milestone, idx) => {
             const isActive = activeMilestone === milestone.id;
             return (
@@ -167,6 +167,36 @@ export default function ProblemSection() {
               </div>
             );
           })}
+        </div>
+
+        {/* Desktop 3-Column Horizontal Bento Grid */}
+        <div className="hidden lg:grid grid-cols-3 gap-6 items-stretch">
+          {milestones.map((milestone) => (
+            <div
+              key={milestone.id}
+              className="bg-[#FCFBF9] rounded-[28px] p-6 border border-[#1C1917]/[0.06] shadow-xs flex flex-col justify-between hover:shadow-md transition-all group"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-[10px] font-mono tracking-widest text-[#8C857B] uppercase">
+                    {milestone.time}
+                  </span>
+                  <div className="w-10 h-10 rounded-full overflow-hidden shadow-sm border border-stone-200">
+                    {milestone.renderMedia()}
+                  </div>
+                </div>
+                <h3 className="font-serif text-2xl text-[#1C1917] mb-2 font-normal">
+                  {milestone.title}
+                </h3>
+                <p className="text-xs sm:text-sm text-[#57534E] leading-relaxed">
+                  {milestone.desc}
+                </p>
+              </div>
+              <div className="mt-6 pt-4 border-t border-[#1C1917]/[0.05]">
+                {milestone.signalPill}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </section>

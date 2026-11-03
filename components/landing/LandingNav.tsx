@@ -17,10 +17,10 @@ export default function LandingNav() {
   const { data: session } = useSession();
 
   return (
-    <header className="fixed top-3 inset-x-4 z-50 max-w-md md:max-w-4xl mx-auto pointer-events-none transition-all duration-300">
+    <header className="fixed top-3 inset-x-4 z-50 max-w-[1280px] w-full mx-auto pointer-events-none transition-all duration-300">
       <nav
         aria-label="Main Navigation"
-        className="pointer-events-auto bg-[#FCFBF9]/85 backdrop-blur-md border border-[#1C1917]/[0.08] rounded-full px-4 py-2.5 shadow-sm flex items-center justify-between"
+        className="pointer-events-auto bg-[#FCFBF9]/85 backdrop-blur-md border border-[#1C1917]/[0.08] rounded-full px-6 py-3 shadow-sm flex items-center justify-between"
       >
         {/* Left: Brand identity with Logo and font-serif satat. wordmark */}
         <Link href="/" className="flex items-center gap-2 group shrink-0">

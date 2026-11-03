@@ -115,9 +115,18 @@ function renderInline(text: string): React.ReactNode[] {
       (part.startsWith("**") && part.endsWith("**") && part.length > 4) ||
       (part.startsWith("__") && part.endsWith("__") && part.length > 4)
     ) {
+      const boldContent = part.slice(2, -2);
+      const isRating = /\b(\d+(?:\.\d+)?)\s*\/\s*10\b/.test(boldContent);
       return (
-        <strong key={i} className="font-semibold" style={{ color: "var(--text-primary, #F2F3F0)" }}>
-          {part.slice(2, -2)}
+        <strong
+          key={i}
+          className={cn(
+            "font-semibold",
+            isRating && "inline-flex items-center px-1.5 py-0.5 rounded font-bold text-[#E05A47] bg-[#E05A47]/15 border border-[#E05A47]/30"
+          )}
+          style={!isRating ? { color: "var(--text-primary, #F2F3F0)" } : undefined}
+        >
+          {boldContent}
         </strong>
       );
     }
@@ -180,7 +189,9 @@ function renderInline(text: string): React.ReactNode[] {
 export function MarkdownText({ text, className }: Props) {
   if (!text) return null;
 
-  const lines = text.split("\n");
+  // Preprocessing: unescape markdown backslashes that models sometimes emit (e.g. \*Volume -> *Volume)
+  const cleanText = text.replace(/\\([*_~`[\]()#+-])/g, "$1");
+  const lines = cleanText.split(/\r?\n/);
   const elements: React.ReactNode[] = [];
   let i = 0;
 
@@ -371,12 +382,7 @@ export function MarkdownText({ text, className }: Props) {
           style={{ paddingLeft: `${indentLevel * 14}px` }}
         >
           <span
-            className="shrink-0 min-w-5 h-5 px-1 rounded-full text-[10px] font-bold flex items-center justify-center mt-0.5"
-            style={{
-              background: "rgba(110, 139, 255, 0.12)",
-              color: "var(--satat-brand, #6E8BFF)",
-              border: "1px solid rgba(110, 139, 255, 0.25)",
-            }}
+            className="markdown-num-badge shrink-0 min-w-5 h-5 px-1 rounded-full text-[10px] font-mono font-bold flex items-center justify-center mt-0.5 bg-[#2D6A4F]/45 border border-[#6EE7B7]/35 text-[#6EE7B7]"
           >
             {num}
           </span>
@@ -460,80 +466,117 @@ export function MarkdownText({ text, className }: Props) {
         });
 
       if (headerCells.length > 0) {
+        const isTwoColumn = headerCells.length === 2;
+
         elements.push(
           <div
             key={`tbl-${i}`}
-            className="w-full max-w-full my-3 rounded-xl border overflow-hidden shadow-sm"
-            style={{
-              borderColor: "var(--border, rgba(255, 255, 255, 0.08))",
-              background: "var(--surface, #0D0F11)",
-            }}
+            className="w-full max-w-full overflow-x-auto my-2.5 rounded-xl border border-white/[0.08] bg-white/[0.04] [-webkit-overflow-scrolling:touch] scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent"
           >
-            <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-              <table className="w-full min-w-[480px] border-collapse text-xs">
-                <thead>
+            <table
+              className={cn(
+                "border-collapse text-[11px] leading-snug",
+                isTwoColumn ? "w-full table-fixed" : "w-full min-w-full sm:min-w-[480px]"
+              )}
+            >
+              <thead>
+                <tr
+                  className="border-b"
+                  style={{
+                    borderColor: "var(--border, rgba(255, 255, 255, 0.08))",
+                    background: "rgba(255, 255, 255, 0.03)",
+                  }}
+                >
+                  {headerCells.map((h, colIdx) => {
+                    const align = alignments[colIdx] || (isNumericHeader(h) ? "right" : "left");
+                    const isMeal = isMealColumn(h);
+                    return (
+                      <th
+                        key={colIdx}
+                        className={cn(
+                          "py-1.5 px-2.5 font-semibold tracking-wide text-[10px] uppercase select-none",
+                          align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left",
+                          isTwoColumn
+                            ? colIdx === 0
+                              ? "w-[75px] sm:w-[88px] whitespace-nowrap"
+                              : "w-auto whitespace-normal break-words"
+                            : "whitespace-nowrap",
+                          !isTwoColumn && isMeal && "min-w-[140px]"
+                        )}
+                        style={{ color: "var(--text-primary, #F2F3F0)" }}
+                      >
+                        {renderInline(h)}
+                      </th>
+                    );
+                  })}
+                </tr>
+              </thead>
+              <tbody>
+                {bodyRows.map((row, rowIdx) => (
                   <tr
-                    className="border-b"
-                    style={{
-                      borderColor: "var(--border, rgba(255, 255, 255, 0.08))",
-                      background: "rgba(255, 255, 255, 0.03)",
-                    }}
+                    key={rowIdx}
+                    className="border-b last:border-b-0 hover:bg-white/[0.02] transition-colors"
+                    style={{ borderColor: "var(--border-subtle, rgba(255, 255, 255, 0.05))" }}
                   >
-                    {headerCells.map((h, colIdx) => {
-                      const align = alignments[colIdx] || (isNumericHeader(h) ? "right" : "left");
-                      const isMeal = isMealColumn(h);
+                    {row.map((cell, colIdx) => {
+                      const headerName = headerCells[colIdx] || "";
+                      const align = alignments[colIdx] || (isNumericHeader(headerName) ? "right" : "left");
+                      const isMeal = isMealColumn(headerName);
+                      const isNum = isNumericHeader(headerName) || isNumericValue(cell);
                       return (
-                        <th
+                        <td
                           key={colIdx}
                           className={cn(
-                            "py-2.5 px-3 font-semibold tracking-wide text-xs select-none",
+                            "py-2 px-2.5 leading-snug",
                             align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left",
-                            isMeal && "min-w-[140px]"
+                            isTwoColumn
+                              ? colIdx === 0
+                                ? "w-[75px] sm:w-[88px] whitespace-nowrap font-medium text-stone-300 align-top"
+                                : "w-auto whitespace-normal break-words text-white/90 align-top leading-relaxed"
+                              : isMeal
+                              ? "whitespace-normal break-words min-w-[140px]"
+                              : isNum
+                              ? "whitespace-nowrap font-mono tabular-nums text-xs"
+                              : "min-w-[110px] whitespace-normal break-words"
                           )}
                           style={{ color: "var(--text-primary, #F2F3F0)" }}
                         >
-                          {renderInline(h)}
-                        </th>
+                          {renderInline(cell)}
+                        </td>
                       );
                     })}
                   </tr>
-                </thead>
-                <tbody>
-                  {bodyRows.map((row, rowIdx) => (
-                    <tr
-                      key={rowIdx}
-                      className="border-b last:border-b-0 hover:bg-white/[0.02] transition-colors"
-                      style={{ borderColor: "var(--border-subtle, rgba(255, 255, 255, 0.05))" }}
-                    >
-                      {row.map((cell, colIdx) => {
-                        const headerName = headerCells[colIdx] || "";
-                        const align = alignments[colIdx] || (isNumericHeader(headerName) ? "right" : "left");
-                        const isMeal = isMealColumn(headerName);
-                        const isNum = isNumericHeader(headerName) || isNumericValue(cell);
-                        return (
-                          <td
-                            key={colIdx}
-                            className={cn(
-                              "py-2 px-3",
-                              align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left",
-                              isMeal ? "whitespace-normal break-words min-w-[140px] leading-snug" : "whitespace-nowrap",
-                              isNum && "font-mono tabular-nums text-[11px]"
-                            )}
-                            style={{ color: "var(--text-secondary, #AEB3B0)" }}
-                          >
-                            {renderInline(cell)}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           </div>
         );
       }
       continue;
+    }
+
+    // 10.5. Dangling Single-Asterisk Footnotes: e.g. *Counts every rep performed... or \*Counts...
+    const footnoteMatch = trimmed.match(/^\\?\*([^\s*].*)$/);
+    if (footnoteMatch) {
+      const innerText = footnoteMatch[1];
+      const withoutClosing = innerText.endsWith("*") && !innerText.slice(0, -1).includes("*")
+        ? innerText.slice(0, -1)
+        : !innerText.includes("*")
+        ? innerText
+        : null;
+
+      if (withoutClosing !== null) {
+        elements.push(
+          <p
+            key={`fn-${i}`}
+            className="text-[11px] italic text-stone-300 my-1 leading-normal break-words"
+          >
+            {renderInline(withoutClosing)}
+          </p>
+        );
+        i++;
+        continue;
+      }
     }
 
     // 11. Regular paragraph

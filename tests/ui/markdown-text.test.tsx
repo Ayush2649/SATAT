@@ -198,6 +198,23 @@ describe("MarkdownText Component — Rendering & Formatting", () => {
     expect(html).not.toContain("---|---|");
   });
 
+  it("renders workout recap tables with whitespace-nowrap on header cells to prevent 'Durat / ion' wrapping", () => {
+    const tableMarkdown = [
+      "| Date | Session | Duration | Exercises |",
+      "|:---|:---|---:|---:|",
+      "| Oct 26 | Upper Body Push | 45 min | Bench Press, OHP |",
+      "| Oct 27 | Pull & Back | 50 min | Lat Pulldowns, Rows |",
+    ].join("\n");
+
+    const html = renderToStaticMarkup(React.createElement(MarkdownText, { text: tableMarkdown }));
+
+    expect(html).toContain("<th");
+    expect(html).toContain("Duration");
+    expect(html).toContain("whitespace-nowrap");
+    expect(html).toContain("px-2.5");
+    expect(html).toContain("py-1.5");
+  });
+
   it("does not corrupt identifiers with underscores or simple arithmetic with asterisks", () => {
     const markdown = "Check user_profile_data and note that 2 * 3 = 6.";
     const html = renderToStaticMarkup(React.createElement(MarkdownText, { text: markdown }));
@@ -260,6 +277,36 @@ You demonstrated solid momentum with strength workouts this week. Nutrition trac
     expect(html).toContain("<strong");
     expect(html).toContain("Workouts");
     expect(html).toContain("7.0/10");
+  });
+
+  it("renders 2-column volume summary tables with table-fixed and wrapping on exercise column (Sprint 6.3)", () => {
+    const tableMarkdown = [
+      "| DAY | MAIN LIFTS (SETS × REPS) |",
+      "|:---|:---|",
+      "| Mon | Incline DB Press 4×8-10, Cable Crunch 3×15, Wood-chops 3×12 |",
+      "| Wed | Barbell Squat 4×6-8, Romanian Deadlift 3×10 |",
+    ].join("\n");
+
+    const html = renderToStaticMarkup(React.createElement(MarkdownText, { text: tableMarkdown }));
+
+    // Must use table-fixed for 2-column mobile layout
+    expect(html).toContain("table-fixed");
+    expect(html).toContain("w-full");
+    // Col 0 is fixed compact width
+    expect(html).toContain("w-[75px]");
+    // Col 1 is auto with normal wrapping and break-words
+    expect(html).toContain("whitespace-normal break-words");
+    expect(html).toContain("Cable Crunch 3×15");
+  });
+
+  it("renders dangling single-asterisk footnotes as clean italic text without raw asterisk (Sprint 6.3)", () => {
+    const markdown = "*Counts every rep performed during session without double counting warmup sets.";
+    const html = renderToStaticMarkup(React.createElement(MarkdownText, { text: markdown }));
+
+    expect(html).toContain("text-[11px] italic text-stone-300");
+    expect(html).toContain("Counts every rep performed during session without double counting warmup sets.");
+    // Must NOT contain leading raw asterisk
+    expect(html).not.toContain(">*Counts");
   });
 });
 
