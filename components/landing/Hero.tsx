@@ -6,7 +6,8 @@ import HeroProductScene from "./HeroProductScene";
 
 export default function Hero() {
   return (
-    <section className="relative pt-24 sm:pt-32 pb-12 sm:pb-20 px-6 overflow-hidden">
+    <section className="relative pt-24 sm:pt-32 pb-12 sm:pb-20 px-6 md:px-12 lg:px-16 overflow-hidden w-full max-w-[1440px] xl:max-w-[1600px] mx-auto">
+      {/* Centered Editorial Hook & Actions */}
       <div className="max-w-[960px] mx-auto text-center">
         {/* Eyebrow badge */}
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EFECE4] border border-stone-300/60 mb-3 whitespace-nowrap">
@@ -45,56 +46,58 @@ export default function Hero() {
             Sign in with Google
           </button>
         </div>
+      </div>
 
-        {/* Widescreen Hero Visual Card on Desktop (Matching image_23a8c0.jpg) */}
-        <div className="hidden sm:block mt-10 relative rounded-[32px] overflow-hidden shadow-2xl border border-[#1C1917]/[0.08] aspect-[16/10] sm:aspect-[16/9] max-w-[900px] mx-auto bg-[#191D1A]">
-          {/* Full-bleed atmospheric gym/training photograph */}
+      {/* Widescreen Hero Visual Card on Desktop (Expanded to max-w-[1560px] aspect-[16/9] lg:aspect-[21/9]) */}
+      <div className="hidden sm:block mt-10 sm:mt-12 w-full max-w-[1440px] xl:max-w-[1560px] mx-auto relative rounded-[32px] overflow-hidden shadow-2xl border border-[#1C1917]/[0.08] aspect-[16/9] lg:aspect-[21/9] max-h-[680px] bg-[#191D1A]">
+        {/* Full-bleed atmospheric gym/training photograph */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?auto=format&fit=crop&w=1600&q=85"
+          alt="Upper body dumbbell strength training session"
+          className="w-full h-full object-cover object-center contrast-[1.03]"
+        />
+        {/* Subtle editorial vignette */}
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(180deg, rgba(25,29,26,0.15) 0%, transparent 40%, rgba(25,29,26,0.45) 100%)",
+          }}
+        />
+
+        {/* Top-Right Floating Dark Pill with Physical Floating Animation */}
+        <div className="absolute top-5 right-5 sm:top-7 sm:right-7 -rotate-2 bg-[#191D1A]/90 backdrop-blur-md text-white rounded-full px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-medium flex items-center gap-2 shadow-2xl border border-white/10 animate-[satatFloatSlow_4.2s_ease-in-out_infinite] hover:scale-105 transition-transform cursor-default">
+          <span className="w-2 h-2 rounded-full bg-[#6EE7B7]" />
+          <span>
+            <strong className="font-semibold text-white">Upper Body</strong>{" "}
+            <span className="text-stone-300">moved to 6PM · Sleep was light</span>
+          </span>
+        </div>
+
+        {/* Bottom-Right Floating Alabaster Meal Card with Physical Delayed Floating Animation */}
+        <div className="absolute bottom-5 right-5 sm:bottom-7 sm:right-7 bg-[#FCFBF9] rounded-2xl p-3 sm:p-3.5 shadow-2xl border border-[#1C1917]/[0.08] flex items-center gap-3 text-left animate-[satatFloatDelayed_5s_ease-in-out_0.8s_infinite] hover:scale-105 transition-transform cursor-default">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?auto=format&fit=crop&w=1200&q=85"
-            alt="Upper body dumbbell strength training session"
-            className="w-full h-full object-cover object-center contrast-[1.03]"
+            src="https://images.unsplash.com/photo-1517673400267-0251440c45dc?auto=format&fit=crop&w=400&q=80"
+            alt="Warm protein oatmeal bowl"
+            className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl rounded-l-[92px] object-cover"
           />
-          {/* Subtle editorial vignette */}
-          <div
-            className="pointer-events-none absolute inset-0"
-            style={{
-              background:
-                "linear-gradient(180deg, rgba(25,29,26,0.15) 0%, transparent 40%, rgba(25,29,26,0.45) 100%)",
-            }}
-          />
-
-          {/* Top-Right Floating Dark Pill */}
-          <div className="absolute top-5 right-5 -rotate-2 bg-[#191D1A]/90 backdrop-blur-md text-white rounded-full px-4 py-2 text-xs font-medium flex items-center gap-2 shadow-lg border border-white/10">
-            <span className="w-2 h-2 rounded-full bg-[#6EE7B7]" />
-            <span>
-              <strong className="font-semibold text-white">Upper Body</strong>{" "}
-              <span className="text-stone-300">moved to 6PM · Sleep was light</span>
-            </span>
-          </div>
-
-          {/* Bottom-Right Floating Alabaster Meal Card */}
-          <div className="absolute bottom-5 right-5 bg-[#FCFBF9] rounded-2xl p-3 shadow-xl border border-[#1C1917]/[0.08] flex items-center gap-3 text-left">
-            <img
-              src="https://images.unsplash.com/photo-1517673400267-0251440c45dc?auto=format&fit=crop&w=400&q=80"
-              alt="Warm protein oatmeal bowl"
-              className="w-12 h-12 rounded-xl rounded-l-[92px] object-cover"
-            />
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#E05A47]" />
-                <span className="text-xs font-bold text-[#1C1917]">Oatmeal &amp; Whey</span>
-              </div>
-              <p className="text-[11px] text-[#57534E] font-mono mt-0.5">
-                420 kcal · 34g Protein
-              </p>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#E05A47]" />
+              <span className="text-xs sm:text-sm font-bold text-[#1C1917]">Oatmeal &amp; Whey</span>
             </div>
+            <p className="text-[11px] sm:text-xs text-[#57534E] font-mono mt-0.5">
+              420 kcal · 34g Protein
+            </p>
           </div>
         </div>
+      </div>
 
-        {/* Mobile Fallback: Overlapping Physical Collage Scene */}
-        <div className="sm:hidden mt-4">
-          <HeroProductScene />
-        </div>
+      {/* Mobile Fallback: Overlapping Physical Collage Scene */}
+      <div className="sm:hidden mt-4">
+        <HeroProductScene />
       </div>
     </section>
   );

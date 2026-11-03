@@ -7,7 +7,7 @@ import Logo from "@/components/Logo";
 export default function Footer() {
   return (
     <footer className="border-t border-[rgba(28,25,23,0.07)] bg-[#F6F3EC]">
-      <div className="max-w-[920px] mx-auto px-6 pb-12 pt-6 text-xs text-[#57534E]">
+      <div className="w-full max-w-[1360px] xl:max-w-[1480px] mx-auto px-6 md:px-12 lg:px-16 pb-12 pt-6 text-xs text-[#57534E]">
         {/* Top row */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-4 border-b border-[rgba(28,25,23,0.06)]">
           <div className="flex items-center gap-2">

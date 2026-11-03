@@ -914,6 +914,35 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ---
 
+### ✅ Sprint 6.9: Full-Bleed Desktop Width Overhaul, Broken Image Fixes, Floating Tag Keyframes & Interactive Streak Tabs
+- **Full-Bleed Desktop Widescreen Layout (`max-w-[1440px] xl:max-w-[1600px]`)**:
+  - `LandingNav.tsx`: Floating pill navbar expanded to `w-[calc(100%-2rem)] sm:w-[calc(100%-3rem)] max-w-[1440px] xl:max-w-[1600px] mx-auto px-6 sm:px-8 py-3.5`.
+  - `Hero.tsx`: Outer container expanded to `max-w-[1440px] xl:max-w-[1600px] mx-auto px-6 md:px-12 lg:px-16`. Hero visual card expanded to `w-full max-w-[1440px] xl:max-w-[1560px] mx-auto aspect-[16/9] lg:aspect-[21/9] max-h-[680px]` with high-res training photography.
+  - `ProblemSection.tsx`: 3-column studio grid container expanded to `w-full max-w-[1440px] xl:max-w-[1600px] mx-auto px-6 md:px-12 lg:px-16` with taller card image headers (`h-56 lg:h-64`).
+  - `ProgressSection.tsx`, `OrbitSection.tsx`, `FinalCTA.tsx`, `Footer.tsx`: Expanded containers to `w-full max-w-[1360px] xl:max-w-[1480px] mx-auto px-6 md:px-12 lg:px-16`.
+- **Card 1 Image Fix & Safe Fallback Preventions (`ProblemSection.tsx`)**:
+  - Replaced 404ing image URL in Card 1 with high-resolution sunlit desk photography (`photo-1499750310107-5fef28a66643`).
+  - Attached robust `onError` fallbacks on all 3 desktop card images and mobile timeline thumbnails preventing broken image icons.
+- **Physical Floating Animations & Hover Lifts (`app/globals.css`, `Hero.tsx`, `ProblemSection.tsx`, `OrbitSection.tsx`)**:
+  - Defined `@keyframes satatFloatSlow` and `@keyframes satatFloatDelayed` in `app/globals.css`.
+  - Applied `animate-[satatFloatSlow_4.2s_ease-in-out_infinite]` to the top-right dark pill (`Upper Body moved to 6PM · Sleep was light`).
+  - Applied `animate-[satatFloatDelayed_5s_ease-in-out_0.8s_infinite]` to the bottom-right Alabaster meal card (`Oatmeal & Whey · 420 kcal · 34g Protein`).
+  - Added subtle hover lift (`hover:-translate-y-1 transition-all duration-300 shadow-sm hover:shadow-md`) to status badge pills in all 3 cards and the Orbit core orb.
+- **Interactive Streak Tabs & Clean Comparison Banner (`ProgressSection.tsx`)**:
+  - Added `activeMilestone` state (`7 | 14 | 28`) with clickable pill buttons (`Day 7 · Start`, `Day 14 · Rested`, `Day 28 · Flow`).
+  - Dynamically calculates the 21-day calendar grid (Day 7 baseline, Day 14 rest auto-bridge, Day 28 flow).
+  - Dynamically updates bottom comparison banner:
+    - Day 7: `✓ Satat Rhythm: Week 1 Baseline Locked · 100% Cadence Sync`
+    - Day 14: `✓ Satat Rhythm: 14 Days Unbroken · Auto-Bridged 2 Rest Days`
+    - Day 28: `✓ Satat Rhythm: 28 Days Unbroken · +18.4% Strength ✓`
+  - Simplified eyebrow to `LIVING STREAKS` and eliminated duplicate strength text strings.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **55 passed (55 files), 650 passed | 26 skipped (676 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
 - **Vitest Suite**: `650 passed | 26 skipped` across all 55 test suites (0 failing).

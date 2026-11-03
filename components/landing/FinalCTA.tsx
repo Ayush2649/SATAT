@@ -111,33 +111,33 @@ export default function FinalCTA() {
   };
 
   return (
-    <section ref={sectionRef} className="py-12 sm:py-16 px-6 max-w-[920px] mx-auto">
-      {/* Single rounded dark botanical card (Matching image_23a8c0.jpg) */}
-      <div className="bg-[#191D1A] text-[#FCFBF9] rounded-[32px] p-8 sm:p-14 text-center shadow-2xl relative overflow-hidden">
+    <section ref={sectionRef} className="py-16 sm:py-24 px-6 md:px-12 lg:px-16 w-full max-w-[1360px] xl:max-w-[1480px] mx-auto">
+      {/* Single rounded dark botanical card (Expanded to max-w-[1480px]) */}
+      <div className="bg-[#191D1A] text-[#FCFBF9] rounded-[32px] p-8 sm:p-16 lg:p-20 text-center shadow-2xl relative overflow-hidden w-full">
         {/* Subtle warm terracotta radial glow in top-right corner */}
         <div
           ref={glowRef}
-          className="absolute -top-12 -right-12 w-48 h-48 rounded-full pointer-events-none opacity-25 blur-2xl"
+          className="absolute -top-12 -right-12 w-64 h-64 rounded-full pointer-events-none opacity-25 blur-3xl"
           style={{
             background: "radial-gradient(circle, #E05A47 0%, transparent 70%)",
           }}
           aria-hidden="true"
         />
 
-        <div className="relative z-10 max-w-xl mx-auto">
+        <div className="relative z-10 max-w-2xl mx-auto">
           {/* Eyebrow (Centered) */}
-          <span className="text-[10px] font-bold tracking-[0.18em] uppercase text-[#6EE7B7] block mb-3.5 cta-eyebrow">
+          <span className="text-[10px] sm:text-xs font-bold tracking-[0.18em] uppercase text-[#6EE7B7] block mb-3.5 cta-eyebrow">
             ● START YOUR PRACTICE
           </span>
 
           {/* Headline (Centered in Instrument Serif) */}
-          <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl text-[#FCFBF9] leading-[1.15] tracking-tight cta-headline">
+          <h2 className="font-serif text-3xl sm:text-5xl lg:text-6xl text-[#FCFBF9] leading-[1.12] tracking-tight cta-headline">
             Build a body and routine you can{" "}
             <span className="italic text-[#6EE7B7]">actually keep.</span>
           </h2>
 
           {/* Body copy (Centered) */}
-          <p className="text-xs sm:text-sm text-stone-300 mt-4 max-w-md mx-auto leading-relaxed font-normal cta-copy">
+          <p className="text-xs sm:text-sm lg:text-base text-stone-300 mt-4 max-w-lg mx-auto leading-relaxed font-normal cta-copy">
             No rigid streaks, no guilt, no isolated numbers. Just your daily life, moving in conscious rhythm.
           </p>
 

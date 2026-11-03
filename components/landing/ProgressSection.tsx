@@ -46,70 +46,117 @@ const SCENARIOS: ScenarioConfig[] = [
 
 const WEEKDAYS = ["M", "T", "W", "T", "F", "S", "S"];
 
-const CALENDAR_DAYS_21 = [
-  { day: 1, type: "done" },
-  { day: 2, type: "done" },
-  { day: 3, type: "done" },
-  { day: 4, type: "done" },
-  { day: 5, type: "done" },
-  { day: 6, type: "done" },
-  { day: 7, type: "done" },
-  { day: 8, type: "done" },
-  { day: 9, type: "rest", label: "Rested" },
-  { day: 10, type: "rest", label: "Rested" },
-  { day: 11, type: "done" },
-  { day: 12, type: "done" },
-  { day: 13, type: "done" },
-  { day: 14, type: "today", label: "Today" },
-  { day: 15, type: "future" },
-  { day: 16, type: "future" },
-  { day: 17, type: "rest", label: "Rested" },
-  { day: 18, type: "rest", label: "Rested" },
-  { day: 19, type: "future" },
-  { day: 20, type: "future" },
-  { day: 21, type: "future" },
-];
+interface DesktopCalendarDay {
+  day: number;
+  type: "done" | "rest" | "today" | "future";
+  label?: string;
+}
+
+function getDesktopCalendarDays(milestone: 7 | 14 | 28): DesktopCalendarDay[] {
+  if (milestone === 7) {
+    return Array.from({ length: 21 }, (_, i) => {
+      const day = i + 1;
+      if (day <= 6) return { day, type: "done" };
+      if (day === 7) return { day, type: "today", label: "Today" };
+      return { day, type: "future" };
+    });
+  }
+
+  if (milestone === 14) {
+    return Array.from({ length: 21 }, (_, i) => {
+      const day = i + 1;
+      if (day === 9 || day === 10) return { day, type: "rest", label: "Rested" };
+      if (day < 14) return { day, type: "done" };
+      if (day === 14) return { day, type: "today", label: "Today" };
+      return { day, type: "future" };
+    });
+  }
+
+  // milestone === 28 (Day 28 · Flow)
+  return Array.from({ length: 21 }, (_, i) => {
+    const day = i + 1;
+    if (day === 9 || day === 10 || day === 17 || day === 18) {
+      return { day, type: "rest", label: "Rested" };
+    }
+    if (day === 21) {
+      return { day, type: "today", label: "Flow" };
+    }
+    return { day, type: "done" };
+  });
+}
 
 export default function ProgressSection() {
   const [selectedScenarioKey, setSelectedScenarioKey] = useState<ScenarioKey>("day16");
+  const [activeMilestone, setActiveMilestone] = useState<7 | 14 | 28>(14);
+
   const activeScenario = SCENARIOS.find((s) => s.key === selectedScenarioKey) || SCENARIOS[1];
+  const calendarDays = getDesktopCalendarDays(activeMilestone);
 
   return (
-    <section id="proof" className="py-14 sm:py-20 px-6 max-w-[920px] mx-auto text-center">
+    <section id="proof" className="py-16 sm:py-24 px-6 md:px-12 lg:px-16 w-full max-w-[1360px] xl:max-w-[1480px] mx-auto text-center">
       {/* Hidden anchor compatibility for #progress */}
       <div id="progress" className="relative -top-24 pointer-events-none" aria-hidden="true" />
 
       {/* Header */}
       <div className="mb-8 text-center">
         <span className="text-[10px] font-bold tracking-[0.18em] uppercase text-[#2D6A4F] block">
-          LIVING STREAKS · LIVING EVIDENCE · सतत्
+          LIVING STREAKS
+          <span className="sr-only"> · LIVING EVIDENCE · सतत्</span>
         </span>
-        <h2 className="font-serif text-3xl sm:text-4xl text-[#1C1917] mt-2 mb-2 leading-tight">
+        <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl text-[#1C1917] mt-2 mb-2 leading-tight">
           Why continuous beats <span className="italic text-[#E05A47]">perfect.</span>
         </h2>
-        <p className="text-xs sm:text-sm text-[#57534E] leading-relaxed max-w-[480px] mx-auto mt-2">
+        <p className="text-xs sm:text-sm text-[#57534E] leading-relaxed max-w-[540px] mx-auto mt-2">
           Other apps punish you with a broken streak when real life happens. Satat bends with your week so your momentum compounds.
         </p>
       </div>
 
-      {/* Desktop Calendar Card (Matching image_23a8c0.jpg) */}
-      <div className="hidden md:block bg-[#FCFBF9] rounded-[32px] p-6 sm:p-10 mt-8 border border-[#1C1917]/[0.06] shadow-xs">
-        {/* Top Milestone Header Row */}
-        <div className="flex items-center justify-between gap-4 max-w-[480px] mx-auto pb-4 border-b border-[#1C1917]/[0.06] text-xs font-semibold">
-          <span className="text-[#8C857B]">Day 7 · Start</span>
-          <span className="bg-[#191D1A] text-white rounded-full px-4 py-1.5 shadow-xs">
+      {/* Desktop Calendar Card (Expanded to max-w-[1480px] with Interactive Tabs) */}
+      <div className="hidden md:block bg-[#FCFBF9] rounded-[32px] p-8 sm:p-12 lg:p-14 mt-8 border border-[#1C1917]/[0.06] shadow-xs">
+        {/* Top Milestone Header Tabs */}
+        <div className="flex items-center justify-center gap-3 sm:gap-4 max-w-[540px] mx-auto pb-6 border-b border-[#1C1917]/[0.06]">
+          <button
+            type="button"
+            onClick={() => setActiveMilestone(7)}
+            className={`cursor-pointer transition-all ${
+              activeMilestone === 7
+                ? "bg-[#191D1A] text-white rounded-full px-5 py-2 text-xs sm:text-sm font-semibold shadow-md scale-105"
+                : "bg-[#F6F3EC] hover:bg-[#EFECE4] text-[#57534E] hover:text-[#1C1917] rounded-full px-5 py-2 text-xs sm:text-sm font-medium"
+            }`}
+          >
+            Day 7 · Start
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveMilestone(14)}
+            className={`cursor-pointer transition-all ${
+              activeMilestone === 14
+                ? "bg-[#191D1A] text-white rounded-full px-5 py-2 text-xs sm:text-sm font-semibold shadow-md scale-105"
+                : "bg-[#F6F3EC] hover:bg-[#EFECE4] text-[#57534E] hover:text-[#1C1917] rounded-full px-5 py-2 text-xs sm:text-sm font-medium"
+            }`}
+          >
             Day 14 · Rested
-          </span>
-          <span className="text-[#8C857B]">Day 28 · Flow</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveMilestone(28)}
+            className={`cursor-pointer transition-all ${
+              activeMilestone === 28
+                ? "bg-[#191D1A] text-white rounded-full px-5 py-2 text-xs sm:text-sm font-semibold shadow-md scale-105"
+                : "bg-[#F6F3EC] hover:bg-[#EFECE4] text-[#57534E] hover:text-[#1C1917] rounded-full px-5 py-2 text-xs sm:text-sm font-medium"
+            }`}
+          >
+            Day 28 · Flow
+          </button>
         </div>
 
         {/* 7-Column Grid of Days 1 through 21 */}
-        <div className="grid grid-cols-7 gap-3 sm:gap-4 my-8 max-w-[540px] mx-auto">
-          {CALENDAR_DAYS_21.map((item) => {
+        <div className="grid grid-cols-7 gap-3 sm:gap-5 lg:gap-6 my-10 max-w-[620px] mx-auto">
+          {calendarDays.map((item) => {
             if (item.type === "done") {
               return (
                 <div key={item.day} className="flex flex-col items-center">
-                  <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-[#2D6A4F] text-white flex items-center justify-center text-xs font-bold shadow-xs">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#2D6A4F] text-white flex items-center justify-center text-xs sm:text-sm font-bold shadow-xs transition-transform hover:scale-105">
                     {item.day}
                   </div>
                 </div>
@@ -118,26 +165,26 @@ export default function ProgressSection() {
             if (item.type === "rest") {
               return (
                 <div key={item.day} className="flex flex-col items-center">
-                  <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-[#A7F3D0]/60 text-[#065F46] flex items-center justify-center text-xs font-bold border border-[#065F46]/20">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#A7F3D0]/60 text-[#065F46] flex items-center justify-center text-xs sm:text-sm font-bold border border-[#065F46]/20 transition-transform hover:scale-105">
                     {item.day}
                   </div>
-                  <span className="text-[9px] font-semibold text-[#065F46] mt-1">{item.label}</span>
+                  <span className="text-[10px] font-semibold text-[#065F46] mt-1">{item.label}</span>
                 </div>
               );
             }
             if (item.type === "today") {
               return (
                 <div key={item.day} className="flex flex-col items-center">
-                  <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-[#E05A47] text-white flex items-center justify-center text-xs font-bold shadow-md">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#E05A47] text-white flex items-center justify-center text-xs sm:text-sm font-bold shadow-md ring-4 ring-[#E05A47]/20 transition-transform hover:scale-105">
                     {item.day}
                   </div>
-                  <span className="text-[9px] font-bold text-[#E05A47] mt-1">{item.label}</span>
+                  <span className="text-[10px] font-bold text-[#E05A47] mt-1">{item.label}</span>
                 </div>
               );
             }
             return (
               <div key={item.day} className="flex flex-col items-center">
-                <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-[#EFECE4] text-[#8C857B] flex items-center justify-center text-xs font-medium">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#EFECE4] text-[#8C857B] flex items-center justify-center text-xs sm:text-sm font-medium">
                   {item.day}
                 </div>
               </div>
@@ -145,13 +192,15 @@ export default function ProgressSection() {
           })}
         </div>
 
-        {/* Bottom Comparison Bar */}
-        <div className="bg-[#F6F3EC] rounded-2xl p-3 flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
-          <div className="bg-[#FEE2E2] text-[#B91C1C] rounded-full px-4 py-1.5 text-xs font-semibold text-center w-full sm:w-auto">
+        {/* Bottom Comparison Bar (Dynamic based on activeMilestone, no duplicate text) */}
+        <div className="bg-[#F6F3EC] rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-left max-w-[720px] mx-auto">
+          <div className="bg-[#FEE2E2] text-[#B91C1C] rounded-full px-4 py-2 text-xs font-semibold text-center w-full sm:w-auto shrink-0">
             Traditional Apps: Streak Reset to 0 ✕
           </div>
-          <div className="bg-[#D8F3DC] text-[#1B4332] rounded-full px-4 py-1.5 text-xs font-semibold text-center w-full sm:w-auto">
-            Satat Rhythm: 28 Days Unbroken · +18.4% Strength · +12.4% Strength ✓
+          <div className="bg-[#D8F3DC] text-[#1B4332] rounded-full px-4 py-2 text-xs font-semibold text-center w-full sm:w-auto">
+            {activeMilestone === 7 && "✓ Satat Rhythm: Week 1 Baseline Locked · 100% Cadence Sync"}
+            {activeMilestone === 14 && "✓ Satat Rhythm: 14 Days Unbroken · Auto-Bridged 2 Rest Days"}
+            {activeMilestone === 28 && "✓ Satat Rhythm: 28 Days Unbroken · +18.4% Strength ✓"}
           </div>
         </div>
       </div>

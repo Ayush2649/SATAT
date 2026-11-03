@@ -12,7 +12,7 @@ export default function LandingNav() {
     <header className="fixed top-0 inset-x-0 z-50 px-4 pt-4 sm:pt-6 pointer-events-none transition-all duration-300">
       <nav
         aria-label="Main Navigation"
-        className="max-w-[920px] mx-auto pointer-events-auto bg-[#FCFBF9] rounded-full px-6 py-3 shadow-[0_8px_30px_rgba(28,25,23,0.05)] border border-[#1C1917]/[0.06] flex items-center justify-between"
+        className="w-[calc(100%-2rem)] sm:w-[calc(100%-3rem)] max-w-[1440px] xl:max-w-[1600px] mx-auto pointer-events-auto bg-[#FCFBF9] rounded-full px-6 sm:px-8 py-3.5 shadow-[0_8px_30px_rgba(28,25,23,0.05)] border border-[#1C1917]/[0.06] flex items-center justify-between"
       >
         {/* Left: Brand identity with Logo and font-serif satat. wordmark */}
         <Link href="/" className="flex items-center gap-2 group shrink-0">
