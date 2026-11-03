@@ -41,18 +41,6 @@ export interface OrbitRecommendation {
   actions: OrbitAction[];
 }
 
-export interface OrbitMessage {
-  id: string;
-  role: "user" | "assistant" | "system";
-  content: string;
-  timestamp?: number;
-  type?: OrbitMessageType;
-  insight?: OrbitInsight;
-  recommendation?: OrbitRecommendation;
-}
-
-export type OrbitFocusMode = "all" | "workout" | "diet" | "tasks" | "circadian";
-
 export interface OrbitEntityContext {
   activeMealSlot?: "breakfast" | "lunch" | "dinner" | "snack" | string;
   activeMealId?: string;
@@ -69,6 +57,21 @@ export interface OrbitSuggestedAction {
 
 export interface OrbitActionExecuted {
   type: string;
-  status: "success" | "error" | string;
+  status: "success" | "error" | "failed" | string;
   details?: Record<string, any>;
 }
+
+export interface OrbitMessage {
+  id: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  timestamp?: number;
+  type?: OrbitMessageType;
+  insight?: OrbitInsight;
+  recommendation?: OrbitRecommendation;
+  action_executed?: OrbitActionExecuted | null;
+  suggested_actions?: OrbitSuggestedAction[];
+  activeContext?: OrbitEntityContext;
+}
+
+export type OrbitFocusMode = "all" | "workout" | "diet" | "tasks" | "circadian";

@@ -30,7 +30,7 @@ import NotificationBell from "@/components/ui/NotificationBell";
 import { MarkdownText } from "@/components/ui/MarkdownText";
 import { OrbitRecommendationCard, OrbitInsightCard } from "@/components/orbit/OrbitActionCard";
 import { getDietContext, getWorkoutContext, getTaskContext } from "@/lib/orbitContext";
-import type { OrbitMessage, OrbitFocusMode } from "@/types/orbit";
+import type { OrbitMessage, OrbitFocusMode, OrbitEntityContext } from "@/types/orbit";
 import { classifyOrbitIntent, type OrbitIntent } from "@/lib/orbit/intentClassifier";
 
 interface OrbitViewProps {
@@ -83,6 +83,7 @@ const QUICK_CHIPS = [
 export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewProps) {
   const { data: session } = useSession();
   const [messages, setMessages] = useState<OrbitMessage[]>([]);
+  const [activeContext, setActiveContext] = useState<OrbitEntityContext>({});
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [focusMode, setFocusMode] = useState<OrbitFocusMode>("all");
@@ -260,6 +261,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
           body: JSON.stringify({
             messages: payloadMessages,
             mode: focusMode === "all" ? null : focusMode,
+            activeContext,
             dietContext,
             workoutContext,
             taskContext,
@@ -271,10 +273,35 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
         }
 
         const data = await res.json();
+        if (data.activeContext) {
+          setActiveContext((prev) => ({ ...prev, ...data.activeContext }));
+        }
+
+        if (data.action_executed && data.action_executed.status === "success" && typeof window !== "undefined") {
+          const domain =
+            data.action_executed.type === "UPSERT_MEAL" || data.action_executed.type === "MODIFY_MEAL"
+              ? "diet"
+              : data.action_executed.type === "UPDATE_WORKOUT"
+              ? "workout"
+              : "tasks";
+
+          window.dispatchEvent(
+            new CustomEvent("satat:data-refresh", {
+              detail: {
+                domain,
+                type: data.action_executed.type,
+                details: data.action_executed.details,
+              },
+            })
+          );
+        }
         const assistantMsg: OrbitMessage = {
           id: `assistant-${Date.now()}`,
           role: "assistant",
-          content: data.reply || "I encountered an issue processing your request.",
+          content: data.reply || data.message || "I encountered an issue processing your request.",
+          action_executed: data.action_executed ?? null,
+          suggested_actions: data.suggested_actions ?? [],
+          activeContext: data.activeContext,
           timestamp: Date.now(),
           type: "markdown",
         };
@@ -296,7 +323,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
         setLoading(false);
       }
     },
-    [input, loading, messages, focusMode]
+    [input, loading, messages, focusMode, activeContext]
   );
 
   // Retry sending the last user message without duplicating it in the message list
@@ -355,6 +382,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
         body: JSON.stringify({
           messages: payloadMessages,
           mode: focusMode === "all" ? null : focusMode,
+          activeContext,
           dietContext,
           workoutContext,
           taskContext,
@@ -366,10 +394,35 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
       }
 
       const data = await res.json();
+      if (data.activeContext) {
+        setActiveContext((prev) => ({ ...prev, ...data.activeContext }));
+      }
+
+      if (data.action_executed && data.action_executed.status === "success" && typeof window !== "undefined") {
+        const domain =
+          data.action_executed.type === "UPSERT_MEAL" || data.action_executed.type === "MODIFY_MEAL"
+            ? "diet"
+            : data.action_executed.type === "UPDATE_WORKOUT"
+            ? "workout"
+            : "tasks";
+
+        window.dispatchEvent(
+          new CustomEvent("satat:data-refresh", {
+            detail: {
+              domain,
+              type: data.action_executed.type,
+              details: data.action_executed.details,
+            },
+          })
+        );
+      }
       const assistantMsg: OrbitMessage = {
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: data.reply || "I encountered an issue processing your request.",
+        content: data.reply || data.message || "I encountered an issue processing your request.",
+        action_executed: data.action_executed ?? null,
+        suggested_actions: data.suggested_actions ?? [],
+        activeContext: data.activeContext,
         timestamp: Date.now(),
         type: "markdown",
       };
@@ -389,7 +442,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
     } finally {
       setLoading(false);
     }
-  }, [loading, messages, focusMode]);
+  }, [loading, messages, focusMode, activeContext]);
 
   // Clear conversation / Reset chat
   const handleReset = () => {
@@ -974,6 +1027,23 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                       )}
                     </div>
 
+                    {/* Contextual Suggestion Chips */}
+                    {m.suggested_actions && m.suggested_actions.length > 0 && isLastAssistant && (
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1.5 max-w-[94%]">
+                        {m.suggested_actions.map((act, actIdx) => (
+                          <button
+                            key={actIdx}
+                            type="button"
+                            onClick={() => handleSend(act.prompt)}
+                            className="px-3 py-1.5 rounded-full bg-[#FCFBF9] hover:bg-[#EFECE4] text-[#191D1A] border border-[#191D1A]/10 text-xs font-semibold tracking-tight shadow-2xs flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                          >
+                            <Sparkles className="w-3.5 h-3.5 text-[#E05A47]" />
+                            <span>{act.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
                     <span className="text-[10px] text-[#8C857B] font-medium pl-1">
                       Delivered by Orbit · 100% verified data
                     </span>
@@ -1080,7 +1150,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
         )}
 
         {/* Floating Input Dock (Cream Alabaster #FCFBF9, rounded-full) */}
-        <div className="relative w-full bg-[#FCFBF9] rounded-full pl-4 pr-2 py-2 border border-[#1C1917]/10 shadow-[0_8px_24px_rgba(25,29,26,0.08)] flex items-center gap-2 focus-within:border-[#191D1A]/30 focus-within:shadow-[0_8px_28px_rgba(25,29,26,0.12)] transition-all">
+        <div className="relative w-full bg-[#FCFBF9] rounded-full pl-4 pr-2 py-2 border border-[#1C1917]/10 shadow-[0_8px_24px_rgba(25,29,26,0.08)] flex items-center gap-2 focus-within:ring-2 focus-within:ring-[#e06d53]/20 focus-within:border-[#e06d53]/40 focus-within:shadow-[0_8px_28px_rgba(25,29,26,0.12)] transition-all">
           <Sparkles className="w-4 h-4 text-[#8C857B] shrink-0" />
           <textarea
             ref={inputRef}
@@ -1089,7 +1159,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             placeholder="Ask Orbit about training, diet, or focus..."
-            className="flex-1 bg-transparent text-xs sm:text-sm resize-none outline-none leading-relaxed scrollbar-none min-h-[22px] max-h-[120px] text-[#1C1917] placeholder-[#8C857B] font-medium py-0.5"
+            className="w-full flex-1 bg-transparent border-0 outline-none focus:outline-none focus:ring-0 ring-0 shadow-none text-xs sm:text-sm resize-none leading-relaxed scrollbar-none min-h-[22px] max-h-[120px] text-[#1C1917] placeholder-[#8C857B] font-medium py-0.5"
             aria-label="Ask Orbit"
           />
 
@@ -1581,7 +1651,24 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                             )}
                           </div>
 
-                          <span className="text-[10px] text-[#8C857B] font-medium pl-1">
+                          {/* Contextual Suggestion Chips */}
+                    {m.suggested_actions && m.suggested_actions.length > 0 && isLastAssistant && (
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1.5 max-w-[94%]">
+                        {m.suggested_actions.map((act, actIdx) => (
+                          <button
+                            key={actIdx}
+                            type="button"
+                            onClick={() => handleSend(act.prompt)}
+                            className="px-3 py-1.5 rounded-full bg-[#FCFBF9] hover:bg-[#EFECE4] text-[#191D1A] border border-[#191D1A]/10 text-xs font-semibold tracking-tight shadow-2xs flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                          >
+                            <Sparkles className="w-3.5 h-3.5 text-[#E05A47]" />
+                            <span>{act.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    <span className="text-[10px] text-[#8C857B] font-medium pl-1">
                             Delivered by Orbit · 100% verified data
                           </span>
                         </div>
@@ -1671,7 +1758,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
             </div>
 
             {/* Studio Input Bar with Camera, Mic, Paperclip */}
-            <div className="relative w-full bg-[#F6F3EC] rounded-2xl px-3 py-2 border border-[#1C1917]/10 flex items-center gap-2 focus-within:border-[#191D1A]/30 focus-within:shadow-sm transition-all">
+            <div className="relative w-full bg-[#F6F3EC] rounded-2xl px-3 py-2 border border-[#1C1917]/10 flex items-center gap-2 focus-within:ring-2 focus-within:ring-[#e06d53]/20 focus-within:border-[#e06d53]/40 focus-within:shadow-sm transition-all">
               <div className="flex items-center gap-1.5 shrink-0 text-[#8C857B]">
                 <button
                   type="button"
@@ -1702,7 +1789,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
                 placeholder="Ask Orbit about training, diet, or focus..."
-                className="flex-1 bg-transparent text-xs sm:text-sm resize-none outline-none leading-relaxed scrollbar-none min-h-[22px] max-h-[120px] text-[#1C1917] placeholder-[#8C857B] font-medium py-0.5"
+                className="w-full flex-1 bg-transparent border-0 outline-none focus:outline-none focus:ring-0 ring-0 shadow-none text-xs sm:text-sm resize-none leading-relaxed scrollbar-none min-h-[22px] max-h-[120px] text-[#1C1917] placeholder-[#8C857B] font-medium py-0.5"
                 aria-label="Ask Orbit desktop"
               />
 

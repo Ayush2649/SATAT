@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { getUserKey } from "@/lib/auth/userKey";
 import { callTextWithFallback } from "@/lib/ai/groq";
 import { buildOrbitContext } from "@/lib/orbit/contextEngine";
 import { inferContextRequirements } from "@/lib/orbit/contextRequirement";
@@ -11,6 +12,12 @@ import {
   classifyOrbitIntentDetailed,
   getSimpleConversationReply,
 } from "@/lib/orbit/intentClassifier";
+import {
+  parseMutationIntent,
+  executeMutation,
+  generateContextualSuggestions,
+} from "@/lib/orbit/mutationEngine";
+import type { OrbitEntityContext, OrbitActionExecuted, OrbitSuggestedAction } from "@/types/orbit";
 
 function formatDetailedWorkoutSessions(workouts: any[]): string {
   if (!workouts || workouts.length === 0) {
@@ -107,6 +114,23 @@ async function callGeminiTextFallback(prompt: string): Promise<string | null> {
   }
 }
 
+function makeOrbitResponse(opts: {
+  message: string;
+  reply?: string;
+  action_executed: OrbitActionExecuted | null;
+  suggested_actions?: OrbitSuggestedAction[];
+  activeContext?: OrbitEntityContext;
+}) {
+  const replyText = opts.reply ?? opts.message;
+  return NextResponse.json({
+    message: opts.message,
+    reply: replyText,
+    action_executed: opts.action_executed ?? null,
+    suggested_actions: opts.suggested_actions ?? [],
+    activeContext: opts.activeContext,
+  });
+}
+
 export const maxDuration = 30;
 
 export async function POST(req: NextRequest) {
@@ -115,17 +139,71 @@ export async function POST(req: NextRequest) {
   const tAuth = Date.now();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const userId = getUserKey(session) || (session.user as any)?.id || session.user?.email || "";
   const userName = session.user?.name?.split(" ")[0] ?? "there";
-  const { messages, mode, dietContext, workoutContext, taskContext } = await req.json();
+  const reqBody = await req.json();
+  const {
+    message,
+    messages,
+    mode,
+    activeContext: reqActiveContext,
+    dietContext,
+    workoutContext,
+    taskContext,
+  } = reqBody;
 
   // Determine required context based on user messages (never assistant responses)
-  const userMessages = (messages || []).filter((m: any) => m.role === "user");
-  const latestUserMessage = userMessages[userMessages.length - 1]?.content || "";
+  const rawUserMessages = (messages || []).filter((m: any) => m.role === "user");
+  const userMessages =
+    rawUserMessages.length > 0
+      ? rawUserMessages
+      : message
+      ? [{ role: "user", content: message }]
+      : [];
+  const latestUserMessage = message || userMessages[userMessages.length - 1]?.content || "";
 
   // 1. Fast-path: Deterministic classification for simple greetings & pleasantries.
-  // Bypasses expensive historical Firestore context retrieval, returning in <5ms.
   const classifiedIntent = classifyOrbitIntentDetailed(latestUserMessage);
   const tIntent = Date.now();
+
+  let currentActiveContext: OrbitEntityContext = {
+    ...(reqActiveContext || {}),
+  };
+
+  const allUserText = userMessages.map((m: any) => m.content).join(" ");
+
+  // Recover any dropped entities (e.g. meal slot, target exercise) from conversation history
+  if (!currentActiveContext.activeMealSlot) {
+    for (let i = (messages || []).length - 1; i >= 0; i--) {
+      const content = (messages[i]?.content || "").toLowerCase();
+      if (/\bdinner\b/.test(content)) {
+        currentActiveContext.activeMealSlot = "dinner";
+        break;
+      } else if (/\blunch\b/.test(content)) {
+        currentActiveContext.activeMealSlot = "lunch";
+        break;
+      } else if (/\bbreakfast\b/.test(content)) {
+        currentActiveContext.activeMealSlot = "breakfast";
+        break;
+      } else if (/\bsnack\b/.test(content)) {
+        currentActiveContext.activeMealSlot = "snack";
+        break;
+      }
+    }
+  }
+
+  if (!currentActiveContext.activeExerciseName) {
+    for (let i = (messages || []).length - 1; i >= 0; i--) {
+      const content = (messages[i]?.content || "").toLowerCase();
+      const exMatch = content.match(
+        /\b(incline dumbbell press|dumbbell press|bench press|barbell squat|squat|deadlift|bicep curl|lat pulldown)\b/i
+      );
+      if (exMatch) {
+        currentActiveContext.activeExerciseName = exMatch[0].replace(/\b\w/g, (c: string) => c.toUpperCase());
+        break;
+      }
+    }
+  }
 
   if (classifiedIntent.intent === "SIMPLE_CONVERSATION") {
     const greetingType = classifiedIntent.greetingType ?? "general";
@@ -140,35 +218,56 @@ export async function POST(req: NextRequest) {
         totalMs: Date.now() - t0,
       })
     );
-    return NextResponse.json({ reply });
+    return makeOrbitResponse({
+      message: reply,
+      reply,
+      action_executed: null,
+      suggested_actions: [],
+      activeContext: currentActiveContext,
+    });
+  }
+
+  // ── Deterministic Mutation Execution Engine ──────────────────────────────────
+  const parsedMutation = parseMutationIntent(latestUserMessage, currentActiveContext, allUserText);
+  let actionExecuted: OrbitActionExecuted | null = null;
+  let executedNote = "";
+
+  if (parsedMutation && userId) {
+    const mutResult = await executeMutation(userId, parsedMutation, currentActiveContext);
+    actionExecuted = mutResult.actionExecuted;
+    currentActiveContext = mutResult.updatedContext;
+    executedNote = mutResult.executedNote;
   }
 
   // 2. Infer requirements primarily from the latest user message
   const latestReq = inferContextRequirements(latestUserMessage);
-
-  // For domain detection on follow-up questions (e.g. "what about protein?"),
-  // inspect prior user messages without allowing assistant replies to pollute temporal keywords
-  const allUserText = userMessages.map((m: any) => m.content).join(" ");
   const allUserReq = inferContextRequirements(allUserText);
 
   // Merge inferred domains, add mode‑specific defaults, and resolve temporal scope
   const mergedDomains = new Set([...latestReq.domains, ...allUserReq.domains]);
-  if (mode === "workout") mergedDomains.add("workouts");
-  if (mode === "diet") { mergedDomains.add("meals"); mergedDomains.add("nutrition"); }
-  if (mode === "tasks") mergedDomains.add("tasks");
+  if (mode === "workout" || parsedMutation?.type === "UPDATE_WORKOUT") mergedDomains.add("workouts");
+  if (mode === "diet" || parsedMutation?.type === "UPSERT_MEAL" || parsedMutation?.type === "MODIFY_MEAL") {
+    mergedDomains.add("meals");
+    mergedDomains.add("nutrition");
+  }
+  if (mode === "tasks" || parsedMutation?.type === "MODIFY_PLAN") mergedDomains.add("tasks");
 
   // Strict Domain Pruning: Prevent fetching irrelevant categories
   const lowerLatest = latestUserMessage.toLowerCase();
   const hasWorkoutFocus = (
     mode === "workout" ||
+    parsedMutation?.type === "UPDATE_WORKOUT" ||
     /\b(workouts?|training|gym|exercises?|splits?|sets?|reps?|bench|squats?|deadlifts?|shoulders?|arms?|legs?|push|pull|cardio)\b/i.test(lowerLatest)
   );
   const hasDietFocus = (
     mode === "diet" ||
+    parsedMutation?.type === "UPSERT_MEAL" ||
+    parsedMutation?.type === "MODIFY_MEAL" ||
     /\b(meals?|nutrition|diet|calories|protein|carbs?|fats?|food|eat|eating|ate|breakfast|lunch|dinner|snacks?|macro|macros|protein\s+gap)\b/i.test(lowerLatest)
   );
   const hasTaskFocus = (
     mode === "tasks" ||
+    parsedMutation?.type === "MODIFY_PLAN" ||
     /\b(tasks?|todos?|projects?|deep\s*work|priorit(y|ies|ize)|focus\s*blocks?|planning|plans?|rituals?|cadence)\b/i.test(lowerLatest)
   );
 
@@ -247,6 +346,21 @@ Format: use **bold** for key points and - for bullet lists. Keep responses under
 You are deeply familiar with Indian food, Indian lifestyle, Indian portion sizes, and Indian fitness culture.
 NEVER say you don't know today's date — you always know it.`;
 
+  // Entity Continuity & State Modification Context
+  system += `\n\n=== CONVERSATIONAL CONTINUITY STATE ===
+Active Meal Slot: ${currentActiveContext.activeMealSlot || "None"}
+Active Exercise: ${currentActiveContext.activeExerciseName || "None"}
+Maintain continuity across turns. If the user refers to "dinner", "lunch", "it", "also add", or modifies sets, resolve the target entity from this state.`;
+
+  if (actionExecuted && actionExecuted.status === "success") {
+    system += `\n\n=== ACTION JUST COMPLETED IN DATABASE ===
+Action: ${actionExecuted.type}
+Status: success
+Details: ${JSON.stringify(actionExecuted.details)}
+Note: ${executedNote}
+Acknowledge this update clearly in your response and reference the updated totals or next step.`;
+  }
+
   if (classifiedIntent.intent === "HISTORICAL_ANALYSIS") {
     // 1. Resolve exact date range for historical period
     const temporalScope = requirements.temporalScope || "last7Days";
@@ -285,22 +399,6 @@ NEVER say you don't know today's date — you always know it.`;
     const latestWeight = bodyWeight[0]?.weightKg;
     const prevWeight = bodyWeight.length > 1 ? bodyWeight[1]?.weightKg : undefined;
     const weightDelta = (latestWeight !== undefined && prevWeight !== undefined) ? Number((latestWeight - prevWeight).toFixed(2)) : undefined;
-
-    // Check if user is asking for overall weekly assessment vs domain-specific question
-    const lowerLatest = latestUserMessage.toLowerCase();
-
-    const hasWorkoutFocus = (
-      mode === "workout" ||
-      /\b(workouts?|training|gym|exercises?|splits?|sets?|reps?|bench|squats?|deadlifts?|shoulders?|arms?|legs?|push|pull|cardio)\b/i.test(lowerLatest)
-    );
-    const hasDietFocus = (
-      mode === "diet" ||
-      /\b(meals?|nutrition|diet|calories|protein|carbs?|fats?|food|breakfast|lunch|dinner)\b/i.test(lowerLatest)
-    );
-    const hasTaskFocus = (
-      mode === "tasks" ||
-      /\b(tasks?|todos?|projects?|deep\s+work|priorit(y|ies))\b/i.test(lowerLatest)
-    );
 
     const categoryCount = (hasWorkoutFocus ? 1 : 0) + (hasDietFocus ? 1 : 0) + (hasTaskFocus ? 1 : 0);
 
@@ -389,9 +487,8 @@ ${goals ? `• Macro targets: ${goals.calories} kcal, ${goals.proteinG}g protein
     system += `\n\n[MODE: WORKOUT COACH]
 Focus on exercise programming, form, sets/reps, progressive overload, muscle groups, recovery, and splits.`;
 
-    // Workout mode – use orbitContext.workouts and bodyWeightEntries
     if (orbitContext?.workouts) {
-      const workouts = orbitContext.workouts.today; // filtered list based on temporalScope
+      const workouts = orbitContext.workouts.today;
       const profileWeight = orbitContext.bodyWeightEntries?.[0]?.weightKg;
       if (profileWeight) {
         system += `\n\n=== ${userName.toUpperCase()}'S PROFILE ===\nBody weight: ${profileWeight} kg`;
@@ -442,7 +539,7 @@ Focus on exercise programming, form, sets/reps, progressive overload, muscle gro
     const recentMealNames = Array.from(new Set(recentMealsList.map((m: any) => m.name).filter(Boolean)));
     const pastWeekMealsStr = recentMealNames.length > 0
       ? recentMealNames.join(", ")
-      : "Oats with Milk and Fruit Bowl, Dal Chawal, Paneer Bhurji, Grilled Chicken, Boiled Eggs, Whey Protein";
+      : "No past-week meals logged yet.";
 
     system += `\n\n[MODE: NUTRITION COACH & PROTEIN GAP INTELLIGENCE]
 === ${userName.toUpperCase()}'S NUTRITION TARGETS & TODAY'S LOGS ===
@@ -455,7 +552,7 @@ Recent Past-Week Meals: ${pastWeekMealsStr}
 [INSTRUCTIONS FOR PROTEIN GAP & DIET QUESTIONS]
 1. State the exact progress clearly: "You're at **${totals.proteinG}g / ${targetProtein}g protein** logged so far today (**${remainingProtein}g remaining**)."
 2. If today's logged protein is 0g (or partial), DO NOT refuse with "I don't see any meals logged so I can't calculate your gap" and DO NOT ask the user what their target is! You already have their exact goal (${targetProtein}g Protein).
-3. Immediately provide a practical 3-meal action plan (e.g., Breakfast, Lunch, Dinner, or Post-workout snack) referencing high-protein Indian/athletic staples and their past-week meals (e.g. Greek yogurt, paneer, eggs, chicken, soya chunks, whey, lentils) to hit the remaining ${remainingProtein}g protein gap today.
+3. Immediately provide a practical 3-meal action plan (e.g., Breakfast, Lunch, Dinner, or Post-workout snack) referencing high-protein Indian/athletic staples ${recentMealNames.length > 0 ? "and their past-week meals " : ""}(e.g. Greek yogurt, paneer, eggs, chicken, soya chunks, whey, lentils) to hit the remaining ${remainingProtein}g protein gap today.
 4. Keep the response encouraging, athletic, and directly actionable.`;
   }
 
@@ -464,7 +561,7 @@ Recent Past-Week Meals: ${pastWeekMealsStr}
 Focus on task prioritization, habit building, focus strategies, breaking down goals, and overcoming procrastination.`;
 
     const firestoreAllTasks = orbitContext?.tasks?.all || [];
-    const firestorePending = firestoreAllTasks.filter((t: any) => t.status === "pending" || !t.completedAt);
+    const firestorePending = firestoreAllTasks.filter((t: any) => t.status === "pending");
 
     const clientPending = (taskContext?.pendingToday || []).map((t: any) => ({
       title: t.title,
@@ -485,7 +582,7 @@ Focus on task prioritization, habit building, focus strategies, breaking down go
     });
     const allPendingTasks = Array.from(combinedPendingMap.values());
 
-    const todayDate = new Date().toLocaleDateString('en-CA');
+    const todayDate = new Date().toLocaleDateString('en-CA', { timeZone: userTimezone });
     system += `\n\n=== ${userName.toUpperCase()}'S PENDING TASKS & WORKSPACES — ${todayDate} ===
 Total Incomplete Tasks: ${allPendingTasks.length}
 ${allPendingTasks.length > 0
@@ -579,7 +676,43 @@ The user has opened Orbit without selecting a specific mode. Give helpful, groun
       })
     );
 
-    return NextResponse.json({ reply: result.data });
+    let responseMessage = result.data;
+    let responseActionExecuted = actionExecuted;
+    let responseSuggestedActions: OrbitSuggestedAction[] | undefined = undefined;
+
+    // Check if model emitted JSON format
+    try {
+      const parsed = JSON.parse(result.data);
+      if (parsed && typeof parsed === "object") {
+        if (parsed.message) responseMessage = parsed.message;
+        if (parsed.action_executed && !responseActionExecuted) {
+          responseActionExecuted = parsed.action_executed;
+        }
+        if (Array.isArray(parsed.suggested_actions) && parsed.suggested_actions.length > 0) {
+          responseSuggestedActions = parsed.suggested_actions;
+        }
+      }
+    } catch {
+      // Plain text response from model
+    }
+
+    // Contextual suggestion generation
+    if (!responseSuggestedActions || responseSuggestedActions.length === 0) {
+      responseSuggestedActions = generateContextualSuggestions({
+        orbitContext,
+        activeContext: currentActiveContext,
+        latestUserMessage,
+        actionExecuted: responseActionExecuted || undefined,
+      });
+    }
+
+    return makeOrbitResponse({
+      message: responseMessage,
+      reply: responseMessage,
+      action_executed: responseActionExecuted ?? null,
+      suggested_actions: responseSuggestedActions,
+      activeContext: currentActiveContext,
+    });
   } catch (err: any) {
     const isRateOrTokenError = (
       err?.code === "RATE_LIMITED" ||
@@ -614,14 +747,40 @@ The user has opened Orbit without selecting a specific mode. Give helpful, groun
           feature: "aria_fallback",
         });
 
-        return NextResponse.json({ reply: fallbackResult.data });
+        const fallbackSuggestions = generateContextualSuggestions({
+          orbitContext,
+          activeContext: currentActiveContext,
+          latestUserMessage,
+          actionExecuted: actionExecuted || undefined,
+        });
+
+        return makeOrbitResponse({
+          message: fallbackResult.data,
+          reply: fallbackResult.data,
+          action_executed: actionExecuted ?? null,
+          suggested_actions: fallbackSuggestions,
+          activeContext: currentActiveContext,
+        });
       } catch (retryErr: any) {
         console.warn("[aria] Groq fallback retry failed, checking Gemini fallback:", retryErr?.message);
         const geminiReply = await callGeminiTextFallback(
           `System: ${system.slice(0, 3000)}\n\nUser: ${latestUserMessage}`
         );
         if (geminiReply) {
-          return NextResponse.json({ reply: geminiReply });
+          const geminiSuggestions = generateContextualSuggestions({
+            orbitContext,
+            activeContext: currentActiveContext,
+            latestUserMessage,
+            actionExecuted: actionExecuted || undefined,
+          });
+
+          return makeOrbitResponse({
+            message: geminiReply,
+            reply: geminiReply,
+            action_executed: actionExecuted ?? null,
+            suggested_actions: geminiSuggestions,
+            activeContext: currentActiveContext,
+          });
         }
       }
     }

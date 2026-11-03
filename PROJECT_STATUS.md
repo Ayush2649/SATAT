@@ -885,12 +885,38 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ---
 
+### ✅ Sprint 6.8: Orbit Dual-Layer Schema, Input UI Outline, Ordinal Exercise Resolution & Targeted Network Sync
+- **Standardized Dual-Layer API Response Schema (`app/api/aria/route.ts`)**:
+  - Wired `executeMutation` from `lib/orbit/mutationEngine.ts` to deterministically execute state updates (`UPSERT_MEAL`, `MODIFY_MEAL`, `UPDATE_WORKOUT`, `MODIFY_PLAN`).
+  - Standardized all API responses via `makeOrbitResponse` to return `{ message, reply, action_executed, suggested_actions, activeContext }`.
+  - Added support for both `req.json().message` directly and `req.json().messages` array payloads.
+- **Fixed Chat Bar Focus Outline Bug (`components/orbit/OrbitView.tsx`)**:
+  - Removed browser default outline and harsh focus borders by applying `className="w-full flex-1 bg-transparent border-0 outline-none focus:outline-none focus:ring-0 ring-0 shadow-none ..."` on `<textarea>`.
+  - Added clean subtle terracotta focus ring on parent pill dock: `focus-within:ring-2 focus-within:ring-[#e06d53]/20 focus-within:border-[#e06d53]/40` on both mobile floating dock and desktop studio input.
+- **Ordinal & Fuzzy Workout Exercise Resolution (`lib/orbit/mutationEngine.ts`)**:
+  - Enhanced `parseMutationIntent` to detect ordinal indicators (`"first"`/`"1st"` -> index 0, `"second"`/`"2nd"` -> index 1, `"third"`/`"3rd"` -> index 2, `"exercise #2"` -> index 1).
+  - Enhanced `update_workout_session` to target exercises by ordinal index, exact name, substring, or token overlap (e.g. `"dumbbell press"` -> `"Incline Dumbbell Press"`).
+  - Preserved existing workout set weights and units when user only updates reps (e.g. `"Change that second exercise to 12 reps"` maintains 24kg and updates reps to 12).
+- **Targeted Network Sync & Contextual Suggestions (`components/orbit/OrbitView.tsx`)**:
+  - Added `activeContext` state in `OrbitView` to retain conversational entities across turns without dropping active meal slots or exercise names.
+  - Dispatched targeted `satat:data-refresh` custom event with `{ domain, type, details }` on successful mutations to avoid full-page reloads and prevent duplicate Firestore queries.
+  - Rendered interactive contextual suggestion chips under assistant cards that trigger quick one-click prompts.
+- **Comprehensive Verification & Regression Suite (`tests/orbit/continuity-mutations.test.ts`)**:
+  - Expanded test coverage across 17 unit and integration tests including multi-turn diet upserts, workout set mutations, dual-layer schemas, ordinal resolution, error handling, and fast-path conversational contracts.
+- **Zero Regression Standard Verified**:
+  - `npm run typecheck`: **0 errors**.
+  - `npm run lint`: **0 errors**.
+  - Vitest suite: **56 passed (56 files), 667 passed | 26 skipped (693 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
-- **Vitest Suite**: `650 passed | 26 skipped` across all 55 test suites (0 failing).
+- **Vitest Suite**: `667 passed | 26 skipped` across all 56 test suites (0 failing).
 - **Markdown & UI Tests**: `13/13 passed` in `tests/ui/markdown-text.test.tsx`.
 - **Navigation & Launcher Tests**: `5/5 passed` in `tests/navigation/navigation-orbit-launcher.test.ts`.
-- **Orbit Tests**: `49/49 passed` across `tests/orbit/*` and `tests/api/aria.test.ts`.
+- **Orbit Tests**: `66/66 passed` across `tests/orbit/*` and `tests/api/aria.test.ts`.
 - **Diet Tests**: `213/213 passed` across all 15 test suites in `tests/diet/*`.
 - **Workout Tests**: `42/42 passed` across `tests/workouts/*`.
 - **Onboarding Tests**: `78/78 passed` across `tests/onboarding/*`.

@@ -401,6 +401,221 @@ describe("Orbit Context Continuity, State Mutation & Suggestion Engine", () => {
       expect(body.suggested_actions[0]).toHaveProperty("label");
       expect(body.suggested_actions[0]).toHaveProperty("prompt");
     });
+
+    it("returns action_executed: null when no mutation occurs in conversational query", async () => {
+      const req = new NextRequest("http://localhost/api/aria", {
+        method: "POST",
+        body: JSON.stringify({
+          messages: [{ role: "user", content: "What is my recommended daily calorie intake?" }],
+        }),
+      });
+
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+
+      const body = await res.json();
+      expect(body).toHaveProperty("message");
+      expect(body).toHaveProperty("reply");
+      expect(body.action_executed).toBeNull();
+      expect(Array.isArray(body.suggested_actions)).toBe(true);
+    });
+
+    it("ensures simple conversation fast-path responses adhere to dual-layer response contract", async () => {
+      const req = new NextRequest("http://localhost/api/aria", {
+        method: "POST",
+        body: JSON.stringify({
+          messages: [{ role: "user", content: "Hello Orbit" }],
+        }),
+      });
+
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+
+      const body = await res.json();
+      expect(body).toHaveProperty("message");
+      expect(body).toHaveProperty("reply");
+      expect(body.reply).toContain("Hey Prateek!");
+      expect(body.action_executed).toBeNull();
+      expect(body.suggested_actions).toEqual([]);
+    });
+
+    it("returns accurate failure information with status 'failed' when mutation throws an error", async () => {
+      // Force Firestore meals add to reject
+      mockMealsCol.add.mockRejectedValueOnce(new Error("Firestore database connection timeout"));
+
+      const req = new NextRequest("http://localhost/api/aria", {
+        method: "POST",
+        body: JSON.stringify({
+          messages: [{ role: "user", content: "Log 2 bananas for snack" }],
+          mode: "diet",
+        }),
+      });
+
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+
+      const body = await res.json();
+      expect(body.action_executed).toEqual(
+        expect.objectContaining({
+          type: "UPSERT_MEAL",
+          status: "failed",
+          details: expect.objectContaining({
+            error: expect.stringContaining("Firestore database connection timeout"),
+          }),
+        })
+      );
+      expect(body).toHaveProperty("reply");
+      expect(body.suggested_actions).toBeDefined();
+    });
+
+    it("preserves historical analysis behavior and returns dual-layer contract", async () => {
+      const req = new NextRequest("http://localhost/api/aria", {
+        method: "POST",
+        body: JSON.stringify({
+          messages: [{ role: "user", content: "How was my workout this week?" }],
+        }),
+      });
+
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+
+      const body = await res.json();
+      expect(mockBuildOrbitContext).toHaveBeenCalledWith(
+        expect.objectContaining({
+          domains: ["workouts"],
+          temporalScope: "thisWeek",
+        })
+      );
+      expect(body.action_executed).toBeNull();
+      expect(body).toHaveProperty("reply");
+      expect(body.suggested_actions.length).toBeGreaterThan(0);
+    });
+  });
+
+  // ── 6. Exercise Partial Name Resolution & Unrelated Sets Preservation ──────
+  describe("Workout Exercise Resolution & Unrelated Sets Preservation", () => {
+    it("resolves exercise through partial name and preserves unrelated exercise sets intact", async () => {
+      const todayStr = new Date().toLocaleDateString("en-CA");
+      const existingSession = {
+        id: "w-existing-123",
+        userId: mockUserId,
+        date: todayStr,
+        exercises: [
+          {
+            id: "ex-squat",
+            name: "Barbell Back Squat",
+            sets: [{ reps: 5, weight: 120, unit: "kg" }],
+          },
+          {
+            id: "ex-press",
+            name: "Incline Dumbbell Press",
+            sets: [{ reps: 8, weight: 20, unit: "kg" }],
+          },
+        ],
+        durationMinutes: 60,
+        createdAt: Date.now(),
+      };
+      mockWorkoutStore.set(existingSession.id, existingSession);
+
+      const req = new NextRequest("http://localhost/api/aria", {
+        method: "POST",
+        body: JSON.stringify({
+          messages: [{ role: "user", content: "Change the dumbbell press reps to 12" }],
+          activeContext: { activeExerciseName: "Incline Dumbbell Press" },
+          mode: "workout",
+        }),
+      });
+
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+
+      const body = await res.json();
+      expect(body.action_executed).toEqual(
+        expect.objectContaining({
+          type: "UPDATE_WORKOUT",
+          status: "success",
+          details: expect.objectContaining({
+            exerciseName: "Incline Dumbbell Press",
+            sets: [expect.objectContaining({ reps: 12 })],
+          }),
+        })
+      );
+
+      // Verify in store:
+      const updatedSession = mockWorkoutStore.get(existingSession.id);
+      expect(updatedSession.exercises).toHaveLength(2);
+
+      // Barbell Back Squat must be completely untouched
+      const squat = updatedSession.exercises.find((e: any) => e.name === "Barbell Back Squat");
+      expect(squat).toBeDefined();
+      expect(squat.sets).toEqual([{ reps: 5, weight: 120, unit: "kg" }]);
+
+      // Incline Dumbbell Press must have updated sets
+      const press = updatedSession.exercises.find((e: any) => e.name === "Incline Dumbbell Press");
+      expect(press).toBeDefined();
+      expect(press.sets[0].reps).toBe(12);
+    });
+
+    it("resolves ordinal exercise reference ('that second exercise') and preserves weight", async () => {
+      const todayStr = new Date().toLocaleDateString("en-CA");
+      const existingSession = {
+        id: "w-ordinal-session",
+        userId: mockUserId,
+        date: todayStr,
+        exercises: [
+          {
+            id: "ex-1",
+            name: "Barbell Back Squat",
+            sets: [{ reps: 5, weight: 120, unit: "kg" }],
+          },
+          {
+            id: "ex-2",
+            name: "Incline Dumbbell Press",
+            sets: [{ reps: 10, weight: 24, unit: "kg" }],
+          },
+        ],
+        durationMinutes: 45,
+        createdAt: Date.now(),
+      };
+      mockWorkoutStore.set(existingSession.id, existingSession);
+
+      const req = new NextRequest("http://localhost/api/aria", {
+        method: "POST",
+        body: JSON.stringify({
+          messages: [{ role: "user", content: "Change that second exercise to 12 reps" }],
+          mode: "workout",
+        }),
+      });
+
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+
+      const body = await res.json();
+      expect(body.action_executed).toEqual(
+        expect.objectContaining({
+          type: "UPDATE_WORKOUT",
+          status: "success",
+          details: expect.objectContaining({
+            exerciseName: "Incline Dumbbell Press",
+            sets: [expect.objectContaining({ reps: 12, weight: 24 })],
+          }),
+        })
+      );
+
+      expect(body.activeContext).toEqual(
+        expect.objectContaining({
+          activeExerciseName: "Incline Dumbbell Press",
+          activeWorkoutId: existingSession.id,
+        })
+      );
+
+      const updatedSession = mockWorkoutStore.get(existingSession.id);
+      expect(updatedSession.exercises[0].name).toBe("Barbell Back Squat");
+      expect(updatedSession.exercises[0].sets[0].reps).toBe(5);
+      expect(updatedSession.exercises[1].name).toBe("Incline Dumbbell Press");
+      expect(updatedSession.exercises[1].sets[0].reps).toBe(12);
+      expect(updatedSession.exercises[1].sets[0].weight).toBe(24);
+    });
   });
 });
 

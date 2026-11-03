@@ -54,8 +54,10 @@ export interface WorkoutSetInput {
 export interface UpdateWorkoutParams {
   userId: string;
   sessionId?: string; // specific doc ID or "latest" / "today"
-  exerciseName: string;
+  exerciseName?: string;
   exerciseId?: string;
+  exerciseIndex?: number;
+  setIndex?: number;
   sets: WorkoutSetInput[];
 }
 
@@ -371,7 +373,7 @@ export async function update_workout_session(params: UpdateWorkoutParams): Promi
   status: "success";
   activeContext: OrbitEntityContext;
 }> {
-  const { userId, exerciseName, sets } = params;
+  const { userId, exerciseName = "Workout Exercise", sets, exerciseIndex } = params;
   if (!userId) throw new Error("Missing required userId for update_workout_session");
 
   const todayStr = new Date().toLocaleDateString("en-CA");
@@ -428,15 +430,62 @@ export async function update_workout_session(params: UpdateWorkoutParams): Promi
   }
 
   const exercises: any[] = session.exercises || [];
-  const existingExIndex = exercises.findIndex(
-    (e) => (e.name || "").toLowerCase().includes(lowerExName) || lowerExName.includes((e.name || "").toLowerCase())
-  );
+  let existingExIndex = -1;
+
+  // 1. Ordinal index targeting (e.g. "second exercise" -> exerciseIndex: 1)
+  if (typeof exerciseIndex === "number" && exerciseIndex >= 0 && exerciseIndex < exercises.length) {
+    existingExIndex = exerciseIndex;
+  } else {
+    // 2. Exact match
+    existingExIndex = exercises.findIndex(
+      (e) => (e.name || "").trim().toLowerCase() === lowerExName
+    );
+
+    // 3. Substring match in either direction
+    if (existingExIndex === -1 && lowerExName !== "workout exercise") {
+      existingExIndex = exercises.findIndex((e) => {
+        const n = (e.name || "").toLowerCase();
+        return n.includes(lowerExName) || lowerExName.includes(n);
+      });
+    }
+
+    // 4. Token overlap match (e.g. "dumbbell press" matches "Incline Dumbbell Press")
+    if (existingExIndex === -1 && lowerExName !== "workout exercise") {
+      const tokens = lowerExName.split(/\s+/).filter((t) => t.length > 2);
+      if (tokens.length > 0) {
+        existingExIndex = exercises.findIndex((e) => {
+          const n = (e.name || "").toLowerCase();
+          return tokens.every((token) => n.includes(token));
+        });
+      }
+    }
+  }
 
   let targetExName = normalizedExName;
+  let finalSets: WorkoutSetInput[] = sets;
 
   if (existingExIndex !== -1) {
     targetExName = exercises[existingExIndex].name;
-    exercises[existingExIndex].sets = formattedSets;
+    const existingSets = exercises[existingExIndex].sets || [];
+    const updatedSets = sets.map((s, idx) => {
+      const prevSet = existingSets[idx] || existingSets[0];
+      const resolvedWeight = s.weight && s.weight > 0 ? s.weight : (prevSet?.weight ?? 0);
+      const resolvedUnit = s.unit || prevSet?.unit || "kg";
+      return {
+        id: `set-${Date.now()}-${idx}`,
+        reps: s.reps,
+        weight: resolvedWeight,
+        unit: resolvedUnit,
+        completed: s.completed ?? true,
+      };
+    });
+    exercises[existingExIndex].sets = updatedSets;
+    finalSets = updatedSets.map((s) => ({
+      reps: s.reps,
+      weight: s.weight,
+      unit: s.unit as "kg" | "lbs" | "bodyweight",
+      completed: s.completed,
+    }));
   } else {
     exercises.push({
       id: `ex-${Date.now()}`,
@@ -452,7 +501,7 @@ export async function update_workout_session(params: UpdateWorkoutParams): Promi
   return {
     sessionId: session.id,
     exerciseName: targetExName,
-    sets,
+    sets: finalSets,
     status: "success",
     activeContext: {
       activeWorkoutId: session.id,
@@ -488,6 +537,115 @@ export async function modify_plan_schedule(params: ModifyPlanParams): Promise<{
     };
     const ref = await adminDb.collection("tasks").add(docData);
     return { taskId: ref.id, status: "success" };
+  }
+}
+
+/**
+ * Execute a parsed mutation intent and update the conversational entity context.
+ */
+export async function executeMutation(
+  userId: string,
+  mutationIntent: ParsedMutation,
+  currentContext: OrbitEntityContext = {}
+): Promise<{
+  actionExecuted: OrbitActionExecuted;
+  updatedContext: OrbitEntityContext;
+  executedNote: string;
+}> {
+  let nextContext: OrbitEntityContext = { ...currentContext };
+  try {
+    if (mutationIntent.type === "UPSERT_MEAL") {
+      const res = await upsert_diet_entry({
+        userId,
+        mealType: mutationIntent.params.mealType,
+        items: mutationIntent.params.items,
+      });
+      nextContext = { ...nextContext, ...res.activeContext };
+      const itemNames = (mutationIntent.params.items || []).map((i: any) => i.name).join(", ");
+      const slot = mutationIntent.params.mealType;
+      const note = res.isNew
+        ? `Logged ${itemNames} to your ${slot}.`
+        : `Added ${itemNames} to your ${slot}.`;
+
+      return {
+        actionExecuted: {
+          type: "UPSERT_MEAL",
+          status: "success",
+          details: {
+            mealId: res.mealId,
+            isNew: res.isNew,
+            name: res.meal.name,
+            macros: res.meal.macros,
+          },
+        },
+        updatedContext: nextContext,
+        executedNote: note,
+      };
+    } else if (mutationIntent.type === "MODIFY_MEAL") {
+      const res = await modify_diet_entry({
+        userId,
+        entryId: mutationIntent.params.entryId,
+        updates: mutationIntent.params.updates,
+      });
+      return {
+        actionExecuted: {
+          type: "MODIFY_MEAL",
+          status: "success",
+          details: res,
+        },
+        updatedContext: nextContext,
+        executedNote: `Updated ${mutationIntent.params.entryId || "meal"} log.`,
+      };
+    } else if (mutationIntent.type === "UPDATE_WORKOUT") {
+      const res = await update_workout_session({
+        userId,
+        exerciseName: mutationIntent.params.exerciseName,
+        exerciseIndex: mutationIntent.params.exerciseIndex,
+        setIndex: mutationIntent.params.setIndex,
+        sets: mutationIntent.params.sets,
+      });
+      nextContext = { ...nextContext, ...res.activeContext };
+      const setsSummary = (res.sets || []).map((s: any) => `${s.reps} reps${s.weight ? ` @ ${s.weight}kg` : ""}`).join(", ");
+      return {
+        actionExecuted: {
+          type: "UPDATE_WORKOUT",
+          status: "success",
+          details: {
+            sessionId: res.sessionId,
+            exerciseName: res.exerciseName,
+            sets: res.sets,
+          },
+        },
+        updatedContext: nextContext,
+        executedNote: `Updated ${res.exerciseName} sets: ${setsSummary}.`,
+      };
+    } else if (mutationIntent.type === "MODIFY_PLAN") {
+      const res = await modify_plan_schedule({
+        userId,
+        ...mutationIntent.params,
+      });
+      return {
+        actionExecuted: {
+          type: "MODIFY_PLAN",
+          status: "success",
+          details: res,
+        },
+        updatedContext: nextContext,
+        executedNote: `Scheduled task: ${mutationIntent.params.title || "focus block"}.`,
+      };
+    }
+    throw new Error(`Unsupported mutation type: ${(mutationIntent as any).type}`);
+  } catch (err: any) {
+    console.warn("[mutationEngine] Execution error:", err?.message);
+    return {
+      actionExecuted: {
+        type: mutationIntent.type,
+        status: "failed",
+        details: { error: err?.message || "Execution failed" },
+      },
+      updatedContext: nextContext,
+      executedNote: `Failed to execute: ${err?.message || "Execution failed"}`,
+    };
   }
 }
 
@@ -565,9 +723,24 @@ export function parseMutationIntent(
   // "Change the dumbbell press reps to 12"
   // "Set my incline dumbbell press to 10 reps at 24kg"
   // "Log 10 reps of incline dumbbell press at 24kg"
+  // "Change that second exercise to 12 reps"
+  let exerciseIndex: number | undefined = undefined;
+  if (/\b(?:that\s+)?first\s+exercise\b|\b1st\s+exercise\b|\bexercise\s*#?1\b/i.test(text)) {
+    exerciseIndex = 0;
+  } else if (/\b(?:that\s+)?second\s+exercise\b|\b2nd\s+exercise\b|\bexercise\s*#?2\b/i.test(text)) {
+    exerciseIndex = 1;
+  } else if (/\b(?:that\s+)?third\s+exercise\b|\b3rd\s+exercise\b|\bexercise\s*#?3\b/i.test(text)) {
+    exerciseIndex = 2;
+  } else if (/\b(?:that\s+)?fourth\s+exercise\b|\b4th\s+exercise\b|\bexercise\s*#?4\b/i.test(text)) {
+    exerciseIndex = 3;
+  } else if (/\b(?:that\s+)?fifth\s+exercise\b|\b5th\s+exercise\b|\bexercise\s*#?5\b/i.test(text)) {
+    exerciseIndex = 4;
+  }
+
   const isWorkoutMutation =
-    /\b(change|set|update|log)\b/i.test(lower) &&
-    /\b(reps?|sets?|weight|kg|lbs|dumbbell|press|squat|bench|deadlift|curl|pulldown|extension)\b/i.test(lower);
+    /\b(change|set|update|log|make)\b/i.test(lower) &&
+    (/\b(reps?|sets?|weight|kg|lbs|dumbbell|press|squat|bench|deadlift|curl|pulldown|extension|exercise)\b/i.test(lower) ||
+      exerciseIndex !== undefined);
 
   if (isWorkoutMutation) {
     // Extract exercise name
@@ -595,8 +768,9 @@ export function parseMutationIntent(
 
     // Extract reps: e.g. "to 12", "10 reps", "12 reps"
     let reps = 10;
-    const repsMatch = text.match(/(?:to\s+|reps?\s+to\s+|set\s+to\s+)?(\d+)\s*reps?/i) ||
+    const repsMatch =
       text.match(/reps?\s+to\s+(\d+)/i) ||
+      text.match(/(?:to\s+|set\s+to\s+)?(\d+)\s*reps?/i) ||
       text.match(/to\s+(\d+)\s*(?:reps?)?/i);
     if (repsMatch) {
       reps = parseInt(repsMatch[1], 10) || 10;
@@ -604,7 +778,8 @@ export function parseMutationIntent(
 
     // Extract weight: e.g. "at 24kg", "with 24 kg", "24kg"
     let weight = 0;
-    const weightMatch = text.match(/(?:at|with|@)\s*(\d+(?:\.\d+)?)\s*(?:kg|lbs)?/i) ||
+    const weightMatch =
+      text.match(/(?:at|with|@)\s*(\d+(?:\.\d+)?)\s*(?:kg|lbs)?/i) ||
       text.match(/(\d+(?:\.\d+)?)\s*kg/i);
     if (weightMatch) {
       weight = parseFloat(weightMatch[1]) || 0;
@@ -614,6 +789,7 @@ export function parseMutationIntent(
       type: "UPDATE_WORKOUT",
       params: {
         exerciseName,
+        exerciseIndex,
         sets: [{ reps, weight, unit: "kg", completed: true }],
       },
     };
