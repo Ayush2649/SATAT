@@ -54,7 +54,7 @@ interface DesktopCalendarDay {
 
 function getDesktopCalendarDays(milestone: 7 | 14 | 28): DesktopCalendarDay[] {
   if (milestone === 7) {
-    return Array.from({ length: 21 }, (_, i) => {
+    return Array.from({ length: 28 }, (_, i) => {
       const day = i + 1;
       if (day <= 6) return { day, type: "done" };
       if (day === 7) return { day, type: "today", label: "Today" };
@@ -63,7 +63,7 @@ function getDesktopCalendarDays(milestone: 7 | 14 | 28): DesktopCalendarDay[] {
   }
 
   if (milestone === 14) {
-    return Array.from({ length: 21 }, (_, i) => {
+    return Array.from({ length: 28 }, (_, i) => {
       const day = i + 1;
       if (day === 9 || day === 10) return { day, type: "rest", label: "Rested" };
       if (day < 14) return { day, type: "done" };
@@ -73,12 +73,13 @@ function getDesktopCalendarDays(milestone: 7 | 14 | 28): DesktopCalendarDay[] {
   }
 
   // milestone === 28 (Day 28 · Flow)
-  return Array.from({ length: 21 }, (_, i) => {
+  const restDays = [9, 10, 17, 18, 24];
+  return Array.from({ length: 28 }, (_, i) => {
     const day = i + 1;
-    if (day === 9 || day === 10 || day === 17 || day === 18) {
+    if (restDays.includes(day)) {
       return { day, type: "rest", label: "Rested" };
     }
-    if (day === 21) {
+    if (day === 28) {
       return { day, type: "today", label: "Flow" };
     }
     return { day, type: "done" };
@@ -111,7 +112,7 @@ export default function ProgressSection() {
         </p>
       </div>
 
-      {/* Desktop Calendar Card (Expanded to max-w-[1480px] with Interactive Tabs) */}
+      {/* Desktop Calendar Card (Full 28-Day Grid, 4 Rows × 7 Columns) */}
       <div className="hidden md:block bg-[#FCFBF9] rounded-[32px] p-8 sm:p-12 lg:p-14 mt-8 border border-[#1C1917]/[0.06] shadow-xs">
         {/* Top Milestone Header Tabs */}
         <div className="flex items-center justify-center gap-3 sm:gap-4 max-w-[540px] mx-auto pb-6 border-b border-[#1C1917]/[0.06]">
@@ -150,13 +151,13 @@ export default function ProgressSection() {
           </button>
         </div>
 
-        {/* 7-Column Grid of Days 1 through 21 */}
-        <div className="grid grid-cols-7 gap-3 sm:gap-5 lg:gap-6 my-10 max-w-[620px] mx-auto">
+        {/* 7-Column Grid of 28 Days (4 Weeks × 7 Days) */}
+        <div className="grid grid-cols-7 gap-2.5 sm:gap-3.5 my-8 max-w-[560px] mx-auto">
           {calendarDays.map((item) => {
             if (item.type === "done") {
               return (
                 <div key={item.day} className="flex flex-col items-center">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#2D6A4F] text-white flex items-center justify-center text-xs sm:text-sm font-bold shadow-xs transition-transform hover:scale-105">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#2D6A4F] text-white flex items-center justify-center text-xs sm:text-sm font-bold shadow-xs transition-transform hover:scale-105">
                     {item.day}
                   </div>
                 </div>
@@ -165,26 +166,26 @@ export default function ProgressSection() {
             if (item.type === "rest") {
               return (
                 <div key={item.day} className="flex flex-col items-center">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#A7F3D0]/60 text-[#065F46] flex items-center justify-center text-xs sm:text-sm font-bold border border-[#065F46]/20 transition-transform hover:scale-105">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#A7F3D0]/60 text-[#065F46] flex items-center justify-center text-xs sm:text-sm font-bold border border-[#065F46]/20 transition-transform hover:scale-105">
                     {item.day}
                   </div>
-                  <span className="text-[10px] font-semibold text-[#065F46] mt-1">{item.label}</span>
+                  <span className="text-[9px] font-semibold text-[#065F46] mt-0.5">{item.label}</span>
                 </div>
               );
             }
             if (item.type === "today") {
               return (
                 <div key={item.day} className="flex flex-col items-center">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#E05A47] text-white flex items-center justify-center text-xs sm:text-sm font-bold shadow-md ring-4 ring-[#E05A47]/20 transition-transform hover:scale-105">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#E05A47] text-white flex items-center justify-center text-xs sm:text-sm font-bold shadow-md ring-4 ring-[#E05A47]/20 transition-transform hover:scale-105">
                     {item.day}
                   </div>
-                  <span className="text-[10px] font-bold text-[#E05A47] mt-1">{item.label}</span>
+                  <span className="text-[9px] font-bold text-[#E05A47] mt-0.5">{item.label}</span>
                 </div>
               );
             }
             return (
               <div key={item.day} className="flex flex-col items-center">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#EFECE4] text-[#8C857B] flex items-center justify-center text-xs sm:text-sm font-medium">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#F6F3EC] text-[#8C857B] flex items-center justify-center text-xs sm:text-sm font-medium">
                   {item.day}
                 </div>
               </div>
@@ -192,15 +193,15 @@ export default function ProgressSection() {
           })}
         </div>
 
-        {/* Bottom Comparison Bar (Dynamic based on activeMilestone, no duplicate text) */}
+        {/* Bottom Comparison Bar (Single checkmark at the end, zero duplicate checkmarks) */}
         <div className="bg-[#F6F3EC] rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-left max-w-[720px] mx-auto">
           <div className="bg-[#FEE2E2] text-[#B91C1C] rounded-full px-4 py-2 text-xs font-semibold text-center w-full sm:w-auto shrink-0">
             Traditional Apps: Streak Reset to 0 ✕
           </div>
           <div className="bg-[#D8F3DC] text-[#1B4332] rounded-full px-4 py-2 text-xs font-semibold text-center w-full sm:w-auto">
-            {activeMilestone === 7 && "✓ Satat Rhythm: Week 1 Baseline Locked · 100% Cadence Sync"}
-            {activeMilestone === 14 && "✓ Satat Rhythm: 14 Days Unbroken · Auto-Bridged 2 Rest Days"}
-            {activeMilestone === 28 && "✓ Satat Rhythm: 28 Days Unbroken · +18.4% Strength ✓"}
+            {activeMilestone === 7 && "Satat Rhythm: Week 1 Baseline Locked · 100% Cadence Sync ✓"}
+            {activeMilestone === 14 && "Satat Rhythm: 14 Days Unbroken · Auto-Bridged 2 Rest Days ✓"}
+            {activeMilestone === 28 && "Satat Rhythm: 28 Days Unbroken · +18.4% Strength ✓"}
           </div>
         </div>
       </div>

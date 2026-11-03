@@ -149,7 +149,7 @@ export default function FinalCTA() {
               onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
               onPointerMove={handlePointerMove}
               onPointerLeave={handlePointerLeave}
-              className="bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full px-8 py-3.5 sm:py-4 text-xs sm:text-sm font-semibold inline-flex items-center gap-2 shadow-lg transition-all active:scale-95 cursor-pointer"
+              className="bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full px-8 py-4 text-xs sm:text-sm font-semibold inline-flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 cursor-pointer min-h-[44px] hover:scale-105"
             >
               <span>Begin in 60 seconds</span>
               <span>→</span>

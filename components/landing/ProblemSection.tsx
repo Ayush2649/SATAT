@@ -213,22 +213,14 @@ export default function ProblemSection() {
               onMouseEnter={() => setActiveMilestone(milestone.id)}
               onMouseLeave={() => setActiveMilestone(null)}
             >
-              {/* Left Rail Column: Node + Inter-Node Beam */}
-              <div className="flex flex-col items-center shrink-0 w-12">
-                {/* The Node */}
-                <div className="w-11 h-11 rounded-full relative flex items-center justify-center shrink-0 z-10">
-                  <span
-                    className="absolute -inset-1 rounded-full animate-ping opacity-20 pointer-events-none"
-                    style={{ backgroundColor: milestone.pulseColor }}
-                  />
-                  <div className="w-11 h-11 rounded-full overflow-hidden ring-[3px] ring-[#F6F3EC] shadow-md relative z-10 bg-[#EFECE4]">
-                    {milestone.renderMedia()}
-                  </div>
-                </div>
-
-                {/* Inter-Node Beam Connector */}
+              {/* Left Rail Column: Mathematically Centered Node + Vertical Spine Beam */}
+              <div className="relative flex flex-col items-center shrink-0 w-12">
+                {/* Vertical Spine Rail Line centered precisely at left-1/2 -translate-x-1/2 */}
                 {idx < milestones.length - 1 && (
-                  <div className="w-[2.5px] flex-1 my-1.5 rounded-full bg-[#1C1917]/10 relative overflow-hidden min-h-[76px]">
+                  <div
+                    className="absolute top-6 bottom-0 left-1/2 -translate-x-1/2 w-[2.5px] bg-[#1C1917]/10 overflow-hidden rounded-full pointer-events-none"
+                    aria-hidden="true"
+                  >
                     <div
                       className="absolute inset-0 opacity-45"
                       style={{
@@ -244,6 +236,17 @@ export default function ProblemSection() {
                     />
                   </div>
                 )}
+
+                {/* The Centered Node Wrapper */}
+                <div className="relative flex items-center justify-center w-12 h-12 shrink-0 z-10">
+                  <span
+                    className="absolute w-8 h-8 rounded-full animate-ping opacity-20 pointer-events-none"
+                    style={{ backgroundColor: milestone.pulseColor }}
+                  />
+                  <div className="w-10 h-10 rounded-full overflow-hidden ring-[3px] ring-[#F6F3EC] border-2 border-white shadow-md relative z-10 bg-[#EFECE4] flex items-center justify-center">
+                    {milestone.renderMedia()}
+                  </div>
+                </div>
               </div>
 
               {/* Right Content Card */}

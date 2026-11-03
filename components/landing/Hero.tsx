@@ -28,12 +28,12 @@ export default function Hero() {
           Workouts, meals, and daily plans that quietly adjust to real life.
         </p>
 
-        {/* Actions Row (Desktop & Mobile) */}
-        <div className="mt-7 flex flex-col sm:flex-row items-center justify-center gap-3">
+        {/* Actions Row (Desktop & Mobile) with Large & Prominent CTA Buttons */}
+        <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3.5">
           <button
             type="button"
             onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-            className="bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full px-7 py-3 text-xs sm:text-sm font-semibold shadow-md active:scale-95 transition-all inline-flex items-center gap-2 cursor-pointer"
+            className="bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full px-7 py-3.5 text-xs sm:text-sm font-semibold shadow-md hover:shadow-lg active:scale-95 transition-all inline-flex items-center justify-center gap-2 cursor-pointer min-h-[44px] hover:scale-105"
           >
             <span>Start free</span>
             <span>&rarr;</span>
@@ -41,7 +41,7 @@ export default function Hero() {
           <button
             type="button"
             onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-            className="bg-[#FCFBF9] hover:bg-[#EFECE4] text-[#191D1A] border border-[#1C1917]/10 rounded-full px-6 py-3 text-xs sm:text-sm font-semibold shadow-2xs transition-all inline-flex items-center cursor-pointer"
+            className="bg-[#FCFBF9] hover:bg-[#EFECE4] text-[#191D1A] border border-[#1C1917]/10 rounded-full px-7 py-3.5 text-xs sm:text-sm font-semibold shadow-2xs hover:shadow-xs transition-all inline-flex items-center justify-center cursor-pointer min-h-[44px]"
           >
             Sign in with Google
           </button>

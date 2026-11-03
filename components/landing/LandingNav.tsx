@@ -35,12 +35,12 @@ export default function LandingNav() {
           </a>
         </div>
 
-        {/* Right: Actions */}
+        {/* Right: Actions with prominent large CTA buttons */}
         <div className="flex items-center gap-3">
           {session ? (
             <Link
               href="/dashboard"
-              className="bg-[#191D1A] hover:bg-[#2A302C] text-white rounded-full px-5 py-2 text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5 active:scale-95"
+              className="bg-[#191D1A] hover:bg-[#2A302C] text-white rounded-full px-6 py-2.5 text-xs sm:text-sm font-semibold shadow-sm transition-all inline-flex items-center justify-center gap-1.5 active:scale-95 min-h-[44px]"
             >
               <span>Dashboard</span>
               <span className="text-xs">→</span>
@@ -50,17 +50,17 @@ export default function LandingNav() {
               <button
                 type="button"
                 onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-                className="text-xs font-medium text-[#57534E] hover:text-[#1C1917] px-2 py-1 transition-colors rounded-full cursor-pointer"
+                className="px-5 py-2.5 text-xs sm:text-sm font-semibold text-[#1C1917] hover:bg-[#EFECE4] rounded-full transition-all min-h-[44px] inline-flex items-center justify-center cursor-pointer"
               >
                 Sign in
               </button>
               <button
                 type="button"
                 onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-                className="bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full px-5 py-2 text-xs font-semibold shadow-sm hover:shadow-md transition-all active:scale-95 inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+                className="bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full px-7 py-3 text-xs sm:text-sm font-semibold shadow-md hover:shadow-lg transition-all hover:scale-105 active:scale-95 inline-flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap min-h-[44px]"
               >
                 <span>Start free</span>
-                <span className="text-xs">→</span>
+                <span className="text-xs sm:text-sm">→</span>
               </button>
             </>
           )}

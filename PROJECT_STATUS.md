@@ -943,6 +943,31 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ---
 
+### ✅ Sprint 6.9.1 & 6.9.2: 28-Day Calendar Grid (Days 1–28), Inline Footer, Mathematical Timeline Centering & Large CTA Buttons
+- **Full 28-Day Calendar Grid (`ProgressSection.tsx`)**:
+  - Replaced 21-day grid with complete 28-day matrix (`Array.from({ length: 28 })` in 4 rows of 7 columns).
+  - Bridge rest days highlighted in soft Mint (`Rested`) for days `9, 10, 17, 18, 24`.
+  - When `activeMilestone === 7`: Days 1–6 Matcha Sage, Day 7 highlighted as `Today` in Terracotta, Days 8–28 upcoming.
+  - When `activeMilestone === 14`: Days 1–8 & 11–13 Matcha Sage, Days 9–10 Mint (`Rested`), Day 14 highlighted as `Today` in Terracotta, Days 15–28 upcoming.
+  - When `activeMilestone === 28`: Days 1–27 unbroken flow, Day 28 highlighted in Terracotta (`#E05A47 ring-4 ring-[#E05A47]/20`) with sub-label `Flow`!
+  - Removed duplicate checkmarks: kept single clean checkmark at end (`Satat Rhythm: 28 Days Unbroken · +18.4% Strength ✓`).
+- **Single-Line Inline Footer Tagline (`Footer.tsx`)**:
+  - Inlined the Sanskrit lineage note (`— Rooted in सतत् (Satat) — the Sanskrit principle of continuous, unbroken flow.`) horizontally right beside `सतत्` inside the brand cluster on desktop.
+  - Aligned navigation links (`Rhythm`, `Orbit`, `Proof`, `Sign in`) cleanly on the same row.
+- **Mathematical Centering of Timeline Logos (`ProblemSection.tsx`)**:
+  - Re-architected vertical cadence timeline nodes with `relative flex flex-col items-center shrink-0 w-12`.
+  - Positioned vertical spine rail line dead-center (`absolute top-6 bottom-0 left-1/2 -translate-x-1/2 w-[2.5px]`).
+  - Wrapped circular nodes (`w-10 h-10 border-2 border-white shadow-md ring-[3px] ring-[#F6F3EC]`) in centered `w-12 h-12 flex items-center justify-center relative z-10` container.
+- **Large & Prominent CTA Buttons (`LandingNav.tsx`, `Hero.tsx`, `FinalCTA.tsx`)**:
+  - Enhanced `"Sign in"` buttons with `px-5 py-2.5 text-xs sm:text-sm font-semibold rounded-full min-h-[44px]`.
+  - Enhanced `"Start free"` and `"Begin in 60 seconds"` buttons with `px-7 sm:px-8 py-3.5 sm:py-4 text-xs sm:text-sm font-semibold min-h-[44px] shadow-md hover:shadow-lg hover:scale-105 active:scale-95`.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **55 passed (55 files), 650 passed | 26 skipped (676 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
 - **Vitest Suite**: `650 passed | 26 skipped` across all 55 test suites (0 failing).
