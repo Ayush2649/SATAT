@@ -885,6 +885,35 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ---
 
+### ✅ Sprint 6.8: Unify Orbit Mobile Header with Today & Build Responsive Desktop Landing Page
+- **Unify `/dashboard/orbit` Mobile Header with `SATAT / Today` (`components/orbit/OrbitView.tsx`)**:
+  - **Shared App Bar Brand Cluster**: Upgraded mobile top bar to match `SATAT / Today` 1:1 (`h-14 px-4 bg-[#FCFBF9] border-b border-[#1C1917]/[0.06]`).
+    - Left: White circular emblem container housing geometric `S` mark (`<Logo size={22} />`) + **`SATAT`** (`font-bold text-[#1C1917]`) + **`/ Orbit`** (`font-normal text-[#57534E]`).
+    - Right: Exact same cluster as Today: 3D `<OrbitLauncherBadge size="md" />` + terracotta `<NotificationBell />` + circular user avatar photo.
+  - **Clean Title & Reset Hierarchy**: Scoped Orbit title (`Orbit Intelligence` in `Instrument Serif` + `Unified biological & execution copilot.`) and the `↻ New Chat` button below the top bar.
+  - **Eliminated Scrollbar Clutter**: Added `no-scrollbar` utility and hidden webkit scrollbar directives to the context filter row with tightened pill padding (`px-3 py-1.5 text-xs whitespace-nowrap`).
+- **Responsive Widescreen Desktop Landing Page Overhaul (`components/landing/*`)**:
+  - **Floating Alabaster Capsule Navbar (`LandingNav.tsx`)**: Aligned to `max-w-[920px] mx-auto mt-6 bg-[#FCFBF9] rounded-full px-6 py-3 shadow-[0_8px_30px_rgba(28,25,23,0.05)] border border-[#1C1917]/[0.06]` with `स satat.` brand mark, anchor links (`#rhythm`, `#orbit`, `#proof`), `Sign in`, and terracotta `Start free →` button.
+  - **Centered Hero & Desktop Widescreen Card (`Hero.tsx` & `HeroProductScene.tsx`)**:
+    - Centered typography (`max-w-[960px] mx-auto text-center`) with `● A GENTLER WAY TO STAY CONTINUOUS` eyebrow, `Your body doesn't live in five separate apps.` headline, and dual CTAs.
+    - Widescreen Hero Visual Card: `aspect-[16/10] sm:aspect-[16/9] max-w-[900px] mx-auto rounded-[32px] overflow-hidden shadow-2xl border border-[#1C1917]/[0.08]` with full-bleed atmospheric gym photo, top-right floating dark pill (`Upper Body moved to 6PM · Sleep was light`), and bottom-right floating Alabaster meal card (`Oatmeal & Whey`, `420 kcal · 34g Protein`).
+    - Mobile visual scene preserved under `sm:hidden`.
+  - **Rhythmic Cadence 3-Column Studio Grid (`ProblemSection.tsx`)**:
+    - Responsive 3-column photo cards (`grid grid-cols-1 md:grid-cols-3 gap-6 mt-10 text-left`) for Morning check-in, Mindful nourishment, and Adaptive recalibration with uncropped photos and live signal pills.
+    - Mobile sinusoidal vertical timeline preserved under `md:hidden`.
+  - **Living Evidence 28-Day Continuity Calendar (`ProgressSection.tsx`)**:
+    - Desktop Alabaster Calendar Card (`hidden md:block bg-[#FCFBF9] rounded-[32px] p-6 sm:p-10`) with top milestone header (`Day 7 · Start` | active dark pill `Day 14 · Rested` | `Day 28 · Flow`), 7-column grid of days 1-21 (completed Matcha Sage, rested Mint, and active Terracotta), and bottom comparative bar (`✕ Traditional Apps: Streak Reset to 0` vs `✓ Satat Rhythm: 28 Days Unbroken`).
+    - Mobile 28-day matrix card with scenario switcher preserved under `md:hidden`.
+  - **Final CTA & Minimalist Grounded Footer (`FinalCTA.tsx` & `Footer.tsx`)**:
+    - Dark Botanical Espresso card (`max-w-[920px] mx-auto bg-[#191D1A] rounded-[32px] px-6 py-12 sm:p-14 text-center text-white`) with `● START YOUR PRACTICE` in `#6EE7B7`, centered headline, and `Begin in 60 seconds →` terracotta button.
+    - Clean footer below card (`max-w-[920px] mx-auto`) with Sanskrit etymology attribution and anchor links.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **55 passed (55 files), 650 passed | 26 skipped (676 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
 - **Vitest Suite**: `650 passed | 26 skipped` across all 55 test suites (0 failing).
