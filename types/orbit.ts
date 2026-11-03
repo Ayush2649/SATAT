@@ -53,3 +53,22 @@ export interface OrbitMessage {
 
 export type OrbitFocusMode = "all" | "workout" | "diet" | "tasks" | "circadian";
 
+export interface OrbitEntityContext {
+  activeMealSlot?: "breakfast" | "lunch" | "dinner" | "snack" | string;
+  activeMealId?: string;
+  activeWorkoutId?: string;
+  activeExerciseName?: string;
+  activeExerciseId?: string;
+  activeTaskId?: string;
+}
+
+export interface OrbitSuggestedAction {
+  label: string;
+  prompt: string;
+}
+
+export interface OrbitActionExecuted {
+  type: string;
+  status: "success" | "error" | string;
+  details?: Record<string, any>;
+}
