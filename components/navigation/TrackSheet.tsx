@@ -147,17 +147,21 @@ export default function TrackSheet({ isOpen, onClose }: TrackSheetProps) {
           {/* 4. Ask Orbit AI */}
           <button
             onClick={() => handleAction("/dashboard/orbit")}
-            className="group relative h-32 rounded-2xl overflow-hidden p-3 text-left border border-[#34D399]/25 hover:border-[#34D399]/45 bg-gradient-to-br from-[#1B2A22] via-[#121A16] to-[#0D120F] flex flex-col justify-between transition-all duration-200 active:scale-[0.98] cursor-pointer shadow-lg"
+            className="group relative h-32 rounded-2xl overflow-hidden p-3 text-left border border-[#34D399]/30 hover:border-[#34D399]/50 flex flex-col justify-between transition-all duration-200 active:scale-[0.98] cursor-pointer shadow-lg"
           >
-            {/* Subtle concentric orbital rings and emerald glow background */}
-            <div className="absolute inset-0 pointer-events-none overflow-hidden">
-              <div className="absolute -top-10 -right-10 w-36 h-36 rounded-full bg-[#34D399]/15 blur-2xl group-hover:bg-[#34D399]/25 transition-all duration-300" />
-              <svg className="absolute -right-8 -top-8 w-44 h-44 opacity-25 group-hover:opacity-40 transition-opacity duration-300" viewBox="0 0 160 160" fill="none">
-                <circle cx="80" cy="80" r="70" stroke="#34D399" strokeWidth="0.75" strokeDasharray="3 3" />
-                <circle cx="80" cy="80" r="50" stroke="#34D399" strokeWidth="0.75" />
-                <circle cx="80" cy="80" r="30" stroke="#34D399" strokeWidth="0.75" strokeDasharray="2 2" />
-              </svg>
-            </div>
+            {/* Real high-contrast atmospheric deep-space / neural photograph */}
+            <img
+              src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80"
+              alt=""
+              loading="lazy"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src =
+                  "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80";
+              }}
+              className="absolute inset-0 w-full h-full object-cover opacity-55 group-hover:scale-105 transition-transform duration-500 pointer-events-none"
+            />
+            {/* Dark botanical gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0D1310] via-[#121C17]/75 to-[#192820]/40 pointer-events-none" />
 
             {/* Top-Left Badge: Live animated 3D Orbit3DCore in sleek rounded-xl dark container */}
             <div className="relative z-10 w-9 h-9 rounded-xl bg-[#191D1A]/90 border border-[#34D399]/30 flex items-center justify-center shadow-md shrink-0">

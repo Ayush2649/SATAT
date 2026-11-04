@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { localDateString, todayString } from "@/lib/utils";
+import { cn, localDateString, todayString } from "@/lib/utils";
 import type { Task, WorkoutSession, MealEntry, MacroGoals } from "@/types";
 
 interface ProgressTrendChartProps {
@@ -107,12 +107,14 @@ export default function ProgressTrendChart({
     // Sample exactly 7 points across the range for the full-width responsive SVG (7 columns of 100px each)
     const sampledDays: DayPoint[] = [];
     const xCoords = [50, 150, 250, 350, 450, 550, 650];
+    const yMin = 32;
+    const yMax = 82;
 
     for (let j = 0; j < 7; j++) {
       const idx = Math.min(rawDays.length - 1, Math.round((j / 6) * (rawDays.length - 1)));
       const src = rawDays[idx];
-      // Map score 0..100 to y=116..26
-      const y = Math.round(116 - (src.score / 100) * 90);
+      // Map score 0..100 gently into yMax (82) down to yMin (32) to dampen vertical spikes
+      const y = Math.round(yMax - (src.score / 100) * (yMax - yMin));
       sampledDays.push({
         ...src,
         x: xCoords[j],
@@ -158,7 +160,7 @@ export default function ProgressTrendChart({
     return `${p.dayLabel}: ${p.score}% · ${desc}`;
   }, [selectedNodeIndex, chartData]);
 
-  // Construct smooth cubic Bezier path for SVG
+  // Construct smooth monotone cubic Bezier path for SVG
   const pathD = useMemo(() => {
     const pts = chartData.points;
     if (pts.length < 2) return "";
@@ -166,8 +168,9 @@ export default function ProgressTrendChart({
     for (let i = 0; i < pts.length - 1; i++) {
       const p0 = pts[i];
       const p1 = pts[i + 1];
-      const midX = (p0.x + p1.x) / 2;
-      d += ` C ${midX} ${p0.y}, ${midX} ${p1.y}, ${p1.x} ${p1.y}`;
+      const smoothing = 0.35;
+      const dx = (p1.x - p0.x) * smoothing;
+      d += ` C ${p0.x + dx} ${p0.y}, ${p1.x - dx} ${p1.y}, ${p1.x} ${p1.y}`;
     }
     return d;
   }, [chartData.points]);
@@ -177,7 +180,7 @@ export default function ProgressTrendChart({
     const pts = chartData.points;
     const last = pts[pts.length - 1];
     const first = pts[0];
-    return `${pathD} L ${last.x} 128 L ${first.x} 128 Z`;
+    return `${pathD} L ${last.x} 118 L ${first.x} 118 Z`;
   }, [pathD, chartData.points]);
 
   return (
@@ -251,22 +254,18 @@ export default function ProgressTrendChart({
 
       {/* 3. Smooth Bezier Area Curve SVG + Floating Tooltip */}
       <div className="mt-7 relative pt-4">
-        {/* Floating Dark Tooltip Positioned Over Active Node */}
+        {/* Floating Dark Tooltip Positioned Cleanly Above Curve */}
         <div
-          className="absolute -top-1 bg-[#191D1A] dark:bg-[#1E2822] text-white dark:text-[#F4F1EA] border border-transparent dark:border-white/10 rounded-2xl px-3.5 py-1.5 text-[10px] font-semibold shadow-lg whitespace-nowrap z-10 pointer-events-none transition-all duration-300"
-          style={{
-            left: `${(activePoint.x / 700) * 100}%`,
-            transform: "translate(-50%, -100%)",
-          }}
+          className="absolute top-0 right-2 sm:right-4 bg-[#191D1A] dark:bg-[#1E2822] text-white dark:text-[#F4F1EA] border border-transparent dark:border-white/10 rounded-full px-3 py-1 text-[10px] font-semibold shadow-md whitespace-nowrap z-20 pointer-events-none transition-all duration-200 flex items-center gap-1.5"
         >
+          <span className="w-1.5 h-1.5 rounded-full bg-[#34D399]" />
           <span>{tooltipText}</span>
         </div>
 
         {/* Full-Width Responsive Bezier Area SVG */}
         <svg
-          viewBox="0 0 700 140"
-          preserveAspectRatio="none"
-          className="w-full h-36 sm:h-44 overflow-visible block"
+          viewBox="0 0 700 120"
+          className="w-full h-32 sm:h-36 overflow-visible block"
           aria-hidden="true"
         >
           <defs>
@@ -278,9 +277,9 @@ export default function ProgressTrendChart({
           </defs>
 
           {/* Subtle Horizontal Reference Grid Lines */}
-          <line x1="20" y1="26" x2="680" y2="26" stroke="currentColor" strokeDasharray="4 4" className="text-stone-200 dark:text-white/[0.06]" />
-          <line x1="20" y1="71" x2="680" y2="71" stroke="currentColor" strokeDasharray="4 4" className="text-stone-200 dark:text-white/[0.06]" />
-          <line x1="20" y1="116" x2="680" y2="116" stroke="currentColor" strokeDasharray="4 4" className="text-stone-200 dark:text-white/[0.06]" />
+          <line x1="20" y1="32" x2="680" y2="32" stroke="currentColor" strokeDasharray="4 4" className="text-stone-200 dark:text-white/[0.06]" />
+          <line x1="20" y1="57" x2="680" y2="57" stroke="currentColor" strokeDasharray="4 4" className="text-stone-200 dark:text-white/[0.06]" />
+          <line x1="20" y1="82" x2="680" y2="82" stroke="currentColor" strokeDasharray="4 4" className="text-stone-200 dark:text-white/[0.06]" />
 
           {/* Area Fill */}
           <path d={areaD} fill="url(#momentumGradient)" />
@@ -290,7 +289,7 @@ export default function ProgressTrendChart({
             x1={activePoint.x}
             y1={activePoint.y}
             x2={activePoint.x}
-            y2="128"
+            y2="118"
             stroke="#2D6A4F"
             strokeWidth="1.5"
             strokeDasharray="4 4"
@@ -302,59 +301,42 @@ export default function ProgressTrendChart({
           <path
             d={pathD}
             stroke="#2D6A4F"
-            strokeWidth="3"
+            strokeWidth="2.5"
+            vectorEffect="non-scaling-stroke"
             fill="none"
             strokeLinecap="round"
             className="dark:stroke-[#34D399]"
           />
+        </svg>
 
-          {/* Interactive Clickable Nodes */}
+        {/* Crisp Geometric HTML Circular Nodes (100% Perfect Circles at Any Viewport) */}
+        <div className="absolute inset-0 pointer-events-none">
           {chartData.points.map((pt, idx) => {
             const isSelected = idx === activeIdx;
             const isToday = pt.isToday;
 
             return (
-              <g
+              <button
                 key={idx}
-                className="cursor-pointer"
+                type="button"
                 onClick={() => setSelectedNodeIndex(idx)}
-              >
-                {/* Invisible larger hit target for tapping */}
-                <circle cx={pt.x} cy={pt.y} r="18" fill="transparent" />
-
-                {isSelected ? (
-                  <circle
-                    cx={pt.x}
-                    cy={pt.y}
-                    r="7"
-                    fill="#2D6A4F"
-                    stroke="#FCFBF9"
-                    strokeWidth="3"
-                    className="transition-all dark:fill-[#34D399] dark:stroke-[#141916]"
-                  />
-                ) : isToday ? (
-                  <circle
-                    cx={pt.x}
-                    cy={pt.y}
-                    r="5.5"
-                    fill="#E05A47"
-                    className="transition-all"
-                  />
-                ) : (
-                  <circle
-                    cx={pt.x}
-                    cy={pt.y}
-                    r="5"
-                    fill="#FCFBF9"
-                    stroke="#2D6A4F"
-                    strokeWidth="2.5"
-                    className="transition-all hover:scale-125 dark:fill-[#141916] dark:stroke-[#34D399]"
-                  />
+                aria-label={`${pt.dayLabel}: ${pt.score}%`}
+                className={cn(
+                  "pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 rounded-full transition-transform cursor-pointer focus:outline-none",
+                  isSelected
+                    ? "w-3.5 h-3.5 bg-[#2D6A4F] dark:bg-[#34D399] border-2 border-[#FCFBF9] dark:border-[#141916] shadow-sm scale-110 z-10"
+                    : isToday
+                    ? "w-3 h-3 bg-[#E05A47] border-2 border-[#FCFBF9] dark:border-[#141916] hover:scale-125 z-10"
+                    : "w-2.5 h-2.5 bg-[#FCFBF9] dark:bg-[#141916] border-2 border-[#2D6A4F] dark:border-[#34D399] hover:scale-125"
                 )}
-              </g>
+                style={{
+                  left: `${(pt.x / 700) * 100}%`,
+                  top: `${(pt.y / 120) * 100}%`,
+                }}
+              />
             );
           })}
-        </svg>
+        </div>
 
         {/* Bottom X-Axis Day Labels */}
         <div className="grid grid-cols-7 text-center text-[10px] font-semibold mt-2 select-none">

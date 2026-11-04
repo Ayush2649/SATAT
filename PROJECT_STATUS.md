@@ -1093,10 +1093,44 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ---
 
+### ✅ Sprint 7.3: Inactive Sidebar Styling & Coral Ember Orbit AI (`Navigation.tsx`, `styles/app-shell.css`)
+- **Zero Permanent Gray Pill on Inactive Links & Workspaces**:
+  - In `components/Navigation.tsx`, ensured all inactive primary navigation items (`Plan · Execution`, `Train · Studio`, `Fuel · Nutrition`) and workspace items render with `bg-transparent border border-transparent shadow-none text-[#57534E] dark:text-[#9CA39E] hover:bg-[#1C1917]/[0.05] dark:hover:bg-white/[0.05] hover:text-[#1C1917] dark:hover:text-[#F4F1EA]`.
+  - In `styles/app-shell.css`, protected sidebar navigation links from global `[class*="bg-[#EFECE4]"]` overrides by scoping selectors to `:not(aside *):not(nav a):not(nav button)` and adding dedicated rules enforcing transparent backgrounds on inactive links.
+- **Coral Ember (`#E05A47`) Orbit AI Button**:
+  - Replaced ambiguous green styling with signature SATAT Coral Ember:
+    - Active (`pathname === "/dashboard/orbit"`): `bg-[#E05A47] text-white border border-[#F87171]/40 shadow-[0_6px_20px_rgba(224,90,71,0.35)]`.
+    - Inactive: `bg-[#E05A47]/12 dark:bg-[#E05A47]/18 hover:bg-[#E05A47]/22 dark:hover:bg-[#E05A47]/28 text-[#C84331] dark:text-[#FF7A68] border border-[#E05A47]/30 shadow-[0_4px_14px_rgba(224,90,71,0.12)]`.
+  - Added explicit CSS overrides in `styles/app-shell.css` to protect Coral Ember buttons from generic dark mode green styling.
+
+---
+
+### ✅ Sprint 7.4: Settings Dropdown Click Reliability, Today Eyebrow Fix, Smooth Weekly Momentum Curve, & Photographic Orbit Card (`Navigation.tsx`, `HomeView.tsx`, `ProgressTrendChart.tsx`, `TrackSheet.tsx`)
+- **Desktop Settings Dropdown Click Reliability (`components/Navigation.tsx`)**:
+  - Resolved outside-click collision bug where desktop and mobile profile menus shared a single ref.
+  - Implemented dual refs (`desktopProfileRef` and `mobileProfileRef`) and attached `data-profile-menu="true"` attributes.
+  - Bound direct `router.push("/dashboard/settings")` and `signOut({ callbackUrl: "/" })` callbacks ensuring instant first-click navigation on Desktop.
+- **Non-Wrapping Today Greeting & Streak Row (`components/dashboard/HomeView.tsx`)**:
+  - Converted the circadian alignment eyebrow and streak badge into a single non-wrapping row (`flex items-center gap-3 flex-nowrap mb-2`).
+  - Added `whitespace-nowrap` and shrink-proof badge styling (`shrink-0`), preventing the streak pill from ever breaking onto two lines.
+  - Balanced the outer layout with `flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6`.
+- **Smooth Monotone Weekly Momentum Curve & HTML Circular Markers (`components/dashboard/ProgressTrendChart.tsx`)**:
+  - Eliminated oval distortion on dots by rendering the 7 nodes as HTML circular buttons with percentage positioning (`left: ${(pt.x / 700) * 100}%`, `top: ${(pt.y / 120) * 100}%`), guaranteeing 100% geometric circles on all viewports.
+  - Dampened vertical spikes by mapping scores into a calm editorial band (`yMin = 32`, `yMax = 82` inside a `120px` viewBox) with monotone cubic curve smoothing (`smoothing = 0.35`).
+  - Cleanly positioned the active day tooltip above the curve (`top-0 right-2 sm:right-4`) preventing curve collisions.
+- **Rich Photographic Depth on 4th Quick-Track Tile (`components/navigation/TrackSheet.tsx`)**:
+  - Added high-contrast atmospheric deep-space photography (`photo-1451187580459-43490279c0fa` with fallback `photo-1518770660439-4636190af475`) with `bg-gradient-to-t from-[#0D1310] via-[#121C17]/75 to-[#192820]/40` overlay behind the 3D `<Orbit3DCore size="sm" />` core emblem.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **57 passed (57 files), 660 passed | 26 skipped (686 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
-- **Vitest Suite**: `654 passed | 26 skipped` across all 56 test suites (0 failing).
-- **Navigation & Track Sheet Tests**: `9/9 passed` across `tests/navigation/*`.
+- **Vitest Suite**: `660 passed | 26 skipped` across all 57 test suites (0 failing).
+- **Navigation & Track Sheet Tests**: `15/15 passed` across `tests/navigation/*`.
 - **Markdown & UI Tests**: `13/13 passed` in `tests/ui/markdown-text.test.tsx`.
 - **Navigation & Launcher Tests**: `5/5 passed` in `tests/navigation/navigation-orbit-launcher.test.ts`.
 - **Orbit Tests**: `49/49 passed` across `tests/orbit/*` and `tests/api/aria.test.ts`.

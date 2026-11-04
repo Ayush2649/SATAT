@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import fs from "fs";
 import path from "path";
 
-describe("Sprint 7.2: Quick Track (+) Modal Translucent Backdrop & Orbit AI 4th Tile", () => {
+describe("Sprint 7.2 & 7.4: Quick Track (+) Modal Translucent Backdrop & Orbit AI Photographic Tile", () => {
   const trackSheetSource = fs.readFileSync(
     path.resolve(__dirname, "../../components/navigation/TrackSheet.tsx"),
     "utf8"
@@ -37,5 +37,11 @@ describe("Sprint 7.2: Quick Track (+) Modal Translucent Backdrop & Orbit AI 4th 
     expect(trackSheetSource).toContain("Deep Work Task");
     expect(trackSheetSource).toContain("Ask Orbit AI");
     expect(trackSheetSource).not.toContain("Water & Biometrics");
+  });
+
+  it("5. Renders high-contrast deep space photo background on 4th tile with gradient overlay", () => {
+    expect(trackSheetSource).toContain("photo-1451187580459-43490279c0fa");
+    expect(trackSheetSource).toContain("photo-1518770660439-4636190af475");
+    expect(trackSheetSource).toContain("bg-gradient-to-t from-[#0D1310] via-[#121C17]/75 to-[#192820]/40");
   });
 });

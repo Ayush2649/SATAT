@@ -399,13 +399,63 @@ html.dark .bg-white:not(button):not(input):not(.bg-white\/\[0\.08\]):not(.bg-whi
 }
 
 /* 3. Secondary / Muted Surface (#EFECE4 -> #1C221E Subtle Inset Well) */
-html.dark .bg-\[\#EFECE4\],
-html.dark [class*="bg-[#EFECE4]"],
-html.dark .bg-\[\#EFECE4\]\/85,
-html.dark .bg-\[\#EFECE4\]\/70,
-html.dark .bg-\[\#EFECE4\]\/60 {
+html.dark .bg-\[\#EFECE4\]:not(aside *):not(nav a):not(nav button),
+html.dark [class*="bg-[#EFECE4]"]:not(aside *):not(nav a):not(nav button):not([class*="hover:"]),
+html.dark .bg-\[\#EFECE4\]\/85:not(aside *):not(nav a):not(nav button),
+html.dark .bg-\[\#EFECE4\]\/70:not(aside *):not(nav a):not(nav button),
+html.dark .bg-\[\#EFECE4\]\/60:not(aside *):not(nav a):not(nav button) {
   background-color: #1C221E !important;
   border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Inactive Sidebar Navigation Links & Workspaces — Strict No Background & No Border */
+html.dark aside nav a:not([aria-current="page"]):not([data-active="true"]):not([data-orbit="true"]),
+html.dark aside nav button:not([aria-current="page"]):not([data-active="true"]):not([data-orbit="true"]),
+aside nav a:not([aria-current="page"]):not([data-active="true"]):not([data-orbit="true"]),
+aside nav button:not([aria-current="page"]):not([data-active="true"]):not([data-orbit="true"]) {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Hover state for inactive sidebar links */
+html.dark aside nav a:not([aria-current="page"]):not([data-active="true"]):not([data-orbit="true"]):hover,
+html.dark aside nav button:not([aria-current="page"]):not([data-active="true"]):not([data-orbit="true"]):hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  color: #F4F1EA !important;
+}
+aside nav a:not([aria-current="page"]):not([data-active="true"]):not([data-orbit="true"]):hover,
+aside nav button:not([aria-current="page"]):not([data-active="true"]):not([data-orbit="true"]):hover {
+  background-color: rgba(28, 25, 23, 0.05) !important;
+  color: #1C1917 !important;
+}
+
+/* Orbit AI Coral Ember Primary Button in Sidebar Navigation */
+aside nav a[data-orbit="true"]:not([aria-current="page"]) {
+  background-color: rgba(224, 90, 71, 0.12) !important;
+  border: 1px solid rgba(224, 90, 71, 0.30) !important;
+  color: #C84331 !important;
+  box-shadow: 0 4px 14px rgba(224, 90, 71, 0.12) !important;
+}
+aside nav a[data-orbit="true"]:not([aria-current="page"]):hover {
+  background-color: rgba(224, 90, 71, 0.22) !important;
+}
+html.dark aside nav a[data-orbit="true"]:not([aria-current="page"]) {
+  background-color: rgba(224, 90, 71, 0.18) !important;
+  border: 1px solid rgba(224, 90, 71, 0.30) !important;
+  color: #FF7A68 !important;
+  box-shadow: 0 4px 14px rgba(224, 90, 71, 0.12) !important;
+}
+html.dark aside nav a[data-orbit="true"]:not([aria-current="page"]):hover {
+  background-color: rgba(224, 90, 71, 0.28) !important;
+}
+
+aside nav a[data-orbit="true"][aria-current="page"],
+html.dark aside nav a[data-orbit="true"][aria-current="page"] {
+  background-color: #E05A47 !important;
+  border: 1px solid rgba(248, 113, 113, 0.40) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 6px 20px rgba(224, 90, 71, 0.35) !important;
 }
 
 /* 4. Hero & Dark Feature Cards (#191D1A -> Deep Botanical Emerald-Charcoal Gradient) */

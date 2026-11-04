@@ -654,20 +654,22 @@ export default function HomeView() {
         {/* ── LEFT 8 COLUMNS: Main Studio Flow ── */}
         <div className="col-span-8 space-y-6">
           {/* 1. Top Greeting + 7-Day Calendar Row */}
-          <div className="bg-[#FCFBF9] rounded-[28px] p-6 border border-[#1C1917]/[0.06] shadow-xs flex flex-col xl:flex-row xl:items-center justify-between gap-6">
-            <div>
-              <div className="flex items-center gap-2 text-[10px] font-bold tracking-[0.14em] uppercase text-[#8C857B]">
-                <span className="w-2 h-2 rounded-full bg-[#2D6A4F]" />
-                <span>CIRCADIAN ALIGNMENT · {formatDateEyebrow()}</span>
-                <span className="bg-[#EFECE4] border border-[#1C1917]/[0.06] rounded-full px-2 py-0.5 text-[10px] font-bold text-[#1C1917] ml-2">
+          <div className="bg-[#FCFBF9] dark:bg-[#141916] rounded-[28px] p-6 border border-[#1C1917]/[0.06] dark:border-white/[0.07] shadow-xs flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-3 flex-nowrap mb-2">
+                <span className="inline-flex items-center gap-2 text-[11px] font-bold tracking-[0.14em] uppercase text-[#57534E] dark:text-[#9CA39E] whitespace-nowrap">
+                  <span className="w-2 h-2 rounded-full bg-[#2D6A4F] dark:bg-[#34D399]" />
+                  CIRCADIAN ALIGNMENT · {formatDateEyebrow()}
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap shrink-0 bg-[#EFECE4] dark:bg-[#1C221E] text-[#1C1917] dark:text-[#F4F1EA] border border-[#1C1917]/[0.06] dark:border-white/[0.08]">
                   🔥 {activeStreakDays}d streak
                 </span>
               </div>
-              <h1 className="font-serif font-normal text-3xl leading-tight tracking-tight text-[#1C1917] mt-2">
+              <h1 className="font-serif font-normal text-3xl leading-tight tracking-tight text-[#1C1917] dark:text-[#F4F1EA] mt-2">
                 {getGreetingPrefix()},{" "}
-                <span className="italic text-[#2D6A4F]">{firstName}</span>
+                <span className="italic text-[#2D6A4F] dark:text-[#6EE7B7]">{firstName}</span>
               </h1>
-              <p className="text-xs text-[#57534E] mt-1">
+              <p className="text-xs text-[#57534E] dark:text-[#9CA39E] mt-1">
                 Biological readiness primed · 4 high-impact cognitive blocks on deck today
               </p>
             </div>

@@ -44,7 +44,8 @@ export default function Navigation() {
   const [dpError, setDpError] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [projects, setProjects] = useState<Project[]>([]);
-  const profileRef = useRef<HTMLDivElement>(null);
+  const desktopProfileRef = useRef<HTMLDivElement>(null);
+  const mobileProfileRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Load user projects dynamically for WORKSPACES rail
@@ -106,9 +107,16 @@ export default function Navigation() {
   useEffect(() => {
     if (!showProfileMenu) return;
     const handler = (e: MouseEvent) => {
-      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
-        setShowProfileMenu(false);
+      const targetNode = e.target as Node;
+      const targetEl = e.target as Element | null;
+      if (
+        (desktopProfileRef.current && desktopProfileRef.current.contains(targetNode)) ||
+        (mobileProfileRef.current && mobileProfileRef.current.contains(targetNode)) ||
+        Boolean(targetEl?.closest?.("[data-profile-menu]"))
+      ) {
+        return;
       }
+      setShowProfileMenu(false);
     };
     const t = setTimeout(() => document.addEventListener("mousedown", handler), 50);
     return () => {
@@ -268,15 +276,24 @@ export default function Navigation() {
             const Icon = item.icon;
             const isOrbit = item.isOrbit;
 
-            // Inactive Orbit styling vs normal inactive
-            const inactiveClass = isOrbit
-              ? "bg-[#191D1A] text-[#FCFBF9] hover:bg-[#2D6A4F] shadow-2xs"
-              : "text-[#57534E] hover:text-[#1C1917] hover:bg-[#EFECE4]/70";
+            // Orbit Coral Ember primary styling vs standard studio styling
+            let itemClass = "";
+            if (isOrbit) {
+              itemClass = item.isActive
+                ? "bg-[#E05A47] text-white border border-[#F87171]/40 shadow-[0_6px_20px_rgba(224,90,71,0.35)] font-semibold"
+                : "bg-[#E05A47]/12 dark:bg-[#E05A47]/18 hover:bg-[#E05A47]/22 dark:hover:bg-[#E05A47]/28 text-[#C84331] dark:text-[#FF7A68] border border-[#E05A47]/30 shadow-[0_4px_14px_rgba(224,90,71,0.12)]";
+            } else if (item.isActive) {
+              itemClass = "bg-[#2D6A4F] text-white font-semibold shadow-[0_4px_12px_rgba(45,106,79,0.28)] border border-transparent";
+            } else {
+              itemClass = "bg-transparent border border-transparent shadow-none text-[#57534E] dark:text-[#9CA39E] hover:bg-[#1C1917]/[0.05] dark:hover:bg-white/[0.05] hover:text-[#1C1917] dark:hover:text-[#F4F1EA]";
+            }
 
             return (
               <Link
                 key={item.href}
                 href={item.href}
+                data-orbit={isOrbit ? "true" : undefined}
+                data-active={item.isActive ? "true" : undefined}
                 aria-current={item.isActive ? "page" : undefined}
                 title={item.label}
                 className={cn(
@@ -284,9 +301,7 @@ export default function Navigation() {
                   collapsed
                     ? "w-11 h-11 mx-auto justify-center"
                     : "w-11 h-11 mx-auto lg:w-full lg:h-auto lg:px-4 lg:py-2.5 lg:justify-start lg:gap-3",
-                  item.isActive
-                    ? "bg-[#2D6A4F] text-white font-semibold shadow-[0_4px_12px_rgba(45,106,79,0.28)]"
-                    : inactiveClass
+                  itemClass
                 )}
               >
                 {/* Icon */}
@@ -350,7 +365,7 @@ export default function Navigation() {
                 <Link
                   key={p.id}
                   href={`/dashboard/tasks?project=${p.id}`}
-                  className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs text-[#57534E] hover:text-[#1C1917] hover:bg-[#EFECE4]/60 transition-colors truncate"
+                  className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs bg-transparent border border-transparent shadow-none text-[#57534E] dark:text-[#9CA39E] hover:bg-[#1C1917]/[0.05] dark:hover:bg-white/[0.05] hover:text-[#1C1917] dark:hover:text-[#F4F1EA] transition-colors truncate"
                 >
                   <span
                     className="w-2 h-2 rounded-full shrink-0"
@@ -501,14 +516,14 @@ export default function Navigation() {
 
           {/* User Avatar & Dropdown */}
           {session?.user ? (
-            <div ref={profileRef} className="relative">
+            <div ref={desktopProfileRef} data-profile-menu="true" className="relative">
               <button
                 onClick={() => setShowProfileMenu((v) => !v)}
                 type="button"
                 title="Account menu"
                 aria-label="Open account menu"
                 aria-expanded={showProfileMenu}
-                className="w-9 h-9 rounded-full flex items-center justify-center bg-[#191D1A] text-white shadow-xs border border-white/10 transition-transform active:scale-95 overflow-hidden"
+                className="w-9 h-9 rounded-full flex items-center justify-center bg-[#191D1A] text-white shadow-xs border border-white/10 transition-transform active:scale-95 overflow-hidden cursor-pointer"
               >
                 {session.user.image && !dpError ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
@@ -530,27 +545,33 @@ export default function Navigation() {
               {/* Profile dropdown */}
               {showProfileMenu && (
                 <div
-                  className="absolute right-0 top-full mt-2 w-56 rounded-2xl overflow-hidden z-50 animate-scale-in bg-[#FCFBF9] border border-[#1C1917]/[0.08] shadow-lg"
+                  className="absolute right-0 top-full mt-2 w-56 rounded-2xl overflow-hidden z-50 animate-scale-in bg-[#FCFBF9] dark:bg-[#141916] border border-[#1C1917]/[0.08] dark:border-white/[0.08] shadow-lg"
                 >
-                  <div className="px-4 py-3 border-b border-[#1C1917]/[0.06]">
-                    <p className="text-xs font-semibold text-[#1C1917] truncate">
+                  <div className="px-4 py-3 border-b border-[#1C1917]/[0.06] dark:border-white/[0.06]">
+                    <p className="text-xs font-semibold text-[#1C1917] dark:text-[#F4F1EA] truncate">
                       {session.user.name}
                     </p>
-                    <p className="text-[11px] text-[#8C857B] truncate mt-0.5">
+                    <p className="text-[11px] text-[#8C857B] dark:text-[#9CA39E] truncate mt-0.5">
                       {session.user.email}
                     </p>
                   </div>
                   <Link
                     href="/dashboard/settings"
-                    onClick={() => setShowProfileMenu(false)}
-                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-[#57534E] hover:bg-black/5 transition-colors"
+                    onClick={() => {
+                      setShowProfileMenu(false);
+                      router.push("/dashboard/settings");
+                    }}
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-[#57534E] dark:text-[#9CA39E] hover:bg-black/5 dark:hover:bg-white/5 hover:text-[#1C1917] dark:hover:text-[#F4F1EA] transition-colors cursor-pointer"
                   >
                     <Settings className="w-3.5 h-3.5" />
                     <span>Settings & Profile</span>
                   </Link>
                   <button
-                    onClick={() => signOut({ callbackUrl: "/" })}
-                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-[#E05A47] hover:bg-red-500/10 transition-colors"
+                    onClick={() => {
+                      setShowProfileMenu(false);
+                      signOut({ callbackUrl: "/" });
+                    }}
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-[#E05A47] hover:bg-red-500/10 transition-colors cursor-pointer"
                   >
                     <LogOut className="w-3.5 h-3.5" />
                     <span>Sign out</span>
@@ -590,14 +611,14 @@ export default function Navigation() {
 
             <NotificationBell />
             {session?.user ? (
-              <div ref={profileRef} className="relative">
+              <div ref={mobileProfileRef} data-profile-menu="true" className="relative">
                 <button
                   onClick={() => setShowProfileMenu((v) => !v)}
                   type="button"
                   title="Account menu"
                   aria-label="Open account menu"
                   aria-expanded={showProfileMenu}
-                  className="w-8 h-8 rounded-full flex items-center justify-center bg-[#191D1A] text-white shadow-sm border border-white/10 transition-transform active:scale-95 overflow-hidden"
+                  className="w-8 h-8 rounded-full flex items-center justify-center bg-[#191D1A] text-white shadow-sm border border-white/10 transition-transform active:scale-95 overflow-hidden cursor-pointer"
                 >
                   {session.user.image && !dpError ? (
                     /* eslint-disable-next-line @next/next/no-img-element */
@@ -636,16 +657,22 @@ export default function Navigation() {
                     </div>
                     <Link
                       href="/dashboard/settings"
-                      onClick={() => setShowProfileMenu(false)}
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        router.push("/dashboard/settings");
+                      }}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
                       style={{ color: "var(--text-secondary)" }}
                     >
                       <Settings className="w-3.5 h-3.5" />
                       <span>Settings & Profile</span>
                     </Link>
                     <button
-                      onClick={() => signOut({ callbackUrl: "/" })}
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium transition-colors hover:bg-red-500/10"
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        signOut({ callbackUrl: "/" });
+                      }}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium transition-colors hover:bg-red-500/10 cursor-pointer"
                       style={{ color: "var(--error)" }}
                     >
                       <LogOut className="w-3.5 h-3.5" />
