@@ -1072,9 +1072,31 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ---
 
+### ✅ Sprint 7.2: Translucent Quick Track Modal Backdrop & Orbit AI 4th Tile (`TrackSheet.tsx`, `app-shell.css`, `tests/navigation/track-sheet.test.ts`)
+- **Translucent Quick Track Modal Backdrop (`components/navigation/TrackSheet.tsx`, `styles/app-shell.css`)**:
+  - Resolved opaque dark-green wall bug when opening the center `+` Quick Track modal in Dark Mode.
+  - Set explicit inline translucent background `style={{ backgroundColor: "rgba(10, 13, 11, 0.58)" }}` combined with `data-backdrop="true"` and `backdrop-blur-md transition-opacity` on the modal overlay.
+  - In `styles/app-shell.css`, protected all modal and sheet overlays from opaque dark card gradient overrides by excluding `[data-backdrop="true"]` and all opacity alpha classes (`:not([data-backdrop="true"]):not([class*="bg-[#191D1A]/"]):not([class*="/60"]):not([class*="/65"]):not([class*="/70"]):not([class*="/75"]):not([class*="/80"]):not([class*="/85"]):not([class*="/90"])`).
+  - Added dedicated global rule under `html.dark` guaranteeing `rgba(10, 13, 11, 0.58)` and `backdrop-filter: blur(8px)` on all modal backdrops so underlying dashboards (`Today`, `Plan`, `Train`, `Fuel`) remain softly blurred and clearly visible.
+- **Orbit AI 4th Tile in Quick Track Modal (`components/navigation/TrackSheet.tsx`)**:
+  - Replaced legacy `Water & Biometrics` tile with **`Ask Orbit AI`**:
+    - **Top-Left Badge**: Animated 3D `<Orbit3DCore size="sm" state="idle" />` framed inside `w-9 h-9 rounded-xl bg-[#191D1A]/90 border border-[#34D399]/30 flex items-center justify-center shadow-md`.
+    - **Nocturnal Background**: Rich emerald-radial gradient (`bg-gradient-to-br from-[#1B2A22] via-[#121A16] to-[#0D120F] border border-[#34D399]/25 hover:border-[#34D399]/45`) with subtle concentric orbital SVG rings and emerald radial wash.
+    - **Typography**: Title `Ask Orbit AI` (`text-sm font-bold text-white`) and subtitle `Unified Copilot · Orbit` (`text-[11px] text-[#6EE7B7]`).
+    - **Tactile Interaction**: Closes the modal and navigates directly to `/dashboard/orbit` (`handleAction("/dashboard/orbit")`).
+- **Comprehensive Unit Testing**:
+  - Added `tests/navigation/track-sheet.test.ts` verifying translucent alpha styling, CSS dark-mode protection, 4 quick capture paths, and Orbit 3D Core embedding.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **56 passed (56 files), 654 passed | 26 skipped (680 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
-- **Vitest Suite**: `650 passed | 26 skipped` across all 55 test suites (0 failing).
+- **Vitest Suite**: `654 passed | 26 skipped` across all 56 test suites (0 failing).
+- **Navigation & Track Sheet Tests**: `9/9 passed` across `tests/navigation/*`.
 - **Markdown & UI Tests**: `13/13 passed` in `tests/ui/markdown-text.test.tsx`.
 - **Navigation & Launcher Tests**: `5/5 passed` in `tests/navigation/navigation-orbit-launcher.test.ts`.
 - **Orbit Tests**: `49/49 passed` across `tests/orbit/*` and `tests/api/aria.test.ts`.

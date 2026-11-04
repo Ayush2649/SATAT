@@ -3,11 +3,8 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { useFirebaseAuth } from "@/components/FirebaseAuthProvider";
-import { Utensils, Dumbbell, CheckSquare, Scale, X, Loader2, Check } from "lucide-react";
-import { logBodyWeight } from "@/lib/firestore";
-import { useToast } from "@/components/ui/Toast";
+import { Utensils, Dumbbell, CheckSquare, X } from "lucide-react";
+import { Orbit3DCore } from "@/components/orbit/Orbit3DCore";
 
 interface TrackSheetProps {
   isOpen: boolean;
@@ -16,15 +13,6 @@ interface TrackSheetProps {
 
 export default function TrackSheet({ isOpen, onClose }: TrackSheetProps) {
   const router = useRouter();
-  const { data: session } = useSession();
-  const { firebaseUser } = useFirebaseAuth();
-  const userId = firebaseUser?.uid ?? (session?.user as any)?.id ?? session?.user?.email ?? "";
-  const { toast } = useToast();
-
-  const [weightKg, setWeightKg] = useState("");
-  const [loggingWeight, setLoggingWeight] = useState(false);
-  const [showWeightInput, setShowWeightInput] = useState(false);
-  const [weightSuccess, setWeightSuccess] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -47,45 +35,18 @@ export default function TrackSheet({ isOpen, onClose }: TrackSheetProps) {
     router.push(route);
   };
 
-  const handleQuickWeight = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const val = parseFloat(weightKg);
-    if (isNaN(val) || val <= 0 || !userId) return;
-
-    setLoggingWeight(true);
-    try {
-      const today = new Date().toISOString().split("T")[0];
-      await logBodyWeight({
-        userId,
-        weightKg: val,
-        date: today,
-        createdAt: Date.now(),
-      });
-      setWeightSuccess(true);
-      toast("Weight logged successfully", "success");
-      setTimeout(() => {
-        setWeightSuccess(false);
-        setShowWeightInput(false);
-        setWeightKg("");
-        onClose();
-      }, 700);
-    } catch {
-      toast("Failed to log weight", "error");
-    } finally {
-      setLoggingWeight(false);
-    }
-  };
-
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex flex-col justify-end sm:items-center sm:justify-center p-0 sm:p-4 animate-fade-in">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-[#191D1A]/75 backdrop-blur-xs transition-opacity"
+        data-backdrop="true"
+        className="fixed inset-0 backdrop-blur-md transition-opacity"
+        style={{ backgroundColor: "rgba(10, 13, 11, 0.58)" }}
         onClick={onClose}
         aria-hidden="true"
       />
 
-      {/* Sheet Content (image_cc4f9d.jpg top half) */}
+      {/* Sheet Content */}
       <div
         className="relative w-full sm:max-w-md bg-[#191D1A] text-[#FCFBF9] rounded-t-[32px] sm:rounded-[32px] p-5 sm:p-6 z-10 shadow-2xl border border-white/[0.08] animate-slide-up"
         role="dialog"
@@ -118,148 +79,98 @@ export default function TrackSheet({ isOpen, onClose }: TrackSheetProps) {
           </button>
         </div>
 
-        {/* 2x2 Photo-Backed Action Grid */}
-        {!showWeightInput ? (
-          <div className="grid grid-cols-2 gap-3 mt-4">
-            {/* 1. Scan Meal Plate */}
-            <button
-              onClick={() => handleAction("/dashboard/diet?action=scan")}
-              className="group relative h-32 rounded-2xl overflow-hidden p-3 text-left border border-white/[0.08] flex flex-col justify-between transition-transform active:scale-[0.98] cursor-pointer"
-            >
-              <img
-                src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=300&q=75"
-                alt=""
-                className="absolute inset-0 w-full h-full object-cover opacity-35 group-hover:opacity-45 group-hover:scale-105 transition-all duration-300 pointer-events-none"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#141715] via-[#141715]/60 to-transparent pointer-events-none" />
-              <div className="relative z-10 w-7 h-7 rounded-lg bg-white/[0.12] backdrop-blur-xs flex items-center justify-center text-white">
-                <Utensils className="w-3.5 h-3.5" />
-              </div>
-              <div className="relative z-10">
-                <p className="font-bold text-xs text-white leading-tight">Scan Meal Plate</p>
-                <p className="text-[10px] text-stone-300 mt-0.5">Instant AI Vision · Fuel</p>
-              </div>
-            </button>
+        {/* 2x2 Action Grid */}
+        <div className="grid grid-cols-2 gap-3 mt-4">
+          {/* 1. Scan Meal Plate */}
+          <button
+            onClick={() => handleAction("/dashboard/diet?action=scan")}
+            className="group relative h-32 rounded-2xl overflow-hidden p-3 text-left border border-white/[0.08] flex flex-col justify-between transition-transform active:scale-[0.98] cursor-pointer"
+          >
+            <img
+              src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=300&q=75"
+              alt=""
+              loading="lazy"
+              className="absolute inset-0 w-full h-full object-cover opacity-35 group-hover:opacity-45 group-hover:scale-105 transition-all duration-300 pointer-events-none"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#141715] via-[#141715]/60 to-transparent pointer-events-none" />
+            <div className="relative z-10 w-7 h-7 rounded-lg bg-white/[0.12] backdrop-blur-xs flex items-center justify-center text-white">
+              <Utensils className="w-3.5 h-3.5" />
+            </div>
+            <div className="relative z-10">
+              <p className="font-bold text-xs text-white leading-tight">Scan Meal Plate</p>
+              <p className="text-[10px] text-stone-300 mt-0.5">Instant AI Vision · Fuel</p>
+            </div>
+          </button>
 
-            {/* 2. Start Workout */}
-            <button
-              onClick={() => handleAction("/dashboard/workout")}
-              className="group relative h-32 rounded-2xl overflow-hidden p-3 text-left border border-white/[0.08] flex flex-col justify-between transition-transform active:scale-[0.98] cursor-pointer"
-            >
-              <img
-                src="https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?auto=format&fit=crop&w=300&q=75"
-                alt=""
-                className="absolute inset-0 w-full h-full object-cover opacity-35 group-hover:opacity-45 group-hover:scale-105 transition-all duration-300 pointer-events-none"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#141715] via-[#141715]/60 to-transparent pointer-events-none" />
-              <div className="relative z-10 w-7 h-7 rounded-lg bg-[#2D6A4F]/60 backdrop-blur-xs flex items-center justify-center text-[#6EE7B7]">
-                <Dumbbell className="w-3.5 h-3.5" />
-              </div>
-              <div className="relative z-10">
-                <p className="font-bold text-xs text-white leading-tight">Start Workout</p>
-                <p className="text-[10px] text-stone-300 mt-0.5">Training Studio · Train</p>
-              </div>
-            </button>
+          {/* 2. Start Workout */}
+          <button
+            onClick={() => handleAction("/dashboard/workout")}
+            className="group relative h-32 rounded-2xl overflow-hidden p-3 text-left border border-white/[0.08] flex flex-col justify-between transition-transform active:scale-[0.98] cursor-pointer"
+          >
+            <img
+              src="https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?auto=format&fit=crop&w=300&q=75"
+              alt=""
+              loading="lazy"
+              className="absolute inset-0 w-full h-full object-cover opacity-35 group-hover:opacity-45 group-hover:scale-105 transition-all duration-300 pointer-events-none"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#141715] via-[#141715]/60 to-transparent pointer-events-none" />
+            <div className="relative z-10 w-7 h-7 rounded-lg bg-[#2D6A4F]/60 backdrop-blur-xs flex items-center justify-center text-[#6EE7B7]">
+              <Dumbbell className="w-3.5 h-3.5" />
+            </div>
+            <div className="relative z-10">
+              <p className="font-bold text-xs text-white leading-tight">Start Workout</p>
+              <p className="text-[10px] text-stone-300 mt-0.5">Training Studio · Train</p>
+            </div>
+          </button>
 
-            {/* 3. Deep Work Task */}
-            <button
-              onClick={() => handleAction("/dashboard/tasks?action=new")}
-              className="group relative h-32 rounded-2xl overflow-hidden p-3 text-left border border-white/[0.08] flex flex-col justify-between transition-transform active:scale-[0.98] cursor-pointer"
-            >
-              <img
-                src="https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=300&q=75"
-                alt=""
-                className="absolute inset-0 w-full h-full object-cover opacity-35 group-hover:opacity-45 group-hover:scale-105 transition-all duration-300 pointer-events-none"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#141715] via-[#141715]/60 to-transparent pointer-events-none" />
-              <div className="relative z-10 w-7 h-7 rounded-lg bg-[#E05A47]/40 backdrop-blur-xs flex items-center justify-center text-[#FADCD5]">
-                <CheckSquare className="w-3.5 h-3.5" />
-              </div>
-              <div className="relative z-10">
-                <p className="font-bold text-xs text-white leading-tight">Deep Work Task</p>
-                <p className="text-[10px] text-stone-300 mt-0.5">Execution Studio · Plan</p>
-              </div>
-            </button>
+          {/* 3. Deep Work Task */}
+          <button
+            onClick={() => handleAction("/dashboard/tasks?action=new")}
+            className="group relative h-32 rounded-2xl overflow-hidden p-3 text-left border border-white/[0.08] flex flex-col justify-between transition-transform active:scale-[0.98] cursor-pointer"
+          >
+            <img
+              src="https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=300&q=75"
+              alt=""
+              loading="lazy"
+              className="absolute inset-0 w-full h-full object-cover opacity-35 group-hover:opacity-45 group-hover:scale-105 transition-all duration-300 pointer-events-none"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#141715] via-[#141715]/60 to-transparent pointer-events-none" />
+            <div className="relative z-10 w-7 h-7 rounded-lg bg-[#E05A47]/40 backdrop-blur-xs flex items-center justify-center text-[#FADCD5]">
+              <CheckSquare className="w-3.5 h-3.5" />
+            </div>
+            <div className="relative z-10">
+              <p className="font-bold text-xs text-white leading-tight">Deep Work Task</p>
+              <p className="text-[10px] text-stone-300 mt-0.5">Execution Studio · Plan</p>
+            </div>
+          </button>
 
-            {/* 4. Water & Biometrics */}
-            <button
-              onClick={() => setShowWeightInput(true)}
-              className="group relative h-32 rounded-2xl overflow-hidden p-3 text-left border border-white/[0.08] flex flex-col justify-between transition-transform active:scale-[0.98] cursor-pointer"
-            >
-              <img
-                src="https://images.unsplash.com/photo-1548839140-29a749e1cf4d?auto=format&fit=crop&w=300&q=75"
-                alt=""
-                className="absolute inset-0 w-full h-full object-cover opacity-35 group-hover:opacity-45 group-hover:scale-105 transition-all duration-300 pointer-events-none"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#141715] via-[#141715]/60 to-transparent pointer-events-none" />
-              <div className="relative z-10 w-7 h-7 rounded-lg bg-white/[0.12] backdrop-blur-xs flex items-center justify-center text-white">
-                <Scale className="w-3.5 h-3.5" />
-              </div>
-              <div className="relative z-10">
-                <p className="font-bold text-xs text-white leading-tight">Water &amp; Biometrics</p>
-                <p className="text-[10px] text-stone-300 mt-0.5">74.1 kg · Daily Log</p>
-              </div>
-            </button>
-          </div>
-        ) : (
-          <form onSubmit={handleQuickWeight} className="space-y-4 mt-4">
-            <div className="flex items-center gap-2 mb-1">
-              <button
-                type="button"
-                onClick={() => setShowWeightInput(false)}
-                className="text-xs font-semibold text-stone-400 hover:text-white transition-colors cursor-pointer"
-              >
-                ← Back
-              </button>
-              <span className="text-xs font-medium text-stone-300">
-                Record Today&apos;s Body Weight
-              </span>
+          {/* 4. Ask Orbit AI */}
+          <button
+            onClick={() => handleAction("/dashboard/orbit")}
+            className="group relative h-32 rounded-2xl overflow-hidden p-3 text-left border border-[#34D399]/25 hover:border-[#34D399]/45 bg-gradient-to-br from-[#1B2A22] via-[#121A16] to-[#0D120F] flex flex-col justify-between transition-all duration-200 active:scale-[0.98] cursor-pointer shadow-lg"
+          >
+            {/* Subtle concentric orbital rings and emerald glow background */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+              <div className="absolute -top-10 -right-10 w-36 h-36 rounded-full bg-[#34D399]/15 blur-2xl group-hover:bg-[#34D399]/25 transition-all duration-300" />
+              <svg className="absolute -right-8 -top-8 w-44 h-44 opacity-25 group-hover:opacity-40 transition-opacity duration-300" viewBox="0 0 160 160" fill="none">
+                <circle cx="80" cy="80" r="70" stroke="#34D399" strokeWidth="0.75" strokeDasharray="3 3" />
+                <circle cx="80" cy="80" r="50" stroke="#34D399" strokeWidth="0.75" />
+                <circle cx="80" cy="80" r="30" stroke="#34D399" strokeWidth="0.75" strokeDasharray="2 2" />
+              </svg>
             </div>
 
-            <div className="relative">
-              <input
-                type="number"
-                step="0.1"
-                min="30"
-                max="300"
-                autoFocus
-                placeholder="e.g. 74.5"
-                value={weightKg}
-                onChange={(e) => setWeightKg(e.target.value)}
-                className="w-full bg-white/[0.06] rounded-2xl px-4 py-3 text-base font-bold text-white border border-white/[0.12] focus:outline-none focus:border-[#E05A47]"
-              />
-              <span className="absolute right-4 top-3.5 text-xs font-mono text-stone-400">
-                kg
-              </span>
+            {/* Top-Left Badge: Live animated 3D Orbit3DCore in sleek rounded-xl dark container */}
+            <div className="relative z-10 w-9 h-9 rounded-xl bg-[#191D1A]/90 border border-[#34D399]/30 flex items-center justify-center shadow-md shrink-0">
+              <Orbit3DCore size="sm" state="idle" />
             </div>
 
-            <div className="flex gap-2.5">
-              <button
-                type="button"
-                onClick={() => setShowWeightInput(false)}
-                className="flex-1 py-3 rounded-full text-xs font-semibold bg-white/[0.08] hover:bg-white/[0.14] text-stone-300 cursor-pointer transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={!weightKg || loggingWeight || weightSuccess}
-                className="flex-1 py-3 rounded-full text-xs font-semibold bg-[#E05A47] hover:bg-[#C94A38] text-white flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer shadow-md"
-              >
-                {loggingWeight ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : weightSuccess ? (
-                  <>
-                    <Check className="w-3.5 h-3.5" />
-                    <span>Saved</span>
-                  </>
-                ) : (
-                  <span>Save Weight</span>
-                )}
-              </button>
+            {/* Bottom text */}
+            <div className="relative z-10">
+              <p className="font-bold text-sm text-white leading-tight">Ask Orbit AI</p>
+              <p className="text-[11px] text-[#6EE7B7] mt-0.5">Unified Copilot · Orbit</p>
             </div>
-          </form>
-        )}
+          </button>
+        </div>
       </div>
     </div>,
     document.body

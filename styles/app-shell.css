@@ -409,10 +409,21 @@ html.dark .bg-\[\#EFECE4\]\/60 {
 }
 
 /* 4. Hero & Dark Feature Cards (#191D1A -> Deep Botanical Emerald-Charcoal Gradient) */
-html.dark .bg-\[\#191D1A\]:not(nav):not(.app-mobile-profile-button):not(.rounded-full),
-html.dark [class*="bg-[#191D1A]"]:not(nav):not(.app-mobile-profile-button):not(.rounded-full) {
+html.dark .bg-\[\#191D1A\]:not(nav):not(.app-mobile-profile-button):not(.rounded-full):not([data-backdrop="true"]):not([class*="bg-[#191D1A]/"]):not([class*="/60"]):not([class*="/65"]):not([class*="/70"]):not([class*="/75"]):not([class*="/80"]):not([class*="/85"]):not([class*="/90"]),
+html.dark [class*="bg-[#191D1A]"]:not(nav):not(.app-mobile-profile-button):not(.rounded-full):not([data-backdrop="true"]):not([class*="bg-[#191D1A]/"]):not([class*="/60"]):not([class*="/65"]):not([class*="/70"]):not([class*="/75"]):not([class*="/80"]):not([class*="/85"]):not([class*="/90"]) {
   background: linear-gradient(180deg, #1E2822 0%, #141B17 100%) !important;
   border: 1px solid rgba(52, 211, 153, 0.20) !important;
+}
+
+/* Translucent Modals & Sheet Backdrops - Preserve translucency and blur in Dark Mode */
+html.dark [data-backdrop="true"],
+html.dark .satat-modal-backdrop,
+html.dark [data-backdrop="true"][class*="bg-"] {
+  background: rgba(10, 13, 11, 0.58) !important;
+  background-color: rgba(10, 13, 11, 0.58) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: none !important;
 }
 
 /* 5. Navigation Shell & App Bars */
