@@ -715,3 +715,31 @@ html.dark .border-2.border-\[\#1C1917\]\/20 {
   background-color: #1C221E !important;
   border-color: rgba(255, 255, 255, 0.20) !important;
 }
+
+/* 20. Green/Mint Highlight Containers in Dark Mode (§ Sprint 7.5) */
+html.dark .bg-\[\#E6F4ED\],
+html.dark [class*="bg-[#E6F4ED]"] {
+  background-color: #13221B !important;
+  border-color: rgba(52, 211, 153, 0.25) !important;
+}
+
+/* 21. Full-Width Desktop Dashboard Workspace (§ Sprint 7.5) */
+@media (min-width: 768px) {
+  .app-shell-content:not(:has(.orbit-view-root)) {
+    max-width: none !important;
+    width: 100% !important;
+    padding-inline: 1.5rem !important; /* px-6 */
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-shell-content:not(:has(.orbit-view-root)) {
+    padding-inline: 2.5rem !important; /* lg:px-10 */
+  }
+}
+
+@media (min-width: 1280px) {
+  .app-shell-content:not(:has(.orbit-view-root)) {
+    padding-inline: 3rem !important; /* xl:px-12 */
+  }
+}

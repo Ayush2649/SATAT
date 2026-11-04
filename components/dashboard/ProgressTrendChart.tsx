@@ -104,17 +104,15 @@ export default function ProgressTrendChart({
       else fuel = "Balanced";
     }
 
-    // Sample exactly 7 points across the range for the full-width responsive SVG (7 columns of 100px each)
+    // Sample exactly 7 points across the range for the full-width responsive SVG
     const sampledDays: DayPoint[] = [];
-    const xCoords = [50, 150, 250, 350, 450, 550, 650];
-    const yMin = 32;
-    const yMax = 82;
+    const xCoords = [40, 148, 256, 364, 472, 580, 660];
 
     for (let j = 0; j < 7; j++) {
       const idx = Math.min(rawDays.length - 1, Math.round((j / 6) * (rawDays.length - 1)));
       const src = rawDays[idx];
-      // Map score 0..100 gently into yMax (82) down to yMin (32) to dampen vertical spikes
-      const y = Math.round(yMax - (src.score / 100) * (yMax - yMin));
+      // Map score 0..100 smoothly into [34, 98]
+      const y = Math.round(98 - (src.score / 100) * 64);
       sampledDays.push({
         ...src,
         x: xCoords[j],
@@ -180,7 +178,7 @@ export default function ProgressTrendChart({
     const pts = chartData.points;
     const last = pts[pts.length - 1];
     const first = pts[0];
-    return `${pathD} L ${last.x} 118 L ${first.x} 118 Z`;
+    return `${pathD} L ${last.x} 128 L ${first.x} 128 Z`;
   }, [pathD, chartData.points]);
 
   return (
@@ -264,8 +262,8 @@ export default function ProgressTrendChart({
 
         {/* Full-Width Responsive Bezier Area SVG */}
         <svg
-          viewBox="0 0 700 120"
-          className="w-full h-32 sm:h-36 overflow-visible block"
+          viewBox="0 0 700 140"
+          className="w-full h-auto overflow-visible block"
           aria-hidden="true"
         >
           <defs>
@@ -277,9 +275,9 @@ export default function ProgressTrendChart({
           </defs>
 
           {/* Subtle Horizontal Reference Grid Lines */}
-          <line x1="20" y1="32" x2="680" y2="32" stroke="currentColor" strokeDasharray="4 4" className="text-stone-200 dark:text-white/[0.06]" />
-          <line x1="20" y1="57" x2="680" y2="57" stroke="currentColor" strokeDasharray="4 4" className="text-stone-200 dark:text-white/[0.06]" />
-          <line x1="20" y1="82" x2="680" y2="82" stroke="currentColor" strokeDasharray="4 4" className="text-stone-200 dark:text-white/[0.06]" />
+          <line x1="20" y1="34" x2="680" y2="34" stroke="currentColor" strokeDasharray="4 4" className="text-stone-200 dark:text-white/[0.06]" />
+          <line x1="20" y1="66" x2="680" y2="66" stroke="currentColor" strokeDasharray="4 4" className="text-stone-200 dark:text-white/[0.06]" />
+          <line x1="20" y1="98" x2="680" y2="98" stroke="currentColor" strokeDasharray="4 4" className="text-stone-200 dark:text-white/[0.06]" />
 
           {/* Area Fill */}
           <path d={areaD} fill="url(#momentumGradient)" />
@@ -289,7 +287,7 @@ export default function ProgressTrendChart({
             x1={activePoint.x}
             y1={activePoint.y}
             x2={activePoint.x}
-            y2="118"
+            y2="120"
             stroke="#2D6A4F"
             strokeWidth="1.5"
             strokeDasharray="4 4"
@@ -307,51 +305,73 @@ export default function ProgressTrendChart({
             strokeLinecap="round"
             className="dark:stroke-[#34D399]"
           />
-        </svg>
 
-        {/* Crisp Geometric HTML Circular Nodes (100% Perfect Circles at Any Viewport) */}
-        <div className="absolute inset-0 pointer-events-none">
+          {/* 7 SVG Circular Markers — Rendered inside SVG on exact same coordinate system */}
           {chartData.points.map((pt, idx) => {
             const isSelected = idx === activeIdx;
             const isToday = pt.isToday;
 
             return (
-              <button
+              <g
                 key={idx}
-                type="button"
+                className="cursor-pointer group"
                 onClick={() => setSelectedNodeIndex(idx)}
+                tabIndex={0}
+                role="button"
                 aria-label={`${pt.dayLabel}: ${pt.score}%`}
-                className={cn(
-                  "pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 rounded-full transition-transform cursor-pointer focus:outline-none",
-                  isSelected
-                    ? "w-3.5 h-3.5 bg-[#2D6A4F] dark:bg-[#34D399] border-2 border-[#FCFBF9] dark:border-[#141916] shadow-sm scale-110 z-10"
-                    : isToday
-                    ? "w-3 h-3 bg-[#E05A47] border-2 border-[#FCFBF9] dark:border-[#141916] hover:scale-125 z-10"
-                    : "w-2.5 h-2.5 bg-[#FCFBF9] dark:bg-[#141916] border-2 border-[#2D6A4F] dark:border-[#34D399] hover:scale-125"
+              >
+                {/* Hit target */}
+                <circle cx={pt.x} cy={pt.y} r="16" fill="transparent" />
+
+                {/* Outer halo when selected */}
+                {isSelected && (
+                  <circle
+                    cx={pt.x}
+                    cy={pt.y}
+                    r="10"
+                    fill="none"
+                    stroke={isToday ? "#E05A47" : "#2D6A4F"}
+                    strokeWidth="2"
+                    opacity="0.35"
+                    className="dark:stroke-[#34D399]"
+                  />
                 )}
-                style={{
-                  left: `${(pt.x / 700) * 100}%`,
-                  top: `${(pt.y / 120) * 100}%`,
-                }}
-              />
+
+                {/* Solid Dot sitting dead-center on the curve */}
+                <circle
+                  cx={pt.x}
+                  cy={pt.y}
+                  r={isSelected ? 6.5 : 5.5}
+                  fill={isSelected ? (isToday ? "#E05A47" : "#2D6A4F") : (isToday ? "#E05A47" : "#FCFBF9")}
+                  stroke={isToday ? "#E05A47" : (isSelected ? "#FCFBF9" : "#2D6A4F")}
+                  strokeWidth={isSelected ? 2.5 : 2}
+                  className={cn(
+                    "transition-all duration-200",
+                    !isSelected && !isToday && "dark:fill-[#141916] dark:stroke-[#34D399]",
+                    isSelected && !isToday && "dark:fill-[#34D399] dark:stroke-[#141916]"
+                  )}
+                />
+              </g>
             );
           })}
-        </div>
+        </svg>
 
-        {/* Bottom X-Axis Day Labels */}
-        <div className="grid grid-cols-7 text-center text-[10px] font-semibold mt-2 select-none">
+        {/* Bottom X-Axis Day Labels aligned with xCoords */}
+        <div className="relative h-6 mt-1.5 select-none">
           {chartData.points.map((pt, idx) => (
             <button
               key={idx}
               type="button"
               onClick={() => setSelectedNodeIndex(idx)}
-              className={`transition-colors ${
+              style={{ left: `${(pt.x / 700) * 100}%` }}
+              className={cn(
+                "absolute -translate-x-1/2 text-[11px] font-semibold transition-colors cursor-pointer",
                 idx === activeIdx
                   ? "text-[#2D6A4F] dark:text-[#34D399] font-bold"
                   : pt.isToday
                   ? "text-[#E05A47] dark:text-[#F87171] font-bold"
                   : "text-[#8C857B] dark:text-[#6E7872] hover:text-[#1C1917] dark:hover:text-[#F4F1EA]"
-              }`}
+              )}
             >
               {pt.dayLabel}
             </button>

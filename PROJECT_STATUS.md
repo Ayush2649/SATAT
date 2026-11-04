@@ -1105,6 +1105,44 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ---
 
+### ✅ Sprint 7.5: Unified Weekly Momentum SVG Math, Dark Mode Steppers & Volume Highlight, Tactile Workout Sets, Filtered Completed Session Save, Streak Pill Relocation, & 12-Column Settings Bento Grid (`components/dashboard/ProgressTrendChart.tsx`, `components/diet/DietPage.tsx`, `components/workout/WorkoutPage.tsx`, `components/dashboard/HomeView.tsx`, `app/dashboard/settings/page.tsx`, `components/settings/*`, `styles/app-shell.css`, `tests/sprint7-5/sprint7-5.test.ts`)
+- **Unified SVG Coordinate Space for Weekly Momentum Curve & Markers (`components/dashboard/ProgressTrendChart.tsx`)**:
+  - Resolved floating dot alignment issue where circles were previously rendered in an overlay HTML container with disparate aspect-ratio math.
+  - Computed a unified mathematical coordinate array inside SVG `viewBox="0 0 700 140"`:
+    - `xCoords = [40, 148, 256, 364, 472, 580, 660]` (7 evenly spaced columns).
+    - `y = Math.round(98 - (src.score / 100) * 64)` (calm editorial band between `y=34` and `y=98`).
+  - Rendered both the cubic Bezier spline `<path d={pathD} />` AND the 7 circular markers `<circle cx={pt.x} cy={pt.y} ... />` inside the exact same SVG viewport at identical `(pt.x, pt.y)` coordinates without `preserveAspectRatio="none"`, guaranteeing geometric circles sitting mathematically dead-center on the line at all viewport widths.
+- **Dark Mode Stepper Buttons & Dish Matched Thumbnail (`components/diet/DietPage.tsx`)**:
+  - Restyled all 8 circular `-` and `+` macro stepper buttons inside `ENERGY (KCAL)`, `PROTEIN (G)`, `CARBS (G)`, and `FAT (G)` to `bg-[#EFECE4] dark:bg-[#1E2621] text-[#1C1917] dark:text-[#F4F1EA] border border-[#1C1917]/10 dark:border-white/15 hover:bg-[#2D6A4F] hover:text-white dark:hover:bg-[#34D399] dark:hover:text-[#0A0D0B]`.
+  - Added `truncate max-w-full leading-none px-2 py-0.5` to the dish thumbnail `✓ Matched` badge to prevent horizontal clipping.
+- **Session Intelligence Volume Highlight Dark Mode (`components/workout/WorkoutPage.tsx`, `styles/app-shell.css`)**:
+  - Restyled `VOLUME HIGHLIGHT` box in Dark Mode to `bg-[#F2F9F5] dark:bg-[#13221B] border border-[#2D6A4F]/20 dark:border-[#34D399]/25 text-[#1C1917] dark:text-[#E6F4ED]` and updated body text to `text-[#1C1917] dark:text-[#E6F4ED]`.
+  - Added global dark mode override rule `html.dark .bg-\[\#E6F4ED\]` to `styles/app-shell.css` to protect all mint/sage highlight cards.
+- **Tactile Border & "Click" Affordance for Workout Sets (`components/workout/WorkoutPage.tsx`)**:
+  - Unchecked Sets (`!set.completed`): rendered bordered `Click` button (`px-2.5 py-1.5 min-w-[54px] h-8 rounded-lg border border-[#1C1917]/20 dark:border-white/25 bg-[#F6F3EC] dark:bg-[#18201C] text-[10px] font-bold tracking-wider uppercase text-[#57534E] dark:text-[#9CA39E] hover:border-[#2D6A4F] dark:hover:border-[#34D399]`).
+  - Completed Sets (`set.completed`): rendered solid Matcha Sage badge (`px-2.5 py-1.5 min-w-[54px] h-8 rounded-lg bg-[#2D6A4F] text-white border border-[#34D399]/40 flex items-center justify-center gap-1 text-[10px] font-bold shadow-xs`) with `<Check className="w-3.5 h-3.5" /> Done`.
+- **Filtered Workout Save & Empty Exercise Exclusion (`components/workout/WorkoutPage.tsx`)**:
+  - In `handleSave`, filtered `ex.sets` to keep strictly `s.completed === true`.
+  - Filtered out exercises with 0 completed sets.
+  - Aborted save and showed error toast (`"Please mark at least one completed set as Done before finishing your session."`) if total completed sets equals 0 and no cardio was logged.
+  - Calculated session calories, split metadata, and Firestore documents strictly from completed sets.
+- **Dedicated Top-Right Streak Pill Slot Above 7-Day Calendar Strip (`components/dashboard/HomeView.tsx`)**:
+  - Rebuilt the top desktop greeting card with a full-width header eyebrow row separating `CIRCADIAN ALIGNMENT · {formatDateEyebrow()}` on the left and `🔥 {activeStreakDays}d streak` on the top right.
+  - Positioned the 7-day calendar strip below the divider line on the right, completely eliminating any possibility of the streak pill touching or overlapping `M 2`.
+- **Full-Width Desktop Workspace & Removal of Stray Orbit FAB (`styles/app-shell.css`, `components/ui/AriaChatbot.tsx`)**:
+  - Configured `.app-shell-content:not(:has(.orbit-view-root))` to `max-width: none !important; width: 100% !important; padding-inline: 1.5rem / 2.5rem / 3rem`.
+  - Removed duplicate floating bottom-right Orbit circle FAB in `AriaChatbot.tsx` (`return null;`).
+- **12-Column Responsive Bento Grid Desktop Settings Overhaul (`app/dashboard/settings/page.tsx`)**:
+  - Redesigned settings into a modern 12-column editorial bento grid:
+    - **Left 5 Columns**: Profile Identity Card (avatar, Google account, active status, circadian sync badge), Interface Appearance Card (3-column visual theme selector), and SATAT Setup & Biometrics Calibration Card with signature `#E05A47` CTA button (`Review & Update Setup →`).
+    - **Right 7 Columns**: Notifications & Circadian Reminders Card (2×2 responsive grid of time pickers with dark-mode borders `dark:bg-[#1C221E] dark:border-white/10 dark:text-[#F4F1EA]`), Connected Devices & Health Sync Card, and Data Ownership & Sign Out Card (`AccountPrivacySettings.tsx`).
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **58 passed (58 files), 668 passed | 26 skipped (694 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
 ### ✅ Sprint 7.4: Settings Dropdown Click Reliability, Today Eyebrow Fix, Smooth Weekly Momentum Curve, & Photographic Orbit Card (`Navigation.tsx`, `HomeView.tsx`, `ProgressTrendChart.tsx`, `TrackSheet.tsx`)
 - **Desktop Settings Dropdown Click Reliability (`components/Navigation.tsx`)**:
   - Resolved outside-click collision bug where desktop and mobile profile menus shared a single ref.
@@ -1129,7 +1167,7 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
-- **Vitest Suite**: `660 passed | 26 skipped` across all 57 test suites (0 failing).
+- **Vitest Suite**: `668 passed | 26 skipped` across all 58 test suites (0 failing).
 - **Navigation & Track Sheet Tests**: `15/15 passed` across `tests/navigation/*`.
 - **Markdown & UI Tests**: `13/13 passed` in `tests/ui/markdown-text.test.tsx`.
 - **Navigation & Launcher Tests**: `5/5 passed` in `tests/navigation/navigation-orbit-launcher.test.ts`.

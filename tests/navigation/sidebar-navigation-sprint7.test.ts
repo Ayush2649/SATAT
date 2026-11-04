@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import fs from "fs";
 import path from "path";
 
-describe("Sprint 7.3 & 7.4: Sidebar Navigation, Profile Menu, Greeting, & Weekly Momentum", () => {
+describe("Sprint 7.3, 7.4 & 7.5: Navigation, Profile Menu, Streak Positioning, & Unified Momentum Spline", () => {
   const navSource = fs.readFileSync(
     path.resolve(__dirname, "../../components/Navigation.tsx"),
     "utf8"
@@ -42,18 +42,17 @@ describe("Sprint 7.3 & 7.4: Sidebar Navigation, Profile Menu, Greeting, & Weekly
     expect(navSource).toContain('router.push("/dashboard/settings");');
   });
 
-  it("4. Today greeting eyebrow and streak badge are on a single non-wrapping row", () => {
-    expect(homeSource).toContain("flex items-center gap-3 flex-nowrap mb-2");
-    expect(homeSource).toContain("whitespace-nowrap");
+  it("4. Desktop streak badge is cleanly positioned in dedicated top-right slot above 7-day strip", () => {
     expect(homeSource).toContain("CIRCADIAN ALIGNMENT · {formatDateEyebrow()}");
     expect(homeSource).toContain("🔥 {activeStreakDays}d streak");
+    expect(homeSource).toContain("Dedicated Top Eyebrow Row: Streak Pill Cleanly Positioned in Top-Right");
   });
 
-  it("5. Weekly Momentum uses monotone cubic curve, dampened Y band, and HTML circular nodes", () => {
-    expect(chartSource).toContain("const yMin = 32;");
-    expect(chartSource).toContain("const yMax = 82;");
+  it("5. Weekly Momentum uses unified SVG coordinate space for curve and circular markers", () => {
+    expect(chartSource).toContain("xCoords = [40, 148, 256, 364, 472, 580, 660]");
+    expect(chartSource).toContain("const y = Math.round(98 - (src.score / 100) * 64);");
+    expect(chartSource).toContain("viewBox=\"0 0 700 140\"");
     expect(chartSource).toContain("vectorEffect=\"non-scaling-stroke\"");
-    expect(chartSource).toContain("rounded-full");
-    expect(chartSource).toContain("top-0 right-2 sm:right-4");
+    expect(chartSource).toContain("circle cx={pt.x} cy={pt.y}");
   });
 });

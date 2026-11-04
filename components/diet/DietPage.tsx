@@ -1214,14 +1214,14 @@ function AddMealModal({
         </div>
 
         {/* Dish Name & Live Matched Thumbnail */}
-        <div className="bg-[#F6F3EC] rounded-2xl p-3.5 flex items-center justify-between gap-3 border border-[#1C1917]/[0.05]">
+        <div className="bg-[#F6F3EC] dark:bg-[#181E1A] rounded-2xl p-3.5 flex items-center justify-between gap-3 border border-[#1C1917]/[0.05] dark:border-white/[0.08]">
           <div className="flex-1 min-w-0">
             <label className="text-[10px] font-bold uppercase tracking-wider text-[#8C857B] block mb-1">
               DISH NAME / RECIPE *
             </label>
             <input
               autoFocus
-              className="w-full bg-transparent text-sm font-bold text-[#1C1917] outline-none"
+              className="w-full bg-transparent text-sm font-bold text-[#1C1917] dark:text-[#F4F1EA] outline-none"
               placeholder="e.g. 2 besan cheela with curd"
               value={name}
               onChange={(e) => {
@@ -1234,8 +1234,8 @@ function AddMealModal({
 
           <div className="w-14 h-14 rounded-2xl overflow-hidden relative shrink-0 shadow-2xs bg-[#EFECE4]">
             <img src={matchedPhoto} alt="Dish match preview" className="w-full h-full object-cover" />
-            <span className="absolute inset-x-0 bottom-0 bg-[#2D6A4F]/90 text-white text-[8px] font-bold text-center py-0.2 tracking-wider uppercase flex items-center justify-center gap-0.5">
-              <Check className="w-2.5 h-2.5" /> Matched
+            <span className="absolute inset-x-0 bottom-0 bg-[#2D6A4F]/95 text-white px-2 py-0.5 text-[9px] font-bold truncate max-w-full tracking-wider uppercase flex items-center justify-center gap-0.5 leading-none">
+              <Check className="w-2.5 h-2.5 shrink-0" /> <span className="truncate">Matched</span>
             </span>
           </div>
         </div>
@@ -1245,7 +1245,7 @@ function AddMealModal({
           type="button"
           onClick={() => estimateMacros(name)}
           disabled={estimating || !name.trim()}
-          className="w-full bg-[#EFECE4] hover:bg-[#E2DDD2] text-[#1C1917] rounded-full py-2.5 px-4 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+          className="w-full bg-[#EFECE4] dark:bg-[#1E2621] hover:bg-[#E2DDD2] dark:hover:bg-[#26322B] text-[#1C1917] dark:text-[#F4F1EA] rounded-full py-2.5 px-4 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 border border-transparent dark:border-white/[0.08]"
         >
           {estimating ? (
             <Loader2 className="w-3.5 h-3.5 animate-spin text-[#2D6A4F]" />
@@ -1258,7 +1258,7 @@ function AddMealModal({
         {/* 2x2 Tactile Macro Grid with Steppers */}
         <div className="grid grid-cols-2 gap-3">
           {/* Calories */}
-          <div className="bg-[#F6F3EC] rounded-2xl p-3 border border-[#1C1917]/[0.05]">
+          <div className="bg-[#F6F3EC] dark:bg-[#181E1A] rounded-2xl p-3 border border-[#1C1917]/[0.05] dark:border-white/[0.08]">
             <span className="text-[10px] font-bold uppercase tracking-wider text-[#C94A38] block mb-1">
               ENERGY (KCAL)
             </span>
@@ -1266,7 +1266,7 @@ function AddMealModal({
               <button
                 type="button"
                 onClick={() => stepMacro(setCalories, calories, -25)}
-                className="w-6 h-6 rounded-full bg-white text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs"
+                className="w-6 h-6 rounded-full bg-[#EFECE4] dark:bg-[#1E2621] text-[#1C1917] dark:text-[#F4F1EA] border border-[#1C1917]/10 dark:border-white/15 hover:bg-[#2D6A4F] hover:text-white dark:hover:bg-[#34D399] dark:hover:text-[#0A0D0B] text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs transition-colors"
               >
                 -
               </button>
@@ -1278,12 +1278,12 @@ function AddMealModal({
                   setCalories(e.target.value);
                   setEstimated(false);
                 }}
-                className="w-14 text-center bg-transparent text-sm font-bold text-[#1C1917] outline-none"
+                className="w-14 text-center bg-transparent text-sm font-bold text-[#1C1917] dark:text-[#F4F1EA] outline-none"
               />
               <button
                 type="button"
                 onClick={() => stepMacro(setCalories, calories, 25)}
-                className="w-6 h-6 rounded-full bg-white text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs"
+                className="w-6 h-6 rounded-full bg-[#EFECE4] dark:bg-[#1E2621] text-[#1C1917] dark:text-[#F4F1EA] border border-[#1C1917]/10 dark:border-white/15 hover:bg-[#2D6A4F] hover:text-white dark:hover:bg-[#34D399] dark:hover:text-[#0A0D0B] text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs transition-colors"
               >
                 +
               </button>
@@ -1291,7 +1291,7 @@ function AddMealModal({
           </div>
 
           {/* Protein */}
-          <div className="bg-[#F6F3EC] rounded-2xl p-3 border border-[#1C1917]/[0.05]">
+          <div className="bg-[#F6F3EC] dark:bg-[#181E1A] rounded-2xl p-3 border border-[#1C1917]/[0.05] dark:border-white/[0.08]">
             <span className="text-[10px] font-bold uppercase tracking-wider text-[#2D6A4F] block mb-1">
               PROTEIN (G)
             </span>
@@ -1299,7 +1299,7 @@ function AddMealModal({
               <button
                 type="button"
                 onClick={() => stepMacro(setProtein, protein, -5)}
-                className="w-6 h-6 rounded-full bg-white text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs"
+                className="w-6 h-6 rounded-full bg-[#EFECE4] dark:bg-[#1E2621] text-[#1C1917] dark:text-[#F4F1EA] border border-[#1C1917]/10 dark:border-white/15 hover:bg-[#2D6A4F] hover:text-white dark:hover:bg-[#34D399] dark:hover:text-[#0A0D0B] text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs transition-colors"
               >
                 -
               </button>
@@ -1311,12 +1311,12 @@ function AddMealModal({
                   setProtein(e.target.value);
                   setEstimated(false);
                 }}
-                className="w-14 text-center bg-transparent text-sm font-bold text-[#1C1917] outline-none"
+                className="w-14 text-center bg-transparent text-sm font-bold text-[#1C1917] dark:text-[#F4F1EA] outline-none"
               />
               <button
                 type="button"
                 onClick={() => stepMacro(setProtein, protein, 5)}
-                className="w-6 h-6 rounded-full bg-white text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs"
+                className="w-6 h-6 rounded-full bg-[#EFECE4] dark:bg-[#1E2621] text-[#1C1917] dark:text-[#F4F1EA] border border-[#1C1917]/10 dark:border-white/15 hover:bg-[#2D6A4F] hover:text-white dark:hover:bg-[#34D399] dark:hover:text-[#0A0D0B] text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs transition-colors"
               >
                 +
               </button>
@@ -1324,7 +1324,7 @@ function AddMealModal({
           </div>
 
           {/* Carbs */}
-          <div className="bg-[#F6F3EC] rounded-2xl p-3 border border-[#1C1917]/[0.05]">
+          <div className="bg-[#F6F3EC] dark:bg-[#181E1A] rounded-2xl p-3 border border-[#1C1917]/[0.05] dark:border-white/[0.08]">
             <span className="text-[10px] font-bold uppercase tracking-wider text-[#F59E0B] block mb-1">
               CARBS (G)
             </span>
@@ -1332,7 +1332,7 @@ function AddMealModal({
               <button
                 type="button"
                 onClick={() => stepMacro(setCarbs, carbs, -5)}
-                className="w-6 h-6 rounded-full bg-white text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs"
+                className="w-6 h-6 rounded-full bg-[#EFECE4] dark:bg-[#1E2621] text-[#1C1917] dark:text-[#F4F1EA] border border-[#1C1917]/10 dark:border-white/15 hover:bg-[#2D6A4F] hover:text-white dark:hover:bg-[#34D399] dark:hover:text-[#0A0D0B] text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs transition-colors"
               >
                 -
               </button>
@@ -1344,12 +1344,12 @@ function AddMealModal({
                   setCarbs(e.target.value);
                   setEstimated(false);
                 }}
-                className="w-14 text-center bg-transparent text-sm font-bold text-[#1C1917] outline-none"
+                className="w-14 text-center bg-transparent text-sm font-bold text-[#1C1917] dark:text-[#F4F1EA] outline-none"
               />
               <button
                 type="button"
                 onClick={() => stepMacro(setCarbs, carbs, 5)}
-                className="w-6 h-6 rounded-full bg-white text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs"
+                className="w-6 h-6 rounded-full bg-[#EFECE4] dark:bg-[#1E2621] text-[#1C1917] dark:text-[#F4F1EA] border border-[#1C1917]/10 dark:border-white/15 hover:bg-[#2D6A4F] hover:text-white dark:hover:bg-[#34D399] dark:hover:text-[#0A0D0B] text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs transition-colors"
               >
                 +
               </button>
@@ -1357,7 +1357,7 @@ function AddMealModal({
           </div>
 
           {/* Fat */}
-          <div className="bg-[#F6F3EC] rounded-2xl p-3 border border-[#1C1917]/[0.05]">
+          <div className="bg-[#F6F3EC] dark:bg-[#181E1A] rounded-2xl p-3 border border-[#1C1917]/[0.05] dark:border-white/[0.08]">
             <span className="text-[10px] font-bold uppercase tracking-wider text-[#E05A47] block mb-1">
               FAT (G)
             </span>
@@ -1365,7 +1365,7 @@ function AddMealModal({
               <button
                 type="button"
                 onClick={() => stepMacro(setFat, fat, -2)}
-                className="w-6 h-6 rounded-full bg-white text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs"
+                className="w-6 h-6 rounded-full bg-[#EFECE4] dark:bg-[#1E2621] text-[#1C1917] dark:text-[#F4F1EA] border border-[#1C1917]/10 dark:border-white/15 hover:bg-[#2D6A4F] hover:text-white dark:hover:bg-[#34D399] dark:hover:text-[#0A0D0B] text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs transition-colors"
               >
                 -
               </button>
@@ -1377,12 +1377,12 @@ function AddMealModal({
                   setFat(e.target.value);
                   setEstimated(false);
                 }}
-                className="w-14 text-center bg-transparent text-sm font-bold text-[#1C1917] outline-none"
+                className="w-14 text-center bg-transparent text-sm font-bold text-[#1C1917] dark:text-[#F4F1EA] outline-none"
               />
               <button
                 type="button"
                 onClick={() => stepMacro(setFat, fat, 2)}
-                className="w-6 h-6 rounded-full bg-white text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs"
+                className="w-6 h-6 rounded-full bg-[#EFECE4] dark:bg-[#1E2621] text-[#1C1917] dark:text-[#F4F1EA] border border-[#1C1917]/10 dark:border-white/15 hover:bg-[#2D6A4F] hover:text-white dark:hover:bg-[#34D399] dark:hover:text-[#0A0D0B] text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs transition-colors"
               >
                 +
               </button>

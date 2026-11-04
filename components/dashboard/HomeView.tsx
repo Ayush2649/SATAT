@@ -374,7 +374,7 @@ export default function HomeView() {
                 <span className="w-1.5 h-1.5 rounded-full bg-[#2D6A4F]" />
                 <span>{formatDateEyebrow()}</span>
               </div>
-              <div className="bg-[#EFECE4] border border-[#1C1917]/[0.06] rounded-full px-2.5 py-0.5 inline-flex items-center gap-1 text-[11px] font-bold text-[#1C1917] shrink-0">
+              <div className="bg-[#EFECE4] dark:bg-[#1C221E] border border-[#1C1917]/[0.06] dark:border-white/[0.08] rounded-full px-2.5 py-0.5 inline-flex items-center gap-1 text-[11px] font-bold text-[#1C1917] dark:text-[#F4F1EA] shrink-0">
                 <span>🔥</span>
                 <span>{activeStreakDays}d</span>
               </div>
@@ -654,28 +654,31 @@ export default function HomeView() {
         {/* ── LEFT 8 COLUMNS: Main Studio Flow ── */}
         <div className="col-span-8 space-y-6">
           {/* 1. Top Greeting + 7-Day Calendar Row */}
-          <div className="bg-[#FCFBF9] dark:bg-[#141916] rounded-[28px] p-6 border border-[#1C1917]/[0.06] dark:border-white/[0.07] shadow-xs flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3 flex-nowrap mb-2">
-                <span className="inline-flex items-center gap-2 text-[11px] font-bold tracking-[0.14em] uppercase text-[#57534E] dark:text-[#9CA39E] whitespace-nowrap">
-                  <span className="w-2 h-2 rounded-full bg-[#2D6A4F] dark:bg-[#34D399]" />
-                  CIRCADIAN ALIGNMENT · {formatDateEyebrow()}
-                </span>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap shrink-0 bg-[#EFECE4] dark:bg-[#1C221E] text-[#1C1917] dark:text-[#F4F1EA] border border-[#1C1917]/[0.06] dark:border-white/[0.08]">
-                  🔥 {activeStreakDays}d streak
-                </span>
-              </div>
-              <h1 className="font-serif font-normal text-3xl leading-tight tracking-tight text-[#1C1917] dark:text-[#F4F1EA] mt-2">
-                {getGreetingPrefix()},{" "}
-                <span className="italic text-[#2D6A4F] dark:text-[#6EE7B7]">{firstName}</span>
-              </h1>
-              <p className="text-xs text-[#57534E] dark:text-[#9CA39E] mt-1">
-                Biological readiness primed · 4 high-impact cognitive blocks on deck today
-              </p>
+          <div className="bg-[#FCFBF9] dark:bg-[#141916] rounded-[28px] p-6 border border-[#1C1917]/[0.06] dark:border-white/[0.07] shadow-xs">
+            {/* Dedicated Top Eyebrow Row: Streak Pill Cleanly Positioned in Top-Right */}
+            <div className="flex items-center justify-between gap-4 mb-4 pb-3 border-b border-[#1C1917]/[0.05] dark:border-white/[0.06]">
+              <span className="inline-flex items-center gap-2 text-[11px] font-bold tracking-[0.14em] uppercase text-[#57534E] dark:text-[#9CA39E] whitespace-nowrap">
+                <span className="w-2 h-2 rounded-full bg-[#2D6A4F] dark:bg-[#34D399]" />
+                CIRCADIAN ALIGNMENT · {formatDateEyebrow()}
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold whitespace-nowrap shrink-0 bg-[#EFECE4] dark:bg-[#1C221E] text-[#1C1917] dark:text-[#F4F1EA] border border-[#1C1917]/[0.06] dark:border-white/[0.08] shadow-xs">
+                🔥 {activeStreakDays}d streak
+              </span>
             </div>
 
-            {/* Horizontal 7-Day Week Strip */}
-            <div className="grid grid-cols-7 gap-2 xl:w-[380px] shrink-0">
+            <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
+              <div className="flex-1 min-w-0">
+                <h1 className="font-serif font-normal text-3xl leading-tight tracking-tight text-[#1C1917] dark:text-[#F4F1EA]">
+                  {getGreetingPrefix()},{" "}
+                  <span className="italic text-[#2D6A4F] dark:text-[#6EE7B7]">{firstName}</span>
+                </h1>
+                <p className="text-xs text-[#57534E] dark:text-[#9CA39E] mt-1">
+                  Biological readiness primed · 4 high-impact cognitive blocks on deck today
+                </p>
+              </div>
+
+              {/* Horizontal 7-Day Week Strip */}
+              <div className="grid grid-cols-7 gap-2 xl:w-[380px] shrink-0">
               {weekDays.map((day) => {
                 if (day.isToday) {
                   return (
@@ -702,6 +705,7 @@ export default function HomeView() {
                   </div>
                 );
               })}
+              </div>
             </div>
           </div>
 

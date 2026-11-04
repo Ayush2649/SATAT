@@ -50,13 +50,13 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
       aria-checked={checked}
       onClick={() => onChange(!checked)}
       className={cn(
-        "relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200",
-        checked ? "bg-indigo-500" : "bg-gray-600"
+        "relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 cursor-pointer",
+        checked ? "bg-[#2D6A4F] dark:bg-[#34D399]" : "bg-stone-300 dark:bg-stone-700"
       )}
     >
       <span
         className={cn(
-          "pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg transform transition-transform duration-200",
+          "pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-md transform transition-transform duration-200",
           checked ? "translate-x-5" : "translate-x-0"
         )}
       />
@@ -77,23 +77,21 @@ function TimeRow({
   disabled?: boolean;
 }) {
   return (
-    <div className={cn(
-      "flex items-center justify-between py-3 px-4 rounded-xl transition-opacity",
-      disabled ? "opacity-40 pointer-events-none" : "",
-    )} style={{ background: "var(--surface-2)" }}>
-      <div className="flex items-center gap-2.5">
-        <Clock className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--text-3)" }} />
-        <span className="text-xs font-semibold" style={{ color: "var(--text-2)" }}>{label}</span>
+    <div
+      className={cn(
+        "flex items-center justify-between py-2.5 px-3 rounded-xl transition-opacity bg-[#F6F3EC] dark:bg-[#1C221E] border border-[#1C1917]/[0.06] dark:border-white/10",
+        disabled ? "opacity-40 pointer-events-none" : ""
+      )}
+    >
+      <div className="flex items-center gap-2">
+        <Clock className="w-3.5 h-3.5 shrink-0 text-[#8C857B] dark:text-[#9CA39E]" />
+        <span className="text-xs font-semibold text-[#1C1917] dark:text-[#F4F1EA]">{label}</span>
       </div>
       <input
         type="time"
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="text-xs font-mono font-bold rounded-lg px-2 py-1.5 border-0 outline-none focus:ring-1 focus:ring-[var(--accent)]"
-        style={{
-          background: "var(--surface-3)",
-          color: "var(--text-1)",
-        }}
+        className="text-xs font-mono font-bold rounded-lg px-2 py-1 border border-[#1C1917]/10 dark:border-white/10 bg-[#FCFBF9] dark:bg-[#141916] text-[#1C1917] dark:text-[#F4F1EA] outline-none focus:ring-1 focus:ring-[#2D6A4F] dark:focus:ring-[#34D399]"
       />
     </div>
   );
@@ -109,6 +107,7 @@ function SectionCard({
   enabled,
   onToggle,
   children,
+  gridLayout = false,
 }: {
   icon: React.ElementType;
   iconColor: string;
@@ -118,27 +117,25 @@ function SectionCard({
   enabled: boolean;
   onToggle: (v: boolean) => void;
   children?: React.ReactNode;
+  gridLayout?: boolean;
 }) {
   return (
-    <div
-      className="rounded-2xl overflow-hidden"
-      style={{ background: "var(--surface-1)", border: "1px solid var(--border)" }}
-    >
+    <div className="rounded-[22px] overflow-hidden bg-[#FCFBF9] dark:bg-[#141916] border border-[#1C1917]/[0.06] dark:border-white/[0.08] shadow-xs">
       {/* Header row */}
-      <div className="flex items-center gap-3 px-4 py-4">
+      <div className="flex items-center gap-3 px-4 py-3.5">
         <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center shrink-0", iconBg)}>
           <Icon className={cn("w-4.5 h-4.5", iconColor)} style={{ width: 18, height: 18 }} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold" style={{ color: "var(--text-1)" }}>{title}</p>
-          <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-3)" }}>{subtitle}</p>
+          <p className="text-sm font-bold text-[#1C1917] dark:text-[#F4F1EA]">{title}</p>
+          <p className="text-xs mt-0.5 truncate text-[#8C857B] dark:text-[#9CA39E]">{subtitle}</p>
         </div>
         <Toggle checked={enabled} onChange={onToggle} />
       </div>
 
-      {/* Time rows */}
+      {/* Time rows — 2x2 grid layout where applicable */}
       {children && (
-        <div className="px-3 pb-3 space-y-1.5">
+        <div className={cn("px-3.5 pb-3.5", gridLayout ? "grid grid-cols-1 sm:grid-cols-2 gap-2" : "space-y-2")}>
           {children}
         </div>
       )}
@@ -387,6 +384,7 @@ export default function NotificationSettings() {
         subtitle="Reminders to log breakfast, lunch & dinner"
         enabled={prefs.mealReminders}
         onToggle={v => update({ mealReminders: v })}
+        gridLayout={true}
       >
         <TimeRow label="Breakfast" value={prefs.breakfastTime} onChange={v => update({ breakfastTime: v })} disabled={!prefs.mealReminders} />
         <TimeRow label="Lunch"     value={prefs.lunchTime}     onChange={v => update({ lunchTime: v })}     disabled={!prefs.mealReminders} />

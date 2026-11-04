@@ -498,12 +498,42 @@ export default function WorkoutPage() {
       toast("Add at least one movement or cardio activity", "error");
       return;
     }
+
+    // Filter to keep ONLY completed sets and exercises with at least one completed set
+    const validExercises = exercises
+      .map((ex) => ({
+        ...ex,
+        sets: ex.sets.filter((s) => Boolean(s.completed)),
+      }))
+      .filter((ex) => ex.sets.length > 0);
+
+    const totalCompletedSets = validExercises.reduce((acc, ex) => acc + ex.sets.length, 0);
+
+    // If exercises are entered but 0 sets marked completed (and no cardio logged)
+    if (totalCompletedSets === 0 && cardioLogs.length === 0) {
+      toast("Please mark at least one completed set as Done before finishing your session.", "error");
+      return;
+    }
+
     setSaving(true);
     try {
+      // Guarantee clean Firestore document (no undefined fields) strictly from completed sets
+      const sanitizedExercises = validExercises.map((ex) => ({
+        id: ex.id || generateId(),
+        name: ex.name,
+        sets: ex.sets.map((s) => ({
+          id: s.id || generateId(),
+          reps: Number(s.reps) || 0,
+          weight: s.unit === "bodyweight" ? 0 : Number(s.weight) || 0,
+          unit: s.unit || "kg",
+          completed: true,
+        })),
+      }));
+
       const sessionCalories = extractOrComputeWorkoutCalories(
         {
           durationMinutes: duration || 45,
-          exercises,
+          exercises: sanitizedExercises,
           cardioLogs,
           summary: summaryResult,
           caloriesBurned: caloriesBurned || undefined,
@@ -513,22 +543,9 @@ export default function WorkoutPage() {
 
       const splitMeta = inferWorkoutSplitMeta({
         name: activeSessionTitle,
-        exercises,
+        exercises: sanitizedExercises,
         cardioLogs,
       });
-
-      // Guarantee clean Firestore document (no undefined fields)
-      const sanitizedExercises = exercises.map((ex) => ({
-        id: ex.id || generateId(),
-        name: ex.name,
-        sets: ex.sets.map((s) => ({
-          id: s.id || generateId(),
-          reps: Number(s.reps) || 0,
-          weight: s.unit === "bodyweight" ? 0 : Number(s.weight) || 0,
-          unit: s.unit || "kg",
-          completed: Boolean(s.completed),
-        })),
-      }));
 
       const session_data: any = {
         userId,
@@ -907,31 +924,31 @@ export default function WorkoutPage() {
                     )}
 
                     {/* 3. Editorial "Session Intelligence" (Orbit Biomechanical Synthesis) Card */}
-                    <div className="bg-[#FCFBF9] rounded-[28px] p-5 border border-[#1C1917]/[0.06] shadow-xs">
+                    <div className="bg-[#FCFBF9] dark:bg-[#141916] rounded-[28px] p-5 border border-[#1C1917]/[0.06] dark:border-white/[0.07] shadow-xs">
                       <div className="flex items-start justify-between gap-2 mb-4">
                         <div>
-                          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#2D6A4F]">
+                          <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#2D6A4F] dark:text-[#34D399]">
                             ORBIT BIOMECHANICAL SYNTHESIS
                           </div>
-                          <h3 className="font-serif text-2xl text-[#1C1917] mt-0.5 leading-tight">
+                          <h3 className="font-serif text-2xl text-[#1C1917] dark:text-[#F4F1EA] mt-0.5 leading-tight">
                             Session Intelligence
                           </h3>
                         </div>
-                        <span className="bg-[#FADCD5]/70 text-[#C94A38] rounded-full px-3 py-1 text-[10px] font-bold whitespace-nowrap shrink-0">
+                        <span className="bg-[#FADCD5]/70 dark:bg-[#341B18] text-[#C94A38] dark:text-[#F87171] rounded-full px-3 py-1 text-[10px] font-bold whitespace-nowrap shrink-0 border border-transparent dark:border-[#E05A47]/30">
                           {coachIntel.intensityBadge}
                         </span>
                       </div>
 
                       <div className="space-y-3">
                         {/* Sub-Card 1: Mint Sage Highlight */}
-                        <div className="bg-[#E6F4ED] border border-[#2D6A4F]/15 rounded-[20px] p-4">
-                          <div className="text-[10px] font-bold tracking-wider uppercase text-[#2D6A4F] flex items-center gap-1.5">
-                            <Check className="w-3.5 h-3.5 text-[#2D6A4F]" />
+                        <div className="bg-[#F2F9F5] dark:bg-[#13221B] border border-[#2D6A4F]/20 dark:border-[#34D399]/25 text-[#1C1917] dark:text-[#E6F4ED] rounded-[20px] p-4">
+                          <div className="text-[10px] font-bold tracking-wider uppercase text-[#2D6A4F] dark:text-[#34D399] flex items-center gap-1.5">
+                            <Check className="w-3.5 h-3.5 text-[#2D6A4F] dark:text-[#34D399]" />
                             VOLUME HIGHLIGHT
                           </div>
                           <p
                             className={cn(
-                              "text-xs text-[#1C1917] leading-relaxed mt-1.5",
+                              "text-xs text-[#1C1917] dark:text-[#E6F4ED] leading-relaxed mt-1.5",
                               !showFullAnalysis && "line-clamp-3"
                             )}
                           >
@@ -940,14 +957,14 @@ export default function WorkoutPage() {
                         </div>
 
                         {/* Sub-Card 2: Warm Stone Progression */}
-                        <div className="bg-[#F6F3EC] border border-[#1C1917]/[0.06] rounded-[20px] p-4">
-                          <div className="text-[10px] font-bold tracking-wider uppercase text-[#1C1917] flex items-center gap-1.5">
-                            <TrendingUp className="w-3.5 h-3.5 text-[#1C1917]" />
+                        <div className="bg-[#F6F3EC] dark:bg-[#181E1A] border border-[#1C1917]/[0.06] dark:border-white/[0.08] rounded-[20px] p-4">
+                          <div className="text-[10px] font-bold tracking-wider uppercase text-[#1C1917] dark:text-[#F4F1EA] flex items-center gap-1.5">
+                            <TrendingUp className="w-3.5 h-3.5 text-[#1C1917] dark:text-[#34D399]" />
                             LOAD PROGRESSION
                           </div>
                           <p
                             className={cn(
-                              "text-xs text-[#57534E] leading-relaxed mt-1.5",
+                              "text-xs text-[#57534E] dark:text-[#9CA39E] leading-relaxed mt-1.5",
                               !showFullAnalysis && "line-clamp-3"
                             )}
                           >
@@ -956,12 +973,12 @@ export default function WorkoutPage() {
                         </div>
 
                         {/* Sub-Card 3: Deep Botanical Espresso Next Session Tip */}
-                        <div className="bg-[#191D1A] text-[#FCFBF9] rounded-[20px] p-4 shadow-md">
+                        <div className="bg-[#191D1A] dark:bg-[#101412] text-[#FCFBF9] rounded-[20px] p-4 shadow-md border border-transparent dark:border-white/[0.08]">
                           <div className="text-[10px] font-bold tracking-wider uppercase text-[#E05A47] flex items-center gap-1.5">
                             <Sparkles className="w-3.5 h-3.5 text-[#E05A47]" />
                             NEXT SESSION ACTIVATION TIP
                           </div>
-                          <p className="text-xs text-stone-200 leading-relaxed mt-1.5">
+                          <p className="text-xs text-stone-200 dark:text-stone-300 leading-relaxed mt-1.5">
                             {coachIntel.nextSessionTip}
                           </p>
                         </div>
@@ -1292,20 +1309,23 @@ export default function WorkoutPage() {
 
                               {/* Done Checkbox */}
                               <div className="col-span-2 flex justify-end">
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    updateSet(ex.id, set.id, { completed: !set.completed })
-                                  }
-                                  className={cn(
-                                    "w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer",
-                                    set.completed
-                                      ? "bg-[#2D6A4F] text-white shadow-2xs"
-                                      : "border border-[#1C1917]/20 text-transparent hover:border-[#2D6A4F]"
-                                  )}
-                                >
-                                  <Check className="w-3.5 h-3.5" />
-                                </button>
+                                {!set.completed ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => updateSet(ex.id, set.id, { completed: true })}
+                                    className="px-2 py-1 min-w-[46px] h-7 rounded-lg border border-[#1C1917]/20 dark:border-white/25 bg-[#F6F3EC] dark:bg-[#18201C] text-[9px] font-bold tracking-wider uppercase text-[#57534E] dark:text-[#9CA39E] hover:border-[#2D6A4F] dark:hover:border-[#34D399] hover:text-[#2D6A4F] dark:hover:text-[#6EE7B7] flex items-center justify-center gap-1 transition-all cursor-pointer"
+                                  >
+                                    Click
+                                  </button>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => updateSet(ex.id, set.id, { completed: false })}
+                                    className="px-2 py-1 min-w-[46px] h-7 rounded-lg bg-[#2D6A4F] text-white border border-[#34D399]/40 flex items-center justify-center gap-1 text-[9px] font-bold shadow-xs transition-all cursor-pointer"
+                                  >
+                                    <Check className="w-3 h-3" /> Done
+                                  </button>
+                                )}
                               </div>
                             </div>
                           );
@@ -1700,7 +1720,7 @@ export default function WorkoutPage() {
                           <th className="py-2 px-3 text-center">WEIGHT (KG)</th>
                           <th className="py-2 px-3 text-center">REPS</th>
                           <th className="py-2 px-3 text-center">RPE</th>
-                          <th className="py-2 px-2 text-right w-16">STATUS</th>
+                          <th className="py-2 px-2 text-right w-20">DONE</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[#1C1917]/[0.04]">
@@ -1748,17 +1768,23 @@ export default function WorkoutPage() {
                                 </span>
                               </td>
                               <td className="py-2.5 px-2 text-right">
-                                <button
-                                  type="button"
-                                  onClick={() => updateSet(ex.id, set.id, { completed: !set.completed })}
-                                  className={`w-7 h-7 rounded-full inline-flex items-center justify-center transition-all cursor-pointer ${
-                                    set.completed
-                                      ? "bg-[#2D6A4F] text-white"
-                                      : "bg-[#EFECE4] hover:bg-[#E2DDD2] text-stone-400"
-                                  }`}
-                                >
-                                  <Check className="w-3.5 h-3.5 stroke-[3]" />
-                                </button>
+                                {!set.completed ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => updateSet(ex.id, set.id, { completed: true })}
+                                    className="px-2.5 py-1.5 min-w-[54px] h-8 rounded-lg border border-[#1C1917]/20 dark:border-white/25 bg-[#F6F3EC] dark:bg-[#18201C] text-[10px] font-bold tracking-wider uppercase text-[#57534E] dark:text-[#9CA39E] hover:border-[#2D6A4F] dark:hover:border-[#34D399] hover:text-[#2D6A4F] dark:hover:text-[#6EE7B7] flex items-center justify-center gap-1 transition-all cursor-pointer ml-auto"
+                                  >
+                                    Click
+                                  </button>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => updateSet(ex.id, set.id, { completed: false })}
+                                    className="px-2.5 py-1.5 min-w-[54px] h-8 rounded-lg bg-[#2D6A4F] text-white border border-[#34D399]/40 flex items-center justify-center gap-1 text-[10px] font-bold shadow-xs transition-all cursor-pointer ml-auto"
+                                  >
+                                    <Check className="w-3.5 h-3.5" /> Done
+                                  </button>
+                                )}
                               </td>
                             </tr>
                           );
