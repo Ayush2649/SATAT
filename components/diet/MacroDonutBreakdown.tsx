@@ -62,19 +62,19 @@ export default function MacroDonutBreakdown({
       key: "carbs",
       pct: carbPct,
       arcColor: "#F59E0B",
-      textColor: variant === "dark" ? "#FBBF24" : "#D97706",
+      textColor: variant === "dark" ? "#F59E0B" : "#D97706",
     },
     {
       key: "fat",
       pct: fatPct,
       arcColor: "#E05A47",
-      textColor: variant === "dark" ? "#F87171" : "#E05A47",
+      textColor: variant === "dark" ? "#E05A47" : "#E05A47",
     },
     {
       key: "protein",
       pct: proteinPct,
       arcColor: "#2D6A4F",
-      textColor: variant === "dark" ? "#4ADE80" : "#2D6A4F",
+      textColor: variant === "dark" ? "#34D399" : "#2D6A4F",
     },
   ];
 
@@ -156,9 +156,9 @@ export default function MacroDonutBreakdown({
       {/* ── Right: 3-Column Macro Readout Inset Box ── */}
       <div
         className={cn(
-          "flex-1 rounded-2xl py-3 px-2 border",
+          "flex-1 rounded-2xl py-3 px-2 sm:p-4 border",
           variant === "dark"
-            ? "bg-white/[0.04] border-white/[0.06] text-white"
+            ? "bg-white/[0.04] border-white/[0.07] text-white"
             : "bg-[#EFECE4]/60 border-[#1C1917]/[0.05] text-[#1C1917]"
         )}
       >
@@ -178,19 +178,19 @@ export default function MacroDonutBreakdown({
             </span>
             <span
               className={cn(
-                "text-base sm:text-lg font-bold whitespace-nowrap mt-0.5 leading-tight",
+                "text-base sm:text-lg lg:text-xl font-bold whitespace-nowrap mt-1 leading-tight",
                 variant === "dark" ? "text-white" : "text-[#1C1917]"
               )}
             >
               {safeCarbs}g
             </span>
-            {targetCarbs != null && targetCarbs > 0 && (
-              <span className="text-[10px] text-stone-400 font-normal block whitespace-nowrap mt-0.5 leading-none">
-                /{targetCarbs}g
-              </span>
-            )}
-            <span className="text-[11px] text-[#8C857B] font-medium whitespace-nowrap mt-0.5 block leading-none">
-              Carbs
+            <span
+              className={cn(
+                "text-[11px] font-normal block whitespace-nowrap mt-1 leading-none",
+                variant === "dark" ? "text-stone-400" : "text-[#8C857B]"
+              )}
+            >
+              {targetCarbs != null && targetCarbs > 0 ? `/${targetCarbs}g Carbs` : "Carbs"}
             </span>
           </div>
 
@@ -204,19 +204,19 @@ export default function MacroDonutBreakdown({
             </span>
             <span
               className={cn(
-                "text-base sm:text-lg font-bold whitespace-nowrap mt-0.5 leading-tight",
+                "text-base sm:text-lg lg:text-xl font-bold whitespace-nowrap mt-1 leading-tight",
                 variant === "dark" ? "text-white" : "text-[#1C1917]"
               )}
             >
               {safeFat}g
             </span>
-            {targetFat != null && targetFat > 0 && (
-              <span className="text-[10px] text-stone-400 font-normal block whitespace-nowrap mt-0.5 leading-none">
-                /{targetFat}g
-              </span>
-            )}
-            <span className="text-[11px] text-[#8C857B] font-medium whitespace-nowrap mt-0.5 block leading-none">
-              Fat
+            <span
+              className={cn(
+                "text-[11px] font-normal block whitespace-nowrap mt-1 leading-none",
+                variant === "dark" ? "text-stone-400" : "text-[#8C857B]"
+              )}
+            >
+              {targetFat != null && targetFat > 0 ? `/${targetFat}g Fat` : "Fat"}
             </span>
           </div>
 
@@ -230,19 +230,19 @@ export default function MacroDonutBreakdown({
             </span>
             <span
               className={cn(
-                "text-base sm:text-lg font-bold whitespace-nowrap mt-0.5 leading-tight",
+                "text-base sm:text-lg lg:text-xl font-bold whitespace-nowrap mt-1 leading-tight",
                 variant === "dark" ? "text-white" : "text-[#1C1917]"
               )}
             >
               {safeProtein}g
             </span>
-            {targetProtein != null && targetProtein > 0 && (
-              <span className="text-[10px] text-stone-400 font-normal block whitespace-nowrap mt-0.5 leading-none">
-                /{targetProtein}g
-              </span>
-            )}
-            <span className="text-[11px] text-[#8C857B] font-medium whitespace-nowrap mt-0.5 block leading-none">
-              Protein
+            <span
+              className={cn(
+                "text-[11px] font-normal block whitespace-nowrap mt-1 leading-none",
+                variant === "dark" ? "text-stone-400" : "text-[#8C857B]"
+              )}
+            >
+              {targetProtein != null && targetProtein > 0 ? `/${targetProtein}g Protein` : "Protein"}
             </span>
           </div>
         </div>

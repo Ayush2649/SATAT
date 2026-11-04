@@ -649,53 +649,33 @@ export default function DietPage() {
           <div className="col-span-5 space-y-5">
             {/* 1. Dark Espresso "Circadian Fuel Balance" Macro Card */}
             <div className="bg-[#191D1A] rounded-[28px] p-5 text-white shadow-xl relative overflow-hidden border border-white/[0.08]">
+              {/* Top Row with Non-Truncating Remaining Calories */}
               <div className="flex items-center justify-between gap-2 mb-4">
-                <span className="bg-[#2D6A4F]/30 border border-[#6EE7B7]/20 text-[#6EE7B7] rounded-full px-3 py-1 text-[10px] font-bold tracking-wider uppercase inline-flex items-center gap-1.5 whitespace-nowrap">
+                <span className="bg-[#2D6A4F]/30 border border-[#6EE7B7]/20 text-[#6EE7B7] rounded-full px-3 py-1 text-[10px] font-bold tracking-wider uppercase inline-flex items-center gap-1.5 whitespace-nowrap shrink-0">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7]" />
                   CIRCADIAN FUEL BALANCE
                 </span>
-                <span className="text-[10px] text-stone-300 font-semibold bg-white/10 px-2 py-0.5 rounded-full">
-                  ● High Nutrient Density
+                <span className="text-xs text-stone-300 font-medium text-right whitespace-nowrap shrink-0">
+                  <strong className="text-white font-bold">{remainingCalories.toLocaleString()} kcal</strong>{" "}
+                  remaining · Target {targetCalories.toLocaleString()}
                 </span>
               </div>
 
-              {/* CRITICAL FIX for image_49d42c.jpg: Clean w-28 h-28 (112px x 112px) SVG Progress Ring */}
-              <div className="w-28 h-28 mx-auto my-3 relative flex items-center justify-center">
-                <svg className="w-full h-full -rotate-90 transform" viewBox="0 0 112 112">
-                  <circle
-                    cx="56"
-                    cy="56"
-                    r="46"
-                    stroke="rgba(255,255,255,0.08)"
-                    strokeWidth="8"
-                    fill="none"
-                  />
-                  <circle
-                    cx="56"
-                    cy="56"
-                    r="46"
-                    stroke="#2D6A4F"
-                    strokeWidth="8"
-                    strokeLinecap="round"
-                    fill="none"
-                    strokeDasharray={2 * Math.PI * 46}
-                    strokeDashoffset={2 * Math.PI * 46 * (1 - Math.min(1, totals.calories / targetCalories))}
-                    className="transition-all duration-700 ease-out"
-                  />
-                </svg>
-                {/* Center Calorie Readout Inside SVG Ring */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-                  <span className="text-2xl font-serif font-bold text-white leading-none">
-                    {totals.calories.toLocaleString()}
-                  </span>
-                  <span className="text-[10px] text-stone-400 mt-1 font-medium leading-none">
-                    / {targetCalories.toLocaleString()} kcal
-                  </span>
-                </div>
-              </div>
+              {/* 3-Segment SVG Macro Doughnut Ring & 3-Column Macro Percentage/Gram Breakdown Box (Exact match with image_51b401.png) */}
+              <MacroDonutBreakdown
+                variant="dark"
+                calories={totals.calories}
+                carbs={totals.carbsG}
+                fat={totals.fatG}
+                protein={totals.proteinG}
+                targetCarbs={goals?.carbsG}
+                targetFat={goals?.fatG}
+                targetProtein={goals?.proteinG}
+                className="my-2"
+              />
 
               {/* 3 Horizontal Macro Progress Bars Below Ring */}
-              <div className="space-y-2.5 mt-4 pt-3 border-t border-white/[0.08]">
+              <div className="space-y-2.5 mt-5 pt-4 border-t border-white/[0.08]">
                 {/* Protein Bar */}
                 <div>
                   <div className="flex items-center justify-between text-xs mb-1">
