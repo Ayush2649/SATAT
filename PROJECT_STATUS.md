@@ -995,6 +995,29 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ---
 
+### ✅ Sprint 6.9.3: Multi-Segment Macro Doughnut Ring on Desktop Fuel Summary Card (`components/diet/DietPage.tsx`, `components/diet/MacroDonutBreakdown.tsx`)
+- **3-Segment SVG Macro Doughnut Ring on Desktop**:
+  - Replaced the plain single-color green ring on desktop with the vibrant 3-segment SVG Macro Doughnut Ring matching the mobile design:
+    - Carbs arc: Warm Amber/Gold (`#F59E0B`)
+    - Fat arc: Terracotta Coral (`#E05A47`)
+    - Protein arc: Botanical Matcha Sage (`#2D6A4F`) with geometric gaps (`strokeDashoffset`) and clean fallback on 0 kcal.
+    - Centered calorie readout: Bold white `{loggedCalories}` with `kcal` sub-label.
+- **3-Column Macro Breakdown Box Alongside Doughnut Ring**:
+  - Embedded the rounded dark inner container (`bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 grid grid-cols-3 divide-x divide-white/[0.08] text-center`):
+    - Column 1 (Carbs): `{carbsPct}%` (`text-[#F59E0B] text-xs font-bold`), `{loggedCarbs}g` (`text-white text-xl font-bold`), `/{targetCarbs}g Carbs` (`text-stone-400 text-[11px]`).
+    - Column 2 (Fat): `{fatPct}%` (`text-[#E05A47] text-xs font-bold`), `{loggedFats}g` (`text-white text-xl font-bold`), `/{targetFats}g Fat` (`text-stone-400 text-[11px]`).
+    - Column 3 (Protein): `{proteinPct}%` (`text-[#34D399] text-xs font-bold`), `{loggedProtein}g` (`text-white text-xl font-bold`), `/{targetProtein}g Protein` (`text-stone-400 text-[11px]`).
+- **Header Remaining Calories Non-Truncating**:
+  - Added `whitespace-nowrap shrink-0` to the top-right remaining calories label (`{remainingCalories} kcal remaining · Target {targetCalories}`) ensuring it never truncates with `...`.
+- **Preserved Desktop Telemetry**:
+  - Retained the 3 horizontal progress bars (Protein, Carbs, Fats) and the Restorative biological ceiling callout below the doughnut breakdown.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **55 passed (55 files), 650 passed | 26 skipped (676 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
 - **Vitest Suite**: `650 passed | 26 skipped` across all 55 test suites (0 failing).
