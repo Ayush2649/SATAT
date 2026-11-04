@@ -365,3 +365,230 @@
 
 
 
+
+
+/* ──────────────────────────────────────────────────────────────────────────
+   NOCTURNAL BOTANICAL EDITORIAL DARK MODE SYSTEM (§ SPRINT 7.0)
+   Matching image_51307e.jpg (Today), image_51305d.jpg (Fuel), and image_512d9b.jpg (Orbit)
+   Strictly scoped to html.dark / [data-theme="dark"] with 0% impact on Light Mode.
+   ────────────────────────────────────────────────────────────────────────── */
+
+html.dark body,
+html.dark .app-shell-main,
+html.dark .app-shell-content,
+html.dark .orbit-view-root,
+html[data-theme="dark"] body {
+  background-color: #0A0D0B !important;
+  color: #F4F1EA !important;
+}
+
+/* 1. Background Canvas (#F6F3EC -> #0A0D0B Deep Obsidian Forest) */
+html.dark .bg-\[\#F6F3EC\],
+html.dark [class*="bg-[#F6F3EC]"],
+html.dark .bg-\[\#F6F3EC\]\/90,
+html.dark .bg-\[\#F6F3EC\]\/85 {
+  background-color: #0A0D0B !important;
+}
+
+/* 2. Standard Card Surface (#FCFBF9 -> #141916 Elevated Charcoal Moss) */
+html.dark .bg-\[\#FCFBF9\],
+html.dark [class*="bg-[#FCFBF9]"],
+html.dark .bg-white:not(button):not(input):not(.bg-white\/\[0\.08\]):not(.bg-white\/\[0\.06\]):not(.bg-white\/\[0\.04\]):not([class*="bg-white/"]):not(.app-mobile-track-fab):not(.rounded-full) {
+  background-color: #141916 !important;
+  border-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+/* 3. Secondary / Muted Surface (#EFECE4 -> #1C221E Subtle Inset Well) */
+html.dark .bg-\[\#EFECE4\],
+html.dark [class*="bg-[#EFECE4]"],
+html.dark .bg-\[\#EFECE4\]\/85,
+html.dark .bg-\[\#EFECE4\]\/70,
+html.dark .bg-\[\#EFECE4\]\/60 {
+  background-color: #1C221E !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* 4. Hero & Dark Feature Cards (#191D1A -> Deep Botanical Emerald-Charcoal Gradient) */
+html.dark .bg-\[\#191D1A\]:not(nav):not(.app-mobile-profile-button):not(.rounded-full),
+html.dark [class*="bg-[#191D1A]"]:not(nav):not(.app-mobile-profile-button):not(.rounded-full) {
+  background: linear-gradient(180deg, #1E2822 0%, #141B17 100%) !important;
+  border: 1px solid rgba(52, 211, 153, 0.20) !important;
+}
+
+/* 5. Navigation Shell & App Bars */
+html.dark .app-mobile-header,
+html.dark header.app-mobile-header {
+  background-color: #0A0D0B !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
+}
+
+html.dark header.fixed.top-0,
+html.dark .app-shell-sidebar,
+html.dark aside.fixed {
+  background-color: #0A0D0B !important;
+  border-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+/* Mobile Bottom Navigation Dock in Dark Mode */
+html.dark nav.bg-\[\#191D1A\]\/95,
+html.dark .bg-\[\#191D1A\]\/95 {
+  background: rgba(20, 25, 22, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.75) !important;
+}
+
+/* 6. Typography Hierarchy in Dark Mode */
+html.dark .text-\[\#1C1917\],
+html.dark .text-\[\#191D1A\],
+html.dark [class*="text-[#1C1917]"],
+html.dark [class*="text-[#191D1A]"] {
+  color: #F4F1EA !important;
+}
+
+html.dark .text-\[\#57534E\],
+html.dark [class*="text-[#57534E]"] {
+  color: #9CA39E !important;
+}
+
+html.dark .text-\[\#8C857B\],
+html.dark [class*="text-[#8C857B]"] {
+  color: #6E7872 !important;
+}
+
+/* 7. Precision Hairline Borders in Dark Mode */
+html.dark .border-\[\#1C1917\]\/\[0\.08\],
+html.dark .border-\[\#1C1917\]\/\[0\.06\],
+html.dark .border-\[\#1C1917\]\/\[0\.05\],
+html.dark .border-\[\#1C1917\]\/\[0\.04\],
+html.dark .border-\[\#1C1917\]\/10,
+html.dark .border-\[\#191D1A\]\/10,
+html.dark .border-\[\#191D1A\]\/\[0\.06\] {
+  border-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+/* 8. Botanical Matcha Sage Pill Overrides in Dark Mode */
+html.dark .bg-\[\#2D6A4F\],
+html.dark [class*="bg-[#2D6A4F]"]:not(button):not(a) {
+  background-color: #1E4D38 !important;
+  border-color: rgba(52, 211, 153, 0.30) !important;
+  color: #E6F4ED !important;
+}
+
+html.dark .text-\[\#2D6A4F\] {
+  color: #34D399 !important;
+}
+
+/* Active navigation tab & active calendar pill */
+html.dark a[class*="bg-[#2D6A4F]"],
+html.dark button[class*="bg-[#2D6A4F]"] {
+  background-color: #1E4D38 !important;
+  border: 1px solid rgba(52, 211, 153, 0.30) !important;
+  color: #E6F4ED !important;
+}
+
+/* 9. Terracotta Clay Actions in Dark Mode */
+html.dark button.bg-\[\#E05A47\],
+html.dark a.bg-\[\#E05A47\],
+html.dark .bg-\[\#E05A47\] {
+  background-color: #C84331 !important;
+  color: #FFFFFF !important;
+}
+
+html.dark button.bg-\[\#E05A47\]:hover,
+html.dark a.bg-\[\#E05A47\]:hover,
+html.dark .bg-\[\#E05A47\]:hover {
+  background-color: #E05A47 !important;
+}
+
+/* 10. Calorie & Macro Badges in Dark Mode */
+html.dark .bg-\[\#FADCD5\]\/70,
+html.dark .bg-\[\#FADCD5\],
+html.dark .bg-\[\#FADCD5\]\/80 {
+  background-color: rgba(224, 90, 71, 0.15) !important;
+  color: #F87171 !important;
+  border: 1px solid rgba(224, 90, 71, 0.25) !important;
+}
+
+/* 11. Protein Macro Pills in Dark Mode */
+html.dark .bg-\[\#D1FAE5\],
+html.dark .bg-\[\#E0F2E9\],
+html.dark .bg-\[\#D8F3DC\] {
+  background-color: rgba(45, 106, 79, 0.25) !important;
+  color: #6EE7B7 !important;
+  border: 1px solid rgba(52, 211, 153, 0.20) !important;
+}
+
+/* 12. Orbit AI Response Cards & Bubbles */
+html.dark .orbit-card-content {
+  --text-primary: #F4F1EA;
+  --text-secondary: #9CA39E;
+  --text-muted: #6E7872;
+}
+
+
+/* 13. Active & Inactive Calendar Days in Dark Mode */
+html.dark .bg-\[\#191D1A\].text-\[\#FCFBF9\].rounded-\[22px\],
+html.dark .bg-\[\#191D1A\].text-\[\#FCFBF9\].rounded-\[20px\] {
+  background: #1E4D38 !important;
+  border: 1px solid rgba(52, 211, 153, 0.30) !important;
+  color: #E6F4ED !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45) !important;
+}
+
+/* 14. Input & Textarea Elements in Dark Mode */
+html.dark input:not([type="checkbox"]):not([type="radio"]),
+html.dark textarea,
+html.dark select {
+  background-color: #141916 !important;
+  color: #F4F1EA !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #6E7872 !important;
+}
+
+/* 15. Orbit Chat Stream & Bubbles in Dark Mode */
+html.dark div[class*="rounded-br-sm"] {
+  background-color: #1C241F !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
+  color: #F4F1EA !important;
+}
+
+html.dark div[class*="rounded-tl-sm"] {
+  background-color: #121815 !important;
+  border-color: rgba(52, 211, 153, 0.20) !important;
+  color: #F4F1EA !important;
+}
+
+/* 16. Composer Dock Gradient in Dark Mode */
+html.dark .from-\[\#F6F3EC\],
+html.dark [class*="from-[#F6F3EC]"] {
+  --tw-gradient-from: #0A0D0B var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgba(10, 13, 11, 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+html.dark .via-\[\#F6F3EC\]\/95,
+html.dark [class*="via-[#F6F3EC]"] {
+  --tw-gradient-stops: var(--tw-gradient-from), rgba(10, 13, 11, 0.95) var(--tw-gradient-via-position), var(--tw-gradient-to) !important;
+}
+
+/* 17. Cadence Shift Insights Banner */
+html.dark .bg-\[\#D8F3DC\]\/75,
+html.dark .bg-\[\#D8F3DC\] {
+  background-color: rgba(30, 58, 43, 0.45) !important;
+  border-color: rgba(52, 211, 153, 0.20) !important;
+  color: #D1FAE5 !important;
+}
+
+html.dark .text-\[\#1B4332\] {
+  color: #D1FAE5 !important;
+}
+
+/* 18. Macro Donut Inset & Dividers */
+html.dark .divide-\[\#1C1917\]\/\[0\.08\],
+html.dark .divide-\[\#1C1917\]\/\[0\.07\] {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}

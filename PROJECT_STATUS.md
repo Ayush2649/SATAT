@@ -1018,6 +1018,34 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ---
 
+### ✅ Sprint 7.0: Full-App "Nocturnal Botanical Editorial" Dark Mode (`styles/satat.tokens.css`, `styles/app-shell.css`, `components/settings/AppearanceSettings.tsx`, `app/dashboard/settings/page.tsx`, `app/layout.tsx`)
+- **Nocturnal Botanical Editorial Palette Tokens**:
+  - Configured canonical dark mode tokens under `.dark`, `html.dark`, and `[data-theme="dark"]` in `styles/satat.tokens.css`:
+    - Canvas: `--satat-bg: #0A0D0B` (Deep Obsidian Forest)
+    - Card Surfaces: `--satat-surface: #141916` (Elevated Charcoal Moss) with hairline border `rgba(255, 255, 255, 0.07)`
+    - Subtle Inset Wells: `--satat-surface-subtle: #1C221E` with hairline border `rgba(255, 255, 255, 0.06)`
+    - Hero & Feature Dark Cards: `--satat-anchor-dark: #1B241E` / `linear-gradient(180deg, #1E2822 0%, #141B17 100%)` with luminous emerald rim `border border-[#34D399]/20`
+    - Typography Scale: Primary `#F4F1EA` (Warm Alabaster), Secondary `#9CA39E` (Muted Sage-Stone), Muted metadata `#6E7872`
+    - Semantic Botanical Accents: Active calendar & nav pills `bg-[#1E4D38]` with `border-[#34D399]/30` and text `#E6F4ED`, Terracotta CTAs `bg-[#C84331]` hover `bg-[#E05A47]`, Calorie pills `bg-[#E05A47]/15 text-[#F87171] border border-[#E05A47]/25`, Protein pills `bg-[#2D6A4F]/25 text-[#6EE7B7] border border-[#34D399]/20`.
+- **Universal Scoped Overrides in `styles/app-shell.css`**:
+  - Implemented scoped CSS rules under `html.dark` converting existing components into the Nocturnal Botanical Dark Mode without structural destabilization.
+  - Active and inactive calendar day indicators on Today and 7-day strip.
+  - Date navigator buttons and pills on Fuel.
+  - Floating bottom composer dock with seamless dark mode gradient (`from-[#0A0D0B] via-[#0A0D0B]/95 to-transparent`).
+  - Chat stream user bubble (`#1C241F` with `border-white/10`) and AI response card (`#121815` with `#34D399]/20` rim).
+  - Cadence Shift insight banner (`#1E3A2B]/45` with `#34D399]/20` border and `#D1FAE5` text).
+  - Form inputs, textareas, and select elements (`#141916` with `#F4F1EA` text and `#6E7872` placeholder).
+- **Settings & Appearance Enhancements (`components/settings/AppearanceSettings.tsx`, `app/dashboard/settings/page.tsx`)**:
+  - Upgraded Appearance switcher with tactile SATAT button tokens (`Dark (Nocturnal)`, `Light (Sunlit)`, `System`).
+  - Removed legacy purple/blue `#6E8BFF` styles in favor of SATAT Matcha `#2D6A4F` / Emerald `#34D399`.
+  - Immediate `document.documentElement.classList.toggle("dark", isDark)` execution on click with persistent `localStorage` synchronization.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **55 passed (55 files), 650 passed | 26 skipped (676 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
 - **Vitest Suite**: `650 passed | 26 skipped` across all 55 test suites (0 failing).
