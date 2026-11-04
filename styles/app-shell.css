@@ -592,3 +592,65 @@ html.dark .divide-\[\#1C1917\]\/\[0\.08\],
 html.dark .divide-\[\#1C1917\]\/\[0\.07\] {
   border-color: rgba(255, 255, 255, 0.08) !important;
 }
+
+/* 19. All Remaining Light/Pastel Surfaces in Dark Mode (§ Sprint 7.1) */
+/* Overdue and Warning Containers */
+html.dark .bg-rose-50,
+html.dark .bg-rose-50\/60,
+html.dark .bg-rose-50\/30,
+html.dark .bg-\[\#FDF2F0\],
+html.dark .bg-\[\#FDF2EC\] {
+  background-color: #1F1414 !important;
+  border-color: rgba(224, 90, 71, 0.30) !important;
+}
+
+html.dark .border-rose-200\/70,
+html.dark .border-rose-200\/80 {
+  border-color: rgba(224, 90, 71, 0.30) !important;
+}
+
+html.dark .text-\[\#C94A38\],
+html.dark .text-\[\#9A3412\] {
+  color: #F87171 !important;
+}
+
+/* Green/Mint Pastels (Adherence, Options, Recommendations) */
+html.dark .bg-\[\#F2F9F5\],
+html.dark .bg-\[\#E6F7F0\] {
+  background-color: #131D18 !important;
+  border-color: rgba(52, 211, 153, 0.25) !important;
+}
+
+html.dark .text-\[\#22543D\],
+html.dark .text-\[\#1B4332\] {
+  color: #6EE7B7 !important;
+}
+
+/* Amber/Gold Pastels (Best Streak) */
+html.dark .bg-\[\#FEF9E7\] {
+  background-color: #241E14 !important;
+  border-color: rgba(245, 158, 11, 0.25) !important;
+}
+
+html.dark .text-\[\#92400E\] {
+  color: #FBBF24 !important;
+}
+
+/* Habit Heatmap 1-2 Habits Cell */
+html.dark .bg-\[\#C6F6D5\],
+html.dark .bg-\[\#A7F3D0\] {
+  background-color: #163828 !important;
+  color: #6EE7B7 !important;
+  border: 1px solid rgba(52, 211, 153, 0.25) !important;
+}
+
+html.dark .text-\[\#065F46\] {
+  color: #6EE7B7 !important;
+}
+
+/* Inactive/Unchecked Ritual Status Circles */
+html.dark .border-2.border-\[\#1C1917\]\/20.bg-white,
+html.dark .border-2.border-\[\#1C1917\]\/20 {
+  background-color: #1C221E !important;
+  border-color: rgba(255, 255, 255, 0.20) !important;
+}

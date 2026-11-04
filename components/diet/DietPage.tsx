@@ -925,9 +925,9 @@ export default function DietPage() {
             )}
 
             {/* 3. Orbit Autonomous Recommendation ("Adaptive Protein-Gap Dinner") Card */}
-            <div className="bg-[#F2F9F5] border border-[#2D6A4F]/25 rounded-[26px] p-5 shadow-xs space-y-3.5">
+            <div className="bg-[#F2F9F5] dark:bg-[#131D18] border border-[#2D6A4F]/20 dark:border-[#34D399]/25 rounded-[26px] p-5 shadow-xs space-y-3.5">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#1B4332]">
+                <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#2D6A4F] dark:text-[#6EE7B7]">
                   ORBIT AUTONOMOUS RECOMMENDATION · ADAPTIVE DINNER
                 </span>
                 <span className="bg-[#2D6A4F] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full">
@@ -935,16 +935,16 @@ export default function DietPage() {
                 </span>
               </div>
 
-              <p className="text-xs text-[#1B4332] leading-relaxed">
+              <p className="text-xs text-[#57534E] dark:text-[#9CA39E] leading-relaxed">
                 To close today&apos;s protein window before your sleep cycle, Orbit synthesized 2 high-protein options tailored to your circadian timing:
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="bg-white rounded-2xl p-3.5 border border-[#2D6A4F]/15 flex flex-col justify-between">
+                <div className="bg-white dark:bg-[#1A221D] rounded-2xl p-3.5 border border-[#2D6A4F]/15 dark:border-white/[0.08] flex flex-col justify-between">
                   <div>
-                    <span className="text-[10px] font-bold text-[#2D6A4F] uppercase">Option A</span>
-                    <h5 className="font-bold text-xs text-[#1C1917] mt-0.5">Paneer Bhurji & 2 Rotis</h5>
-                    <p className="text-[11px] text-[#57534E] mt-0.5">38g Protein · 480 kcal · Low GI</p>
+                    <span className="text-[10px] font-bold text-[#2D6A4F] dark:text-[#34D399] uppercase">Option A</span>
+                    <h5 className="font-bold text-xs text-[#1C1917] dark:text-[#F4F1EA] mt-0.5">Paneer Bhurji & 2 Rotis</h5>
+                    <p className="text-[11px] text-[#57534E] dark:text-[#9CA39E] mt-0.5">38g Protein · 480 kcal · Low GI</p>
                   </div>
                   <button
                     type="button"
@@ -960,11 +960,11 @@ export default function DietPage() {
                   </button>
                 </div>
 
-                <div className="bg-white rounded-2xl p-3.5 border border-[#2D6A4F]/15 flex flex-col justify-between">
+                <div className="bg-white dark:bg-[#1A221D] rounded-2xl p-3.5 border border-[#2D6A4F]/15 dark:border-white/[0.08] flex flex-col justify-between">
                   <div>
-                    <span className="text-[10px] font-bold text-[#2D6A4F] uppercase">Option B</span>
-                    <h5 className="font-bold text-xs text-[#1C1917] mt-0.5">Grilled Tofu & Quinoa Bowl</h5>
-                    <p className="text-[11px] text-[#57534E] mt-0.5">34g Protein · 420 kcal · High Fiber</p>
+                    <span className="text-[10px] font-bold text-[#2D6A4F] dark:text-[#34D399] uppercase">Option B</span>
+                    <h5 className="font-bold text-xs text-[#1C1917] dark:text-[#F4F1EA] mt-0.5">Grilled Tofu & Quinoa Bowl</h5>
+                    <p className="text-[11px] text-[#57534E] dark:text-[#9CA39E] mt-0.5">34g Protein · 420 kcal · High Fiber</p>
                   </div>
                   <button
                     type="button"
@@ -974,7 +974,7 @@ export default function DietPage() {
                         { calories: 420, proteinG: 34, carbsG: 40, fatG: 14 }
                       )
                     }
-                    className="w-full mt-3 bg-[#191D1A] hover:bg-[#2D6A4F] text-white rounded-full py-1.5 text-xs font-semibold text-center transition-all cursor-pointer shadow-2xs"
+                    className="w-full mt-3 bg-[#191D1A] dark:bg-[#253028] hover:bg-[#2D6A4F] text-white rounded-full py-1.5 text-xs font-semibold text-center transition-all cursor-pointer shadow-2xs"
                   >
                     + Log Option B →
                   </button>
