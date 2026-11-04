@@ -104,15 +104,15 @@ export default function ProgressTrendChart({
       else fuel = "Balanced";
     }
 
-    // Sample exactly 7 points across the range for the responsive SVG
+    // Sample exactly 7 points across the range for the full-width responsive SVG (7 columns of 100px each)
     const sampledDays: DayPoint[] = [];
-    const xCoords = [20, 66, 112, 158, 205, 252, 300];
+    const xCoords = [50, 150, 250, 350, 450, 550, 650];
 
     for (let j = 0; j < 7; j++) {
       const idx = Math.min(rawDays.length - 1, Math.round((j / 6) * (rawDays.length - 1)));
       const src = rawDays[idx];
-      // Map score 0..100 to y=88..32
-      const y = Math.round(88 - (src.score / 100) * 56);
+      // Map score 0..100 to y=116..26
+      const y = Math.round(116 - (src.score / 100) * 90);
       sampledDays.push({
         ...src,
         x: xCoords[j],
@@ -177,24 +177,24 @@ export default function ProgressTrendChart({
     const pts = chartData.points;
     const last = pts[pts.length - 1];
     const first = pts[0];
-    return `${pathD} L ${last.x} 110 L ${first.x} 110 Z`;
+    return `${pathD} L ${last.x} 128 L ${first.x} 128 Z`;
   }, [pathD, chartData.points]);
 
   return (
-    <div className="bg-[#FCFBF9] rounded-[28px] p-5 border border-[#1C1917]/[0.06] shadow-xs">
+    <div className="bg-[#FCFBF9] dark:bg-[#141916] rounded-[28px] p-5 border border-[#1C1917]/[0.06] dark:border-white/[0.07] shadow-xs">
       {/* 1. Header Row — Fixed Single-Line Title without truncation */}
       <div className="flex items-center justify-between gap-2 min-w-0">
         <div className="shrink-0">
-          <div className="text-[9px] font-bold tracking-[0.15em] uppercase text-[#8C857B]">
+          <div className="text-[9px] font-bold tracking-[0.15em] uppercase text-[#8C857B] dark:text-[#6E7872]">
             PROGRESS TRAJECTORY
           </div>
-          <h2 className="font-serif text-[1.15rem] sm:text-xl text-[#1C1917] leading-tight whitespace-nowrap">
+          <h2 className="font-serif text-[1.15rem] sm:text-xl text-[#1C1917] dark:text-[#F4F1EA] leading-tight whitespace-nowrap">
             Weekly Momentum
           </h2>
         </div>
 
         {/* 3-Pill Range Switcher */}
-        <div className="bg-[#EFECE4] p-1 rounded-full inline-flex items-center gap-0.5 shrink-0">
+        <div className="bg-[#EFECE4] dark:bg-[#1C221E] p-1 rounded-full inline-flex items-center gap-0.5 shrink-0">
           {(["7D", "30D", "90D"] as const).map((r) => (
             <button
               key={r}
@@ -205,8 +205,8 @@ export default function ProgressTrendChart({
               }}
               className={`rounded-full py-1 text-[10px] font-semibold transition-all ${
                 range === r
-                  ? "bg-[#191D1A] text-white px-3 font-bold shadow-xs"
-                  : "text-[#8C857B] hover:text-[#1C1917] px-2.5"
+                  ? "bg-[#191D1A] dark:bg-[#1E4D38] text-white dark:text-[#E6F4ED] px-3 font-bold shadow-xs"
+                  : "text-[#8C857B] dark:text-[#6E7872] hover:text-[#1C1917] dark:hover:text-[#F4F1EA] px-2.5"
               }`}
             >
               {r}
@@ -216,13 +216,13 @@ export default function ProgressTrendChart({
       </div>
 
       {/* 2. 3-Column KPI Strip */}
-      <div className="bg-[#F6F3EC] rounded-2xl p-3 grid grid-cols-3 divide-x divide-[#1C1917]/[0.07] mt-4 text-center">
+      <div className="bg-[#F6F3EC] dark:bg-[#181E1A] rounded-2xl p-3 grid grid-cols-3 divide-x divide-[#1C1917]/[0.07] dark:divide-white/[0.08] mt-4 text-center">
         {/* Column 1: Adherence */}
         <div className="px-2">
           <div className="text-[9px] font-bold tracking-wider uppercase text-[#8C857B]">
             ADHERENCE
           </div>
-          <div className="flex items-center justify-center gap-1.5 mt-0.5 text-xs font-bold text-[#1C1917]">
+          <div className="flex items-center justify-center gap-1.5 mt-0.5 text-xs font-bold text-[#1C1917] dark:text-[#F4F1EA]">
             <span className="w-1.5 h-1.5 rounded-full bg-[#2D6A4F]" />
             <span>{chartData.adherence}</span>
           </div>
@@ -233,8 +233,8 @@ export default function ProgressTrendChart({
           <div className="text-[9px] font-bold tracking-wider uppercase text-[#8C857B]">
             STRENGTH
           </div>
-          <div className="flex items-center justify-center gap-1 mt-0.5 text-xs font-bold text-[#1C1917]">
-            <span className="text-[#2D6A4F]">{chartData.strength}</span>
+          <div className="flex items-center justify-center gap-1 mt-0.5 text-xs font-bold text-[#1C1917] dark:text-[#F4F1EA]">
+            <span className="text-[#2D6A4F] dark:text-[#34D399]">{chartData.strength}</span>
           </div>
         </div>
 
@@ -243,7 +243,7 @@ export default function ProgressTrendChart({
           <div className="text-[9px] font-bold tracking-wider uppercase text-[#8C857B]">
             FUEL
           </div>
-          <div className="mt-0.5 text-xs font-bold text-[#2D6A4F]">
+          <div className="mt-0.5 text-xs font-bold text-[#2D6A4F] dark:text-[#34D399]">
             {chartData.fuel}
           </div>
         </div>
@@ -253,51 +253,59 @@ export default function ProgressTrendChart({
       <div className="mt-7 relative pt-4">
         {/* Floating Dark Tooltip Positioned Over Active Node */}
         <div
-          className="absolute -top-1 bg-[#191D1A] text-white rounded-2xl px-3.5 py-1.5 text-[10px] font-semibold shadow-lg whitespace-nowrap z-10 pointer-events-none transition-all duration-300"
+          className="absolute -top-1 bg-[#191D1A] dark:bg-[#1E2822] text-white dark:text-[#F4F1EA] border border-transparent dark:border-white/10 rounded-2xl px-3.5 py-1.5 text-[10px] font-semibold shadow-lg whitespace-nowrap z-10 pointer-events-none transition-all duration-300"
           style={{
-            left: `${(activePoint.x / 320) * 100}%`,
+            left: `${(activePoint.x / 700) * 100}%`,
             transform: "translate(-50%, -100%)",
           }}
         >
           <span>{tooltipText}</span>
         </div>
 
-        {/* Responsive Bezier SVG */}
+        {/* Full-Width Responsive Bezier Area SVG */}
         <svg
-          viewBox="0 0 320 110"
-          className="w-full h-28 overflow-visible"
+          viewBox="0 0 700 140"
+          preserveAspectRatio="none"
+          className="w-full h-36 sm:h-44 overflow-visible block"
           aria-hidden="true"
         >
           <defs>
-            <linearGradient id="momentumWash" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#2D6A4F" stopOpacity="0.22" />
+            <linearGradient id="momentumGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#2D6A4F" stopOpacity="0.32" />
+              <stop offset="70%" stopColor="#2D6A4F" stopOpacity="0.08" />
               <stop offset="100%" stopColor="#2D6A4F" stopOpacity="0.0" />
             </linearGradient>
           </defs>
 
+          {/* Subtle Horizontal Reference Grid Lines */}
+          <line x1="20" y1="26" x2="680" y2="26" stroke="currentColor" strokeDasharray="4 4" className="text-stone-200 dark:text-white/[0.06]" />
+          <line x1="20" y1="71" x2="680" y2="71" stroke="currentColor" strokeDasharray="4 4" className="text-stone-200 dark:text-white/[0.06]" />
+          <line x1="20" y1="116" x2="680" y2="116" stroke="currentColor" strokeDasharray="4 4" className="text-stone-200 dark:text-white/[0.06]" />
+
           {/* Area Fill */}
-          <path d={areaD} fill="url(#momentumWash)" />
+          <path d={areaD} fill="url(#momentumGradient)" />
 
           {/* Vertical dashed guide line from Active Node down to baseline */}
           <line
             x1={activePoint.x}
             y1={activePoint.y}
             x2={activePoint.x}
-            y2="110"
+            y2="128"
             stroke="#2D6A4F"
-            strokeWidth="1"
-            strokeDasharray="3 3"
-            opacity="0.45"
-            className="transition-all duration-300"
+            strokeWidth="1.5"
+            strokeDasharray="4 4"
+            opacity="0.5"
+            className="transition-all duration-300 dark:stroke-[#34D399]"
           />
 
           {/* Smooth Bezier Line Stroke */}
           <path
             d={pathD}
             stroke="#2D6A4F"
-            strokeWidth="2.5"
+            strokeWidth="3"
             fill="none"
             strokeLinecap="round"
+            className="dark:stroke-[#34D399]"
           />
 
           {/* Interactive Clickable Nodes */}
@@ -311,24 +319,24 @@ export default function ProgressTrendChart({
                 className="cursor-pointer"
                 onClick={() => setSelectedNodeIndex(idx)}
               >
-                {/* Invisible larger hit target for mobile tapping */}
-                <circle cx={pt.x} cy={pt.y} r="12" fill="transparent" />
+                {/* Invisible larger hit target for tapping */}
+                <circle cx={pt.x} cy={pt.y} r="18" fill="transparent" />
 
                 {isSelected ? (
                   <circle
                     cx={pt.x}
                     cy={pt.y}
-                    r="5.5"
+                    r="7"
                     fill="#2D6A4F"
                     stroke="#FCFBF9"
-                    strokeWidth="2.5"
-                    className="transition-all"
+                    strokeWidth="3"
+                    className="transition-all dark:fill-[#34D399] dark:stroke-[#141916]"
                   />
                 ) : isToday ? (
                   <circle
                     cx={pt.x}
                     cy={pt.y}
-                    r="4"
+                    r="5.5"
                     fill="#E05A47"
                     className="transition-all"
                   />
@@ -336,11 +344,11 @@ export default function ProgressTrendChart({
                   <circle
                     cx={pt.x}
                     cy={pt.y}
-                    r="3.5"
+                    r="5"
                     fill="#FCFBF9"
                     stroke="#2D6A4F"
-                    strokeWidth="2"
-                    className="transition-all hover:scale-125"
+                    strokeWidth="2.5"
+                    className="transition-all hover:scale-125 dark:fill-[#141916] dark:stroke-[#34D399]"
                   />
                 )}
               </g>
@@ -357,10 +365,10 @@ export default function ProgressTrendChart({
               onClick={() => setSelectedNodeIndex(idx)}
               className={`transition-colors ${
                 idx === activeIdx
-                  ? "text-[#2D6A4F] font-bold"
+                  ? "text-[#2D6A4F] dark:text-[#34D399] font-bold"
                   : pt.isToday
-                  ? "text-[#E05A47] font-bold"
-                  : "text-[#8C857B] hover:text-[#1C1917]"
+                  ? "text-[#E05A47] dark:text-[#F87171] font-bold"
+                  : "text-[#8C857B] dark:text-[#6E7872] hover:text-[#1C1917] dark:hover:text-[#F4F1EA]"
               }`}
             >
               {pt.dayLabel}

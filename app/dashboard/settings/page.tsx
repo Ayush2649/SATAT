@@ -28,10 +28,10 @@ export default async function SettingsPage() {
       {/* ── Page Header & Profile ── */}
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="page-title text-2xl font-semibold tracking-tight" style={{ color: "var(--text-primary)" }}>
+          <h1 className="page-title text-2xl font-semibold tracking-tight text-[#1C1917] dark:text-[#F4F1EA]">
             Settings & Profile
           </h1>
-          <p className="page-description text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
+          <p className="page-description text-xs mt-0.5 text-[#57534E] dark:text-[#9CA39E]">
             Manage your personal operating system
           </p>
         </div>
@@ -39,13 +39,7 @@ export default async function SettingsPage() {
 
       {/* ── Profile Summary Row ── */}
       {session?.user && (
-        <div
-          className="rounded-2xl p-4 flex items-center gap-3.5"
-          style={{
-            background: "var(--satat-surface, #0D0F11)",
-            border: "1px solid var(--satat-border-subtle, rgba(255,255,255,0.05))",
-          }}
-        >
+        <div className="rounded-2xl p-4 flex items-center gap-3.5 bg-[#FCFBF9] dark:bg-[#141916] border border-[#1C1917]/[0.06] dark:border-white/[0.07] shadow-sm">
           {session.user.image ? (
             <Image
               src={session.user.image}
@@ -55,18 +49,15 @@ export default async function SettingsPage() {
               className="rounded-xl shrink-0"
             />
           ) : (
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-sm font-semibold"
-              style={{ background: "rgba(110, 139, 255, 0.12)", color: "var(--satat-brand, #6E8BFF)" }}
-            >
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-sm font-semibold bg-[#2D6A4F]/10 dark:bg-[#1E4D38]/40 text-[#2D6A4F] dark:text-[#34D399]">
               <User className="w-5 h-5" />
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>
+            <p className="text-sm font-semibold truncate text-[#1C1917] dark:text-[#F4F1EA]">
               {session.user.name}
             </p>
-            <p className="text-xs truncate mt-0.5" style={{ color: "var(--text-muted)" }}>
+            <p className="text-xs truncate mt-0.5 text-[#57534E] dark:text-[#9CA39E]">
               {session.user.email}
             </p>
           </div>
@@ -76,8 +67,8 @@ export default async function SettingsPage() {
       {/* ── 1. Appearance / Theme ── */}
       <div>
         <div className="flex items-center gap-2 mb-2 px-1">
-          <Palette className="w-4 h-4" style={{ color: "var(--satat-brand, #6E8BFF)" }} />
-          <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+          <Palette className="w-4 h-4 text-[#2D6A4F] dark:text-[#34D399]" />
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-[#57534E] dark:text-[#9CA39E]">
             Appearance
           </h2>
         </div>
@@ -87,8 +78,8 @@ export default async function SettingsPage() {
       {/* ── 2. Personalization / Your SATAT Setup (§2) ── */}
       <div>
         <div className="flex items-center gap-2 mb-2 px-1">
-          <Sliders className="w-4 h-4" style={{ color: "var(--satat-brand, #6E8BFF)" }} />
-          <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+          <Sliders className="w-4 h-4 text-[#2D6A4F] dark:text-[#34D399]" />
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-[#57534E] dark:text-[#9CA39E]">
             Your Setup & Personalization
           </h2>
         </div>
@@ -98,8 +89,8 @@ export default async function SettingsPage() {
       {/* ── 3. Notifications ── */}
       <div>
         <div className="flex items-center gap-2 mb-2 px-1">
-          <Bell className="w-4 h-4" style={{ color: "var(--satat-brand, #6E8BFF)" }} />
-          <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+          <Bell className="w-4 h-4 text-[#2D6A4F] dark:text-[#34D399]" />
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-[#57534E] dark:text-[#9CA39E]">
             Notifications & Reminders
           </h2>
         </div>
@@ -109,8 +100,8 @@ export default async function SettingsPage() {
       {/* ── 4. Health Sync ── */}
       <div>
         <div className="flex items-center gap-2 mb-2 px-1">
-          <Watch className="w-4 h-4" style={{ color: "var(--satat-brand, #6E8BFF)" }} />
-          <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+          <Watch className="w-4 h-4 text-[#2D6A4F] dark:text-[#34D399]" />
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-[#57534E] dark:text-[#9CA39E]">
             Connected Devices & Health Sync
           </h2>
         </div>

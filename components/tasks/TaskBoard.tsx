@@ -980,10 +980,10 @@ export default function TaskBoard() {
 
                 {/* Overdue Tasks Banner (if any) */}
                 {overdueTasks.length > 0 && (
-                  <div className="mb-4 bg-rose-50/60 rounded-3xl p-4 border border-rose-200/70">
+                  <div className="mb-4 bg-rose-50/60 dark:bg-[#1F1414]/90 rounded-3xl p-4 border border-rose-200/70 dark:border-[#E05A47]/30">
                     <div className="flex items-center gap-2 mb-3">
-                      <AlertCircle className="w-4 h-4 text-[#C94A38] shrink-0" />
-                      <span className="text-xs font-bold text-[#C94A38] uppercase tracking-wider">
+                      <AlertCircle className="w-4 h-4 text-[#C94A38] dark:text-[#F87171] shrink-0" />
+                      <span className="text-xs font-bold text-[#C94A38] dark:text-[#F87171] uppercase tracking-wider">
                         Overdue · {overdueTasks.length} tasks
                       </span>
                     </div>
@@ -1514,10 +1514,10 @@ export default function TaskBoard() {
 
                 {/* 3. Today's Execution Queue (Task Cards) */}
                 {overdueTasks.length > 0 && (
-                  <div className="bg-rose-50/60 rounded-3xl p-4 border border-rose-200/70">
+                  <div className="bg-rose-50/60 dark:bg-[#1F1414]/90 rounded-3xl p-4 border border-rose-200/70 dark:border-[#E05A47]/30">
                     <div className="flex items-center gap-2 mb-3">
-                      <AlertCircle className="w-4 h-4 text-[#C94A38] shrink-0" />
-                      <span className="text-xs font-bold text-[#C94A38] uppercase tracking-wider">
+                      <AlertCircle className="w-4 h-4 text-[#C94A38] dark:text-[#F87171] shrink-0" />
+                      <span className="text-xs font-bold text-[#C94A38] dark:text-[#F87171] uppercase tracking-wider">
                         Overdue · {overdueTasks.length} tasks
                       </span>
                     </div>
@@ -1816,19 +1816,19 @@ export default function TaskBoard() {
                 ) : (
                   <>
                     <Play className="w-4 h-4 fill-current" />
-                    <span>▷ Enter Flow State</span>
+                    <span>Enter Flow State</span>
                   </>
                 )}
               </button>
             </div>
 
             {/* 2. Daily Rituals 2×2 Photo-Backed Overlay Grid */}
-            <div className="bg-[#FCFBF9] rounded-[28px] p-5 border border-[#1C1917]/[0.06] shadow-xs">
+            <div className="bg-[#FCFBF9] dark:bg-[#141916] rounded-[28px] p-5 border border-[#1C1917]/[0.06] dark:border-white/[0.07] shadow-xs">
               <div className="flex items-center justify-between mb-3.5">
-                <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#1C1917]">
+                <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#1C1917] dark:text-[#F4F1EA]">
                   DAILY NON-NEGOTIABLES
                 </span>
-                <span className="text-xs font-semibold text-[#2D6A4F]">
+                <span className="text-xs font-semibold text-[#2D6A4F] dark:text-[#34D399]">
                   {completedRitualsCount} / {RITUAL_DEFS.length} Done
                 </span>
               </div>
@@ -1840,10 +1840,10 @@ export default function TaskBoard() {
                     <div
                       key={ritual.id}
                       onClick={() => toggleRitual(ritual.id)}
-                      className="bg-[#FCFBF9] hover:bg-[#F6F3EC] p-3.5 rounded-[22px] border border-[#1C1917]/[0.08] shadow-2xs cursor-pointer transition-all flex flex-col justify-between min-h-[118px] group"
+                      className="bg-[#FCFBF9] hover:bg-[#F6F3EC] dark:bg-[#141916] dark:hover:bg-[#1C221E] p-3.5 rounded-[22px] border border-[#1C1917]/[0.08] dark:border-white/[0.08] shadow-2xs cursor-pointer transition-all flex flex-col justify-between min-h-[118px] group"
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0 border border-[#1C1917]/10 bg-stone-100 shadow-2xs">
+                        <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0 border border-[#1C1917]/10 dark:border-white/10 bg-stone-100 dark:bg-[#1C221E] shadow-2xs">
                           <img
                             src={ritual.photoUrl}
                             alt={ritual.title}
@@ -1859,7 +1859,7 @@ export default function TaskBoard() {
                             "w-5 h-5 rounded-full flex items-center justify-center transition-colors shrink-0",
                             isDone
                               ? "bg-[#2D6A4F] text-white"
-                              : "border-2 border-[#1C1917]/20 bg-white"
+                              : "border-2 border-[#1C1917]/20 dark:border-white/20 bg-white dark:bg-[#1C221E]"
                           )}
                         >
                           {isDone && <Check className="w-3 h-3 stroke-[3]" />}
@@ -1867,10 +1867,10 @@ export default function TaskBoard() {
                       </div>
 
                       <div className="mt-2">
-                        <span className="text-[9px] font-bold tracking-wider uppercase text-[#8C857B] block truncate">
+                        <span className="text-[9px] font-bold tracking-wider uppercase text-[#8C857B] dark:text-[#6E7872] block truncate">
                           {ritual.category}
                         </span>
-                        <h5 className="font-bold text-xs text-[#1C1917] mt-0.5 leading-snug line-clamp-2">
+                        <h5 className="font-bold text-xs text-[#1C1917] dark:text-[#F4F1EA] mt-0.5 leading-snug line-clamp-2">
                           {ritual.title}
                         </h5>
                       </div>
@@ -1973,9 +1973,9 @@ function TaskCardItem({
   return (
     <div
       className={cn(
-        "bg-[#FCFBF9] rounded-[24px] p-3.5 border border-[#1C1917]/[0.06] shadow-xs flex items-center gap-3 transition-all",
-        done && "opacity-60 bg-[#F6F3EC]",
-        isOverdue && !done && "border-rose-200/80 bg-rose-50/30"
+        "bg-[#FCFBF9] dark:bg-[#141916] rounded-[24px] p-3.5 border border-[#1C1917]/[0.06] dark:border-white/[0.08] shadow-xs flex items-center gap-3 transition-all",
+        done && "opacity-60 bg-[#F6F3EC] dark:bg-[#181E1A]",
+        isOverdue && !done && "border-rose-200/80 bg-rose-50/30 dark:bg-[#1E1616] dark:border-[#E05A47]/30"
       )}
     >
       {/* Left Photo (w-12 h-12 shrink-0) */}
@@ -2001,7 +2001,7 @@ function TaskCardItem({
         </p>
         <h3
           className={cn(
-            "font-sans font-bold text-sm text-[#1C1917] leading-snug line-clamp-1 mt-0.5",
+            "font-sans font-bold text-sm text-[#1C1917] dark:text-[#F4F1EA] leading-snug line-clamp-1 mt-0.5",
             done && "line-through text-[#8C857B]"
           )}
         >
@@ -2011,17 +2011,17 @@ function TaskCardItem({
         {/* Meta Pills Row */}
         <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
           {priority === "high" && (
-            <span className="whitespace-nowrap rounded-lg px-2 py-0.5 text-[10px] font-bold bg-[#FADCD5]/80 text-[#C94A38]">
+            <span className="whitespace-nowrap rounded-lg px-2 py-0.5 text-[10px] font-bold bg-[#FADCD5]/80 text-[#C94A38] dark:bg-[#2A1816] dark:text-[#F87171] dark:border dark:border-[#E05A47]/25">
               High Impact
             </span>
           )}
           {priority === "medium" && (
-            <span className="whitespace-nowrap rounded-lg px-2 py-0.5 text-[10px] font-medium bg-[#EFECE4] text-[#57534E]">
+            <span className="whitespace-nowrap rounded-lg px-2 py-0.5 text-[10px] font-medium bg-[#EFECE4] dark:bg-[#1C221E] text-[#57534E] dark:text-[#9CA39E]">
               Medium
             </span>
           )}
           {priority === "low" && (
-            <span className="whitespace-nowrap rounded-lg px-2 py-0.5 text-[10px] font-medium bg-[#EFECE4] text-[#57534E]">
+            <span className="whitespace-nowrap rounded-lg px-2 py-0.5 text-[10px] font-medium bg-[#EFECE4] dark:bg-[#1C221E] text-[#57534E] dark:text-[#9CA39E]">
               Light
             </span>
           )}

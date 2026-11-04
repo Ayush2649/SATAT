@@ -1018,6 +1018,60 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ---
 
+### ✅ Sprint 7.0: Full-App "Nocturnal Botanical Editorial" Dark Mode (`styles/satat.tokens.css`, `styles/app-shell.css`, `components/settings/AppearanceSettings.tsx`, `app/dashboard/settings/page.tsx`, `app/layout.tsx`)
+- **Nocturnal Botanical Editorial Palette Tokens**:
+  - Configured canonical dark mode tokens under `.dark`, `html.dark`, and `[data-theme="dark"]` in `styles/satat.tokens.css`:
+    - Canvas: `--satat-bg: #0A0D0B` (Deep Obsidian Forest)
+    - Card Surfaces: `--satat-surface: #141916` (Elevated Charcoal Moss) with hairline border `rgba(255, 255, 255, 0.07)`
+    - Subtle Inset Wells: `--satat-surface-subtle: #1C221E` with hairline border `rgba(255, 255, 255, 0.06)`
+    - Hero & Feature Dark Cards: `--satat-anchor-dark: #1B241E` / `linear-gradient(180deg, #1E2822 0%, #141B17 100%)` with luminous emerald rim `border border-[#34D399]/20`
+    - Typography Scale: Primary `#F4F1EA` (Warm Alabaster), Secondary `#9CA39E` (Muted Sage-Stone), Muted metadata `#6E7872`
+    - Semantic Botanical Accents: Active calendar & nav pills `bg-[#1E4D38]` with `border-[#34D399]/30` and text `#E6F4ED`, Terracotta CTAs `bg-[#C84331]` hover `bg-[#E05A47]`, Calorie pills `bg-[#E05A47]/15 text-[#F87171] border border-[#E05A47]/25`, Protein pills `bg-[#2D6A4F]/25 text-[#6EE7B7] border border-[#34D399]/20`.
+- **Universal Scoped Overrides in `styles/app-shell.css`**:
+  - Implemented scoped CSS rules under `html.dark` converting existing components into the Nocturnal Botanical Dark Mode without structural destabilization.
+  - Active and inactive calendar day indicators on Today and 7-day strip.
+  - Date navigator buttons and pills on Fuel.
+  - Floating bottom composer dock with seamless dark mode gradient (`from-[#0A0D0B] via-[#0A0D0B]/95 to-transparent`).
+  - Chat stream user bubble (`#1C241F` with `border-white/10`) and AI response card (`#121815` with `#34D399]/20` rim).
+  - Cadence Shift insight banner (`#1E3A2B]/45` with `#34D399]/20` border and `#D1FAE5` text).
+  - Form inputs, textareas, and select elements (`#141916` with `#F4F1EA` text and `#6E7872` placeholder).
+- **Settings & Appearance Enhancements (`components/settings/AppearanceSettings.tsx`, `app/dashboard/settings/page.tsx`)**:
+  - Upgraded Appearance switcher with tactile SATAT button tokens (`Dark (Nocturnal)`, `Light (Sunlit)`, `System`).
+  - Removed legacy purple/blue `#6E8BFF` styles in favor of SATAT Matcha `#2D6A4F` / Emerald `#34D399`.
+  - Immediate `document.documentElement.classList.toggle("dark", isDark)` execution on click with persistent `localStorage` synchronization.
+
+---
+
+### ✅ Sprint 7.1: Habit Compounding Compact Grid, Full-Width Weekly Momentum SVG, & Total Elimination of Dark Mode Light Surfaces (`HomeView.tsx`, `ConsistencyHeatmap.tsx`, `ProgressTrendChart.tsx`, `TaskBoard.tsx`, `DietPage.tsx`, `app-shell.css`)
+- **Compact & Dark-Mode Native Habit Compounding Month Blocks (`components/dashboard/ConsistencyHeatmap.tsx`)**:
+  - Eliminated full-width `aspect-square` cells (~110px tall per row) in favor of compact, sleek day cells (`h-10 sm:h-11 md:h-12 w-full rounded-xl flex items-center justify-center text-xs font-semibold`) with tight grid spacing (`gap-1.5 sm:gap-2`).
+  - Reduced total calendar height from 600px+ down to ~240px tall.
+  - Mapped habit heatmap intensity states in Dark Mode to deep botanical tones:
+    - `0 habits (Rest)`: `bg-[#EFECE4] dark:bg-[#181E1A] text-[#8C857B] dark:text-[#6E7872]`
+    - `1-2 habits`: `bg-[#A7F3D0] text-[#065F46] dark:bg-[#163828] dark:text-[#6EE7B7] dark:border dark:border-[#34D399]/25` (zero blinding pastel mint!)
+    - `Target Hit (3+)`: `bg-[#2D6A4F] text-white dark:bg-[#2D6A4F] dark:text-white`
+    - `Today`: `ring-2 ring-[#E05A47] dark:ring-[#34D399] dark:ring-offset-[#141916]`
+  - Converted the 4 summary pills (`1d Streak`, `100% Adherence`, `10d Best`, `3 Active`) to dark-aware botanical cards (`dark:bg-[#2A1816]`, `dark:bg-[#142E22]`, `dark:bg-[#1C221E]`).
+- **Full-Width Weekly Momentum Bezier SVG Graph (`components/dashboard/ProgressTrendChart.tsx`)**:
+  - Stretched the chart wrapper and `<svg>` across 100% of the parent card width (`viewBox="0 0 700 140" preserveAspectRatio="none" className="w-full h-36 sm:h-44 overflow-visible block"`).
+  - Aligned data points at `x = 50, 150, 250, 350, 450, 550, 650` directly matching the 7 columns of the weekday label row (`T`, `F`, `S`, `S`, `M`, `T`, `W`).
+  - Added horizontal dashed reference lines (`y = 26`, `y = 71`, `y = 116`), smooth emerald area gradient (`linearGradient id="momentumGradient"`), and dark-themed tooltip (`dark:bg-[#1E2822]`).
+- **Overdue Task Banner & Ritual Checkboxes on Plan Studio (`components/tasks/TaskBoard.tsx`, `components/dashboard/HomeView.tsx`)**:
+  - Overdue container styled in Dark Mode as `dark:bg-[#1F1414]/90 dark:border-[#E05A47]/30` with `#F87171` header and dark cards (`dark:bg-[#1E1616] dark:border-[#E05A47]/30`).
+  - Removed duplicate `▷` literal text from the right-rail Focus Engine button (`<Play />` + `Enter Flow State`).
+  - Styled unchecked status circles in `DAILY NON-NEGOTIABLES` as `dark:border-white/20 dark:bg-[#1C221E]`.
+- **Orbit Autonomous Recommendation Card on Fuel Studio (`components/diet/DietPage.tsx`)**:
+  - Styled `ORBIT AUTONOMOUS RECOMMENDATION · ADAPTIVE DINNER` container as `dark:bg-[#131D18] dark:border-[#34D399]/25`.
+  - Converted Option A and Option B dinner cards to `dark:bg-[#1A221D] dark:border-white/[0.08]` with crisp `#F4F1EA` titles and `#9CA39E` subtext.
+- **Universal Scoped Dark Pastel Overrides (`styles/app-shell.css`)**:
+  - Appended universal rules under `html.dark` mapping all remaining pastel surfaces (`bg-rose-50`, `bg-[#FDF2F0]`, `bg-[#F2F9F5]`, `bg-[#E6F7F0]`, `bg-[#FEF9E7]`, `bg-[#C6F6D5]`, `bg-[#A7F3D0]`) to dark botanical surfaces.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **55 passed (55 files), 650 passed | 26 skipped (676 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
 - **Vitest Suite**: `650 passed | 26 skipped` across all 55 test suites (0 failing).
