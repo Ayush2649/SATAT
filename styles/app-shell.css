@@ -399,20 +399,81 @@ html.dark .bg-white:not(button):not(input):not(.bg-white\/\[0\.08\]):not(.bg-whi
 }
 
 /* 3. Secondary / Muted Surface (#EFECE4 -> #1C221E Subtle Inset Well) */
-html.dark .bg-\[\#EFECE4\],
-html.dark [class*="bg-[#EFECE4]"],
-html.dark .bg-\[\#EFECE4\]\/85,
-html.dark .bg-\[\#EFECE4\]\/70,
-html.dark .bg-\[\#EFECE4\]\/60 {
+html.dark .bg-\[\#EFECE4\]:not(aside *):not(nav a):not(nav button),
+html.dark [class*="bg-[#EFECE4]"]:not(aside *):not(nav a):not(nav button):not([class*="hover:"]),
+html.dark .bg-\[\#EFECE4\]\/85:not(aside *):not(nav a):not(nav button),
+html.dark .bg-\[\#EFECE4\]\/70:not(aside *):not(nav a):not(nav button),
+html.dark .bg-\[\#EFECE4\]\/60:not(aside *):not(nav a):not(nav button) {
   background-color: #1C221E !important;
   border-color: rgba(255, 255, 255, 0.06) !important;
 }
 
+/* Inactive Sidebar Navigation Links & Workspaces — Strict No Background & No Border */
+html.dark aside nav a:not([aria-current="page"]):not([data-active="true"]):not([data-orbit="true"]),
+html.dark aside nav button:not([aria-current="page"]):not([data-active="true"]):not([data-orbit="true"]),
+aside nav a:not([aria-current="page"]):not([data-active="true"]):not([data-orbit="true"]),
+aside nav button:not([aria-current="page"]):not([data-active="true"]):not([data-orbit="true"]) {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Hover state for inactive sidebar links */
+html.dark aside nav a:not([aria-current="page"]):not([data-active="true"]):not([data-orbit="true"]):hover,
+html.dark aside nav button:not([aria-current="page"]):not([data-active="true"]):not([data-orbit="true"]):hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  color: #F4F1EA !important;
+}
+aside nav a:not([aria-current="page"]):not([data-active="true"]):not([data-orbit="true"]):hover,
+aside nav button:not([aria-current="page"]):not([data-active="true"]):not([data-orbit="true"]):hover {
+  background-color: rgba(28, 25, 23, 0.05) !important;
+  color: #1C1917 !important;
+}
+
+/* Orbit AI Coral Ember Primary Button in Sidebar Navigation */
+aside nav a[data-orbit="true"]:not([aria-current="page"]) {
+  background-color: rgba(224, 90, 71, 0.12) !important;
+  border: 1px solid rgba(224, 90, 71, 0.30) !important;
+  color: #C84331 !important;
+  box-shadow: 0 4px 14px rgba(224, 90, 71, 0.12) !important;
+}
+aside nav a[data-orbit="true"]:not([aria-current="page"]):hover {
+  background-color: rgba(224, 90, 71, 0.22) !important;
+}
+html.dark aside nav a[data-orbit="true"]:not([aria-current="page"]) {
+  background-color: rgba(224, 90, 71, 0.18) !important;
+  border: 1px solid rgba(224, 90, 71, 0.30) !important;
+  color: #FF7A68 !important;
+  box-shadow: 0 4px 14px rgba(224, 90, 71, 0.12) !important;
+}
+html.dark aside nav a[data-orbit="true"]:not([aria-current="page"]):hover {
+  background-color: rgba(224, 90, 71, 0.28) !important;
+}
+
+aside nav a[data-orbit="true"][aria-current="page"],
+html.dark aside nav a[data-orbit="true"][aria-current="page"] {
+  background-color: #E05A47 !important;
+  border: 1px solid rgba(248, 113, 113, 0.40) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 6px 20px rgba(224, 90, 71, 0.35) !important;
+}
+
 /* 4. Hero & Dark Feature Cards (#191D1A -> Deep Botanical Emerald-Charcoal Gradient) */
-html.dark .bg-\[\#191D1A\]:not(nav):not(.app-mobile-profile-button):not(.rounded-full),
-html.dark [class*="bg-[#191D1A]"]:not(nav):not(.app-mobile-profile-button):not(.rounded-full) {
+html.dark .bg-\[\#191D1A\]:not(nav):not(.app-mobile-profile-button):not(.rounded-full):not([data-backdrop="true"]):not([class*="bg-[#191D1A]/"]):not([class*="/60"]):not([class*="/65"]):not([class*="/70"]):not([class*="/75"]):not([class*="/80"]):not([class*="/85"]):not([class*="/90"]),
+html.dark [class*="bg-[#191D1A]"]:not(nav):not(.app-mobile-profile-button):not(.rounded-full):not([data-backdrop="true"]):not([class*="bg-[#191D1A]/"]):not([class*="/60"]):not([class*="/65"]):not([class*="/70"]):not([class*="/75"]):not([class*="/80"]):not([class*="/85"]):not([class*="/90"]) {
   background: linear-gradient(180deg, #1E2822 0%, #141B17 100%) !important;
   border: 1px solid rgba(52, 211, 153, 0.20) !important;
+}
+
+/* Translucent Modals & Sheet Backdrops - Preserve translucency and blur in Dark Mode */
+html.dark [data-backdrop="true"],
+html.dark .satat-modal-backdrop,
+html.dark [data-backdrop="true"][class*="bg-"] {
+  background: rgba(10, 13, 11, 0.58) !important;
+  background-color: rgba(10, 13, 11, 0.58) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: none !important;
 }
 
 /* 5. Navigation Shell & App Bars */
@@ -653,4 +714,45 @@ html.dark .border-2.border-\[\#1C1917\]\/20.bg-white,
 html.dark .border-2.border-\[\#1C1917\]\/20 {
   background-color: #1C221E !important;
   border-color: rgba(255, 255, 255, 0.20) !important;
+}
+
+/* 20. Green/Mint Highlight Containers in Dark Mode (§ Sprint 7.5) */
+html.dark .bg-\[\#E6F4ED\],
+html.dark [class*="bg-[#E6F4ED]"] {
+  background-color: #13221B !important;
+  border-color: rgba(52, 211, 153, 0.25) !important;
+}
+
+/* 21. Full-Width Desktop Dashboard Workspace (§ Sprint 7.5) */
+@media (min-width: 768px) {
+  .app-shell-content:not(:has(.orbit-view-root)) {
+    max-width: none !important;
+    width: 100% !important;
+    padding-inline: 1.5rem !important; /* px-6 */
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-shell-content:not(:has(.orbit-view-root)) {
+    padding-inline: 2.5rem !important; /* lg:px-10 */
+  }
+}
+
+@media (min-width: 1280px) {
+  .app-shell-content:not(:has(.orbit-view-root)) {
+    padding-inline: 3rem !important; /* xl:px-12 */
+  }
+}
+
+/* 22. Dark Mode Loading Shimmer Skeleton & Sidebar Badge Overrides (§ Sprint 7.6) */
+html.dark .bg-\[\#E6E1D6\],
+html.dark [class*="bg-[#E6E1D6]"] {
+  background-color: #161C18 !important;
+  border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+html.dark aside span[class*="rounded-full"] {
+  background-color: #1C221E !important;
+  color: #9CA39E !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
 }

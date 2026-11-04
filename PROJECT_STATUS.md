@@ -1072,9 +1072,129 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ---
 
+### ✅ Sprint 7.2: Translucent Quick Track Modal Backdrop & Orbit AI 4th Tile (`TrackSheet.tsx`, `app-shell.css`, `tests/navigation/track-sheet.test.ts`)
+- **Translucent Quick Track Modal Backdrop (`components/navigation/TrackSheet.tsx`, `styles/app-shell.css`)**:
+  - Resolved opaque dark-green wall bug when opening the center `+` Quick Track modal in Dark Mode.
+  - Set explicit inline translucent background `style={{ backgroundColor: "rgba(10, 13, 11, 0.58)" }}` combined with `data-backdrop="true"` and `backdrop-blur-md transition-opacity` on the modal overlay.
+  - In `styles/app-shell.css`, protected all modal and sheet overlays from opaque dark card gradient overrides by excluding `[data-backdrop="true"]` and all opacity alpha classes (`:not([data-backdrop="true"]):not([class*="bg-[#191D1A]/"]):not([class*="/60"]):not([class*="/65"]):not([class*="/70"]):not([class*="/75"]):not([class*="/80"]):not([class*="/85"]):not([class*="/90"])`).
+  - Added dedicated global rule under `html.dark` guaranteeing `rgba(10, 13, 11, 0.58)` and `backdrop-filter: blur(8px)` on all modal backdrops so underlying dashboards (`Today`, `Plan`, `Train`, `Fuel`) remain softly blurred and clearly visible.
+- **Orbit AI 4th Tile in Quick Track Modal (`components/navigation/TrackSheet.tsx`)**:
+  - Replaced legacy `Water & Biometrics` tile with **`Ask Orbit AI`**:
+    - **Top-Left Badge**: Animated 3D `<Orbit3DCore size="sm" state="idle" />` framed inside `w-9 h-9 rounded-xl bg-[#191D1A]/90 border border-[#34D399]/30 flex items-center justify-center shadow-md`.
+    - **Nocturnal Background**: Rich emerald-radial gradient (`bg-gradient-to-br from-[#1B2A22] via-[#121A16] to-[#0D120F] border border-[#34D399]/25 hover:border-[#34D399]/45`) with subtle concentric orbital SVG rings and emerald radial wash.
+    - **Typography**: Title `Ask Orbit AI` (`text-sm font-bold text-white`) and subtitle `Unified Copilot · Orbit` (`text-[11px] text-[#6EE7B7]`).
+    - **Tactile Interaction**: Closes the modal and navigates directly to `/dashboard/orbit` (`handleAction("/dashboard/orbit")`).
+- **Comprehensive Unit Testing**:
+  - Added `tests/navigation/track-sheet.test.ts` verifying translucent alpha styling, CSS dark-mode protection, 4 quick capture paths, and Orbit 3D Core embedding.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **56 passed (56 files), 654 passed | 26 skipped (680 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
+### ✅ Sprint 7.3: Inactive Sidebar Styling & Coral Ember Orbit AI (`Navigation.tsx`, `styles/app-shell.css`)
+- **Zero Permanent Gray Pill on Inactive Links & Workspaces**:
+  - In `components/Navigation.tsx`, ensured all inactive primary navigation items (`Plan · Execution`, `Train · Studio`, `Fuel · Nutrition`) and workspace items render with `bg-transparent border border-transparent shadow-none text-[#57534E] dark:text-[#9CA39E] hover:bg-[#1C1917]/[0.05] dark:hover:bg-white/[0.05] hover:text-[#1C1917] dark:hover:text-[#F4F1EA]`.
+  - In `styles/app-shell.css`, protected sidebar navigation links from global `[class*="bg-[#EFECE4]"]` overrides by scoping selectors to `:not(aside *):not(nav a):not(nav button)` and adding dedicated rules enforcing transparent backgrounds on inactive links.
+- **Coral Ember (`#E05A47`) Orbit AI Button**:
+  - Replaced ambiguous green styling with signature SATAT Coral Ember:
+    - Active (`pathname === "/dashboard/orbit"`): `bg-[#E05A47] text-white border border-[#F87171]/40 shadow-[0_6px_20px_rgba(224,90,71,0.35)]`.
+    - Inactive: `bg-[#E05A47]/12 dark:bg-[#E05A47]/18 hover:bg-[#E05A47]/22 dark:hover:bg-[#E05A47]/28 text-[#C84331] dark:text-[#FF7A68] border border-[#E05A47]/30 shadow-[0_4px_14px_rgba(224,90,71,0.12)]`.
+  - Added explicit CSS overrides in `styles/app-shell.css` to protect Coral Ember buttons from generic dark mode green styling.
+
+---
+
+### ✅ Sprint 7.6: Focus Ring 2-Line Sub-Label, Nocturnal Workout Templates, 100% Full Desktop Studio Width, & 12-Column Dark Shimmer Skeletons (`TaskBoard.tsx`, `WorkoutPage.tsx`, `DietPage.tsx`, `HomeView.tsx`, `OrbitView.tsx`, `Navigation.tsx`, `PageSkeletons.tsx`, `loading.tsx`, `app-shell.css`)
+- **Focus Ring 2-Line Stacked Sub-Label (`components/tasks/TaskBoard.tsx`)**:
+  - Expanded timer ring diameter to `w-44 h-44` (`viewBox="0 0 176 176"`, radius `76`) with optimal SVG stroke bounds.
+  - Stacked `FLOW STATE` and `BLOCK 1/3` into two centered, high-contrast spans below the countdown timer (`25:00`), preventing any horizontal collision with the circular stroke edges.
+- **Nocturnal Botanical Workout Template Cards & Dark Badges (`components/workout/WorkoutPage.tsx`)**:
+  - Restyled `PERSONAL WORKOUT TEMPLATES` empty-state invitation card and custom template cards for dark mode: `bg-[#FCFBF9] dark:bg-[#141916] border border-[#1C1917]/[0.08] dark:border-white/[0.08] rounded-[28px] p-8 text-center`.
+  - Icon circle: `bg-[#EFECE4] dark:bg-[#1E2621] text-[#2D6A4F] dark:text-[#6EE7B7]`.
+  - Photo overlay badges (e.g. `Leg Day`, `Upper Body`): `bg-[#191D1A]/85 backdrop-blur-md text-[#F4F1EA] border border-white/15 px-2.5 py-1 rounded-full text-[10px] font-bold shadow-xs`.
+- **100% Full-Width Desktop Workspace Across All Main Studios (`TaskBoard.tsx`, `WorkoutPage.tsx`, `DietPage.tsx`, `HomeView.tsx`, `OrbitView.tsx`)**:
+  - Replaced constraining `lg:max-w-5xl` and `lg:max-w-7xl` wrappers with `w-full max-w-md mx-auto lg:max-w-none` / `w-full max-w-none mx-auto`.
+  - Content now seamlessly spans from the left sidebar navigation across the entire monitor canvas without artificial gutters.
+- **Full-Width 12-Column Responsive Skeletons & Dark-Mode Shimmer (`components/ui/PageSkeletons.tsx`, `app/dashboard/*/loading.tsx`, `styles/app-shell.css`)**:
+  - Rebuilt all studio skeletons (`TodayPageSkeleton`, `PlanPageSkeleton`, `TrainPageSkeleton`, `FuelPageSkeleton`) with 12-column desktop architectures (`hidden lg:grid grid-cols-12 gap-6`).
+  - Updated all shimmer blocks to use dark-aware tokens: `bg-[#E6E1D6] dark:bg-[#161C18] border border-transparent dark:border-white/[0.05] animate-pulse`.
+  - Added route-specific Next.js `loading.tsx` streaming boundaries for `tasks`, `workout`, and `diet`.
+  - Enforced global CSS dark overrides in `styles/app-shell.css` for `html.dark [class*="bg-[#E6E1D6]"]` and sidebar `OS v2.4` badge pill.
+- **Sidebar `OS v2.4` Badge & Wordmark Dark Mode (`components/Navigation.tsx`)**:
+  - Styled `OS v2.4` pill with `bg-[#EFECE4] dark:bg-[#1C221E] text-[#57534E] dark:text-[#9CA39E] border border-transparent dark:border-white/[0.08]`.
+  - Wordmark updated to `text-[#1C1917] dark:text-[#F4F1EA]`.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **59 passed (59 files), 673 passed | 26 skipped (699 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
+### ✅ Sprint 7.5: Unified Weekly Momentum SVG Math, Dark Mode Steppers & Volume Highlight, Tactile Workout Sets, Filtered Completed Session Save, Streak Pill Relocation, & 12-Column Settings Bento Grid (`components/dashboard/ProgressTrendChart.tsx`, `components/diet/DietPage.tsx`, `components/workout/WorkoutPage.tsx`, `components/dashboard/HomeView.tsx`, `app/dashboard/settings/page.tsx`, `components/settings/*`, `styles/app-shell.css`, `tests/sprint7-5/sprint7-5.test.ts`)
+- **Unified SVG Coordinate Space for Weekly Momentum Curve & Markers (`components/dashboard/ProgressTrendChart.tsx`)**:
+  - Resolved floating dot alignment issue where circles were previously rendered in an overlay HTML container with disparate aspect-ratio math.
+  - Computed a unified mathematical coordinate array inside SVG `viewBox="0 0 700 140"`:
+    - `xCoords = [40, 148, 256, 364, 472, 580, 660]` (7 evenly spaced columns).
+    - `y = Math.round(98 - (src.score / 100) * 64)` (calm editorial band between `y=34` and `y=98`).
+  - Rendered both the cubic Bezier spline `<path d={pathD} />` AND the 7 circular markers `<circle cx={pt.x} cy={pt.y} ... />` inside the exact same SVG viewport at identical `(pt.x, pt.y)` coordinates without `preserveAspectRatio="none"`, guaranteeing geometric circles sitting mathematically dead-center on the line at all viewport widths.
+- **Dark Mode Stepper Buttons & Dish Matched Thumbnail (`components/diet/DietPage.tsx`)**:
+  - Restyled all 8 circular `-` and `+` macro stepper buttons inside `ENERGY (KCAL)`, `PROTEIN (G)`, `CARBS (G)`, and `FAT (G)` to `bg-[#EFECE4] dark:bg-[#1E2621] text-[#1C1917] dark:text-[#F4F1EA] border border-[#1C1917]/10 dark:border-white/15 hover:bg-[#2D6A4F] hover:text-white dark:hover:bg-[#34D399] dark:hover:text-[#0A0D0B]`.
+  - Added `truncate max-w-full leading-none px-2 py-0.5` to the dish thumbnail `✓ Matched` badge to prevent horizontal clipping.
+- **Session Intelligence Volume Highlight Dark Mode (`components/workout/WorkoutPage.tsx`, `styles/app-shell.css`)**:
+  - Restyled `VOLUME HIGHLIGHT` box in Dark Mode to `bg-[#F2F9F5] dark:bg-[#13221B] border border-[#2D6A4F]/20 dark:border-[#34D399]/25 text-[#1C1917] dark:text-[#E6F4ED]` and updated body text to `text-[#1C1917] dark:text-[#E6F4ED]`.
+  - Added global dark mode override rule `html.dark .bg-\[\#E6F4ED\]` to `styles/app-shell.css` to protect all mint/sage highlight cards.
+- **Tactile Border & "Click" Affordance for Workout Sets (`components/workout/WorkoutPage.tsx`)**:
+  - Unchecked Sets (`!set.completed`): rendered bordered `Click` button (`px-2.5 py-1.5 min-w-[54px] h-8 rounded-lg border border-[#1C1917]/20 dark:border-white/25 bg-[#F6F3EC] dark:bg-[#18201C] text-[10px] font-bold tracking-wider uppercase text-[#57534E] dark:text-[#9CA39E] hover:border-[#2D6A4F] dark:hover:border-[#34D399]`).
+  - Completed Sets (`set.completed`): rendered solid Matcha Sage badge (`px-2.5 py-1.5 min-w-[54px] h-8 rounded-lg bg-[#2D6A4F] text-white border border-[#34D399]/40 flex items-center justify-center gap-1 text-[10px] font-bold shadow-xs`) with `<Check className="w-3.5 h-3.5" /> Done`.
+- **Filtered Workout Save & Empty Exercise Exclusion (`components/workout/WorkoutPage.tsx`)**:
+  - In `handleSave`, filtered `ex.sets` to keep strictly `s.completed === true`.
+  - Filtered out exercises with 0 completed sets.
+  - Aborted save and showed error toast (`"Please mark at least one completed set as Done before finishing your session."`) if total completed sets equals 0 and no cardio was logged.
+  - Calculated session calories, split metadata, and Firestore documents strictly from completed sets.
+- **Dedicated Top-Right Streak Pill Slot Above 7-Day Calendar Strip (`components/dashboard/HomeView.tsx`)**:
+  - Rebuilt the top desktop greeting card with a full-width header eyebrow row separating `CIRCADIAN ALIGNMENT · {formatDateEyebrow()}` on the left and `🔥 {activeStreakDays}d streak` on the top right.
+  - Positioned the 7-day calendar strip below the divider line on the right, completely eliminating any possibility of the streak pill touching or overlapping `M 2`.
+- **Full-Width Desktop Workspace & Removal of Stray Orbit FAB (`styles/app-shell.css`, `components/ui/AriaChatbot.tsx`)**:
+  - Configured `.app-shell-content:not(:has(.orbit-view-root))` to `max-width: none !important; width: 100% !important; padding-inline: 1.5rem / 2.5rem / 3rem`.
+  - Removed duplicate floating bottom-right Orbit circle FAB in `AriaChatbot.tsx` (`return null;`).
+- **12-Column Responsive Bento Grid Desktop Settings Overhaul (`app/dashboard/settings/page.tsx`)**:
+  - Redesigned settings into a modern 12-column editorial bento grid:
+    - **Left 5 Columns**: Profile Identity Card (avatar, Google account, active status, circadian sync badge), Interface Appearance Card (3-column visual theme selector), and SATAT Setup & Biometrics Calibration Card with signature `#E05A47` CTA button (`Review & Update Setup →`).
+    - **Right 7 Columns**: Notifications & Circadian Reminders Card (2×2 responsive grid of time pickers with dark-mode borders `dark:bg-[#1C221E] dark:border-white/10 dark:text-[#F4F1EA]`), Connected Devices & Health Sync Card, and Data Ownership & Sign Out Card (`AccountPrivacySettings.tsx`).
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **58 passed (58 files), 668 passed | 26 skipped (694 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
+### ✅ Sprint 7.4: Settings Dropdown Click Reliability, Today Eyebrow Fix, Smooth Weekly Momentum Curve, & Photographic Orbit Card (`Navigation.tsx`, `HomeView.tsx`, `ProgressTrendChart.tsx`, `TrackSheet.tsx`)
+- **Desktop Settings Dropdown Click Reliability (`components/Navigation.tsx`)**:
+  - Resolved outside-click collision bug where desktop and mobile profile menus shared a single ref.
+  - Implemented dual refs (`desktopProfileRef` and `mobileProfileRef`) and attached `data-profile-menu="true"` attributes.
+  - Bound direct `router.push("/dashboard/settings")` and `signOut({ callbackUrl: "/" })` callbacks ensuring instant first-click navigation on Desktop.
+- **Non-Wrapping Today Greeting & Streak Row (`components/dashboard/HomeView.tsx`)**:
+  - Converted the circadian alignment eyebrow and streak badge into a single non-wrapping row (`flex items-center gap-3 flex-nowrap mb-2`).
+  - Added `whitespace-nowrap` and shrink-proof badge styling (`shrink-0`), preventing the streak pill from ever breaking onto two lines.
+  - Balanced the outer layout with `flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6`.
+- **Smooth Monotone Weekly Momentum Curve & HTML Circular Markers (`components/dashboard/ProgressTrendChart.tsx`)**:
+  - Eliminated oval distortion on dots by rendering the 7 nodes as HTML circular buttons with percentage positioning (`left: ${(pt.x / 700) * 100}%`, `top: ${(pt.y / 120) * 100}%`), guaranteeing 100% geometric circles on all viewports.
+  - Dampened vertical spikes by mapping scores into a calm editorial band (`yMin = 32`, `yMax = 82` inside a `120px` viewBox) with monotone cubic curve smoothing (`smoothing = 0.35`).
+  - Cleanly positioned the active day tooltip above the curve (`top-0 right-2 sm:right-4`) preventing curve collisions.
+- **Rich Photographic Depth on 4th Quick-Track Tile (`components/navigation/TrackSheet.tsx`)**:
+  - Added high-contrast atmospheric deep-space photography (`photo-1451187580459-43490279c0fa` with fallback `photo-1518770660439-4636190af475`) with `bg-gradient-to-t from-[#0D1310] via-[#121C17]/75 to-[#192820]/40` overlay behind the 3D `<Orbit3DCore size="sm" />` core emblem.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **57 passed (57 files), 660 passed | 26 skipped (686 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
-- **Vitest Suite**: `650 passed | 26 skipped` across all 55 test suites (0 failing).
+- **Vitest Suite**: `668 passed | 26 skipped` across all 58 test suites (0 failing).
+- **Navigation & Track Sheet Tests**: `15/15 passed` across `tests/navigation/*`.
 - **Markdown & UI Tests**: `13/13 passed` in `tests/ui/markdown-text.test.tsx`.
 - **Navigation & Launcher Tests**: `5/5 passed` in `tests/navigation/navigation-orbit-launcher.test.ts`.
 - **Orbit Tests**: `49/49 passed` across `tests/orbit/*` and `tests/api/aria.test.ts`.
