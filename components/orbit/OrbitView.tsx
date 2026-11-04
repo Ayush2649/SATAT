@@ -1095,7 +1095,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
 
       {/* ── DESKTOP & TABLET VIEW (lg: 1024px+) — 12-Column Responsive Studio Architecture (image_49d750.jpg) ── */}
       {!isOverlay && (
-        <div className="orbit-desktop-grid hidden lg:grid grid-cols-12 gap-6 items-start h-full max-w-7xl mx-auto w-full px-6 py-4 overflow-hidden">
+        <div className="orbit-desktop-grid hidden lg:grid grid-cols-12 gap-6 items-start h-full w-full max-w-none px-6 py-4 overflow-hidden">
         {/* ── LEFT 5 COLUMNS: Persistent 3D Orbit Core & Biological Telemetry ── */}
         <div className="col-span-5 h-[calc(100vh-6rem)] overflow-y-auto no-scrollbar space-y-4 pr-1">
           {/* 1. DARK BOTANICAL ESPRESSO HERO STAGE (#191D1A) */}

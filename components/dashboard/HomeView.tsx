@@ -361,7 +361,7 @@ export default function HomeView() {
   }
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-0 sm:px-2 pt-2 pb-8 select-none animate-fade-in">
+    <div className="w-full max-w-none mx-auto px-0 sm:px-2 pt-2 pb-8 select-none animate-fade-in">
       {/* ──────────────────────────────────────────────────────────────────────────
          MOBILE FLOW (< 1024px) — 100% Preserved Single-Column Bento Architecture
          ────────────────────────────────────────────────────────────────────────── */}

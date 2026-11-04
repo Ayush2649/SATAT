@@ -48,6 +48,7 @@ import {
   getUserProfile,
 } from "@/lib/firestore";
 import { WORKOUT_PRESETS } from "@/lib/workoutPresets";
+import { TrainPageSkeleton } from "@/components/ui/PageSkeletons";
 import { partitionWorkoutTemplates } from "@/lib/workouts/classification";
 import {
   normalizeTemplateToExercises,
@@ -108,6 +109,7 @@ export default function WorkoutPage() {
 
   const [view, setView] = useState<"log" | "templates" | "history">("log");
   const [pastSessions, setPastSessions] = useState<WorkoutSession[]>([]);
+  const [loading, setLoading] = useState(true);
   const [bodyWeightEntries, setBodyWeightEntries] = useState<BodyWeightEntry[]>([]);
 
   // Templates & Routine
@@ -207,6 +209,9 @@ export default function WorkoutPage() {
       })
       .catch((err) => {
         console.error("Error loading workout sessions:", err);
+      })
+      .finally(() => {
+        setLoading(false);
       });
 
     getWorkoutTemplates(userId)
@@ -661,8 +666,12 @@ export default function WorkoutPage() {
     };
   }, [pastSessions, bwKg]);
 
+  if (loading && pastSessions.length === 0) {
+    return <TrainPageSkeleton />;
+  }
+
   return (
-    <div className="w-full max-w-7xl mx-auto pb-8 animate-fade-in text-[#1C1917]">
+    <div className="w-full max-w-md mx-auto lg:max-w-none pb-8 animate-fade-in text-[#1C1917] dark:text-[#F4F1EA]">
       {/* ── SHARED TOP HEADER ROW ── */}
       <div className="flex items-start justify-between pt-1 pb-3">
         <div>
@@ -1860,7 +1869,7 @@ export default function WorkoutPage() {
                   return (
                     <div
                       key={tpl.id}
-                      className="bg-[#FCFBF9] rounded-[26px] p-3.5 border border-[#1C1917]/[0.06] shadow-xs"
+                      className="bg-[#FCFBF9] dark:bg-[#141916] rounded-[26px] p-3.5 border border-[#1C1917]/[0.06] dark:border-white/[0.08] shadow-xs"
                     >
                       <div className="flex items-center gap-3">
                         {/* Photo Thumbnail */}
@@ -1879,14 +1888,14 @@ export default function WorkoutPage() {
                         {/* Middle Info */}
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 whitespace-nowrap">
-                            <span className="bg-[#D1FAE5] text-[#1B4332] text-[9px] font-bold px-2 py-0.5 rounded-full">
+                            <span className="bg-[#D1FAE5] dark:bg-[#142B20] text-[#1B4332] dark:text-[#6EE7B7] border border-transparent dark:border-[#34D399]/20 text-[9px] font-bold px-2 py-0.5 rounded-full">
                               ASSIGNED
                             </span>
                             <span className="text-[11px] font-serif italic text-[#57534E]">
                               45 min · ~340 kcal
                             </span>
                           </div>
-                          <h3 className="font-serif font-bold text-[15px] sm:text-lg text-[#1C1917] leading-snug mt-1 whitespace-nowrap truncate">
+                          <h3 className="font-serif font-bold text-[15px] sm:text-lg text-[#1C1917] dark:text-[#F4F1EA] leading-snug mt-1 whitespace-nowrap truncate">
                             {tpl.name}
                           </h3>
                           <p className="text-xs text-[#8C857B] truncate">
@@ -1960,7 +1969,7 @@ export default function WorkoutPage() {
           {/* Section 2: Curated Splits by Muscle Group (2x2 Grid) */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#1C1917]">
+              <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#1C1917] dark:text-[#F4F1EA]">
                 CURATED SPLITS · BY MUSCLE GROUP
               </span>
             </div>
@@ -1971,7 +1980,7 @@ export default function WorkoutPage() {
                 return (
                   <div
                     key={preset.id}
-                    className="bg-[#FCFBF9] rounded-[24px] overflow-hidden border border-[#1C1917]/[0.06] shadow-xs flex flex-col justify-between"
+                    className="bg-[#FCFBF9] dark:bg-[#141916] rounded-[24px] overflow-hidden border border-[#1C1917]/[0.06] dark:border-white/[0.08] shadow-xs flex flex-col justify-between"
                   >
                     <div className="h-24 w-full relative overflow-hidden">
                       <img
@@ -1980,27 +1989,27 @@ export default function WorkoutPage() {
                         className="w-full h-full object-cover"
                         loading="lazy"
                       />
-                      <span className="absolute top-2 left-2 bg-white/90 text-[#1C1917] rounded-full px-2 py-0.5 text-[9px] font-bold shadow-xs">
+                      <span className="absolute top-2 left-2 bg-[#191D1A]/85 backdrop-blur-md text-[#F4F1EA] border border-white/15 px-2.5 py-1 rounded-full text-[10px] font-bold shadow-xs">
                         45 min
                       </span>
                     </div>
                     <div className="p-3.5 flex-1 flex flex-col justify-between">
                       <div>
-                        <h4 className="font-bold text-sm text-[#1C1917] leading-tight">
+                        <h4 className="font-bold text-sm text-[#1C1917] dark:text-[#F4F1EA] leading-tight">
                           {preset.name}
                         </h4>
-                        <p className="text-[11px] text-[#57534E] mt-1 line-clamp-2 leading-relaxed">
+                        <p className="text-[11px] text-[#57534E] dark:text-[#9CA39E] mt-1 line-clamp-2 leading-relaxed">
                           {preset.description || "Targeted resistance routine for muscle stimulation."}
                         </p>
                       </div>
-                      <div className="flex items-center justify-between mt-3 pt-2 border-t border-[#1C1917]/[0.05]">
-                        <span className="bg-[#D1FAE5] text-[#1B4332] text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      <div className="flex items-center justify-between mt-3 pt-2 border-t border-[#1C1917]/[0.05] dark:border-white/[0.06]">
+                        <span className="bg-[#D1FAE5] dark:bg-[#142B20] text-[#1B4332] dark:text-[#6EE7B7] border border-transparent dark:border-[#34D399]/20 text-[10px] font-bold px-2 py-0.5 rounded-full">
                           {preset.exercises.length} mvts
                         </span>
                         <button
                           type="button"
                           onClick={() => handleLoadTemplate(preset)}
-                          className="bg-[#EFECE4] hover:bg-[#191D1A] hover:text-white text-[#1C1917] rounded-full px-3 py-1 text-[11px] font-semibold transition-all cursor-pointer"
+                          className="bg-[#EFECE4] dark:bg-[#1C221E] hover:bg-[#191D1A] dark:hover:bg-[#2D6A4F] hover:text-white text-[#1C1917] dark:text-[#F4F1EA] rounded-full px-3 py-1 text-[11px] font-semibold transition-all cursor-pointer border border-transparent dark:border-white/[0.06]"
                         >
                           Load
                         </button>
@@ -2015,7 +2024,7 @@ export default function WorkoutPage() {
           {/* Section 3: Personal Workout Templates */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#1C1917]">
+              <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#1C1917] dark:text-[#F4F1EA]">
                 PERSONAL WORKOUT TEMPLATES
               </span>
               <span className="text-xs font-semibold text-[#8C857B]">
@@ -2029,11 +2038,11 @@ export default function WorkoutPage() {
                 {customTemplates.map((tpl) => (
                   <div
                     key={tpl.id}
-                    className="bg-[#FCFBF9] rounded-[24px] p-3.5 border border-[#1C1917]/[0.06] shadow-xs flex items-center justify-between gap-3"
+                    className="bg-[#FCFBF9] dark:bg-[#141916] rounded-[24px] p-3.5 border border-[#1C1917]/[0.06] dark:border-white/[0.08] shadow-xs flex items-center justify-between gap-3"
                   >
                     <div className="min-w-0 flex-1">
-                      <h4 className="font-bold text-sm text-[#1C1917] truncate">{tpl.name}</h4>
-                      <p className="text-xs text-[#8C857B] truncate">
+                      <h4 className="font-bold text-sm text-[#1C1917] dark:text-[#F4F1EA] truncate">{tpl.name}</h4>
+                      <p className="text-xs text-[#8C857B] dark:text-[#9CA39E] truncate">
                         {tpl.exercises.length} exercises · Created by you
                       </p>
                     </div>
@@ -2059,18 +2068,18 @@ export default function WorkoutPage() {
             )}
 
             {/* Create Your Own Split Invitation Card */}
-            <div className="bg-gradient-to-b from-[#FAF5F0] to-[#EBF5EE] rounded-[28px] p-6 text-center border border-[#1C1917]/[0.06] shadow-xs">
-              <div className="w-12 h-12 rounded-full bg-white text-[#1C1917] shadow-xs mx-auto flex items-center justify-center mb-3">
-                <Dumbbell className="w-5 h-5 text-[#2D6A4F]" />
+            <div className="bg-[#FCFBF9] dark:bg-[#141916] border border-[#1C1917]/[0.08] dark:border-white/[0.08] rounded-[28px] p-8 text-center shadow-xs">
+              <div className="w-12 h-12 rounded-full bg-[#EFECE4] dark:bg-[#1E2621] text-[#2D6A4F] dark:text-[#6EE7B7] shadow-xs mx-auto flex items-center justify-center mb-3">
+                <Dumbbell className="w-5 h-5 text-[#2D6A4F] dark:text-[#6EE7B7]" />
               </div>
-              <h3 className="font-serif text-xl text-[#1C1917]">Create Your Own Split</h3>
-              <p className="text-xs text-[#57534E] max-w-xs mx-auto mt-1 mb-4 leading-relaxed">
+              <h3 className="font-serif text-xl text-[#1C1917] dark:text-[#F4F1EA]">Create Your Own Split</h3>
+              <p className="text-xs text-[#57534E] dark:text-[#9CA39E] max-w-xs mx-auto mt-1 mb-4 leading-relaxed">
                 Compose custom exercise lists, supersets, and load progressions tailored to your equipment.
               </p>
               <button
                 type="button"
                 onClick={() => setShowCreateTemplate(true)}
-                className="bg-[#191D1A] hover:bg-[#2D6A4F] text-white rounded-full px-5 py-2.5 text-xs font-semibold inline-flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                className="bg-[#191D1A] dark:bg-[#1E4D38] hover:bg-[#2D6A4F] dark:hover:bg-[#27664B] text-white rounded-full px-5 py-2.5 text-xs font-semibold inline-flex items-center gap-1.5 shadow-sm transition-all cursor-pointer border border-transparent dark:border-[#34D399]/30"
               >
                 + Build New Split Template
               </button>
@@ -2316,7 +2325,7 @@ export default function WorkoutPage() {
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setShowBodyWeightModal(false)}
           />
-          <div className="relative rounded-[28px] shadow-2xl w-full max-w-sm p-6 bg-[#FCFBF9] border border-[#1C1917]/[0.08] animate-slide-up text-[#1C1917]">
+          <div className="relative rounded-[28px] shadow-2xl w-full max-w-sm p-6 bg-[#FCFBF9] dark:bg-[#141916] border border-[#1C1917]/[0.08] dark:border-white/[0.08] animate-slide-up text-[#1C1917] dark:text-[#F4F1EA]">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-serif text-xl text-[#1C1917]">Log Body Weight</h3>
               <button
@@ -2392,7 +2401,7 @@ export default function WorkoutPage() {
           />
           <div className="relative rounded-[28px] shadow-2xl w-full max-w-sm p-6 bg-[#FCFBF9] border border-[#1C1917]/[0.08] animate-slide-up text-[#1C1917]">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-serif text-xl text-[#1C1917]">Build New Split Template</h3>
+              <h3 className="font-serif text-xl text-[#1C1917] dark:text-[#F4F1EA]">Build New Split Template</h3>
               <button
                 type="button"
                 onClick={() => setShowCreateTemplate(false)}
@@ -2417,7 +2426,7 @@ export default function WorkoutPage() {
                 />
               </div>
 
-              <p className="text-xs text-[#57534E] leading-relaxed">
+              <p className="text-xs text-[#57534E] dark:text-[#9CA39E] leading-relaxed">
                 {exercises.length > 0
                   ? `Saves the current ${exercises.length} exercises and sets into your library.`
                   : "Creates a starter upper body split template with compound movements."}

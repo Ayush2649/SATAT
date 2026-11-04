@@ -46,6 +46,7 @@ import {
 import { setDietContext } from "@/lib/orbitContext";
 import type { MealEntry, MealMacros, MacroGoals, MealTemplate } from "@/types";
 import EmptyState from "@/components/ui/EmptyState";
+import { FuelPageSkeleton } from "@/components/ui/PageSkeletons";
 
 const defaultGoals: MacroGoals = { calories: 2000, proteinG: 150, carbsG: 200, fatG: 65 };
 
@@ -306,8 +307,12 @@ export default function DietPage() {
     setShowVoiceMeal(false);
   };
 
+  if (loading && meals.length === 0) {
+    return <FuelPageSkeleton />;
+  }
+
   return (
-    <div className="w-full max-w-md mx-auto lg:max-w-7xl pb-8 animate-fade-in text-[#1C1917]">
+    <div className="w-full max-w-md mx-auto lg:max-w-none pb-8 animate-fade-in text-[#1C1917] dark:text-[#F4F1EA]">
       {/* ── 1. TOP HEADER & QUICK-ACTION ICON PILLS ── */}
       <div className="flex items-start justify-between pt-1 pb-3">
         <div>

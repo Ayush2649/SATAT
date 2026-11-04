@@ -257,10 +257,10 @@ export default function Navigation() {
               <Menu className="w-4 h-4" />
             </button>
             <div className={cn("items-center gap-2", collapsed ? "hidden" : "hidden lg:flex")}>
-              <span className="font-serif font-bold text-xl tracking-tight text-[#1C1917]">
+              <span className="font-serif font-bold text-xl tracking-tight text-[#1C1917] dark:text-[#F4F1EA]">
                 SATAT
               </span>
-              <span className="bg-[#EFECE4] text-[#57534E] rounded-full px-2 py-0.5 text-[10px] font-bold">
+              <span className="bg-[#EFECE4] dark:bg-[#1C221E] text-[#57534E] dark:text-[#9CA39E] border border-transparent dark:border-white/[0.08] rounded-full px-2 py-0.5 text-[10px] font-bold">
                 OS v2.4
               </span>
             </div>

@@ -589,7 +589,7 @@ export default function TaskBoard() {
   }
 
   return (
-    <div className="w-full max-w-md mx-auto lg:max-w-5xl pb-4 animate-fade-in text-[#1C1917]">
+    <div className="w-full max-w-md mx-auto lg:max-w-none pb-4 animate-fade-in text-[#1C1917] dark:text-[#F4F1EA]">
       {activeProjectId ? (
         /* ── VIEW B: Dedicated Project Workspace Drill-Down (image_4e69b9.jpg & image_4e699e.jpg) ── */
         <div>
@@ -1775,30 +1775,35 @@ export default function TaskBoard() {
                 </p>
               </div>
 
-              {/* Large 160x160 Progress Ring */}
-              <div className="w-[160px] h-[160px] mx-auto my-3 relative flex items-center justify-center">
-                <svg className="w-full h-full -rotate-90 transform" viewBox="0 0 160 160">
-                  <circle cx="80" cy="80" r="68" stroke="rgba(255,255,255,0.08)" strokeWidth="8" fill="none" />
+              {/* Large 176x176 (w-44 h-44) Focus Ring */}
+              <div className="w-44 h-44 mx-auto my-3 relative flex items-center justify-center">
+                <svg className="w-full h-full -rotate-90 transform" viewBox="0 0 176 176">
+                  <circle cx="88" cy="88" r="76" stroke="rgba(255,255,255,0.08)" strokeWidth="8" fill="none" />
                   <circle
-                    cx="80"
-                    cy="80"
-                    r="68"
+                    cx="88"
+                    cy="88"
+                    r="76"
                     stroke="#E05A47"
                     strokeWidth="8"
                     strokeLinecap="round"
                     fill="none"
-                    strokeDasharray={2 * Math.PI * 68}
-                    strokeDashoffset={2 * Math.PI * 68 * (1 - flowProgress)}
+                    strokeDasharray={2 * Math.PI * 76}
+                    strokeDashoffset={2 * Math.PI * 76 * (1 - flowProgress)}
                     className="transition-all duration-300"
                   />
                 </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-2">
                   <span className="font-mono text-3xl font-bold text-white tracking-tight leading-none">
                     {formatFocusTime(secondsRemaining)}
                   </span>
-                  <span className="text-[10px] font-bold tracking-wider text-stone-400 uppercase mt-1">
-                    FLOW STATE · BLOCK 1/3
-                  </span>
+                  <div className="mt-1.5 flex flex-col items-center justify-center text-center leading-tight">
+                    <span className="text-[10px] font-bold tracking-[0.16em] uppercase text-[#9CA39E]">
+                      FLOW STATE
+                    </span>
+                    <span className="text-[9px] font-semibold tracking-[0.14em] uppercase text-[#6EE7B7] mt-0.5">
+                      BLOCK 1/3
+                    </span>
+                  </div>
                 </div>
               </div>
 

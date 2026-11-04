@@ -1105,6 +1105,32 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ---
 
+### ✅ Sprint 7.6: Focus Ring 2-Line Sub-Label, Nocturnal Workout Templates, 100% Full Desktop Studio Width, & 12-Column Dark Shimmer Skeletons (`TaskBoard.tsx`, `WorkoutPage.tsx`, `DietPage.tsx`, `HomeView.tsx`, `OrbitView.tsx`, `Navigation.tsx`, `PageSkeletons.tsx`, `loading.tsx`, `app-shell.css`)
+- **Focus Ring 2-Line Stacked Sub-Label (`components/tasks/TaskBoard.tsx`)**:
+  - Expanded timer ring diameter to `w-44 h-44` (`viewBox="0 0 176 176"`, radius `76`) with optimal SVG stroke bounds.
+  - Stacked `FLOW STATE` and `BLOCK 1/3` into two centered, high-contrast spans below the countdown timer (`25:00`), preventing any horizontal collision with the circular stroke edges.
+- **Nocturnal Botanical Workout Template Cards & Dark Badges (`components/workout/WorkoutPage.tsx`)**:
+  - Restyled `PERSONAL WORKOUT TEMPLATES` empty-state invitation card and custom template cards for dark mode: `bg-[#FCFBF9] dark:bg-[#141916] border border-[#1C1917]/[0.08] dark:border-white/[0.08] rounded-[28px] p-8 text-center`.
+  - Icon circle: `bg-[#EFECE4] dark:bg-[#1E2621] text-[#2D6A4F] dark:text-[#6EE7B7]`.
+  - Photo overlay badges (e.g. `Leg Day`, `Upper Body`): `bg-[#191D1A]/85 backdrop-blur-md text-[#F4F1EA] border border-white/15 px-2.5 py-1 rounded-full text-[10px] font-bold shadow-xs`.
+- **100% Full-Width Desktop Workspace Across All Main Studios (`TaskBoard.tsx`, `WorkoutPage.tsx`, `DietPage.tsx`, `HomeView.tsx`, `OrbitView.tsx`)**:
+  - Replaced constraining `lg:max-w-5xl` and `lg:max-w-7xl` wrappers with `w-full max-w-md mx-auto lg:max-w-none` / `w-full max-w-none mx-auto`.
+  - Content now seamlessly spans from the left sidebar navigation across the entire monitor canvas without artificial gutters.
+- **Full-Width 12-Column Responsive Skeletons & Dark-Mode Shimmer (`components/ui/PageSkeletons.tsx`, `app/dashboard/*/loading.tsx`, `styles/app-shell.css`)**:
+  - Rebuilt all studio skeletons (`TodayPageSkeleton`, `PlanPageSkeleton`, `TrainPageSkeleton`, `FuelPageSkeleton`) with 12-column desktop architectures (`hidden lg:grid grid-cols-12 gap-6`).
+  - Updated all shimmer blocks to use dark-aware tokens: `bg-[#E6E1D6] dark:bg-[#161C18] border border-transparent dark:border-white/[0.05] animate-pulse`.
+  - Added route-specific Next.js `loading.tsx` streaming boundaries for `tasks`, `workout`, and `diet`.
+  - Enforced global CSS dark overrides in `styles/app-shell.css` for `html.dark [class*="bg-[#E6E1D6]"]` and sidebar `OS v2.4` badge pill.
+- **Sidebar `OS v2.4` Badge & Wordmark Dark Mode (`components/Navigation.tsx`)**:
+  - Styled `OS v2.4` pill with `bg-[#EFECE4] dark:bg-[#1C221E] text-[#57534E] dark:text-[#9CA39E] border border-transparent dark:border-white/[0.08]`.
+  - Wordmark updated to `text-[#1C1917] dark:text-[#F4F1EA]`.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **59 passed (59 files), 673 passed | 26 skipped (699 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
 ### ✅ Sprint 7.5: Unified Weekly Momentum SVG Math, Dark Mode Steppers & Volume Highlight, Tactile Workout Sets, Filtered Completed Session Save, Streak Pill Relocation, & 12-Column Settings Bento Grid (`components/dashboard/ProgressTrendChart.tsx`, `components/diet/DietPage.tsx`, `components/workout/WorkoutPage.tsx`, `components/dashboard/HomeView.tsx`, `app/dashboard/settings/page.tsx`, `components/settings/*`, `styles/app-shell.css`, `tests/sprint7-5/sprint7-5.test.ts`)
 - **Unified SVG Coordinate Space for Weekly Momentum Curve & Markers (`components/dashboard/ProgressTrendChart.tsx`)**:
   - Resolved floating dot alignment issue where circles were previously rendered in an overlay HTML container with disparate aspect-ratio math.

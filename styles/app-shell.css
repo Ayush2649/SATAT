@@ -743,3 +743,16 @@ html.dark [class*="bg-[#E6F4ED]"] {
     padding-inline: 3rem !important; /* xl:px-12 */
   }
 }
+
+/* 22. Dark Mode Loading Shimmer Skeleton & Sidebar Badge Overrides (§ Sprint 7.6) */
+html.dark .bg-\[\#E6E1D6\],
+html.dark [class*="bg-[#E6E1D6]"] {
+  background-color: #161C18 !important;
+  border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+html.dark aside span[class*="rounded-full"] {
+  background-color: #1C221E !important;
+  color: #9CA39E !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
