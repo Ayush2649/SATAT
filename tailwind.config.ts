@@ -153,6 +153,7 @@ const config: Config = {
         "slide-down": "slideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) both",
         "scale-in": "scaleIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) both",
         "rise": "rise 0.25s cubic-bezier(0.16, 1, 0.3, 1) both",
+        shimmer: "shimmer 1.8s infinite",
       },
       keyframes: {
         fadeIn: { "0%": { opacity: "0" }, "100%": { opacity: "1" } },
@@ -160,6 +161,7 @@ const config: Config = {
         slideDown: { "0%": { opacity: "0", transform: "translateY(-8px)" }, "100%": { opacity: "1", transform: "translateY(0)" } },
         scaleIn: { "0%": { opacity: "0", transform: "scale(0.97)" }, "100%": { opacity: "1", transform: "scale(1)" } },
         rise: { "0%": { opacity: "0", transform: "translateY(4px)" }, "100%": { opacity: "1", transform: "translateY(0)" } },
+        shimmer: { "100%": { transform: "translateX(100%)" } },
       },
     },
   },

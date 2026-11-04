@@ -1105,6 +1105,27 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ---
 
+### ✅ Sprint 7.7: High-Contrast Dark Shimmer Wave, Non-Overflowing 7-Day Strip, & 1:1 Studio Geometry (`PageSkeletons.tsx`, `app-shell.css`, `tailwind.config.ts`, `HomeView.tsx`, `loading.tsx`)
+- **High-Contrast Dark Mode Shimmer & True Sweeping Wave (`PageSkeletons.tsx`, `styles/app-shell.css`, `tailwind.config.ts`)**:
+  - Elevated skeleton surface contrast: outer card containers styled with `bg-[#FCFBF9] dark:bg-[#121714] border border-[#1C1917]/[0.06] dark:border-white/[0.07] rounded-[28px] p-5 shadow-xs`, and inner placeholder bars styled with `bg-[#E6E1D6] dark:bg-[#222B26]`.
+  - Added sweeping shimmer wave highlight (`relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_1.8s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/40 dark:before:via-[#34D399]/[0.08] before:to-transparent`).
+  - Added `@keyframes shimmer { 100% { transform: translateX(100%); } }` and `.shimmer-wave` utility in `styles/app-shell.css`.
+  - Protected custom dark background tokens in `app-shell.css` using `:not([class*="dark:bg-"])` with `#222B26 !important;` so dark styles are never flattened.
+- **Unboxed Header & Non-Overflowing 7-Day Calendar Strip (`PageSkeletons.tsx`)**:
+  - Removed enclosing border box around greeting and calendar strip so it sits cleanly on the canvas matching the live `Today` page.
+  - Positioned greeting and 7-day strip inside `flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4 w-full overflow-hidden`.
+  - 7-day strip rendered as `grid grid-cols-7 gap-2 w-full xl:w-[360px] shrink-0` with `h-16 w-full min-w-0 rounded-2xl bg-[#E6E1D6] dark:bg-[#1C2420]`, preventing pills from overflowing the container at any screen size.
+- **1:1 Responsive 12-Column Desktop Geometry for Today Studio (`PageSkeletons.tsx`)**:
+  - Row 2: 2-column bento split with tall workout hero card (`h-[250px] rounded-[28px] bg-[#EFECE4] dark:bg-[#18211C] border border-[#34D399]/15 p-6 flex flex-col justify-between`) and two stacked Alabaster cards (`h-[117px] rounded-[26px]` each) featuring circular calorie ring skeleton and full-width protein synthesis progress bar.
+  - Row 3: 3 horizontal rhythm feed row card skeletons (`h-20 rounded-[24px]` with `w-12 h-12` thumbnail, title, and action pill).
+  - Right 4-column rail: Orbit Adaptive Whisper card, 2×2 Daily Non-Negotiables grid (`grid grid-cols-2 gap-3` with 4 square cards `h-28 rounded-[20px]`), and 3 compact Circadian Telemetry biosensor rows (`h-12 rounded-xl`).
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **60 passed (60 files), 678 passed | 26 skipped (704 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
 ### ✅ Sprint 7.6: Focus Ring 2-Line Sub-Label, Nocturnal Workout Templates, 100% Full Desktop Studio Width, & 12-Column Dark Shimmer Skeletons (`TaskBoard.tsx`, `WorkoutPage.tsx`, `DietPage.tsx`, `HomeView.tsx`, `OrbitView.tsx`, `Navigation.tsx`, `PageSkeletons.tsx`, `loading.tsx`, `app-shell.css`)
 - **Focus Ring 2-Line Stacked Sub-Label (`components/tasks/TaskBoard.tsx`)**:
   - Expanded timer ring diameter to `w-44 h-44` (`viewBox="0 0 176 176"`, radius `76`) with optimal SVG stroke bounds.
