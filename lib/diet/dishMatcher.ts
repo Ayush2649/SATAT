@@ -68,7 +68,11 @@ export function resolveDishThumbnail(mealName?: string, existingPhotoUrl?: strin
   return "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=300&q=75";
 }
 
-export function formatMealTimeAndCategory(createdAt?: number | string): {
+export function formatMealTimeAndCategory(
+  createdAt?: number | string,
+  mealType?: string,
+  mealName?: string
+): {
   timeLabel: string;
   categoryLabel: string;
 } {
@@ -80,8 +84,19 @@ export function formatMealTimeAndCategory(createdAt?: number | string): {
   const displayHours = hours % 12 === 0 ? 12 : hours % 12;
   const timeLabel = `${String(displayHours).padStart(2, "0")}:${String(minutes).padStart(2, "0")} ${period}`;
 
-  let categoryLabel = "FUEL";
-  if (hours >= 5 && hours < 11) {
+  const normalizedType = (mealType || "").toLowerCase();
+  const normalizedName = (mealName || "").toLowerCase();
+
+  let categoryLabel = "";
+  if (normalizedType === "breakfast" || /\bbreakfast\b/i.test(normalizedName)) {
+    categoryLabel = "BREAKFAST";
+  } else if (normalizedType === "lunch" || /\blunch\b/i.test(normalizedName)) {
+    categoryLabel = "LUNCH";
+  } else if (normalizedType === "dinner" || /\bdinner\b/i.test(normalizedName)) {
+    categoryLabel = "DINNER";
+  } else if (normalizedType === "snack" || /\bsnack\b/i.test(normalizedName)) {
+    categoryLabel = "SNACK";
+  } else if (hours >= 5 && hours < 11) {
     categoryLabel = "BREAKFAST";
   } else if (hours >= 11 && hours < 16) {
     categoryLabel = "LUNCH";

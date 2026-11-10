@@ -23,18 +23,24 @@ import {
   Mic,
   Paperclip,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, todayString } from "@/lib/utils";
 import { OrbitIcon, type OrbitState } from "@/components/orbit/OrbitMark";
 import { Orbit3DCore } from "@/components/orbit/Orbit3DCore";
 import NotificationBell from "@/components/ui/NotificationBell";
 import { MarkdownText } from "@/components/ui/MarkdownText";
 import { OrbitRecommendationCard, OrbitInsightCard } from "@/components/orbit/OrbitActionCard";
 import { getDietContext, getWorkoutContext, getTaskContext } from "@/lib/orbitContext";
-import type { OrbitMessage, OrbitFocusMode, OrbitEntityContext } from "@/types/orbit";
+import type {
+  OrbitMessage,
+  OrbitFocusMode,
+  OrbitEntityContext,
+  OrbitActionExecuted,
+} from "@/types/orbit";
 import { classifyOrbitIntent, type OrbitIntent } from "@/lib/orbit/intentClassifier";
 
 interface OrbitViewProps {
   isOverlay?: boolean;
+  isOpen?: boolean;
   onClose?: () => void;
   className?: string;
 }
@@ -80,7 +86,7 @@ const QUICK_CHIPS = [
   },
 ];
 
-export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewProps) {
+export function OrbitView({ isOverlay = false, isOpen = true, onClose, className }: OrbitViewProps) {
   const { data: session } = useSession();
   const [messages, setMessages] = useState<OrbitMessage[]>([]);
   const [activeContext, setActiveContext] = useState<OrbitEntityContext>({});
@@ -94,7 +100,10 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
   const [viewMode, setViewMode] = useState<"overview" | "chat">("overview");
 
   const transitionTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const mobileMessagesEndRef = useRef<HTMLDivElement | null>(null);
+  const desktopMessagesEndRef = useRef<HTMLDivElement | null>(null);
+  const mobileScrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const desktopScrollContainerRef = useRef<HTMLDivElement | null>(null);
   const lastAssistantMessageRef = useRef<HTMLDivElement>(null);
   const lastUserMessageRef = useRef<HTMLDivElement>(null);
   const loadingCardRef = useRef<HTMLDivElement>(null);
@@ -102,6 +111,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
   const lastFailedMessageRef = useRef<string | null>(null);
   const prevLoadingRef = useRef(false);
   const prevMessagesLengthRef = useRef(0);
+  const wasOpenRef = useRef(isOpen);
 
   // Clean up any pending state transition timers on unmount
   useEffect(() => {
@@ -129,7 +139,36 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
   // User first name
   const firstName = session?.user?.name?.split(" ")[0] || "there";
 
-  // Load in-session history
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+    const scrollContainer = (
+      container: HTMLDivElement | null,
+      anchor: HTMLDivElement | null
+    ) => {
+      if (container) {
+        if (typeof container.scrollTo === "function") {
+          try {
+            container.scrollTo({ top: container.scrollHeight, behavior });
+            return;
+          } catch {
+            // Fall through to scrollTop / scrollIntoView
+          }
+        }
+        container.scrollTop = container.scrollHeight;
+        if (anchor && typeof anchor.scrollIntoView === "function") {
+          anchor.scrollIntoView({ behavior, block: "end" });
+        }
+        return;
+      }
+      if (anchor && typeof anchor.scrollIntoView === "function") {
+        anchor.scrollIntoView({ behavior, block: "end" });
+      }
+    };
+
+    scrollContainer(mobileScrollContainerRef.current, mobileMessagesEndRef.current);
+    scrollContainer(desktopScrollContainerRef.current, desktopMessagesEndRef.current);
+  }, []);
+
+  // Load in-session history & jump to latest message on initial open
   useEffect(() => {
     try {
       const saved = sessionStorage.getItem(STORAGE_KEY);
@@ -137,12 +176,16 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
           setMessages(parsed);
+          setViewMode("chat");
+          setTimeout(() => {
+            scrollToBottom("auto");
+          }, 50);
         }
       }
     } catch {
       // sessionStorage unavailable
     }
-  }, []);
+  }, [scrollToBottom]);
 
   // Save history
   const persistMessages = (msgs: OrbitMessage[]) => {
@@ -153,37 +196,37 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
     }
   };
 
-  // Auto-scroll handler:
-  // - When user sends a message (loading starts), scroll user message + loading card into view
-  // - When assistant response arrives (loading finished / assistant message added), scroll to TOP of the assistant response card
+  // Scroll to bottom when overlay re-opens
   useEffect(() => {
-    if (messages.length === 0) return;
-
-    const hadMessages = prevMessagesLengthRef.current;
-    const currentMessages = messages.length;
-    const wasLoading = prevLoadingRef.current;
-
-    prevMessagesLengthRef.current = currentMessages;
-    prevLoadingRef.current = loading;
-
-    // A. User just sent message & loading started -> scroll to loading card or user message
-    if (loading && !wasLoading) {
-      setTimeout(() => {
-        loadingCardRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    const justOpened = isOpen && !wasOpenRef.current;
+    wasOpenRef.current = isOpen;
+    if (justOpened && messages.length > 0) {
+      const timer = setTimeout(() => {
+        scrollToBottom("auto");
       }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, messages.length, scrollToBottom]);
+
+  // Auto-scroll to latest message whenever messages or loading indicator updates
+  useEffect(() => {
+    if (messages.length === 0 && !loading) {
+      prevMessagesLengthRef.current = 0;
+      prevLoadingRef.current = loading;
       return;
     }
 
-    // B. Loading finished and new assistant message arrived -> scroll to TOP of latest assistant message
-    if (!loading && currentMessages > hadMessages) {
-      const lastMsg = messages[messages.length - 1];
-      if (lastMsg && lastMsg.role === "assistant") {
-        setTimeout(() => {
-          lastAssistantMessageRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-        }, 60);
-      }
-    }
-  }, [messages, loading]);
+    const hadMessages = prevMessagesLengthRef.current;
+    prevMessagesLengthRef.current = messages.length;
+    prevLoadingRef.current = loading;
+
+    const behavior: ScrollBehavior = hadMessages === 0 && !loading ? "auto" : "smooth";
+    const timer = setTimeout(() => {
+      scrollToBottom(behavior);
+    }, 50);
+
+    return () => clearTimeout(timer);
+  }, [messages, loading, scrollToBottom]);
 
   // Read actual context from orbitContext store
   const liveDiet = getDietContext();
@@ -213,6 +256,48 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
   const pendingTasksCount = useMemo(() => {
     return liveTasks?.totalPending ?? 3;
   }, [liveTasks]);
+
+  const dispatchMutationRefreshEvents = useCallback((data: any) => {
+    if (typeof window === "undefined" || !data) return;
+
+    const executedList: OrbitActionExecuted[] = Array.isArray(data.actions_executed)
+      ? data.actions_executed
+      : Array.isArray(data.action_executed)
+      ? data.action_executed
+      : data.action_executed
+      ? [data.action_executed]
+      : [];
+
+    for (const act of executedList) {
+      if (!act || act.status !== "success") continue;
+      const domain =
+        act.domain ||
+        (act.type === "UPSERT_MEAL" || act.type === "MODIFY_MEAL" || act.type === "DELETE_MEAL"
+          ? "meals"
+          : act.type === "START_WORKOUT" ||
+            act.type === "UPDATE_WORKOUT" ||
+            act.type === "UPDATE_WORKOUT_SET" ||
+            act.type === "ADD_EXERCISE" ||
+            act.type === "DELETE_EXERCISE" ||
+            act.type === "COMPLETE_WORKOUT"
+          ? "workouts"
+          : act.type === "LOG_RITUAL"
+          ? "rituals"
+          : act.type === "UPDATE_SPRINT_PROGRESS"
+          ? "sprints"
+          : "tasks");
+
+      window.dispatchEvent(
+        new CustomEvent("satat:data-refresh", {
+          detail: {
+            domain,
+            type: act.type,
+            details: act.details,
+          },
+        })
+      );
+    }
+  }, []);
 
   // Send message
   const handleSend = useCallback(
@@ -261,6 +346,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
           body: JSON.stringify({
             messages: payloadMessages,
             mode: focusMode === "all" ? null : focusMode,
+            clientDate: todayString(),
             activeContext,
             dietContext,
             workoutContext,
@@ -277,24 +363,8 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
           setActiveContext((prev) => ({ ...prev, ...data.activeContext }));
         }
 
-        if (data.action_executed && data.action_executed.status === "success" && typeof window !== "undefined") {
-          const domain =
-            data.action_executed.type === "UPSERT_MEAL" || data.action_executed.type === "MODIFY_MEAL"
-              ? "diet"
-              : data.action_executed.type === "UPDATE_WORKOUT"
-              ? "workout"
-              : "tasks";
+        dispatchMutationRefreshEvents(data);
 
-          window.dispatchEvent(
-            new CustomEvent("satat:data-refresh", {
-              detail: {
-                domain,
-                type: data.action_executed.type,
-                details: data.action_executed.details,
-              },
-            })
-          );
-        }
         const assistantMsg: OrbitMessage = {
           id: `assistant-${Date.now()}`,
           role: "assistant",
@@ -323,7 +393,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
         setLoading(false);
       }
     },
-    [input, loading, messages, focusMode, activeContext]
+    [input, loading, messages, focusMode, activeContext, dispatchMutationRefreshEvents]
   );
 
   // Retry sending the last user message without duplicating it in the message list
@@ -382,6 +452,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
         body: JSON.stringify({
           messages: payloadMessages,
           mode: focusMode === "all" ? null : focusMode,
+          clientDate: todayString(),
           activeContext,
           dietContext,
           workoutContext,
@@ -398,24 +469,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
         setActiveContext((prev) => ({ ...prev, ...data.activeContext }));
       }
 
-      if (data.action_executed && data.action_executed.status === "success" && typeof window !== "undefined") {
-        const domain =
-          data.action_executed.type === "UPSERT_MEAL" || data.action_executed.type === "MODIFY_MEAL"
-            ? "diet"
-            : data.action_executed.type === "UPDATE_WORKOUT"
-            ? "workout"
-            : "tasks";
-
-        window.dispatchEvent(
-          new CustomEvent("satat:data-refresh", {
-            detail: {
-              domain,
-              type: data.action_executed.type,
-              details: data.action_executed.details,
-            },
-          })
-        );
-      }
+      dispatchMutationRefreshEvents(data);
       const assistantMsg: OrbitMessage = {
         id: `assistant-${Date.now()}`,
         role: "assistant",
@@ -442,7 +496,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
     } finally {
       setLoading(false);
     }
-  }, [loading, messages, focusMode, activeContext]);
+  }, [loading, messages, focusMode, activeContext, dispatchMutationRefreshEvents]);
 
   // Clear conversation / Reset chat
   const handleReset = () => {
@@ -613,7 +667,10 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
       </header>
 
       {/* ── 2. MAIN VIEWPORT (STITCH 1:1 DASHBOARD OVERVIEW vs CHAT STREAM) ── */}
-      <div className="flex-1 min-h-0 min-w-0 w-full overflow-y-auto overflow-x-hidden px-4 sm:px-6 pt-3 pb-2 space-y-3 scrollbar-none bg-[#F6F3EC] flex flex-col overscroll-contain touch-pan-y">
+      <div
+        ref={mobileScrollContainerRef}
+        className="flex-1 min-h-0 min-w-0 w-full overflow-y-auto overflow-x-hidden px-4 sm:px-6 pt-3 pb-2 space-y-3 scrollbar-none bg-[#F6F3EC] flex flex-col overscroll-contain touch-pan-y"
+      >
         {/* ── 2A. STITCH 1:1 TELEMETRY OVERVIEW (Initial state when no messages) ── */}
         {messages.length === 0 && (
           <div className="w-full max-w-xl mx-auto space-y-3.5 animate-fade-in pb-2">
@@ -1112,7 +1169,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
 
         {/* Spacer to guarantee the final line sits tightly above composer */}
         <div className="h-1 shrink-0" aria-hidden="true" />
-        <div ref={messagesEndRef} />
+        <div ref={mobileMessagesEndRef} />
       </div>
 
       {/* ── 3. COMPOSER DOCK (Docked Above Bottom Navigation) ── */}
@@ -1559,7 +1616,10 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
           </div>
 
           {/* Center Conversational Stream */}
-          <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-3.5 scrollbar-thin flex flex-col overscroll-contain">
+          <div
+            ref={desktopScrollContainerRef}
+            className="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-3.5 scrollbar-thin flex flex-col overscroll-contain"
+          >
             {messages.length === 0 ? (
               <div className="my-auto text-center py-12 px-6 max-w-md mx-auto">
                 <div className="w-12 h-12 rounded-2xl bg-[#191D1A] text-white flex items-center justify-center mx-auto mb-3.5 shadow-md">
@@ -1732,7 +1792,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
             )}
 
             <div className="h-1 shrink-0" aria-hidden="true" />
-            <div ref={messagesEndRef} />
+            <div ref={desktopMessagesEndRef} />
           </div>
 
           {/* Desktop Composer Dock */}

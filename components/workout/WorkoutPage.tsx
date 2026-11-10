@@ -120,6 +120,45 @@ function formatSessionForOrbit(s: WorkoutSession) {
   };
 }
 
+function normalizeSessionExercises(rawList: any[]): ExerciseLog[] {
+  if (!Array.isArray(rawList)) return [];
+  return rawList.map((item, idx) => {
+    const rawSets = Array.isArray(item.sets) ? item.sets : [];
+    const sets: SetLog[] = rawSets.length > 0
+      ? rawSets.map((s: any, sIdx: number) => ({
+          id: s.id || `set-${item.id || idx}-${sIdx}`,
+          reps: typeof s.reps === "number" ? s.reps : (s.duration ? 1 : 10),
+          weight: typeof s.weight === "number" ? s.weight : 0,
+          unit: (s.unit || (s.duration || item.type === "isometric" || item.type === "calisthenics" ? "bodyweight" : s.distance !== undefined ? "km" : "kg")) as WeightUnit,
+          completed: typeof s.completed === "boolean" ? s.completed : true,
+          ...(s.durationSeconds || s.duration ? { durationSeconds: s.durationSeconds || s.duration } : {}),
+          ...(s.distance !== undefined || item.distance !== undefined ? { distance: s.distance ?? item.distance, distanceUnit: s.distanceUnit || item.distanceUnit || "km" } : {}),
+        }))
+      : [
+          {
+            id: `set-${item.id || idx}-0`,
+            reps: item.duration ? 1 : 10,
+            weight: 0,
+            unit: (item.type === "isometric" || item.type === "calisthenics" ? "bodyweight" : item.distance !== undefined ? "km" : "kg") as WeightUnit,
+            completed: true,
+            ...(item.duration ? { durationSeconds: item.duration } : {}),
+            ...(item.distance !== undefined ? { distance: item.distance, distanceUnit: item.distanceUnit || "km" } : {}),
+          },
+        ];
+
+    return {
+      id: item.id || `ex-${idx}-${Date.now()}`,
+      name: item.name || "Exercise",
+      sets,
+      ...(item.type ? { type: item.type } : {}),
+      ...(item.duration ? { duration: item.duration, durationSeconds: item.duration } : {}),
+      ...(item.durationUnit ? { durationUnit: item.durationUnit } : {}),
+      ...(item.distance !== undefined ? { distance: item.distance, distanceUnit: item.distanceUnit || "km" } : {}),
+      ...(item.notes ? { notes: item.notes } : {}),
+    };
+  });
+}
+
 export default function WorkoutPage() {
   const { data: session } = useSession();
   const { firebaseUser, isReady } = useFirebaseAuth();
@@ -212,6 +251,22 @@ export default function WorkoutPage() {
       .then((sessions) => {
         if (isCancelled) return;
         setPastSessions(sessions);
+        const todaySess = sessions.find((s) => s.date === todayString());
+        if (todaySess) {
+          const rawList = (todaySess.exercises && todaySess.exercises.length > 0)
+            ? todaySess.exercises
+            : ((todaySess as any).movements || []);
+          if (rawList.length > 0 && (todaySess.status === "in-progress" || todaySess.status !== "completed")) {
+            setExercises(normalizeSessionExercises(rawList));
+            setIsEditingSession(true);
+            if ((todaySess as any).name || (todaySess as any).title || (todaySess as any).routineTitle) {
+              setActiveSessionTitle((todaySess as any).name || (todaySess as any).title || (todaySess as any).routineTitle);
+            }
+            if ((todaySess as any).duration || todaySess.durationMinutes) {
+              setDuration((todaySess as any).duration || todaySess.durationMinutes);
+            }
+          }
+        }
         const current = getWorkoutContext();
         setWorkoutContext({
           bodyWeightKg: current?.bodyWeightKg ?? bodyWeightEntriesRef.current[0]?.weightKg,
@@ -262,6 +317,48 @@ export default function WorkoutPage() {
       isCancelled = true;
     };
   }, [userId, firebaseUser, isReady]);
+
+  // Listen for real-time Orbit / studio mutations across windows or copilot
+  useEffect(() => {
+    if (!userId || typeof window === "undefined") return;
+    const handleDataRefresh = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const domain = customEvent.detail?.domain;
+      if (!domain || domain === "workouts" || domain === "workout") {
+        getWorkoutSessions(userId)
+          .then((sessions) => {
+            setPastSessions(sessions);
+            const todaySess = sessions.find((s) => s.date === todayString());
+            if (todaySess) {
+              const rawList = (todaySess.exercises && todaySess.exercises.length > 0)
+                ? todaySess.exercises
+                : ((todaySess as any).movements || []);
+              if (rawList.length > 0) {
+                setExercises(normalizeSessionExercises(rawList));
+                if (todaySess.status === "in-progress" || todaySess.status !== "completed") {
+                  setIsEditingSession(true);
+                }
+                if ((todaySess as any).name || (todaySess as any).title || (todaySess as any).routineTitle) {
+                  setActiveSessionTitle((todaySess as any).name || (todaySess as any).title || (todaySess as any).routineTitle);
+                }
+                if ((todaySess as any).duration || todaySess.durationMinutes) {
+                  setDuration((todaySess as any).duration || todaySess.durationMinutes);
+                }
+              }
+            }
+            const current = getWorkoutContext();
+            setWorkoutContext({
+              bodyWeightKg: current?.bodyWeightKg ?? bodyWeightEntriesRef.current[0]?.weightKg,
+              recentSessions: sessions.slice(0, 5).map(formatSessionForOrbit),
+            });
+          })
+          .catch((err) => console.error("Error refreshing workout sessions:", err));
+      }
+    };
+
+    window.addEventListener("satat:data-refresh", handleDataRefresh);
+    return () => window.removeEventListener("satat:data-refresh", handleDataRefresh);
+  }, [userId]);
 
   // Today's session
   const todaySession = pastSessions.find((s) => s.date === todayString()) ?? null;
@@ -556,10 +653,28 @@ export default function WorkoutPage() {
         userId,
         date,
         exercises: sanitizedExercises,
+        movements: sanitizedExercises.map((ex) => ({
+          id: ex.id,
+          name: ex.name,
+          type: (ex as any).type || "strength",
+          sets: ex.sets.map((s, idx) => ({
+            setNumber: idx + 1,
+            reps: s.reps,
+            weight: s.weight,
+            unit: s.unit,
+            completed: s.completed,
+            ...((s as any).durationSeconds ? { duration: (s as any).durationSeconds, durationSeconds: (s as any).durationSeconds } : {}),
+          })),
+          completed: true,
+        })),
         durationMinutes: duration || 45,
+        duration: duration || 45,
+        status: "completed",
         createdAt: Date.now(),
+        updatedAt: new Date().toISOString(),
         caloriesBurned: sessionCalories,
         name: activeSessionTitle || splitMeta.title,
+        title: activeSessionTitle || splitMeta.title,
       };
 
       if (cardioLogs.length > 0) session_data.cardioLogs = cardioLogs;
@@ -603,11 +718,16 @@ export default function WorkoutPage() {
 
   const handleStartEditingToday = () => {
     if (!todaySession) return;
-    setExercises(todaySession.exercises);
+    const sessionExercises = (todaySession.exercises && todaySession.exercises.length > 0)
+      ? todaySession.exercises
+      : ((todaySession as any).movements || []);
+    setExercises(normalizeSessionExercises(sessionExercises));
     setCardioLogs(todaySession.cardioLogs || []);
-    setDuration(todaySession.durationMinutes || 45);
+    setDuration((todaySession as any).duration || todaySession.durationMinutes || 45);
     setDate(todaySession.date);
-    if ((todaySession as any).name) setActiveSessionTitle((todaySession as any).name);
+    if ((todaySession as any).name || (todaySession as any).title) {
+      setActiveSessionTitle((todaySession as any).name || (todaySession as any).title);
+    }
     setIsEditingSession(true);
   };
 
@@ -740,7 +860,7 @@ export default function WorkoutPage() {
       {/* ── TAB 1: LOG WORKOUT VIEW ── */}
       {view === "log" && (
         <>
-          {todaySession && !isEditingSession ? (
+          {todaySession && todaySession.status !== "in-progress" && !isEditingSession ? (
             /* ════════════════════════════════════════════════════════════════════
                VIEW 1B: COMPLETED SESSION & SESSION INTELLIGENCE STATE (image_793942.jpg)
                ════════════════════════════════════════════════════════════════════ */
@@ -748,11 +868,14 @@ export default function WorkoutPage() {
               {(() => {
                 const sessionMeta = inferWorkoutSplitMeta(todaySession);
                 const sessionCals = extractOrComputeWorkoutCalories(todaySession as any, bwKg);
-                const sSets = todaySession.exercises.reduce((a, e) => a + e.sets.length, 0);
-                const sVol = todaySession.exercises.reduce(
-                  (acc, ex) =>
+                const sessionExercises: ExerciseLog[] = (todaySession.exercises && todaySession.exercises.length > 0)
+                  ? todaySession.exercises
+                  : normalizeSessionExercises((todaySession as any).movements || []);
+                const sSets = sessionExercises.reduce((a: number, e: ExerciseLog) => a + (e.sets?.length || 0), 0);
+                const sVol = sessionExercises.reduce(
+                  (acc: number, ex: ExerciseLog) =>
                     acc +
-                    ex.sets.reduce((s, set) => s + (set.weight || 0) * (set.reps || 0), 0),
+                    (ex.sets || []).reduce((s: number, set: SetLog) => s + (set.weight || 0) * (set.reps || 0), 0),
                   0
                 );
                 const coachIntel = parseCoachReport(todaySession.summary, todaySession);
@@ -836,27 +959,27 @@ export default function WorkoutPage() {
                             {sSets}
                           </div>
                           <div className="text-[9px] text-stone-400 truncate">
-                            {todaySession.exercises.length} mvts
+                            {sessionExercises.length} mvts
                           </div>
                         </div>
                       </div>
                     </div>
 
                     {/* 2. Movement Breakdown Card */}
-                    {todaySession.exercises.length > 0 && (
+                    {sessionExercises.length > 0 && (
                       <div className="bg-[#FCFBF9] rounded-[28px] p-5 border border-[#1C1917]/[0.06] shadow-xs">
                         <div className="flex items-center justify-between mb-3.5">
                           <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#1C1917]">
                             MOVEMENT BREAKDOWN
                           </span>
                           <span className="bg-[#EFECE4] text-[#57534E] rounded-full px-2.5 py-0.5 text-[10px] font-semibold whitespace-nowrap shrink-0">
-                            {todaySession.exercises.length} Completed
+                            {sessionExercises.length} Completed
                           </span>
                         </div>
 
                         <div className="space-y-3">
-                          {todaySession.exercises.map((ex) => {
-                            const maxWeight = ex.sets.reduce((max, s) => Math.max(max, s.weight || 0), 0);
+                          {sessionExercises.map((ex: ExerciseLog) => {
+                            const maxWeight = (ex.sets || []).reduce((max: number, s: SetLog) => Math.max(max, s.weight || 0), 0);
                             const targetMuscle = getExerciseTargetMuscle(ex.name);
 
                             return (
@@ -879,13 +1002,17 @@ export default function WorkoutPage() {
                                 <p className="text-[11px] text-[#8C857B] mt-0.5">{targetMuscle}</p>
 
                                 <div className="flex flex-wrap gap-1.5 mt-2.5">
-                                  {ex.sets.map((set, idx) => (
+                                  {(ex.sets || []).map((set: SetLog, idx: number) => (
                                     <span
                                       key={set.id}
                                       className="bg-[#FCFBF9] border border-[#1C1917]/[0.07] text-[#1C1917] rounded-lg px-2.5 py-1 text-[11px] font-mono font-semibold shadow-2xs whitespace-nowrap shrink-0"
                                     >
                                       <span className="text-[#8C857B] mr-1">{idx + 1}</span>
-                                      {set.unit === "bodyweight" ? "BW" : `${set.weight || 0}kg`} × {set.reps || 0}
+                                      {set.distance !== undefined || ex.type === "cardio"
+                                        ? `${set.distance ?? ex.distance ?? 0} ${set.distanceUnit ?? ex.distanceUnit ?? "km"}`
+                                        : set.unit === "bodyweight"
+                                        ? `BW × ${set.reps || 0}`
+                                        : `${set.weight || 0}kg × ${set.reps || 0}`}
                                     </span>
                                   ))}
                                 </div>
@@ -1290,20 +1417,26 @@ export default function WorkoutPage() {
                                 {prevText}
                               </div>
 
-                              {/* KG Input */}
+                              {/* KG Input or Distance or BW */}
                               <div className="col-span-3">
-                                <input
-                                  type="number"
-                                  inputMode="decimal"
-                                  min={0}
-                                  placeholder="0"
-                                  value={set.unit === "bodyweight" ? "" : set.weight || ""}
-                                  disabled={set.unit === "bodyweight"}
-                                  onChange={(e) =>
-                                    updateSet(ex.id, set.id, { weight: Number(e.target.value) })
-                                  }
-                                  className="bg-[#F6F3EC] border border-[#1C1917]/[0.08] rounded-xl py-1.5 px-2 text-center text-xs font-bold text-[#1C1917] w-full outline-none focus:border-[#2D6A4F]"
-                                />
+                                {ex.type === "cardio" || set.distance !== undefined ? (
+                                  <div className="bg-[#F6F3EC] border border-[#1C1917]/[0.08] rounded-xl py-1.5 px-2 text-center text-xs font-bold text-[#1C1917] w-full truncate">
+                                    {set.distance ?? ex.distance ?? 0} {set.distanceUnit ?? ex.distanceUnit ?? "km"}
+                                  </div>
+                                ) : (
+                                  <input
+                                    type="number"
+                                    inputMode="decimal"
+                                    min={0}
+                                    placeholder={set.unit === "bodyweight" ? "BW" : "0"}
+                                    value={set.unit === "bodyweight" ? "" : set.weight || ""}
+                                    disabled={set.unit === "bodyweight"}
+                                    onChange={(e) =>
+                                      updateSet(ex.id, set.id, { weight: Number(e.target.value) })
+                                    }
+                                    className="bg-[#F6F3EC] border border-[#1C1917]/[0.08] rounded-xl py-1.5 px-2 text-center text-xs font-bold text-[#1C1917] w-full outline-none focus:border-[#2D6A4F] disabled:opacity-75 disabled:cursor-not-allowed"
+                                  />
+                                )}
                               </div>
 
                               {/* Reps Input */}

@@ -368,6 +368,26 @@ export default function TaskBoard() {
     };
   }, [userId, firebaseUser, isReady]);
 
+  // Listen for real-time Orbit / studio mutations across windows or copilot
+  useEffect(() => {
+    if (!userId || typeof window === "undefined") return;
+    const handleDataRefresh = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const domain = customEvent.detail?.domain;
+      if (!domain || domain === "tasks") {
+        getAllTasks(userId)
+          .then((loadedTasks) => {
+            setAllTasks(loadedTasks);
+            setTaskContext(computeTaskContext(loadedTasks, projects, todayString()));
+          })
+          .catch((err) => console.error("Error refreshing tasks:", err));
+      }
+    };
+
+    window.addEventListener("satat:data-refresh", handleDataRefresh);
+    return () => window.removeEventListener("satat:data-refresh", handleDataRefresh);
+  }, [userId, projects]);
+
   // ── Computed ──
   const weekDates = getWeekDates(weekAnchor);
   const activeProject = activeProjectId

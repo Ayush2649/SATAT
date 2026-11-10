@@ -122,6 +122,27 @@ export default function DietPage() {
     };
   }, [userId, date, firebaseUser, isReady]);
 
+  // Listen for real-time Orbit / studio mutations across windows or copilot
+  useEffect(() => {
+    if (!userId || typeof window === "undefined") return;
+    const handleDataRefresh = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const domain = customEvent.detail?.domain;
+      if (!domain || domain === "meals" || domain === "diet") {
+        (getMeals as any)(userId, date)
+          .then((loadedMeals: any[]) => {
+            if (Array.isArray(loadedMeals)) {
+              setMeals(loadedMeals);
+            }
+          })
+          .catch((err: any) => console.error("Error refreshing meals:", err));
+      }
+    };
+
+    window.addEventListener("satat:data-refresh", handleDataRefresh);
+    return () => window.removeEventListener("satat:data-refresh", handleDataRefresh);
+  }, [userId, date]);
+
   const totals = meals.reduce<MealMacros>(
     (acc, meal) => ({
       calories: acc.calories + (Number(meal.macros.calories) || 0),
@@ -530,7 +551,7 @@ export default function DietPage() {
             {meals.map((meal) => {
               const isExpanded = expandedMealId === meal.id;
               const photoUrl = resolveDishThumbnail(meal.name, meal.photoUrl);
-              const { timeLabel, categoryLabel } = formatMealTimeAndCategory(meal.createdAt);
+              const { timeLabel, categoryLabel } = formatMealTimeAndCategory(meal.createdAt, (meal as any).mealType, meal.name);
 
               return (
                 <div
@@ -560,7 +581,7 @@ export default function DietPage() {
                             {timeLabel} · {categoryLabel}
                           </span>
                           <h3 className="line-clamp-1 text-[15px] font-bold text-[#1C1917] leading-snug">
-                            {meal.name}
+                            {meal.name.replace(/^(breakfast|lunch|dinner|snack):\s*/i, "")}
                           </h3>
                         </div>
 
@@ -876,7 +897,7 @@ export default function DietPage() {
               <div className="space-y-3">
                 {meals.map((meal) => {
                   const photoUrl = resolveDishThumbnail(meal.name, meal.photoUrl);
-                  const { timeLabel, categoryLabel } = formatMealTimeAndCategory(meal.createdAt);
+                  const { timeLabel, categoryLabel } = formatMealTimeAndCategory(meal.createdAt, (meal as any).mealType, meal.name);
 
                   return (
                     <div
@@ -901,7 +922,7 @@ export default function DietPage() {
                             {timeLabel} · {categoryLabel}
                           </span>
                           <h4 className="font-bold text-base text-[#1C1917] truncate mt-0.5">
-                            {meal.name}
+                            {meal.name.replace(/^(breakfast|lunch|dinner|snack):\s*/i, "")}
                           </h4>
                           <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                             <span className="bg-[#E0F2E9] text-[#2D6A4F] text-[10px] font-bold px-2 py-0.5 rounded-md">

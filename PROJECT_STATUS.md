@@ -911,12 +911,182 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ---
 
+### ✅ Sprint 6.9: Universal Orbit Entity Context, Mutation Engine & Suggestion Engine Across All Editable Domains
+- **Universal Type Definitions (`types/orbit.ts`)**:
+  - Expanded `OrbitEntityContext` to include full cross-domain entity state: `activeWorkoutName`, `activeExerciseIndex`, `activeTaskId`, `activeTaskTitle`, `activePlanId`, `activeHabitType`, `activeSprintId`, and `activeSprintDay`.
+  - Standardized `OrbitActionType` across all 5 manually editable domains:
+    1. **Workouts & Exercises**: `START_WORKOUT`, `UPDATE_WORKOUT`, `UPDATE_WORKOUT_SET`, `ADD_EXERCISE`, `DELETE_EXERCISE`, `COMPLETE_WORKOUT`.
+    2. **Tasks & Schedules**: `CREATE_TASK`, `RESCHEDULE_TASK`, `COMPLETE_TASK`, `DELETE_TASK`, `MODIFY_PLAN`.
+    3. **Meals & Macros**: `UPSERT_MEAL`, `MODIFY_MEAL`, `DELETE_MEAL`.
+    4. **Daily Rituals & Habits**: `LOG_RITUAL` (hydration, steps, reflection, combined).
+    5. **Sprints & Study Milestones**: `UPDATE_SPRINT_PROGRESS` (LeetCode, DSA problems, placement sprint tally).
+  - Added `domain: "meals" | "workouts" | "tasks" | "rituals" | "sprints"` to `OrbitActionExecuted`.
+  - Formalized `OrbitDualLayerResponse` contract for strict API response typing.
+- **Deterministic Universal Mutation Engine (`lib/orbit/mutationEngine.ts`)**:
+  - Implemented CRUD handlers for all 5 domains interacting with Firestore (`meals`, `workouts`, `tasks`, `habits`, `sprints`).
+  - Added `parseTimeString` utility converting natural language times (`"5 PM"` -> `"17:00"`, `"6 PM"` -> `"18:00"`).
+  - Enhanced `update_workout_session` to support multi-turn relative rep increments via `repDelta` (`"Add 2 more reps"`) preserving set weight and units, as well as `isAppendSet` (`"Add a 4th set"`).
+  - Enhanced `reschedule_task_entry` and `complete_task_entry` to resolve target tasks by `activeTaskId`, `taskTitle`, or fuzzy matching user's pending tasks.
+  - Implemented `log_ritual_entry` supporting hydration, step count compounding, evening reflection journaling, or combined hydration + steps in a single natural language command.
+  - Implemented `update_sprint_entry` extracting problem titles and topics (`"Solved Group Anagrams and Valid Balloons on LeetCode using hash map"`).
+  - Expanded `generateContextualSuggestions` to emit domain-specific predictive chips for all domains.
+- **API Route Integration & Domain Safeguards (`app/api/aria/route.ts`)**:
+  - Integrated universal mutation intent parsing and execution on incoming user messages.
+  - Updated context requirements domain merging to include `"habits"` for rituals and `"tasks"` / `"habits"` for sprints.
+  - Refined domain pruning rules with `hasRitualFocus` and `hasSprintFocus` to ensure necessary data is not dropped during category context retrieval.
+  - Ensured dual-layer JSON responses attach `action_executed` with `domain` and contextual suggestions.
+- **UI State Synchronization & Targeted Event Sync (`components/orbit/OrbitView.tsx`)**:
+  - Updated `setActiveContext` to merge incoming `activeContext` updates dynamically from API responses.
+  - Dispatched `satat:data-refresh` event using `data.action_executed.domain` for granular per-studio UI cache invalidation without page reloads.
+- **Comprehensive Vitest Suite (`tests/orbit/continuity-mutations.test.ts`)**:
+  - Expanded in-memory Firestore mocks to support `habits` and `sprints` collections alongside `meals`, `workouts`, and `tasks`.
+  - Added multi-turn task scheduling & rescheduling tests (`"Add 25 min coding sprint at 5 PM"` -> `"Move that sprint to 6 PM"`).
+  - Added 3-turn workout lifecycle and rep delta tests (`"Start Push Day"` -> `"Set first exercise to 10 reps at 20kg"` -> `"Add 2 more reps"`).
+  - Added daily rituals test (`"Log 1000ml water and 8000 steps"`).
+  - Added sprint progress tracking test (`"Solved Group Anagrams and Valid Balloons on LeetCode using hash map"`).
+  - All 21 tests pass with 100% success rate.
+- **Zero Regression Standard Verified**:
+  - `npm run typecheck`: **0 errors**.
+  - Vitest suite: **56 passed (56 files), 671 passed | 26 skipped (697 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
+### ✅ Sprint 6.10: Fix Silent Save Failures in Train/Plan & Conversational Clarification Engine
+- **Conversational Clarification Loop & Parameter Validation (`lib/orbit/mutationEngine.ts` & `types/orbit.ts`)**:
+  - Expanded `OrbitEntityContext` with `awaitingParam` and `partialIntent` to retain multi-turn conversational intent when parameters are incomplete.
+  - Defined `ClarificationResult` interface (`type: "CLARIFICATION_NEEDED"`, `domain`, `missingParam`, `clarificationMessage`, `suggestedActions`, `updatedContext`).
+  - Added workout set validation: if user provides an exercise without sets or reps (e.g. `"Add dumbbell press to my workout"`), Orbit emits a targeted clarifying question without attempting a database write and returns `action_executed: null`.
+  - Added plan task validation: if user requests to schedule a task or sprint without a time (e.g. `"Schedule a placement sprint"`), Orbit prompts for the scheduled time/duration and provides contextual quick-chips.
+  - Handled slot-filling follow-ups: when user answers the prompt (e.g. `"10 reps at 24kg"` or `"Schedule for 5:00 PM"`), Orbit resolves the pending parameter, executes the mutation, writes to Firestore, and clears `awaitingParam`.
+- **Zero Falsified Response Contract & Strict DB Error Guardrails (`app/api/aria/route.ts` & `lib/orbit/mutationEngine.ts`)**:
+  - Guaranteed that Orbit never claims an item was saved until the database write succeeds.
+  - In `app/api/aria/route.ts`, if `executeMutation` returns `status: "failed"`, the response immediately returns `message: "Unable to save your ${domain}: ${error}. Please try again."` with `status: "failed"` and retry action chips, preventing LLM from hallucinating success.
+  - Converted `modify_plan_schedule` to use `set(updates, { merge: true })` ensuring upserts create missing plan documents rather than failing on absent documents.
+- **Real-Time Studio Refresh Listeners (`WorkoutPage.tsx`, `TaskBoard.tsx`, `DietPage.tsx`)**:
+  - Added `satat:data-refresh` event listeners across Training Studio, Execution Studio, and Fuel Studio so that UI views immediately reload and reflect Orbit mutations in real time without requiring browser refreshes.
+- **Comprehensive Verification Suite (`tests/orbit/continuity-mutations.test.ts`)**:
+  - Added 4 new integration test cases:
+    1. Incomplete workout input triggers clarification prompt with set options and `action_executed: null`.
+    2. Multi-turn follow-up resolves pending slot (`"10 reps at 24kg"`), creates workout session, and returns `status: "success"`.
+    3. Incomplete plan scheduling triggers clarification prompt for time/duration with `action_executed: null`.
+    4. Database write failure explicitly returns `"Unable to save"` and `status: "failed"`.
+  - All 25 tests pass clean (100% pass rate).
+- **Zero Regression Standard Verified**:
+  - `npm run typecheck`: **0 errors**.
+  - Vitest suite: **56 passed (56 files), 675 passed | 26 skipped (701 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
+### ✅ Sprint 6.11: Multi-Intent Parsing, Timed Exercise Mutations, Task Persistence & Zero False-Positive Confirmations
+- **Compound Sentence Clause Segmentation & Multi-Intent Batching (`lib/orbit/mutationEngine.ts` & `app/api/aria/route.ts`)**:
+  - Implemented `splitCompoundPrompt` to segment multi-command prompts across punctuation (`;`, `\n`), transitions (`also`, `and also`, `additionally`), and conjunctions (`and`) preceding domain markers or actions, without splitting internal entity lists (such as `"tea and chapati"`).
+  - Implemented `parseMutationIntents` returning an array of distinct domain mutations (`ParsedMutation | ClarificationResult`), while preserving `parseMutationIntent` as a single-operation backwards-compatible wrapper.
+  - Updated `app/api/aria/route.ts` to execute all parsed operations sequentially in a transactional loop, accumulating updated active context (`activeMealSlot`, `activeExerciseName`, `activeTaskTitle`) across turns.
+  - Standardized dual-layer response payload to return all executed operations via `action_executed` (single object or array) and `actions_executed`.
+- **Timed & Isometric Exercise Mutations in Training Studio (`types/index.ts`, `types/orbit.ts`, `lib/orbit/mutationEngine.ts`)**:
+  - Added `durationSeconds?: number` to `SetLog` and `WorkoutSetInput` schemas.
+  - Added timed exercise parser recognizing isometric movements (e.g. `"Plank for 45 seconds"`, `"wall sit for 60s"`, `"dead hang for 30s"`) with automatic duration conversion.
+  - Auto-initializes an active workout session in Firestore if none exists for today, logging `{ reps: 1, durationSeconds: 45, unit: "bodyweight", completed: true }`, resolving the empty state ("No Movements Loaded Yet") in Training Studio.
+- **Task Schema Alignment with Execution Studio (`TaskBoard.tsx` & `mutationEngine.ts`)**:
+  - Enhanced task parser to capture daily plan phrasing (e.g. `"add today's plan for high priority for sending acceptance mail"`), extracting clean imperative task titles (`"Send acceptance mail"`) and priorities (`"high"`).
+  - Persists tasks with `dueDate: todayStr` (`YYYY-MM-DD`), `priority: "high"`, and `status: "pending"`, aligning with Execution Studio's `TaskBoard.tsx` date filtering and eliminating "No tasks scheduled for this date".
+- **Elimination of False-Positive Confirmations & Strict Database Grounding**:
+  - Injected exact database-verified execution results into the system prompt with a critical truthfulness directive, guaranteeing Orbit only acknowledges items successfully written to Firestore.
+- **Comprehensive Verification Suite (`tests/orbit/continuity-mutations.test.ts`)**:
+  - Added 3 new integration tests (suite expanded from 25 to 28 passing tests):
+    1. Compound multi-intent batching: 4 distinct operations (breakfast, lunch, plank 45s, high-priority task) executed and verified across `mockMealStore`, `mockWorkoutStore`, and `mockTaskStore`.
+    2. Timed isometric exercise mutation: Plank (45s) auto-creates session with `durationSeconds: 45`.
+    3. Task creation schema alignment: `priority: "high"`, `dueDate: todayStr`, `status: "pending"` matching TaskBoard filters.
+  - 100% test pass rate across all 28 tests in `tests/orbit/continuity-mutations.test.ts`.
+- **Zero Regression Standard Verified**:
+  - `npm run typecheck`: **0 errors**.
+  - Vitest suite: **56 passed (56 files), 678 passed | 26 skipped (704 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
+### ✅ Sprint 6.12: Workout & Training Studio Auto-Session Creation, Schema Alignment & Movement Persistence
+- **Dual Schema Alignment (`movements` & `exercises`) in Firestore (`lib/orbit/mutationEngine.ts`, `types/index.ts`)**:
+  - Expanded `WorkoutSession` and `ExerciseLog` type definitions to support `movements?: any[]`, `status?: "in-progress" | "completed"`, `duration?: number`, `title?: string`, `type?: "strength" | "isometric"`, and `durationUnit?: string`.
+  - In `add_exercise_to_workout` and `update_workout_session`, ensured both `movements` and `exercises` are always populated in sync:
+    - Isometric/timed movements: `type: "isometric"`, `duration: dur`, `durationUnit: "seconds"`, `sets: [{ setNumber: 1, reps: 1, duration: dur, durationSeconds: dur, weight: 0, completed: true }]`, `completed: true`.
+    - Standard strength movements: `type: "strength"`, `sets: sets.map((s, idx) => ({ setNumber: idx + 1, reps: s.reps, weight: s.weight, unit: s.unit || "kg", completed: s.completed ?? true }))`.
+  - When no session exists for today, automatically creates a workout session document with:
+    `{ userId, date: todayStr, title: "Daily Workout", name: "Daily Workout", routineTitle: "Daily Workout", status: "in-progress", duration: 45, durationMinutes: 45, movements: [movement], exercises: [newExercise], createdAt: Date.now(), updatedAt: new Date().toISOString() }`.
+  - When a session exists, updates both `movements` and `exercises` with `{ merge: true }` preserving existing sets and movements.
+- **Training Studio Active Logger State Sync (`components/workout/WorkoutPage.tsx`)**:
+  - Implemented `normalizeSessionExercises` helper ensuring seamless conversion from either `exercises` or `movements` array into component `ExerciseLog[]` state.
+  - In initial mount `useEffect` and `satat:data-refresh` listener, when a workout session for today exists and is in-progress (or has movements while not completed), automatically populates `exercises` state, sets `isEditingSession: true`, and updates session title/duration.
+  - Eliminated the empty state bug ("No Movements Loaded Yet") when logging exercises via Orbit.
+  - In VIEW 1B (Completed Session state), guarded with `todaySession.status !== "in-progress" && !isEditingSession` and added fallback to `todaySession.movements` if `todaySession.exercises` is empty, preventing runtime crashes or blank completed cards.
+- **Mock Firestore & Integration Test Expansion (`tests/orbit/continuity-mutations.test.ts`)**:
+  - Enhanced mock collection's `doc(id)` implementation to support `set: vi.fn(async (data, options) => { ... merge ... })` and `delete: vi.fn()`.
+  - Added test `it("auto-creates workout session and appends timed movement (Plank 45s) when no active session exists")` verifying `status: "in-progress"`, `title: "Daily Workout"`, `duration: 45`, `movements` isometric schema, and `exercises` duration schema.
+  - Added test `it("updates existing workout movements when session already exists")` verifying both existing movements (Bench Press) and new movements (Plank 45s) persist correctly in both `movements` and `exercises`.
+
+---
+
+### ✅ Sprint 6.13: Cardio & Calisthenics Movement Parsing, Anti-Hallucination Guard & Meal Slot Sanitization
+- **Compound Prompt Boundary Expansion & Dedicated Parsers (`lib/orbit/mutationEngine.ts`)**:
+  - Extended `splitCompoundPrompt` boundary regex with lookahead for cardio and calisthenics movement verbs (`running|run\b|jogging|cycling|bike|skipping|pull\s*ups?|push\s*ups?|dips?`), ensuring compound workout requests like `"add running 2.5 km and skipping 30 reps 3 sets in training"` are cleanly split into individual movement actions.
+  - Added dedicated `isCardioMovement` parser recognizing running, jogging, cycling, treadmill, swimming, rowing, walking with distance (`2.5 km`, `miles`) and duration (`30 mins`), returning `type: "ADD_EXERCISE"`, `movementType: "cardio"`.
+  - Added dedicated `isCalisthenicsMovement` parser recognizing bodyweight exercises (skipping, pull ups, push ups, dips, crunches, burpees) with reps-and-sets extraction (`"30 reps 3 sets"` or `"3 sets of 30 reps"`), returning `type: "ADD_EXERCISE"`, `movementType: "calisthenics"`, `unit: "bodyweight"`, `weight: 0`.
+  - Removed all Bench Press / 60kg defaults when unknown movements are entered, preventing Orbit from hallucinating unrequested exercises.
+- **Cardio & Bodyweight Movement Persistence (`lib/orbit/mutationEngine.ts`, `types/index.ts`)**:
+  - Updated `add_exercise_to_workout` to handle `movementType: "cardio"` and `movementType: "calisthenics"`.
+  - For cardio movements, stores `type: "cardio"`, `distance`, `distanceUnit`, and auto-creates/appends to `cardioLogs` in the workout document.
+  - For calisthenics movements, stores `type: "calisthenics"`, sets with `unit: "bodyweight"` and `weight: 0`.
+  - Automatically initializes or updates today's session in Firestore (`status: "in-progress"`), ensuring Training Studio immediately loads both movements and dismisses "No Movements Loaded Yet".
+- **Training Studio UI Rendering of Distance & Bodyweight (`components/workout/WorkoutPage.tsx`)**:
+  - Enhanced `normalizeSessionExercises` to preserve `distance`, `distanceUnit`, and `type: "cardio"` / `"calisthenics"`.
+  - In exercise set rows: for cardio, displays distance (`2.5 km`) instead of weight input; for calisthenics, displays `BW` placeholder and disables weight input.
+  - In completed workout cards: renders `${set.distance} ${set.distanceUnit}` for cardio and `BW × ${set.reps}` for calisthenics.
+- **Meal Slot Badge Fix & Item Sanitization (`lib/diet/dishMatcher.ts`, `components/diet/DietPage.tsx`, `lib/orbit/mutationEngine.ts`)**:
+  - Updated `formatMealTimeAndCategory(createdAt, mealType, mealName)` to accept explicit `mealType` and `mealName`, strictly respecting the target slot badge (`BREAKFAST`, `LUNCH`, `DINNER`, `SNACK`) over the current system clock (resolving the 8:17 PM evening clock override).
+  - Sanitized food item parsing in `parseSingleMutationIntent`: stripped conversational prefix words (`"in breakfast"`, `"in lunch"`, `"today's meal"`, `"add"`, `"also"`), ensuring dishes are stored cleanly (e.g. `["tea", "chapati"]` -> `"Breakfast: tea, chapati"`).
+  - In `DietPage.tsx`, stripped redundant leading slot prefix when displaying dish titles on cards (`meal.name.replace(/^(breakfast|lunch|dinner|snack):\s* /i, "")`).
+- **Response Guard Directive (`app/api/aria/route.ts`)**:
+  - Injected strict instruction in system prompt: `CRITICAL INSTRUCTION: You MUST strictly echo and acknowledge ONLY the actions and movements listed above (${executedNote}). NEVER mention, claim, or hallucinate an unrequested exercise (such as Bench Press) that was not executed in this turn!`.
+- **Comprehensive Verification Suite (`tests/orbit/continuity-mutations.test.ts`)**:
+  - Added 2 new integration tests (suite expanded from 29 to 31 passing tests):
+    1. `correctly parses cardio (running 2.5km) and calisthenics (skipping 30 reps 3 sets) without hallucinating bench press`: verifies both movements are persisted to Firestore with proper distance/sets, and Bench Press is nowhere in the store or response.
+    2. `sanitizes food item names, stripping conversational phrases and respecting explicit meal slot`: verifies clean dish titles without `"in breakfast"`/`"in lunch"` and validates that `formatMealTimeAndCategory` returns `"BREAKFAST"` and `"LUNCH"` even at 8:17 PM.
+- **Zero Regression Standard Verified**:
+  - `npm run typecheck`: **0 errors**.
+  - Vitest suite: **56 passed (56 files), 681 passed | 26 skipped (707 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
+### ✅ Sprint 6.14: Orbit Chat Auto-Scroll & Nutrition/Fuel Logging Restoration
+- **Dedicated Responsive Auto-Scroll in Orbit Chat (`components/orbit/OrbitView.tsx`, `components/ui/AriaChatbot.tsx`)**:
+  - Eliminated duplicate `messagesEndRef` ref shadowing across mobile and 12-column desktop viewports by adding separate `mobileScrollContainerRef` / `mobileMessagesEndRef` and `desktopScrollContainerRef` / `desktopMessagesEndRef`.
+  - Implemented `scrollToBottom(behavior)` targeting the scrollable chat containers (with smooth fallback) and scrolling via `"auto"` on initial `sessionStorage` restore or overlay open (`isOpen` prop passed from `AriaChatbot.tsx`) and `"smooth"` on subsequent messages/loading updates.
+- **Multi-Intent UI Refresh & Client Date Synchronization (`components/orbit/OrbitView.tsx`, `app/api/aria/route.ts`, `lib/orbit/mutationEngine.ts`)**:
+  - Added `dispatchMutationRefreshEvents(data)` iterating over both `data.actions_executed` and array/single `data.action_executed` payloads so Nourishment Studio (`DietPage.tsx`), Training Studio (`WorkoutPage.tsx`), and Execution Studio (`TaskBoard.tsx`) receive `satat:data-refresh` events reliably for compound multi-intent turns.
+  - Propagated browser local `clientDate` (`todayString()`) from `OrbitView` through `/api/aria` into `parseMutationIntents` and `executeMutation` across all domains (preventing UTC/local midnight date drift between `/api/aria` writes and `DietPage.tsx` `getMeals(userId, date)` queries).
+  - Updated `executeMutation` to clear stale `awaitingParam` state after mutation execution and updated `/api/aria` to scan only user turns (`messages[i].role === "user"`) during fallback entity recovery and check `executedActions` across all multi-intent domains during focus pruning.
+- **Nutrition Parsing, Anti-Ghosting & Indian Staple Macros (`lib/orbit/mutationEngine.ts`)**:
+  - Stripped standalone/leading generic meal preambles (e.g., `"log today's meal, in breakfast..."`) in `splitCompoundPrompt` and removed the phantom `"Custom Meal"` fallback so empty meal phrases or questions (e.g., `"What did I eat for lunch?"`) no longer write phantom records to Firestore.
+  - Added shorthand multi-slot boundary/prefix support (`"breakfast: tea and chapati, lunch: dal and rice"`), expanded `FOOD_KEYWORD_REGEX`, added cross-domain guards in `isCreateTask`, `isRescheduleTask`, `isHydration`, `isWorkoutMutation`, and `awaitingParam === "time"` follow-up resolution (`"add 2 bananas at 4 PM"` logs a meal rather than a task), and added macro heuristics for common staples (`tea/chai`, `curd/yoghurt`, `potato/sabzi`, `banana`, `poha`, `idli/dosa`, `whey/protein shake`, `oats`, `milk/lassi`, `toast/bread`).
+- **Verification Expansion (`tests/orbit/continuity-mutations.test.ts`, `tests/orbit/orbit-retry.test.ts`)**:
+  - Expanded `tests/orbit/continuity-mutations.test.ts` to 36 tests (testing generic preamble stripping without `"Custom Meal"`, shorthand multi-slot parsing, timed food-vs-task disambiguation, question non-mutation guards, and `clientDate` propagation) and `tests/orbit/orbit-retry.test.ts` to 7 tests (auto-scroll refs, overlay reopen, multi-intent refresh dispatch, `clientDate`).
+- **Zero Regression Standard Verified**:
+  - `npm run typecheck`: **0 errors**.
+  - `npm run lint`: **0 errors**.
+  - Vitest suite: **56 passed (56 files), 688 passed | 26 skipped in `tests/security/firestore-rules.test.ts` without Firestore emulator (714 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
-- **Vitest Suite**: `667 passed | 26 skipped` across all 56 test suites (0 failing).
+- **ESLint & Typecheck**: `npm run typecheck` and `npm run lint` exit with code `0`.
+- **Vitest Suite**: `688 passed | 26 skipped` (Firestore security rules suite skipped without emulator on `127.0.0.1:8088`) across `56` test suites (`0` failing), including `36/36 passed` in `tests/orbit/continuity-mutations.test.ts` and `7/7 passed` in `tests/orbit/orbit-retry.test.ts`.
 - **Markdown & UI Tests**: `13/13 passed` in `tests/ui/markdown-text.test.tsx`.
 - **Navigation & Launcher Tests**: `5/5 passed` in `tests/navigation/navigation-orbit-launcher.test.ts`.
-- **Orbit Tests**: `66/66 passed` across `tests/orbit/*` and `tests/api/aria.test.ts`.
 - **Diet Tests**: `213/213 passed` across all 15 test suites in `tests/diet/*`.
 - **Workout Tests**: `42/42 passed` across `tests/workouts/*`.
 - **Onboarding Tests**: `78/78 passed` across `tests/onboarding/*`.

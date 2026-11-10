@@ -1,7 +1,7 @@
 /**
  * SATAT Orbit Types & Primitives
- * Architecture ready for AI Agent capabilities, structured responses,
- * recommendations, and contextual insights.
+ * Universal Orbit Entity Context, Mutation Engine, and Suggestion Engine
+ * across all manually editable domains: Workouts, Tasks, Meals, Rituals, and Sprints.
  */
 
 export type OrbitMessageType =
@@ -42,12 +42,59 @@ export interface OrbitRecommendation {
 }
 
 export interface OrbitEntityContext {
+  // Meals & Diet
   activeMealSlot?: "breakfast" | "lunch" | "dinner" | "snack" | string;
   activeMealId?: string;
+
+  // Workouts & Exercises
   activeWorkoutId?: string;
-  activeExerciseName?: string;
+  activeWorkoutName?: string;
   activeExerciseId?: string;
+  activeExerciseName?: string;
+  activeExerciseIndex?: number;
+
+  // Tasks & Schedules
   activeTaskId?: string;
+  activeTaskTitle?: string;
+  activePlanId?: string;
+
+  // Habits & Rituals
+  activeHabitType?: "hydration" | "steps" | "journal" | "reading";
+
+  // Sprints & Milestones
+  activeSprintId?: string;
+  activeSprintDay?: number;
+
+  // Conversational Clarification & Partial Intent
+  awaitingParam?: "sets" | "time" | "duration" | "exerciseName" | "title" | string;
+  partialIntent?: string;
+}
+
+export type OrbitActionType =
+  | "UPSERT_MEAL"
+  | "MODIFY_MEAL"
+  | "DELETE_MEAL"
+  | "START_WORKOUT"
+  | "UPDATE_WORKOUT"
+  | "UPDATE_WORKOUT_SET"
+  | "ADD_EXERCISE"
+  | "DELETE_EXERCISE"
+  | "COMPLETE_WORKOUT"
+  | "CREATE_TASK"
+  | "UPDATE_TASK"
+  | "DELETE_TASK"
+  | "COMPLETE_TASK"
+  | "RESCHEDULE_TASK"
+  | "LOG_RITUAL"
+  | "UPDATE_SPRINT_PROGRESS"
+  | "MODIFY_PLAN"
+  | "CLARIFICATION_NEEDED";
+
+export interface OrbitActionExecuted {
+  type: OrbitActionType | string;
+  status: "success" | "failed" | string;
+  domain: "meals" | "workouts" | "tasks" | "rituals" | "sprints";
+  details: Record<string, any>;
 }
 
 export interface OrbitSuggestedAction {
@@ -55,10 +102,13 @@ export interface OrbitSuggestedAction {
   prompt: string;
 }
 
-export interface OrbitActionExecuted {
-  type: string;
-  status: "success" | "error" | "failed" | string;
-  details?: Record<string, any>;
+export interface OrbitDualLayerResponse {
+  reply: string;
+  message: string;
+  action_executed: OrbitActionExecuted | OrbitActionExecuted[] | null;
+  actions_executed?: OrbitActionExecuted[];
+  suggested_actions: OrbitSuggestedAction[];
+  activeContext: OrbitEntityContext;
 }
 
 export interface OrbitMessage {
@@ -69,7 +119,8 @@ export interface OrbitMessage {
   type?: OrbitMessageType;
   insight?: OrbitInsight;
   recommendation?: OrbitRecommendation;
-  action_executed?: OrbitActionExecuted | null;
+  action_executed?: OrbitActionExecuted | OrbitActionExecuted[] | null;
+  actions_executed?: OrbitActionExecuted[];
   suggested_actions?: OrbitSuggestedAction[];
   activeContext?: OrbitEntityContext;
 }

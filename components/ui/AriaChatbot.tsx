@@ -82,7 +82,7 @@ export default function AriaChatbot() {
         }}
         className="w-[420px] rounded-2xl flex flex-col overflow-hidden"
       >
-        <OrbitView isOverlay={true} onClose={() => setOpen(false)} />
+        <OrbitView isOverlay={true} isOpen={open} onClose={() => setOpen(false)} />
       </div>
 
       {/* Floating desktop trigger button */}
