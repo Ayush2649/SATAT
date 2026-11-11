@@ -1105,6 +1105,27 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ---
 
+### ✅ Sprint 7.7: High-Contrast Dark Shimmer Wave, Non-Overflowing 7-Day Strip, & 1:1 Studio Geometry (`PageSkeletons.tsx`, `app-shell.css`, `tailwind.config.ts`, `HomeView.tsx`, `loading.tsx`)
+- **High-Contrast Dark Mode Shimmer & True Sweeping Wave (`PageSkeletons.tsx`, `styles/app-shell.css`, `tailwind.config.ts`)**:
+  - Elevated skeleton surface contrast: outer card containers styled with `bg-[#FCFBF9] dark:bg-[#121714] border border-[#1C1917]/[0.06] dark:border-white/[0.07] rounded-[28px] p-5 shadow-xs`, and inner placeholder bars styled with `bg-[#E6E1D6] dark:bg-[#222B26]`.
+  - Added sweeping shimmer wave highlight (`relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_1.8s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/40 dark:before:via-[#34D399]/[0.08] before:to-transparent`).
+  - Added `@keyframes shimmer { 100% { transform: translateX(100%); } }` and `.shimmer-wave` utility in `styles/app-shell.css`.
+  - Protected custom dark background tokens in `app-shell.css` using `:not([class*="dark:bg-"])` with `#222B26 !important;` so dark styles are never flattened.
+- **Unboxed Header & Non-Overflowing 7-Day Calendar Strip (`PageSkeletons.tsx`)**:
+  - Removed enclosing border box around greeting and calendar strip so it sits cleanly on the canvas matching the live `Today` page.
+  - Positioned greeting and 7-day strip inside `flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4 w-full overflow-hidden`.
+  - 7-day strip rendered as `grid grid-cols-7 gap-2 w-full xl:w-[360px] shrink-0` with `h-16 w-full min-w-0 rounded-2xl bg-[#E6E1D6] dark:bg-[#1C2420]`, preventing pills from overflowing the container at any screen size.
+- **1:1 Responsive 12-Column Desktop Geometry for Today Studio (`PageSkeletons.tsx`)**:
+  - Row 2: 2-column bento split with tall workout hero card (`h-[250px] rounded-[28px] bg-[#EFECE4] dark:bg-[#18211C] border border-[#34D399]/15 p-6 flex flex-col justify-between`) and two stacked Alabaster cards (`h-[117px] rounded-[26px]` each) featuring circular calorie ring skeleton and full-width protein synthesis progress bar.
+  - Row 3: 3 horizontal rhythm feed row card skeletons (`h-20 rounded-[24px]` with `w-12 h-12` thumbnail, title, and action pill).
+  - Right 4-column rail: Orbit Adaptive Whisper card, 2×2 Daily Non-Negotiables grid (`grid grid-cols-2 gap-3` with 4 square cards `h-28 rounded-[20px]`), and 3 compact Circadian Telemetry biosensor rows (`h-12 rounded-xl`).
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **60 passed (60 files), 678 passed | 26 skipped (704 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
 ### ✅ Sprint 7.6: Focus Ring 2-Line Sub-Label, Nocturnal Workout Templates, 100% Full Desktop Studio Width, & 12-Column Dark Shimmer Skeletons (`TaskBoard.tsx`, `WorkoutPage.tsx`, `DietPage.tsx`, `HomeView.tsx`, `OrbitView.tsx`, `Navigation.tsx`, `PageSkeletons.tsx`, `loading.tsx`, `app-shell.css`)
 - **Focus Ring 2-Line Stacked Sub-Label (`components/tasks/TaskBoard.tsx`)**:
   - Expanded timer ring diameter to `w-44 h-44` (`viewBox="0 0 176 176"`, radius `76`) with optimal SVG stroke bounds.
@@ -1191,6 +1212,96 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ---
 
+### ✅ Sprint 7.8: Complete Landing Page Overhaul (`app/page.tsx`, `LandingNav.tsx`, `Hero.tsx`, `ProblemSection.tsx`, `MealScanShowcase.tsx`, `OrbitSection.tsx`, `ProgressSection.tsx`, `Footer.tsx`, `DesktopLandingPage.tsx`, `MobileLandingPage.tsx`, `Orbit3DCore.tsx`, `OrbitMark.tsx`, `tests/sprint7-8/sprint7-8.test.ts`, `tests/landing/production-landing.test.tsx`)
+- **Floating Glassmorphic Pill Header (`LandingNav.tsx` & `MobileLandingNav.tsx`)**:
+  - Replaced clipping sticky bar with a non-clipping fixed outer layout: `<header className="fixed top-4 inset-x-0 z-50 px-4 sm:px-8 pointer-events-none">`.
+  - Floating pill capsule: `pointer-events-auto max-w-[1440px] mx-auto bg-[#FCFBF9]/88 dark:bg-[#141916]/88 backdrop-blur-xl border border-[#1C1917]/[0.08] dark:border-white/[0.10] rounded-full px-4 sm:px-6 py-2.5 shadow-[0_10px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_12px_36px_rgba(0,0,0,0.55)] flex items-center justify-between`.
+  - Left: Circle `S` mark + `satat.` (`font-serif font-bold text-lg text-[#1C1917] dark:text-[#F4F1EA]`).
+  - Center (desktop `hidden md:flex gap-8 text-sm`): Anchor navigation links to `#rhythm` (`Timeline`), `#snap` (`AI Snap`), `#orbit` (`Orbit`), and `#proof` (`Proof`).
+  - Right: `"Dashboard →"` pill if authenticated; separated `"Sign in"` button and primary Coral Ember `"Start free →"` pill (`#E05A47`) if unauthenticated.
+- **Separated Hero CTAs & High-Contrast Google OAuth Button (`Hero.tsx` & `MobileHero.tsx`)**:
+  - Button 1: Dedicated `"Start free →"` primary Coral Ember pill (`#E05A47`), routing to `/onboarding`.
+  - Button 2: Separated `"Sign in with Google"` high-contrast button (`bg-[#FCFBF9] dark:bg-[#161D19] text-[#1C1917] dark:text-[#F4F1EA] border border-[#1C1917]/15 dark:border-white/15`) with the official 4-color Google "G" SVG logo (`#4285F4`, `#34A853`, `#FBBC05`, `#EA4335`), invoking `signIn("google", { callbackUrl: "/dashboard" })`.
+- **Interactive 4-Stage Biological Cadence Timeline (`ProblemSection.tsx` & `MobileProblemSection.tsx`, `id="rhythm"`)**:
+  - Eyebrow: `DAILY BIOLOGICAL CADENCE` (`text-[#E05A47] dark:text-[#FF7A68]`).
+  - Headline: `A single day, in seamless motion.`
+  - 4 canonical biological stages:
+    1. `07:30 AM · DAWN CHECK-IN`: Morning Readiness & Plan Sync (`7h 45m Sleep Synced · 92% Readiness`).
+    2. `01:15 PM · MIDDAY FUEL`: Zero-Anxiety Plate Recognition (`640 kcal · 42g Protein Logged in 2s`).
+    3. `06:30 PM · DUSK RECALIBRATION`: Adaptive Hypertrophy Session (`Upper Body A Condensed → 35m Compound Focus`).
+    4. `10:15 PM · NOCTURNAL RECOVERY`: Protein Window & Cortisol Downshift (`135g Protein Target Closed · 24-Day Flow Intact`).
+  - Desktop: 4-column horizontal track (`grid grid-cols-4 gap-6`) with top time nodes and horizontal connector bar.
+  - Mobile: Clean vertical timeline with photos, telemetry badges, and connecting vertical spine.
+- **HealthifySnap-Style Meal Scan Showcase (`MealScanShowcase.tsx`, `id="snap"`)**:
+  - Left column: `SATAT AI VISION · ZERO BARCODE ANXIETY`, headline `Track your food with just a snap.`, 3 interactive step pills (`1. Snap Plate`, `2. Instant Macros`, `3. Orbit Action`), and `"Try AI Plate Scanner →"` CTA link.
+  - Right column: iPhone mockup (`w-[290px] sm:w-[320px] h-[540px]`) displaying high-protein plate photo (`photo-1546069901-ba9599a7e63c`), scanning viewfinder brackets (Stage 1), docked Macro Breakdown Card with 640 kcal (Stage 2), and Orbit AI Action Card with `<Orbit3DCore size="sm" />` (Stage 3).
+- **Living Orbit Section with `<Orbit3DCore />` & Floating Prompt Cloud (`OrbitSection.tsx`, `id="orbit"`)**:
+  - Removed old lotus flower SVG; centered `<Orbit3DCore size="xl" state="active" />` inside luminous radial stage (`w-48 h-48 sm:w-56 sm:h-56`).
+  - Added support for `"xl"` container size (`224px`) in `Orbit3DCore.tsx` and `"active"` state in `OrbitMark.tsx`.
+  - 6 interactive floating prompt pills around the core (3 on left, 3 on right on desktop; horizontal chip cloud on mobile):
+    - `How was my protein intake today?`
+    - `Condense my Upper Body lift to 35m`
+    - `How do I improve my deep sleep score?`
+    - `Suggest a 40g protein vegetarian dinner`
+    - `Why is my training readiness 92%?`
+    - `Shift Deep Work to my dopamine peak`
+  - Clicking any pill dynamically updates the live Orbit quote and real-time adjustment card.
+- **Spaced Streak Milestone Tabs & High-Contrast Dark Mode Comparison Badges (`ProgressSection.tsx`, `id="proof"`)**:
+  - Generously padded milestone tab bar (`bg-[#EFECE4] dark:bg-[#1C221E] p-1.5 sm:p-2 rounded-full gap-2 sm:gap-3`) with `px-4 sm:px-6 py-2.5` buttons.
+  - 28-day organic rhythm matrix showing start, healed, and flow states.
+  - Dark mode native comparison pills: Left `Traditional Apps: Streak Reset to 0 ✕` in `bg-[#FEE2E2] dark:bg-[#2A1414] text-[#B91C1C] dark:text-[#FCA5A5]`; Right `Satat Rhythm: 14 Days Unbroken · Auto-Bridged 2 Rest Days ✓` in `bg-[#D8F3DC] dark:bg-[#132A1F] text-[#1B4332] dark:text-[#6EE7B7]`.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest test suite (`tests/sprint7-8/sprint7-8.test.ts` & `tests/landing/production-landing.test.tsx`): **9/9 tests passed (100%)**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
+### ✅ Sprint 7.9: Restored SATAT Geometric Logo, HealthifySnap Sticky Scroll & Orbit 3D Stage (`app/page.tsx`, `LandingNav.tsx`, `MealScanShowcase.tsx`, `OrbitSection.tsx`, `tests/sprint7-9/sprint7-9.test.ts`)
+- **Restored SATAT Geometric S Logo Mark (`LandingNav.tsx`)**:
+  - Removed plain-text letter "S" inside green circle.
+  - Rendered official `<Logo size={24} className="rounded-md transition-transform duration-200 group-hover:scale-105" priority />` from `components/Logo.tsx`, matching dashboard header and footer.
+- **HealthifySnap Mobile-First Scroll-Scrubbed Architecture (`MealScanShowcase.tsx`, `id="snap"`)**:
+  - **Fixed Header Hard-Clip**: Configured sticky stage at `top: 80px` (`HEADER_OFFSET_PX: 80`), height `calc(100svh - 80px)` with `overflow: hidden`, guaranteeing all content is cleanly hard-clipped below the floating header with zero overlapping or bleeding underneath.
+  - **Single Continuous Normalized Scroll Progress**: Passive `scroll` listener with `requestAnimationFrame` calculating continuous progress (`0` to `1`) driving compositor-safe GPU transforms (`translate3d` and `opacity`), 100% reversible when scrolling up.
+  - **Vertically Composed Center Stage**: Centered `280px × 440px` iPhone mockup vertically inside available 772px clip height with feathered bottom gradient, eliminating all cutoffs.
+  - **3 Seamlessly Scrubbed Stages**:
+    - **Stage A (Intro)**: Translates up and fades on mobile as the phone enters from the bottom of the clip region; docks on left on desktop.
+    - **Stage B (Step 1)**: Phone centered with viewfinder corner brackets, camera mode row, white shutter button, and Caption 1 (`"Snap a photo of your meal."`).
+    - **Stage C (Step 2)**: Card 1 (`Rice & Paneer Bowl`, `454 Cal`, 3 ingredient rows) rises from bottom and settles over the lower half of the phone. Caption 1 slides up and out while Caption 2 slides up and in, overlapping vertically mid-transition.
+    - **Stage D (Step 3)**: Card 2 (Orbit Insight: `"Good protein. Your 10:15 PM window is open: add Greek yogurt to close the 28g gap."`) rises and docks at bottom; Card 1 nudges upward by `-34px`. Caption 2 slides up and out while Caption 3 slides up and in.
+  - **Zero Dead Zone Release**: Runway multiplier calibrated to release immediately at progress `0.97` into `#orbit` with < 40px transition gap.
+  - **Accessibility**: Added `prefers-reduced-motion` static stacked layout.
+- **HealthifyMe 3D Depth-of-Field Orbit Stage (`OrbitSection.tsx`, `id="orbit"`)**:
+  - Replaced cramped horizontal prompt row with full-width atmospheric radial stage (`min-h-[540px] sm:min-h-[620px]`).
+  - Center focal stack: `<Orbit3DCore size="lg" state="active" />`, `Try Orbit — Your Personal AI Biological Copilot`, subtitle, and `Talk to Orbit AI →` CTA button.
+  - 8 non-wrapping floating prompt cards in 2 distinct depth layers:
+    - 4 Crisp foreground cards (`z-10 opacity-95 shadow-lg animate-[satatFloatSlow_5s_ease-in-out_infinite]`): Protein intake, deep sleep score, vegetarian dinner, and 35m workout condensation.
+    - 4 Softly blurred background depth cards (`z-0 blur-[1.5px] opacity-45 scale-90 animate-[satatFloatDelayed_6.5s_ease-in-out_infinite]`): Recovery readiness, 135g protein target, dopamine peak, and 7-day strength trend.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite (`tests/sprint7-9/sprint7-9.test.ts`, `tests/sprint7-8/sprint7-8.test.ts`, `tests/landing/production-landing.test.tsx`): **14/14 tests passed (100%)**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+### ✅ Sprint 7.10: iPhone 17 Pro Max Scale Mockup & Tight Caption/Pill Spacing (`MealScanShowcase.tsx`, `OrbitSection.tsx`)
+- **iPhone 17 Pro Max Flagship Scale Mockup (`MealScanShowcase.tsx`)**:
+  - Replaced the previous 280px × 440px short rectangle with authentic iPhone 17 Pro Max physical proportions: `312px` width by `600px` height (~1.92:1 / 19.5:9 flagship aspect ratio) with slim `7px` titanium bezel (`rounded-[48px]`).
+  - Centered dynamic island pill (`w-24 h-5` with camera lens dot at `top-3.5`).
+  - Expanded camera viewfinder frame (`top-14 bottom-32`) and bottom shutter trigger (`bottom-4`).
+  - Recalibrated card layout inside the taller phone canvas:
+    - Card 1 (`Rice & Paneer Bowl`, `454 Cal`): `CARD1_TOP_PX: 260`, width `326px` (slight tactile overhang), `CARD1_NUDGE_PX: 36`.
+    - Card 2 (`Orbit` biological insight): `CARD2_TOP_PX: 396`, width `302px`.
+    - Both cards layer seamlessly within the phone's vertical screen while keeping the top meal photo and bottom bezels visible.
+- **Shortened Distance Between Phone and Captions / Pills**:
+  - **Captions directly below phone**: Reduced `UNIT_GAP_PX` from `16px` to `8px` and `CAPTION_HEIGHT_PX` from `80px` to `46px` with `text-sm sm:text-base leading-tight`, decreasing vertical distance from ~45px to ~12px–20px so the caption tightly hugs the bottom of the phone.
+  - **Orbit mobile prompt pills**: Changed top padding in `OrbitSection.tsx` on mobile from `py-20` (80px) to `pt-6 pb-20 sm:py-20` (24px), bringing the floating query pills (`How was my protein intake today?`, etc.) close to the preceding section without dead scroll voids.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite (`tests/sprint7-9/sprint7-9.test.ts`, `tests/landing/production-landing.test.tsx`): **7/7 tests passed (100%)**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
 - **Vitest Suite**: `668 passed | 26 skipped` across all 58 test suites (0 failing).
@@ -1201,4 +1312,23 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 - **Diet Tests**: `213/213 passed` across all 15 test suites in `tests/diet/*`.
 - **Workout Tests**: `42/42 passed` across `tests/workouts/*`.
 - **Onboarding Tests**: `78/78 passed` across `tests/onboarding/*`.
-- **Landing Tests**: `3/3 passed` across `tests/landing/*`.
+- **Landing Tests**: `14/14 passed` across `tests/landing/*`, `tests/sprint7-8/*`, and `tests/sprint7-9/*`.
+
+
+## SatatSnap scroll-scrub rebuild (mobile-first)
+
+**Modified files**
+- `components/landing/MealScanShowcase.tsx`: rebuilt. Pinned, clipped stage below the 80px header; 3 scrubbed steps (snap → identify → Orbit insight); caption cross-slides; cards overhang the phone; pure `computeSnapFrame(progress)` drives all transforms; styles written via refs (no per-frame React re-render); reduced-motion static fallback kept.
+- `app/page.tsx`: `<main>` `overflow-x-hidden` → `overflow-x-clip`.
+
+**Resolved bugs**
+- Root cause of the "stage scrolls away / steps 2–3 never show / dead black zone": `overflow-x-hidden` on `<main>` turns it into a scroll container, which silently disables `position: sticky` for every descendant. `overflow-x-clip` clips the same overflow without creating one.
+- Cards were nested inside the phone's `overflow-hidden` box, so they were clipped and could never overlap the phone edge.
+- Scroll progress ignored the 80px sticky offset.
+
+**Verification (see delivery notes)**
+- `tests/sprint7-9` 5/5 pass (run through a minimal vitest shim; real `vitest`, `tsc` and `npm run build` still need to be run locally).
+- Not run: `tests/landing` (needs missing `FinalCTA`/`MobileFinalCTA`), `npm run build`.
+
+**Open**
+- Desktop (>=1024px) layout is a provisional two-column version, not matched to Healthify desktop.

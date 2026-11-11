@@ -744,10 +744,45 @@ html.dark [class*="bg-[#E6F4ED]"] {
   }
 }
 
-/* 22. Dark Mode Loading Shimmer Skeleton & Sidebar Badge Overrides (§ Sprint 7.6) */
-html.dark .bg-\[\#E6E1D6\],
-html.dark [class*="bg-[#E6E1D6]"] {
-  background-color: #161C18 !important;
+/* 22. Dark Mode Loading Shimmer Skeleton & Sidebar Badge Overrides (§ Sprint 7.6 & 7.7)
+   Upgraded from #161C18 !important; to #222B26 for high-contrast separation against #121714 */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.shimmer-wave {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer-wave::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  animation: shimmer 1.8s infinite;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 100%
+  );
+}
+
+html.dark .shimmer-wave::before {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(52, 211, 153, 0.08) 50%,
+    transparent 100%
+  );
+}
+
+html.dark .bg-\[\#E6E1D6\]:not([class*="dark:bg-"]),
+html.dark [class*="bg-[#E6E1D6]"]:not([class*="dark:bg-"]) {
+  background-color: #222B26 !important;
   border-color: rgba(255, 255, 255, 0.05) !important;
 }
 

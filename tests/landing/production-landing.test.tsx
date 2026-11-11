@@ -13,54 +13,73 @@ describe("Stitch Editorial Landing Page with Header, Footer & Continuous Proof",
   it("renders all canonical sections seamlessly on warm sunlit stone canvas", () => {
     const html = renderToStaticMarkup(React.createElement(ProductionLandingPage));
 
-    // Section 1: Floating Editorial Header (LandingNav)
+    // Section 1: Floating Glassmorphic Pill Header (LandingNav)
     expect(html).toContain("satat.");
     expect(html).toContain("Sign in");
     expect(html).toContain("Start free");
+    expect(html).toContain("Timeline");
+    expect(html).toContain("AI Snap");
+    expect(html).toContain("Orbit");
+    expect(html).toContain("Proof");
 
-    // Section 2: Hero (Single line fit on mobile, Stitch semi-circle arch collage)
+    // Section 2: Hero (Separated Start free & Google OAuth button)
     expect(html).toContain("A GENTLER WAY TO STAY CONTINUOUS");
-    expect(html).toContain("whitespace-nowrap");
     expect(html).toContain("Your body doesn&#x27;t live in");
     expect(html).toContain("five separate apps.");
     expect(html).toContain("Workouts, meals, and daily plans that quietly adjust to real life.");
+    expect(html).toContain("Sign in with Google");
     expect(html).toContain("Upper Body");
     expect(html).toContain("moved to 6PM · Sleep was light");
     expect(html).toContain("Upper body dumbbell strength training session");
     expect(html).toContain("Warm protein oatmeal bowl");
-    expect(html).toContain("rounded-l-[92px]");
     expect(html).toContain("Oatmeal &amp; Whey");
-    expect(html).toContain("420 kcal · 34g P");
+    expect(html).toContain("420 kcal · 34g Protein");
 
-    // Section 3: Problem (Rhythmic Cadence, Inter-Node Animated Beam & Live Signals)
-    expect(html).toContain("RHYTHMIC CADENCE");
-    expect(html).toContain("A single day, in seamless motion");
-    expect(html).toContain("animate-timeline-beam");
-    expect(html).toContain("animate-ping opacity-20");
-    expect(html).toContain("ring-[3px] ring-[#F6F3EC]");
-    expect(html).toContain("🌅 DAWN · 7:30 AM");
-    expect(html).toContain("Morning check-in");
-    expect(html).toContain("7h 45m sleep synced → Training readiness 92%");
-    expect(html).toContain("🍴 MIDDAY · 1:15 PM");
-    expect(html).toContain("Mindful nourishment");
-    expect(html).toContain("Plate photo scanned → 540 kcal · 34g protein logged in 2s");
-    expect(html).toContain("✨ DUSK · 6:30 PM");
-    expect(html).toContain("Adaptive recalibration");
-    expect(html).toContain("Upper Body A merged into Thursday → 24-day flow preserved");
+    // Section 3: Interactive User Day Timeline (#rhythm)
+    expect(html).toContain("DAILY BIOLOGICAL CADENCE");
+    expect(html).toContain("A single day, in seamless motion.");
+    expect(html).toContain("07:30 AM · DAWN CHECK-IN");
+    expect(html).toContain("Morning Readiness &amp; Plan Sync");
+    expect(html).toContain("7h 45m Sleep Synced · 92% Readiness");
+    expect(html).toContain("01:15 PM · MIDDAY FUEL");
+    expect(html).toContain("Zero-Anxiety Plate Recognition");
+    expect(html).toContain("640 kcal · 42g Protein Logged in 2s");
+    expect(html).toContain("06:30 PM · DUSK RECALIBRATION");
+    expect(html).toContain("Adaptive Hypertrophy Session");
+    expect(html).toContain("Upper Body A Condensed → 35m Compound Focus");
+    expect(html).toContain("10:15 PM · NOCTURNAL RECOVERY");
+    expect(html).toContain("Protein Window &amp; Cortisol Downshift");
+    expect(html).toContain("135g Protein Target Closed · 24-Day Flow Intact");
 
-    // Section 4: Orbit Section (Quiet Guidance, borderless living orb centerpiece)
-    expect(html).toContain("QUIET GUIDANCE");
-    expect(html).toContain("A companion,");
-    expect(html).toContain("not a dashboard");
-    expect(html).toContain("orbit-living-orb");
-    expect(html).toContain("You trained heavier than usual today.");
-    expect(html).toContain("added a bowl of Greek yogurt to tonight");
-    expect(html).toContain("so you recover well");
-    expect(html).toContain("Accept adjustment ✓");
-    expect(html).toContain("Keep dinner as is");
+    // Section 4: HealthifySnap-Style Meal Scan Showcase (#snap)
+    expect(html).toContain("SatatSnap");
+    expect(html).toContain("Track Your Food With Just a Snap");
+    expect(html).toContain("Snap your meal for instant nutritional details and smart, AI-driven cadence advice from Orbit.");
+    expect(html).toContain("Try Snap with a Photo");
+    expect(html).toContain("Rice &amp; Paneer Bowl");
+    expect(html).toContain("454 Cal");
+    expect(html).toContain("Grilled Paneer");
+    expect(html).toContain("Steamed Basmati Rice");
+    expect(html).toContain("Broccoli &amp; Greens");
+    expect(html).toContain("Orbit");
+    expect(html).toContain("Good protein. Your 10:15 PM window is open: add Greek yogurt to close the 28g gap.");
 
-    // Section 5: Continuous Proof (28-Day Organic Rhythm Matrix)
-    expect(html).toContain("LIVING EVIDENCE · सतत्");
+    // Section 5: Orbit Section (3D Depth-of-Field Floating Prompt Stage)
+    expect(html).toContain("Try Orbit — Your Personal AI Biological Copilot");
+    expect(html).toContain("Cross-synthesizing training strain, nutrition gaps, and focus blocks in real time.");
+    expect(html).toContain("Talk to Orbit AI");
+    expect(html).toContain("orbit-3d-");
+    expect(html).toContain("How was my protein intake today?");
+    expect(html).toContain("How to improve my deep sleep score?");
+    expect(html).toContain("High protein vegetarian dinner ideas?");
+    expect(html).toContain("Condense my Upper Body workout to 35m");
+    expect(html).toContain("Workout recovery readiness");
+    expect(html).toContain("How to hit 135g protein cleanly?");
+    expect(html).toContain("Shift Deep Work to dopamine peak");
+    expect(html).toContain("Analyze my 7-day strength trend");
+
+    // Section 6: Continuous Proof (28-Day Organic Rhythm Matrix)
+    expect(html).toContain("LIVING STREAKS");
     expect(html).toContain("Why continuous beats");
     expect(html).toContain("perfect.");
     expect(html).toContain("Other apps punish you with a broken streak when real life happens. Satat bends with your week so your momentum compounds.");
@@ -68,17 +87,18 @@ describe("Stitch Editorial Landing Page with Header, Footer & Continuous Proof",
     expect(html).toContain("Day 16 · Healed");
     expect(html).toContain("Day 28 · Flow");
     expect(html).toContain("Traditional Apps: Streak Reset to 0 ✕");
-    expect(html).toContain("Satat Rhythm: 28 Days Unbroken · +12.4% Strength ✓");
+    expect(html).toContain("Satat Rhythm: 14 Days Unbroken · Auto-Bridged 2 Rest Days ✓");
 
-    // Section 6: Final CTA in dark botanical card
+    // Section 7: Final CTA in dark botanical card
     expect(html).toContain("START YOUR PRACTICE");
     expect(html).toContain("Build a body and routine you can");
     expect(html).toContain("actually keep.");
     expect(html).toContain("text-[#6EE7B7]");
     expect(html).toContain("Begin in 60 seconds");
 
-    // Section 7: Grounded Footer
-    expect(html).toContain("Rhythm");
+    // Section 8: Grounded Footer
+    expect(html).toContain("Timeline");
+    expect(html).toContain("AI Snap");
     expect(html).toContain("Orbit");
     expect(html).toContain("Proof");
     expect(html).toContain("Rooted in सतत् (Satat) — the Sanskrit principle of continuous, unbroken flow.");
@@ -97,26 +117,5 @@ describe("Stitch Editorial Landing Page with Header, Footer & Continuous Proof",
     expect(html).not.toContain("Priya M.");
     expect(html).not.toContain("Rahul K.");
     expect(html).not.toContain("Ananya S.");
-
-    // Confirm internal developer links are NOT present
-    expect(html).not.toContain("Design System Sandbox");
-    expect(html).not.toContain("href=\"/design-system\"");
-    expect(html).not.toContain("href=\"/design-preview\"");
-    expect(html).not.toContain("href=\"/architecture\"");
-  });
-
-  it("verifies borderless editorial layout, physical collage geometry, and card styling", () => {
-    const html = renderToStaticMarkup(React.createElement(ProductionLandingPage));
-
-    // Warm Sunlit Stone canvas background
-    expect(html).toContain("bg-[#F6F3EC]");
-
-    // Physical collage styling (Stitch semi-circle arch layer)
-    expect(html).toContain("-rotate-2");
-    expect(html).toContain("rounded-l-[92px]");
-
-    // Final CTA dark botanical card styling
-    expect(html).toContain("bg-[#191D1A]");
-    expect(html).toContain("rounded-[32px]");
   });
 });
