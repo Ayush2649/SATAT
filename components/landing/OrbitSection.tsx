@@ -1,203 +1,199 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
+import Link from "next/link";
 import { Orbit3DCore } from "@/components/orbit/Orbit3DCore";
-
-interface PromptOption {
-  id: number;
-  prompt: string;
-  quote: string;
-  adjustment: string;
-}
-
-const PROMPT_OPTIONS: PromptOption[] = [
-  {
-    id: 1,
-    prompt: "How was my protein intake today?",
-    quote:
-      "You trained heavier than usual today. I added a bowl of Greek yogurt to tonight's dinner so you recover well and close the 28g synthesis gap cleanly.",
-    adjustment: "+28g protein added to tonight's dinner target.",
-  },
-  {
-    id: 2,
-    prompt: "Condense my Upper Body lift to 35m",
-    quote:
-      "Condensed Upper Body from 60m to 35m. Paired DB Incline Bench with Chest-Supported Rows in 4 high-density supersets.",
-    adjustment: "Upper Body session condensed into 35m compound supersets.",
-  },
-  {
-    id: 3,
-    prompt: "How do I improve my deep sleep score?",
-    quote:
-      "Your 7h 45m sleep was consistent, but deep sleep dipped 18% below baseline. Cut caffeine after 2 PM and dim screens by 9:30 PM.",
-    adjustment: "Circadian wind-down reminder scheduled for 9:30 PM.",
-  },
-  {
-    id: 4,
-    prompt: "Suggest a 40g protein vegetarian dinner",
-    quote:
-      "Grilled tofu & paneer bowl with edamame, quinoa, and sesame ginger dressing hits 42g protein with a low glycemic load.",
-    adjustment: "42g vegetarian recovery bowl logged to planner.",
-  },
-  {
-    id: 5,
-    prompt: "Why is my training readiness 92%?",
-    quote:
-      "HRV recovered to 68ms and resting heart rate dropped 4 bpm overnight. Biological readiness is primed for heavier sets.",
-    adjustment: "Training readiness calibrated at 92% (High Output).",
-  },
-  {
-    id: 6,
-    prompt: "Shift Deep Work to my dopamine peak",
-    quote:
-      "Moved your 90-minute Deep Work sprint to 10:00 AM, matching your post-cortisol dopamine peak before afternoon fatigue.",
-    adjustment: "Deep Work rescheduled to 10:00 AM peak dopamine window.",
-  },
-];
+import {
+  Sparkles,
+  Moon,
+  Utensils,
+  Dumbbell,
+  Zap,
+  Check,
+  Activity,
+} from "lucide-react";
 
 export default function OrbitSection() {
-  const [selectedPromptId, setSelectedPromptId] = useState<number>(1);
-  const [status, setStatus] = useState<"idle" | "accepted" | "deferred">("idle");
-
-  const currentOption =
-    PROMPT_OPTIONS.find((p) => p.id === selectedPromptId) || PROMPT_OPTIONS[0];
-
-  const handleSelectPrompt = (id: number) => {
-    setSelectedPromptId(id);
-    setStatus("idle");
-  };
-
   return (
     <section
       id="orbit"
-      className="py-16 sm:py-24 px-4 sm:px-8 bg-[#F6F3EC] dark:bg-[#0A0D0B] text-center relative overflow-hidden w-full max-w-[1400px] mx-auto transition-colors"
+      className="relative w-full max-w-[1440px] mx-auto min-h-[540px] sm:min-h-[620px] flex flex-col items-center justify-center px-4 py-20 overflow-hidden bg-[#F6F3EC] dark:bg-[#0A0D0B] transition-colors"
     >
-      <div className="max-w-[1200px] mx-auto flex flex-col items-center">
-        {/* Eyebrow */}
-        <span className="text-[11px] font-bold tracking-[0.18em] uppercase text-[#2D6A4F] dark:text-[#6EE7B7]">
-          QUIET GUIDANCE
-        </span>
+      {/* Inline styles for 3D depth-of-field floating animation keyframes */}
+      <style>{`
+        @keyframes satatFloatSlow {
+          0%, 100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-12px);
+          }
+        }
+        @keyframes satatFloatDelayed {
+          0%, 100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(12px);
+          }
+        }
+      `}</style>
 
-        {/* Title */}
-        <h2 className="font-serif font-normal text-3xl sm:text-5xl text-[#1C1917] dark:text-[#F4F1EA] mt-2 mb-10 leading-tight">
-          A companion, <span className="italic text-[#E05A47]">not a dashboard</span>
+      {/* Radial Atmospheric Lighting Stage */}
+      <div
+        className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(45,106,79,0.12)_0%,transparent_70%)] pointer-events-none"
+        aria-hidden="true"
+      />
+
+      {/* ── DESKTOP & TABLET: SURROUNDING DEPTH-OF-FIELD FLOATING PROMPT CARDS (8 CARDS) ── */}
+      <div className="hidden md:block absolute inset-0 pointer-events-none overflow-hidden max-w-[1440px] mx-auto">
+        {/* ── 4 CRISP FOREGROUND CARDS (z-10, opacity-95, shadow-lg, satatFloatSlow) ── */}
+
+        {/* 1. Top-Left: [Green Icon] How was my protein intake today? */}
+        <div
+          style={{ animationDuration: "5s" }}
+          className="pointer-events-auto absolute top-10 left-6 xl:left-14 z-10 opacity-95 shadow-lg animate-[satatFloatSlow_5s_ease-in-out_infinite]"
+        >
+          <div className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-[#FCFBF9] dark:bg-[#141916] border border-[#1C1917]/[0.08] dark:border-white/[0.10] text-xs sm:text-sm font-medium text-[#1C1917] dark:text-[#F4F1EA] whitespace-nowrap shadow-xs hover:border-[#2D6A4F] transition-colors">
+            <Sparkles className="w-4 h-4 text-[#2D6A4F] dark:text-[#34D399] shrink-0" />
+            <span>How was my protein intake today?</span>
+          </div>
+        </div>
+
+        {/* 2. Mid-Left: [Coral Icon] How to improve my deep sleep score? */}
+        <div
+          style={{ animationDuration: "5.4s", animationDelay: "0.6s" }}
+          className="pointer-events-auto absolute top-[50%] -translate-y-1/2 left-4 xl:left-10 z-10 opacity-95 shadow-lg animate-[satatFloatSlow_5s_ease-in-out_infinite]"
+        >
+          <div className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-[#FCFBF9] dark:bg-[#141916] border border-[#1C1917]/[0.08] dark:border-white/[0.10] text-xs sm:text-sm font-medium text-[#1C1917] dark:text-[#F4F1EA] whitespace-nowrap shadow-xs hover:border-[#E05A47] transition-colors">
+            <Moon className="w-4 h-4 text-[#E05A47] shrink-0" />
+            <span>How to improve my deep sleep score?</span>
+          </div>
+        </div>
+
+        {/* 3. Top-Right: [Amber Icon] High protein vegetarian dinner ideas? */}
+        <div
+          style={{ animationDuration: "4.8s", animationDelay: "0.4s" }}
+          className="pointer-events-auto absolute top-10 right-6 xl:right-14 z-10 opacity-95 shadow-lg animate-[satatFloatSlow_5s_ease-in-out_infinite]"
+        >
+          <div className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-[#FCFBF9] dark:bg-[#141916] border border-[#1C1917]/[0.08] dark:border-white/[0.10] text-xs sm:text-sm font-medium text-[#1C1917] dark:text-[#F4F1EA] whitespace-nowrap shadow-xs hover:border-[#F59E0B] transition-colors">
+            <Utensils className="w-4 h-4 text-[#F59E0B] shrink-0" />
+            <span>High protein vegetarian dinner ideas?</span>
+          </div>
+        </div>
+
+        {/* 4. Bottom-Right: [Mint Icon] Condense my Upper Body workout to 35m */}
+        <div
+          style={{ animationDuration: "5.2s", animationDelay: "1s" }}
+          className="pointer-events-auto absolute bottom-12 right-6 xl:right-16 z-10 opacity-95 shadow-lg animate-[satatFloatSlow_5s_ease-in-out_infinite]"
+        >
+          <div className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-[#FCFBF9] dark:bg-[#141916] border border-[#1C1917]/[0.08] dark:border-white/[0.10] text-xs sm:text-sm font-medium text-[#1C1917] dark:text-[#F4F1EA] whitespace-nowrap shadow-xs hover:border-[#34D399] transition-colors">
+            <Dumbbell className="w-4 h-4 text-[#2D6A4F] dark:text-[#6EE7B7] shrink-0" />
+            <span>Condense my Upper Body workout to 35m</span>
+          </div>
+        </div>
+
+        {/* ── 4 SOFTLY BLURRED BACKGROUND DEPTH CARDS (z-0, blur-[1.5px], opacity-45, scale-90, satatFloatDelayed) ── */}
+
+        {/* 5. Upper-Center-Left: Workout recovery readiness */}
+        <div
+          style={{ animationDuration: "6.5s" }}
+          className="pointer-events-auto absolute top-20 left-[22%] z-0 blur-[1.5px] opacity-45 scale-90 animate-[satatFloatDelayed_6.5s_ease-in-out_infinite] hover:blur-none hover:opacity-100 hover:scale-100 transition-all duration-300"
+        >
+          <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-[#FCFBF9] dark:bg-[#141916] border border-[#1C1917]/[0.08] dark:border-white/[0.10] text-xs font-medium text-[#1C1917] dark:text-[#F4F1EA] whitespace-nowrap">
+            <Zap className="w-3.5 h-3.5 text-[#2D6A4F] dark:text-[#34D399] shrink-0" />
+            <span>Workout recovery readiness</span>
+          </div>
+        </div>
+
+        {/* 6. Bottom-Left: How to hit 135g protein cleanly? */}
+        <div
+          style={{ animationDuration: "6.8s", animationDelay: "0.8s" }}
+          className="pointer-events-auto absolute bottom-14 left-6 xl:left-20 z-0 blur-[1.5px] opacity-45 scale-90 animate-[satatFloatDelayed_6.5s_ease-in-out_infinite] hover:blur-none hover:opacity-100 hover:scale-100 transition-all duration-300"
+        >
+          <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-[#FCFBF9] dark:bg-[#141916] border border-[#1C1917]/[0.08] dark:border-white/[0.10] text-xs font-medium text-[#1C1917] dark:text-[#F4F1EA] whitespace-nowrap">
+            <Check className="w-3.5 h-3.5 text-[#2D6A4F] dark:text-[#34D399] shrink-0" />
+            <span>How to hit 135g protein cleanly?</span>
+          </div>
+        </div>
+
+        {/* 7. Mid-Right: Shift Deep Work to dopamine peak */}
+        <div
+          style={{ animationDuration: "6.2s", animationDelay: "0.5s" }}
+          className="pointer-events-auto absolute top-[48%] -translate-y-1/2 right-4 xl:right-10 z-0 blur-[1.5px] opacity-45 scale-90 animate-[satatFloatDelayed_6.5s_ease-in-out_infinite] hover:blur-none hover:opacity-100 hover:scale-100 transition-all duration-300"
+        >
+          <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-[#FCFBF9] dark:bg-[#141916] border border-[#1C1917]/[0.08] dark:border-white/[0.10] text-xs font-medium text-[#1C1917] dark:text-[#F4F1EA] whitespace-nowrap">
+            <Sparkles className="w-3.5 h-3.5 text-[#E05A47] shrink-0" />
+            <span>Shift Deep Work to dopamine peak</span>
+          </div>
+        </div>
+
+        {/* 8. Lower-Center-Right: Analyze my 7-day strength trend */}
+        <div
+          style={{ animationDuration: "7s", animationDelay: "1.2s" }}
+          className="pointer-events-auto absolute bottom-24 right-[22%] z-0 blur-[1.5px] opacity-45 scale-90 animate-[satatFloatDelayed_6.5s_ease-in-out_infinite] hover:blur-none hover:opacity-100 hover:scale-100 transition-all duration-300"
+        >
+          <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-[#FCFBF9] dark:bg-[#141916] border border-[#1C1917]/[0.08] dark:border-white/[0.10] text-xs font-medium text-[#1C1917] dark:text-[#F4F1EA] whitespace-nowrap">
+            <Activity className="w-3.5 h-3.5 text-[#34D399] shrink-0" />
+            <span>Analyze my 7-day strength trend</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── MOBILE STREAMING CHIP CLOUD (Top & Bottom Marquee Clouds for Mobile) ── */}
+      <div className="md:hidden w-full overflow-x-auto no-scrollbar py-2 mb-6 -mx-4 px-4 flex items-center gap-2.5">
+        <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-[#FCFBF9] dark:bg-[#141916] border border-[#1C1917]/[0.08] dark:border-white/[0.10] text-xs font-medium text-[#1C1917] dark:text-[#F4F1EA] whitespace-nowrap shrink-0">
+          <Sparkles className="w-3.5 h-3.5 text-[#2D6A4F] dark:text-[#34D399] shrink-0" />
+          <span>How was my protein intake today?</span>
+        </div>
+        <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-[#FCFBF9] dark:bg-[#141916] border border-[#1C1917]/[0.08] dark:border-white/[0.10] text-xs font-medium text-[#1C1917] dark:text-[#F4F1EA] whitespace-nowrap shrink-0">
+          <Moon className="w-3.5 h-3.5 text-[#E05A47] shrink-0" />
+          <span>How to improve my deep sleep score?</span>
+        </div>
+        <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-[#FCFBF9] dark:bg-[#141916] border border-[#1C1917]/[0.08] dark:border-white/[0.10] text-xs font-medium text-[#1C1917] dark:text-[#F4F1EA] whitespace-nowrap shrink-0">
+          <Utensils className="w-3.5 h-3.5 text-[#F59E0B] shrink-0" />
+          <span>High protein vegetarian dinner ideas?</span>
+        </div>
+      </div>
+
+      {/* ── CENTER FOCAL STACK (z-20, max-w-[540px] mx-auto) ── */}
+      <div className="relative z-20 text-center max-w-[540px] mx-auto flex flex-col items-center">
+        {/* Top: 3D Orbit Core */}
+        <Orbit3DCore size="lg" state="active" />
+
+        {/* Headline */}
+        <h2 className="font-serif text-3xl sm:text-5xl text-[#1C1917] dark:text-[#F4F1EA] mt-5 leading-tight font-normal">
+          Try Orbit — Your Personal AI Biological Copilot
         </h2>
 
-        {/* ── DESKTOP STAGE: Central Orbit3DCore with 6 Floating Prompts Surrounding It ── */}
-        <div className="hidden lg:grid grid-cols-12 gap-8 items-center w-full my-6">
-          {/* Left 3 Floating Prompt Pills */}
-          <div className="col-span-4 flex flex-col items-end space-y-4">
-            {PROMPT_OPTIONS.slice(0, 3).map((item, idx) => {
-              const isSelected = item.id === selectedPromptId;
-              const delay = `${idx * 0.4}s`;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => handleSelectPrompt(item.id)}
-                  style={{ animationDelay: delay }}
-                  className={`text-left text-xs font-semibold px-4 py-2.5 rounded-full transition-all cursor-pointer shadow-xs animate-[satatFloatSlow_4.5s_ease-in-out_infinite] ${
-                    isSelected
-                      ? "bg-[#191D1A] dark:bg-[#FCFBF9] text-white dark:text-[#191D1A] scale-105 shadow-md ring-2 ring-[#34D399]/40"
-                      : "bg-[#FCFBF9] dark:bg-[#141916] text-[#57534E] dark:text-[#9CA39E] border border-[#1C1917]/10 dark:border-white/10 hover:border-[#2D6A4F] hover:text-[#1C1917] dark:hover:text-[#F4F1EA]"
-                  }`}
-                >
-                  &ldquo;{item.prompt}&rdquo;
-                </button>
-              );
-            })}
-          </div>
+        {/* Subtitle */}
+        <p className="text-sm sm:text-base text-[#57534E] dark:text-[#9CA39E] mt-3 leading-relaxed">
+          Cross-synthesizing training strain, nutrition gaps, and focus blocks in real time.
+        </p>
 
-          {/* Center 4 Columns: Luminous Gyroscope Stage */}
-          <div className="col-span-4 flex flex-col items-center justify-center relative">
-            <div className="w-56 h-56 rounded-full bg-radial from-[#2D6A4F]/15 via-[#2D6A4F]/5 to-transparent flex items-center justify-center relative">
-              <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-[#E05A47]/10 via-transparent to-[#34D399]/15 blur-xl pointer-events-none" />
-              <Orbit3DCore size="xl" state="active" />
-            </div>
-          </div>
+        {/* Center CTA Button */}
+        <Link
+          href="/dashboard/orbit"
+          className="mt-7 px-7 py-3.5 rounded-full bg-[#2D6A4F] hover:bg-[#23533D] text-white text-sm font-semibold shadow-lg inline-flex items-center gap-2 transition-transform active:scale-95 cursor-pointer"
+        >
+          <span>Talk to Orbit AI</span>
+          <span>→</span>
+        </Link>
+      </div>
 
-          {/* Right 3 Floating Prompt Pills */}
-          <div className="col-span-4 flex flex-col items-start space-y-4">
-            {PROMPT_OPTIONS.slice(3, 6).map((item, idx) => {
-              const isSelected = item.id === selectedPromptId;
-              const delay = `${(idx + 1) * 0.5}s`;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => handleSelectPrompt(item.id)}
-                  style={{ animationDelay: delay }}
-                  className={`text-left text-xs font-semibold px-4 py-2.5 rounded-full transition-all cursor-pointer shadow-xs animate-[satatFloatSlow_4.5s_ease-in-out_infinite] ${
-                    isSelected
-                      ? "bg-[#191D1A] dark:bg-[#FCFBF9] text-white dark:text-[#191D1A] scale-105 shadow-md ring-2 ring-[#34D399]/40"
-                      : "bg-[#FCFBF9] dark:bg-[#141916] text-[#57534E] dark:text-[#9CA39E] border border-[#1C1917]/10 dark:border-white/10 hover:border-[#2D6A4F] hover:text-[#1C1917] dark:hover:text-[#F4F1EA]"
-                  }`}
-                >
-                  &ldquo;{item.prompt}&rdquo;
-                </button>
-              );
-            })}
-          </div>
+      {/* Mobile Bottom Prompt Cloud */}
+      <div className="md:hidden w-full overflow-x-auto no-scrollbar py-2 mt-6 -mx-4 px-4 flex items-center gap-2.5">
+        <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-[#FCFBF9] dark:bg-[#141916] border border-[#1C1917]/[0.08] dark:border-white/[0.10] text-xs font-medium text-[#1C1917] dark:text-[#F4F1EA] whitespace-nowrap shrink-0">
+          <Dumbbell className="w-3.5 h-3.5 text-[#2D6A4F] dark:text-[#6EE7B7] shrink-0" />
+          <span>Condense my Upper Body workout to 35m</span>
         </div>
-
-        {/* ── MOBILE STAGE: Central Orbit3DCore + Horizontal Chip Cloud ── */}
-        <div className="lg:hidden flex flex-col items-center my-4 w-full">
-          <div className="w-48 h-48 rounded-full bg-radial from-[#2D6A4F]/15 via-transparent to-transparent flex items-center justify-center relative mb-4">
-            <Orbit3DCore size="lg" state="active" />
-          </div>
-
-          {/* Horizontal Floating Chip Cloud */}
-          <div className="flex gap-2 overflow-x-auto w-full pb-3 px-2 no-scrollbar justify-start sm:justify-center">
-            {PROMPT_OPTIONS.map((item) => {
-              const isSelected = item.id === selectedPromptId;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => handleSelectPrompt(item.id)}
-                  className={`text-xs font-semibold px-3.5 py-2 rounded-full whitespace-nowrap transition-all cursor-pointer shrink-0 shadow-xs ${
-                    isSelected
-                      ? "bg-[#191D1A] dark:bg-[#FCFBF9] text-white dark:text-[#191D1A]"
-                      : "bg-[#FCFBF9] dark:bg-[#141916] text-[#57534E] dark:text-[#9CA39E] border border-[#1C1917]/10 dark:border-white/10"
-                  }`}
-                >
-                  {item.prompt}
-                </button>
-              );
-            })}
-          </div>
+        <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-[#FCFBF9] dark:bg-[#141916] border border-[#1C1917]/[0.08] dark:border-white/[0.10] text-xs font-medium text-[#1C1917] dark:text-[#F4F1EA] whitespace-nowrap shrink-0">
+          <Zap className="w-3.5 h-3.5 text-[#2D6A4F] dark:text-[#34D399] shrink-0" />
+          <span>Workout recovery readiness</span>
         </div>
-
-        {/* ── Dynamic Orbit Whisper Quote & Adjustment Box ── */}
-        <div className="max-w-xl mx-auto mt-6 bg-[#FCFBF9] dark:bg-[#141916] border border-[#1C1917]/[0.08] dark:border-white/[0.10] rounded-[28px] p-6 sm:p-8 shadow-sm">
-          <blockquote className="font-serif italic text-lg sm:text-2xl text-[#1C1917] dark:text-[#F4F1EA] leading-relaxed">
-            &ldquo;{currentOption.quote}&rdquo;
-          </blockquote>
-
-          {/* Interactive Action Buttons */}
-          <div className="w-full max-w-[280px] mx-auto space-y-2.5 mt-6">
-            <button
-              type="button"
-              onClick={() => setStatus("accepted")}
-              className="w-full bg-[#2D6A4F] hover:bg-[#23533D] text-white rounded-full py-3.5 px-6 text-xs sm:text-sm font-semibold shadow-sm transition-all cursor-pointer active:scale-95"
-            >
-              {status === "accepted" ? "Adjustment applied ✓" : "Accept adjustment ✓"}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setStatus("deferred")}
-              className="block w-full py-1.5 text-xs text-[#57534E] dark:text-[#9CA39E] hover:text-[#1C1917] dark:hover:text-[#F4F1EA] transition-colors cursor-pointer"
-            >
-              {status === "deferred" ? "Kept dinner as is" : "Keep dinner as is"}
-            </button>
-          </div>
-
-          {status === "accepted" && (
-            <p className="mt-3.5 text-xs font-semibold text-[#2D6A4F] dark:text-[#6EE7B7] animate-fade-in">
-              ✓ {currentOption.adjustment}
-            </p>
-          )}
+        <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-[#FCFBF9] dark:bg-[#141916] border border-[#1C1917]/[0.08] dark:border-white/[0.10] text-xs font-medium text-[#1C1917] dark:text-[#F4F1EA] whitespace-nowrap shrink-0">
+          <Check className="w-3.5 h-3.5 text-[#2D6A4F] dark:text-[#34D399] shrink-0" />
+          <span>How to hit 135g protein cleanly?</span>
         </div>
       </div>
     </section>

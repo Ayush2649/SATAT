@@ -52,26 +52,31 @@ describe("Stitch Editorial Landing Page with Header, Footer & Continuous Proof",
     expect(html).toContain("135g Protein Target Closed · 24-Day Flow Intact");
 
     // Section 4: HealthifySnap-Style Meal Scan Showcase (#snap)
-    expect(html).toContain("SATAT AI VISION · ZERO BARCODE ANXIETY");
-    expect(html).toContain("Track your food with just a snap.");
-    expect(html).toContain("High-Protein Rice &amp; Paneer Bowl");
-    expect(html).toContain("640 kcal");
-    expect(html).toContain("Grilled Paneer (150g)");
-    expect(html).toContain("✦ Orbit Cadence Insight");
+    expect(html).toContain("SatatSnap");
+    expect(html).toContain("Track Your Food With Just a Snap");
+    expect(html).toContain("Snap your meal for instant nutritional details and smart, AI-driven cadence advice from Orbit.");
+    expect(html).toContain("Try Snap with a Photo");
+    expect(html).toContain("Rice &amp; Paneer Bowl");
+    expect(html).toContain("454 Cal");
+    expect(html).toContain("Grilled Paneer");
+    expect(html).toContain("Steamed Basmati Rice");
+    expect(html).toContain("Broccoli &amp; Greens");
+    expect(html).toContain("✦ Orbit");
+    expect(html).toContain("This meal offers 38g of clean protein.");
 
-    // Section 5: Orbit Section (Orbit3DCore + Floating Prompt Cloud)
-    expect(html).toContain("QUIET GUIDANCE");
-    expect(html).toContain("A companion,");
-    expect(html).toContain("not a dashboard");
+    // Section 5: Orbit Section (3D Depth-of-Field Floating Prompt Stage)
+    expect(html).toContain("Try Orbit — Your Personal AI Biological Copilot");
+    expect(html).toContain("Cross-synthesizing training strain, nutrition gaps, and focus blocks in real time.");
+    expect(html).toContain("Talk to Orbit AI");
     expect(html).toContain("orbit-3d-");
     expect(html).toContain("How was my protein intake today?");
-    expect(html).toContain("Condense my Upper Body lift to 35m");
-    expect(html).toContain("How do I improve my deep sleep score?");
-    expect(html).toContain("Suggest a 40g protein vegetarian dinner");
-    expect(html).toContain("Why is my training readiness 92%?");
-    expect(html).toContain("Shift Deep Work to my dopamine peak");
-    expect(html).toContain("Accept adjustment ✓");
-    expect(html).toContain("Keep dinner as is");
+    expect(html).toContain("How to improve my deep sleep score?");
+    expect(html).toContain("High protein vegetarian dinner ideas?");
+    expect(html).toContain("Condense my Upper Body workout to 35m");
+    expect(html).toContain("Workout recovery readiness");
+    expect(html).toContain("How to hit 135g protein cleanly?");
+    expect(html).toContain("Shift Deep Work to dopamine peak");
+    expect(html).toContain("Analyze my 7-day strength trend");
 
     // Section 6: Continuous Proof (28-Day Organic Rhythm Matrix)
     expect(html).toContain("LIVING STREAKS");

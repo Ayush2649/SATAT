@@ -1,231 +1,210 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Orbit3DCore } from "@/components/orbit/Orbit3DCore";
-import { Camera, Check } from "lucide-react";
 
 export default function MealScanShowcase() {
-  const [step, setStep] = useState<number>(0);
-  const [isPaused, setIsPaused] = useState<boolean>(false);
+  const snapSectionRef = useRef<HTMLElement>(null);
+  const [scrollStep, setScrollStep] = useState<0 | 1 | 2>(0);
 
-  // Auto-advance showcase every 4 seconds unless hovered/interacting
+  // Sticky scroll listener: calculates continuous normalized progress through 280vh track
   useEffect(() => {
-    if (isPaused) return;
-    const interval = setInterval(() => {
-      setStep((prev) => (prev + 1) % 3);
-    }, 4500);
-    return () => clearInterval(interval);
-  }, [isPaused]);
+    const handleScroll = () => {
+      if (!snapSectionRef.current) return;
+      const rect = snapSectionRef.current.getBoundingClientRect();
+      const windowHeight = window.innerHeight;
+      const totalScroll = rect.height - windowHeight;
+      if (totalScroll <= 0) return;
+      const currentScroll = -rect.top;
+      const progress = Math.min(Math.max(currentScroll / totalScroll, 0), 1);
+      const step: 0 | 1 | 2 = progress < 0.33 ? 0 : progress < 0.67 ? 1 : 2;
+      setScrollStep(step);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
     <section
       id="snap"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
-      className="py-16 sm:py-24 px-4 sm:px-8 w-full max-w-[1400px] mx-auto overflow-hidden"
+      ref={snapSectionRef}
+      className="relative h-[280vh] w-full"
     >
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-        {/* Left Column (5 Cols) */}
-        <div className="lg:col-span-5 text-left space-y-6">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#E6F2EC] dark:bg-[#132A1F] border border-[#34D399]/25">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#2D6A4F] dark:bg-[#34D399]" />
-            <span className="text-[10px] sm:text-[11px] font-bold tracking-[0.18em] uppercase text-[#2D6A4F] dark:text-[#6EE7B7]">
-              SATAT AI VISION · ZERO BARCODE ANXIETY
-            </span>
-          </div>
+      {/* Inner Sticky Viewport */}
+      <div className="sticky top-0 h-screen w-full max-w-[1360px] mx-auto px-6 md:px-12 lg:px-16 flex flex-col lg:flex-row items-center justify-center lg:justify-between gap-8 lg:gap-16 overflow-hidden">
+        {/* Left Column (Ultra-Clean, Zero Step Buttons — Matching HealthifyMe) */}
+        <div className="max-w-[460px] text-left">
+          {/* 1. Eyebrow */}
+          <span className="text-sm font-semibold text-[#2D6A4F] dark:text-[#6EE7B7] mb-2 block">
+            SatatSnap
+          </span>
 
-          <h2 className="font-serif text-3xl sm:text-5xl text-[#1C1917] dark:text-[#F4F1EA] leading-[1.1]">
-            Track your food with just a snap.
+          {/* 2. Headline */}
+          <h2 className="font-serif text-3xl sm:text-5xl lg:text-[54px] leading-[1.1] font-bold text-[#1C1917] dark:text-[#F4F1EA]">
+            Track Your Food With Just a Snap
           </h2>
 
-          <p className="text-sm sm:text-base text-[#57534E] dark:text-[#9CA39E] leading-relaxed">
-            Snap your meal for instant Indian &amp; global macro breakdowns and real-time biological adjustments from Orbit.
+          {/* 3. Subtitle */}
+          <p className="text-sm sm:text-base text-[#57534E] dark:text-[#9CA39E] mt-4 leading-relaxed">
+            Snap your meal for instant nutritional details and smart, AI-driven cadence advice from Orbit.
           </p>
 
-          {/* 3 Interactive Step Indicators */}
-          <div className="space-y-3 pt-2">
-            {[
-              {
-                num: 0,
-                pill: "1. Snap Plate",
-                label: "Snap a photo of your meal.",
-                sub: "Zero barcode scanning, gram weighing, or guessing.",
-              },
-              {
-                num: 1,
-                pill: "2. Instant Macros",
-                label: "SATAT identifies every dish & macro in 3 seconds.",
-                sub: "Accurate Indian & international recipes with glycemic index.",
-              },
-              {
-                num: 2,
-                pill: "3. Orbit Action",
-                label: "Orbit gives you instant actionable cadence advice.",
-                sub: "Glucose damping, protein targets, and schedule syncing.",
-              },
-            ].map((item) => {
-              const isCurrent = step === item.num;
-              return (
-                <button
-                  key={item.num}
-                  type="button"
-                  onClick={() => setStep(item.num)}
-                  className={`w-full text-left p-3.5 rounded-2xl transition-all cursor-pointer border ${
-                    isCurrent
-                      ? "bg-[#FCFBF9] dark:bg-[#18211C] border-[#2D6A4F] dark:border-[#34D399]/40 shadow-sm"
-                      : "bg-transparent border-transparent hover:bg-black/5 dark:hover:bg-white/5 opacity-70 hover:opacity-100"
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                        isCurrent
-                          ? "bg-[#2D6A4F] text-white"
-                          : "bg-[#EFECE4] dark:bg-[#1C221E] text-[#57534E] dark:text-[#9CA39E]"
-                      }`}
-                    >
-                      {item.pill}
-                    </span>
-                    <h4 className="text-sm font-bold text-[#1C1917] dark:text-[#F4F1EA]">
-                      {item.label}
-                    </h4>
-                  </div>
-                  <p className="text-xs text-[#57534E] dark:text-[#9CA39E] mt-1 pl-1">
-                    {item.sub}
-                  </p>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="pt-2">
-            <Link
-              href="/onboarding"
-              className="bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full px-7 py-3.5 text-sm font-semibold shadow-md hover:shadow-lg transition-all active:scale-95 inline-flex items-center gap-2 cursor-pointer"
-            >
-              <span>Try AI Plate Scanner</span>
-              <span>&rarr;</span>
-            </Link>
-          </div>
+          {/* 4. Single Pill CTA Button */}
+          <Link
+            href="/onboarding"
+            className="mt-7 inline-flex items-center justify-center px-7 py-3.5 rounded-full border border-[#1C1917]/25 dark:border-white/25 hover:border-[#E05A47] dark:hover:border-[#E05A47] text-sm font-semibold text-[#1C1917] dark:text-[#F4F1EA] hover:bg-[#E05A47] hover:text-white transition-all cursor-pointer"
+          >
+            Try Snap with a Photo
+          </Link>
         </div>
 
-        {/* Right Column (7 Cols): iPhone Frame Mockup + Docking Cards */}
-        <div className="lg:col-span-7 flex flex-col items-center justify-center relative min-h-[560px]">
-          {/* Main Smartphone Shell */}
-          <div className="w-[290px] sm:w-[320px] h-[540px] rounded-[44px] border-[8px] border-[#1C1917] dark:border-[#26302B] bg-[#0A0D0B] shadow-2xl overflow-hidden relative flex flex-col justify-between">
-            {/* Top Notch / Dynamic Island */}
-            <div className="absolute top-2 inset-x-0 mx-auto w-24 h-4 bg-black rounded-full z-30" />
+        {/* Right Column: Sticky Phone Camera Viewfinder + Auto-Popping Overlay Cards + Bottom Caption */}
+        <div className="flex flex-col items-center justify-center relative">
+          {/* Sleek iPhone Mockup */}
+          <div className="w-[270px] sm:w-[300px] h-[480px] sm:h-[530px] rounded-[44px] border-[8px] border-[#1C1917] dark:border-[#26302B] bg-black shadow-2xl relative overflow-visible">
+            {/* Inner Phone Screen */}
+            <div className="w-full h-full rounded-[36px] overflow-hidden relative bg-black flex flex-col justify-between">
+              {/* Dynamic Island / Notch */}
+              <div className="absolute top-2 inset-x-0 mx-auto w-24 h-4 bg-black rounded-full z-30" />
 
-            {/* Food Photo Canvas */}
-            <div className="absolute inset-0 z-10 overflow-hidden">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=900&q=80"
-                alt="Nutrient-dense Indian rice and bowl meal plate"
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 pointer-events-none" />
-            </div>
-
-            {/* Stage 1: Scanning Viewfinder Corner Brackets */}
-            <div className="relative z-20 m-6 flex-1 flex flex-col justify-between pointer-events-none">
-              <div className="flex justify-between items-start">
-                <div className="w-8 h-8 border-t-2 border-l-2 border-[#34D399]" />
-                <div className="w-8 h-8 border-t-2 border-r-2 border-[#34D399]" />
+              {/* Crisp Overhead Meal Bowl Photo */}
+              <div className="absolute inset-0 z-10 overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=900&q=80"
+                  alt="Overhead meal bowl photo"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 pointer-events-none" />
               </div>
 
-              {/* Scanning Laser Beam */}
-              {step === 0 && (
-                <div className="w-full h-1 bg-gradient-to-r from-transparent via-[#34D399] to-transparent shadow-[0_0_12px_#34D399] animate-[timelineBeam_2s_ease-in-out_infinite]" />
-              )}
-
-              <div className="flex justify-between items-end">
-                <div className="w-8 h-8 border-b-2 border-l-2 border-[#34D399]" />
-                <div className="w-8 h-8 border-b-2 border-r-2 border-[#34D399]" />
-              </div>
-            </div>
-
-            {/* Camera Bottom Bar */}
-            <div className="relative z-20 pb-5 px-6 flex flex-col items-center gap-3">
-              <div className="flex items-center gap-3 text-[9px] font-mono font-bold tracking-widest text-white/70 uppercase">
-                <span>MACRO</span>
-                <span className="text-[#34D399]">● VISION</span>
-                <span>PLATE</span>
-                <span>SNAP</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setStep((prev) => (prev + 1) % 3)}
-                className="w-14 h-14 rounded-full border-4 border-white bg-white/20 backdrop-blur-sm flex items-center justify-center hover:scale-105 active:scale-95 transition-transform cursor-pointer"
-                aria-label="Capture meal photo"
+              {/* Viewfinder Corner Brackets */}
+              <div
+                className={`relative z-20 m-6 flex-1 flex flex-col justify-between pointer-events-none transition-opacity duration-300 ${
+                  scrollStep === 0 ? "opacity-100" : "opacity-0"
+                }`}
               >
-                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-[#1C1917]">
-                  <Camera className="w-5 h-5" />
+                <div className="flex justify-between items-start">
+                  <div className="w-7 h-7 border-t-2 border-l-2 border-white/70" />
+                  <div className="w-7 h-7 border-t-2 border-r-2 border-white/70" />
                 </div>
-              </button>
-            </div>
-          </div>
-
-          {/* Floating Stage 2: Crisp Macro Breakdown Card */}
-          <div
-            className={`w-[310px] sm:w-[350px] bg-[#FCFBF9]/95 dark:bg-[#141916]/95 backdrop-blur-xl border border-[#1C1917]/10 dark:border-white/15 rounded-3xl p-4 shadow-2xl transition-all duration-500 z-30 ${
-              step >= 1
-                ? "opacity-100 translate-y-0 relative mt-4 lg:absolute lg:top-12 lg:-right-4"
-                : "opacity-0 pointer-events-none translate-y-4 hidden lg:block lg:absolute lg:top-12 lg:-right-4"
-            }`}
-          >
-            <div className="flex items-center justify-between pb-2.5 border-b border-[#1C1917]/[0.08] dark:border-white/10">
-              <div>
-                <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-[#2D6A4F] dark:text-[#6EE7B7]">
-                  MEAL IDENTIFIED
-                </span>
-                <h4 className="font-serif font-bold text-sm text-[#1C1917] dark:text-[#F4F1EA]">
-                  High-Protein Rice &amp; Paneer Bowl
-                </h4>
+                <div className="flex justify-between items-end">
+                  <div className="w-7 h-7 border-b-2 border-l-2 border-white/70" />
+                  <div className="w-7 h-7 border-b-2 border-r-2 border-white/70" />
+                </div>
               </div>
-              <span className="text-base font-bold text-[#E05A47]">
-                640 kcal
-              </span>
+
+              {/* Camera Bottom Bar: Mode text & White Shutter Button */}
+              <div className="relative z-20 pb-4 px-6 flex flex-col items-center gap-2.5">
+                <div className="flex items-center gap-3 text-[10px] tracking-widest text-white/70 font-semibold uppercase">
+                  <span>VIDEO</span>
+                  <span className="text-[#34D399]">PHOTO</span>
+                  <span>PORTRAIT</span>
+                  <span>PANO</span>
+                </div>
+                <div className="w-12 h-12 rounded-full border-2 border-white p-0.5 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-full bg-white shadow-inner" />
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-1.5 pt-2">
-              {[
-                { name: "Grilled Paneer (150g)", val: "310 kcal · 28g P" },
-                { name: "Steamed Basmati & Dal", val: "240 kcal · 11g P" },
-                { name: "Avocado & Greens", val: "90 kcal · 3g P" },
-              ].map((row, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center justify-between text-xs py-1 border-b border-black/[0.04] dark:border-white/[0.04] last:border-none"
-                >
-                  <span className="text-[#57534E] dark:text-[#9CA39E] font-medium">
-                    {row.name}
-                  </span>
-                  <span className="text-[#1C1917] dark:text-[#F4F1EA] font-semibold flex items-center gap-1">
-                    {row.val} <Check className="w-3 h-3 text-[#2D6A4F] dark:text-[#34D399]" />
+            {/* Card 1 — Nutrition Breakdown Card */}
+            <div
+              className={`absolute left-1/2 -translate-x-1/2 w-[310px] sm:w-[340px] z-20 rounded-2xl bg-[#FCFBF9] dark:bg-[#18201C] border border-[#1C1917]/10 dark:border-white/15 p-4 shadow-[0_20px_50px_rgba(0,0,0,0.35)] transition-all duration-500 ease-out ${
+                scrollStep === 0
+                  ? "bottom-10 translate-y-16 opacity-0 pointer-events-none scale-95"
+                  : scrollStep === 1
+                  ? "bottom-10 translate-y-0 opacity-100 scale-100"
+                  : "bottom-[175px] translate-y-0 opacity-100 scale-[0.98]"
+              }`}
+            >
+              {/* Top Row: Thumbnail + Title + Total Cal */}
+              <div className="flex items-center gap-3 pb-2.5 border-b border-[#1C1917]/[0.08] dark:border-white/10">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=120&q=80"
+                  alt="Rice & Paneer Bowl"
+                  className="w-11 h-11 rounded-xl object-cover shrink-0"
+                />
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-serif font-bold text-sm text-[#1C1917] dark:text-[#F4F1EA] truncate">
+                    Rice &amp; Paneer Bowl
+                  </h4>
+                  <span className="text-xs font-semibold text-[#57534E] dark:text-[#9CA39E]">
+                    454 Cal
                   </span>
                 </div>
-              ))}
+              </div>
+
+              {/* 3 Clean Ingredient Rows */}
+              <div className="divide-y divide-[#1C1917]/[0.06] dark:divide-white/[0.06] mt-3 text-xs">
+                <div className="flex items-center justify-between py-1.5">
+                  <span className="text-[#1C1917] dark:text-[#F4F1EA] font-medium">
+                    Grilled Paneer
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[#57534E] dark:text-[#9CA39E]">
+                      1 katori · 242 Cal
+                    </span>
+                    <span className="text-[#2D6A4F] dark:text-[#34D399] font-bold">
+                      ✓
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between py-1.5">
+                  <span className="text-[#1C1917] dark:text-[#F4F1EA] font-medium">
+                    Steamed Basmati Rice
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[#57534E] dark:text-[#9CA39E]">
+                      0.5 cup · 159 Cal
+                    </span>
+                    <span className="text-[#2D6A4F] dark:text-[#34D399] font-bold">
+                      ✓
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between py-1.5">
+                  <span className="text-[#1C1917] dark:text-[#F4F1EA] font-medium">
+                    Broccoli &amp; Greens
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[#57534E] dark:text-[#9CA39E]">
+                      0.5 cup · 53 Cal
+                    </span>
+                    <span className="text-[#2D6A4F] dark:text-[#34D399] font-bold">
+                      ✓
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 2 — Orbit Actionable Insight Card */}
+            <div
+              className={`absolute left-1/2 -translate-x-1/2 bottom-3 w-[310px] sm:w-[340px] z-30 rounded-2xl bg-[#FCFBF9] dark:bg-[#141C18] border border-[#34D399]/35 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.45)] transition-all duration-500 ease-out ${
+                scrollStep < 2
+                  ? "translate-y-16 opacity-0 pointer-events-none scale-95"
+                  : "translate-y-0 opacity-100 scale-100"
+              }`}
+            >
+              <div className="flex items-center gap-1.5 text-xs font-bold text-[#2D6A4F] dark:text-[#34D399] mb-1.5">
+                <span>✦ Orbit</span>
+              </div>
+              <p className="text-xs leading-relaxed text-[#1C1917] dark:text-[#E6F4ED]">
+                &ldquo;This meal offers 38g of clean protein. However, white rice can spike afternoon glucose—take a 12-min walk before your 3 PM Deep Work block.&rdquo;
+              </p>
             </div>
           </div>
 
-          {/* Floating Stage 3: Orbit AI Action Card */}
-          <div
-            className={`w-[310px] sm:w-[350px] bg-[#18221C] text-[#F4F1EA] border border-[#34D399]/35 rounded-3xl p-4 shadow-2xl transition-all duration-500 z-30 ${
-              step === 2
-                ? "opacity-100 translate-y-0 relative mt-3 lg:absolute lg:bottom-12 lg:-right-8"
-                : "opacity-0 pointer-events-none translate-y-4 hidden lg:block lg:absolute lg:bottom-12 lg:-right-8"
-            }`}
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <Orbit3DCore size="sm" showRadar={false} />
-              <span className="text-xs font-bold text-[#6EE7B7]">
-                ✦ Orbit Cadence Insight
-              </span>
-            </div>
-            <p className="text-xs text-[#E6F4ED] leading-relaxed">
-              &ldquo;This meal hits 42g of protein cleanly. Since white rice can spike afternoon glucose, take a 10-min walk before your 3 PM Deep Work block.&rdquo;
+          {/* Dynamic Caption Line Directly Below the Phone */}
+          <div className="mt-6 text-center h-8 flex items-center justify-center">
+            <p className="text-xs sm:text-sm font-medium text-[#57534E] dark:text-[#9CA39E] transition-opacity duration-300">
+              {scrollStep === 0 && "Snap a photo of your meal."}
+              {scrollStep === 1 && "SATAT identifies all the foods in your photo & tracks it for you."}
+              {scrollStep === 2 && "Orbit AI gives you instant actionable insights to help you improve."}
             </p>
           </div>
         </div>

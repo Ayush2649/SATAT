@@ -90,32 +90,24 @@ describe("Sprint 7.8: Landing Page Complete Overhaul Verification", () => {
     expect(problemSectionSource).toContain("135g Protein Target Closed · 24-Day Flow Intact");
   });
 
-  it("4. HealthifySnap-Style Meal Scan Showcase (#snap) features 3-step workflow, phone mockup, and instant macro card", () => {
+  it("4. HealthifySnap-Style Meal Scan Showcase (#snap) features sticky viewport and auto-popping cards", () => {
     expect(mealScanSource).toContain('id="snap"');
-    expect(mealScanSource).toContain("SATAT AI VISION · ZERO BARCODE ANXIETY");
-    expect(mealScanSource).toContain("Track your food with just a snap.");
-    expect(mealScanSource).toContain("1. Snap Plate");
-    expect(mealScanSource).toContain("2. Instant Macros");
-    expect(mealScanSource).toContain("3. Orbit Action");
-    expect(mealScanSource).toContain("High-Protein Rice &amp; Paneer Bowl");
-    expect(mealScanSource).toContain("640 kcal");
-    expect(mealScanSource).toContain("Grilled Paneer (150g)");
-    expect(mealScanSource).toContain("✦ Orbit Cadence Insight");
-    expect(mealScanSource).toContain("Orbit3DCore");
+    expect(mealScanSource).toContain("Track Your Food With Just a Snap");
+    expect(mealScanSource).toContain("Rice &amp; Paneer Bowl");
+    expect(mealScanSource).toContain("454 Cal");
+    expect(mealScanSource).toContain("Grilled Paneer");
+    expect(mealScanSource).toContain("✦ Orbit");
   });
 
-  it("5. Orbit Section (#orbit) showcases <Orbit3DCore size='xl' state='active' /> with 6 interactive prompt pills", () => {
+  it("5. Orbit Section (#orbit) showcases 3D depth-of-field stage with <Orbit3DCore /> and floating prompt cloud", () => {
     expect(orbitSectionSource).toContain('id="orbit"');
-    expect(orbitSectionSource).toContain("QUIET GUIDANCE");
-    expect(orbitSectionSource).toContain("A companion,");
-    expect(orbitSectionSource).toContain("not a dashboard");
-    expect(orbitSectionSource).toContain('<Orbit3DCore size="xl" state="active"');
+    expect(orbitSectionSource).toContain("Try Orbit — Your Personal AI Biological Copilot");
+    expect(orbitSectionSource).toContain('<Orbit3DCore size="lg" state="active"');
     expect(orbitSectionSource).toContain("How was my protein intake today?");
-    expect(orbitSectionSource).toContain("Condense my Upper Body lift to 35m");
-    expect(orbitSectionSource).toContain("How do I improve my deep sleep score?");
-    expect(orbitSectionSource).toContain("Suggest a 40g protein vegetarian dinner");
-    expect(orbitSectionSource).toContain("Why is my training readiness 92%?");
-    expect(orbitSectionSource).toContain("Shift Deep Work to my dopamine peak");
+    expect(orbitSectionSource).toContain("Condense my Upper Body workout to 35m");
+    expect(orbitSectionSource).toContain("How to improve my deep sleep score?");
+    expect(orbitSectionSource).toContain("High protein vegetarian dinner ideas?");
+    expect(orbitSectionSource).toContain("Shift Deep Work to dopamine peak");
   });
 
   it("6. Streak Proof Section (#proof) features spacious milestone tabs and dark-mode high-contrast comparison pills", () => {

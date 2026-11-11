@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { useSession, signIn } from "next-auth/react";
+import Logo from "@/components/Logo";
 
 export default function LandingNav() {
   const { data: session } = useSession();
@@ -13,11 +14,9 @@ export default function LandingNav() {
         aria-label="Main Navigation"
         className="pointer-events-auto max-w-[1440px] mx-auto bg-[#FCFBF9]/88 dark:bg-[#141916]/88 backdrop-blur-xl border border-[#1C1917]/[0.08] dark:border-white/[0.10] rounded-full px-4 sm:px-6 py-2.5 shadow-[0_10px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_12px_36px_rgba(0,0,0,0.55)] flex items-center justify-between"
       >
-        {/* Left: Geometric S mark in a rounded circle + satat. */}
+        {/* Left: SATAT Geometric S Emblem Mark + satat. wordmark */}
         <Link href="/" className="flex items-center gap-2.5 group shrink-0">
-          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#191D1A] dark:bg-[#2D6A4F] text-[#FCFBF9] flex items-center justify-center font-serif font-bold text-sm sm:text-base shadow-xs group-hover:scale-105 transition-transform">
-            S
-          </div>
+          <Logo size={24} className="rounded-md transition-transform duration-200 group-hover:scale-105" priority />
           <span className="font-serif font-bold text-lg sm:text-xl text-[#1C1917] dark:text-[#F4F1EA]">
             satat.
           </span>

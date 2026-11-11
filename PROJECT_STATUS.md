@@ -1257,6 +1257,32 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ---
 
+### ✅ Sprint 7.9: Restored SATAT Geometric Logo, HealthifySnap Sticky Scroll & Orbit 3D Stage (`app/page.tsx`, `LandingNav.tsx`, `MealScanShowcase.tsx`, `OrbitSection.tsx`, `tests/sprint7-9/sprint7-9.test.ts`)
+- **Restored SATAT Geometric S Logo Mark (`LandingNav.tsx`)**:
+  - Removed plain-text letter "S" inside green circle.
+  - Rendered official `<Logo size={24} className="rounded-md transition-transform duration-200 group-hover:scale-105" priority />` from `components/Logo.tsx`, matching dashboard header and footer.
+- **HealthifySnap Sticky-Scroll Meal Scan Showcase (`MealScanShowcase.tsx`, `id="snap"`)**:
+  - Converted section into a `280vh` scroll track with sticky `100vh` viewport and passive normalized scroll progress listener (`0` to `1`).
+  - Automatically transitions between 3 stages based on user scroll position (`scrollStep = progress < 0.33 ? 0 : progress < 0.67 ? 1 : 2`), reversing smoothly when scrolling up.
+  - Eliminated manual step buttons completely.
+  - Left column: `SatatSnap`, `Track Your Food With Just a Snap`, subtitle, and `Try Snap with a Photo` pill button.
+  - Right column: Sleek iPhone mockup with overhead food photo, camera HUD mode text (`VIDEO · PHOTO · PORTRAIT · PANO`), and white shutter.
+  - Card 1 (Nutrition Breakdown): `Rice & Paneer Bowl`, `454 Cal`, 3 single-line ingredient rows (`Grilled Paneer`, `Steamed Basmati Rice`, `Broccoli & Greens`). Slides up to `bottom-10` at step 1 and moves to `bottom-[175px]` at step 2.
+  - Card 2 (`✦ Orbit` Actionable Insight): Docks at `bottom-3` at step 2 with clean protein and glucose walk guidance.
+  - Dynamic caption line cross-fades automatically below the phone based on `scrollStep`.
+- **HealthifyMe 3D Depth-of-Field Orbit Stage (`OrbitSection.tsx`, `id="orbit"`)**:
+  - Replaced cramped horizontal prompt row with full-width atmospheric radial stage (`min-h-[540px] sm:min-h-[620px]`).
+  - Center focal stack: `<Orbit3DCore size="lg" state="active" />`, `Try Orbit — Your Personal AI Biological Copilot`, subtitle, and `Talk to Orbit AI →` CTA button.
+  - 8 non-wrapping floating prompt cards in 2 distinct depth layers:
+    - 4 Crisp foreground cards (`z-10 opacity-95 shadow-lg animate-[satatFloatSlow_5s_ease-in-out_infinite]`): Protein intake, deep sleep score, vegetarian dinner, and 35m workout condensation.
+    - 4 Softly blurred background depth cards (`z-0 blur-[1.5px] opacity-45 scale-90 animate-[satatFloatDelayed_6.5s_ease-in-out_infinite]`): Recovery readiness, 135g protein target, dopamine peak, and 7-day strength trend.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite (`tests/sprint7-9/sprint7-9.test.ts`, `tests/sprint7-8/sprint7-8.test.ts`, `tests/landing/production-landing.test.tsx`): **14/14 tests passed (100%)**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
 - **Vitest Suite**: `668 passed | 26 skipped` across all 58 test suites (0 failing).
@@ -1267,4 +1293,4 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 - **Diet Tests**: `213/213 passed` across all 15 test suites in `tests/diet/*`.
 - **Workout Tests**: `42/42 passed` across `tests/workouts/*`.
 - **Onboarding Tests**: `78/78 passed` across `tests/onboarding/*`.
-- **Landing Tests**: `9/9 passed` across `tests/landing/*` and `tests/sprint7-8/*`.
+- **Landing Tests**: `14/14 passed` across `tests/landing/*`, `tests/sprint7-8/*`, and `tests/sprint7-9/*`.
