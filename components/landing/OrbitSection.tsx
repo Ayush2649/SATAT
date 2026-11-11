@@ -17,7 +17,7 @@ export default function OrbitSection() {
   return (
     <section
       id="orbit"
-      className="relative w-full max-w-[1440px] mx-auto min-h-[540px] sm:min-h-[620px] flex flex-col items-center justify-center px-4 py-20 overflow-hidden bg-[#F6F3EC] dark:bg-[#0A0D0B] transition-colors"
+      className="relative w-full max-w-[1440px] mx-auto min-h-[540px] sm:min-h-[620px] flex flex-col items-center justify-center px-4 pt-6 pb-20 sm:py-20 overflow-hidden bg-[#F6F3EC] dark:bg-[#0A0D0B] transition-colors"
     >
       {/* Inline styles for 3D depth-of-field floating animation keyframes */}
       <style>{`

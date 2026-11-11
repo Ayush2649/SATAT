@@ -1283,6 +1283,23 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - Vitest suite (`tests/sprint7-9/sprint7-9.test.ts`, `tests/sprint7-8/sprint7-8.test.ts`, `tests/landing/production-landing.test.tsx`): **14/14 tests passed (100%)**.
   - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
 
+### ✅ Sprint 7.10: iPhone 17 Pro Max Scale Mockup & Tight Caption/Pill Spacing (`MealScanShowcase.tsx`, `OrbitSection.tsx`)
+- **iPhone 17 Pro Max Flagship Scale Mockup (`MealScanShowcase.tsx`)**:
+  - Replaced the previous 280px × 440px short rectangle with authentic iPhone 17 Pro Max physical proportions: `312px` width by `600px` height (~1.92:1 / 19.5:9 flagship aspect ratio) with slim `7px` titanium bezel (`rounded-[48px]`).
+  - Centered dynamic island pill (`w-24 h-5` with camera lens dot at `top-3.5`).
+  - Expanded camera viewfinder frame (`top-14 bottom-32`) and bottom shutter trigger (`bottom-4`).
+  - Recalibrated card layout inside the taller phone canvas:
+    - Card 1 (`Rice & Paneer Bowl`, `454 Cal`): `CARD1_TOP_PX: 260`, width `326px` (slight tactile overhang), `CARD1_NUDGE_PX: 36`.
+    - Card 2 (`Orbit` biological insight): `CARD2_TOP_PX: 396`, width `302px`.
+    - Both cards layer seamlessly within the phone's vertical screen while keeping the top meal photo and bottom bezels visible.
+- **Shortened Distance Between Phone and Captions / Pills**:
+  - **Captions directly below phone**: Reduced `UNIT_GAP_PX` from `16px` to `8px` and `CAPTION_HEIGHT_PX` from `80px` to `46px` with `text-sm sm:text-base leading-tight`, decreasing vertical distance from ~45px to ~12px–20px so the caption tightly hugs the bottom of the phone.
+  - **Orbit mobile prompt pills**: Changed top padding in `OrbitSection.tsx` on mobile from `py-20` (80px) to `pt-6 pb-20 sm:py-20` (24px), bringing the floating query pills (`How was my protein intake today?`, etc.) close to the preceding section without dead scroll voids.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite (`tests/sprint7-9/sprint7-9.test.ts`, `tests/landing/production-landing.test.tsx`): **7/7 tests passed (100%)**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
 ---
 
 ## 4. Current Quality & Build Metrics
@@ -1296,3 +1313,22 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 - **Workout Tests**: `42/42 passed` across `tests/workouts/*`.
 - **Onboarding Tests**: `78/78 passed` across `tests/onboarding/*`.
 - **Landing Tests**: `14/14 passed` across `tests/landing/*`, `tests/sprint7-8/*`, and `tests/sprint7-9/*`.
+
+
+## SatatSnap scroll-scrub rebuild (mobile-first)
+
+**Modified files**
+- `components/landing/MealScanShowcase.tsx`: rebuilt. Pinned, clipped stage below the 80px header; 3 scrubbed steps (snap → identify → Orbit insight); caption cross-slides; cards overhang the phone; pure `computeSnapFrame(progress)` drives all transforms; styles written via refs (no per-frame React re-render); reduced-motion static fallback kept.
+- `app/page.tsx`: `<main>` `overflow-x-hidden` → `overflow-x-clip`.
+
+**Resolved bugs**
+- Root cause of the "stage scrolls away / steps 2–3 never show / dead black zone": `overflow-x-hidden` on `<main>` turns it into a scroll container, which silently disables `position: sticky` for every descendant. `overflow-x-clip` clips the same overflow without creating one.
+- Cards were nested inside the phone's `overflow-hidden` box, so they were clipped and could never overlap the phone edge.
+- Scroll progress ignored the 80px sticky offset.
+
+**Verification (see delivery notes)**
+- `tests/sprint7-9` 5/5 pass (run through a minimal vitest shim; real `vitest`, `tsc` and `npm run build` still need to be run locally).
+- Not run: `tests/landing` (needs missing `FinalCTA`/`MobileFinalCTA`), `npm run build`.
+
+**Open**
+- Desktop (>=1024px) layout is a provisional two-column version, not matched to Healthify desktop.
