@@ -61,8 +61,8 @@ describe("Stitch Editorial Landing Page with Header, Footer & Continuous Proof",
     expect(html).toContain("Grilled Paneer");
     expect(html).toContain("Steamed Basmati Rice");
     expect(html).toContain("Broccoli &amp; Greens");
-    expect(html).toContain("✦ Orbit");
-    expect(html).toContain("This meal offers 38g of clean protein.");
+    expect(html).toContain("Orbit");
+    expect(html).toContain("Good protein. Your 10:15 PM window is open: add Greek yogurt to close the 28g gap.");
 
     // Section 5: Orbit Section (3D Depth-of-Field Floating Prompt Stage)
     expect(html).toContain("Try Orbit — Your Personal AI Biological Copilot");

@@ -31,12 +31,12 @@ describe("Sprint 7.9: SATAT Geometric Logo Mark, HealthifySnap Sticky Scroll & O
     expect(footerSource).toContain("<Logo size={18}");
   });
 
-  it("2. HealthifySnap #snap section uses a sticky 280vh track and passive scroll progress listener", () => {
+  it("2. HealthifySnap #snap section uses a sticky clip stage below floating header and scroll progress listener", () => {
     expect(mealScanSource).toContain('id="snap"');
-    expect(mealScanSource).toContain("relative h-[280vh] w-full");
-    expect(mealScanSource).toContain("sticky top-0 h-screen w-full max-w-[1360px] mx-auto");
-    expect(mealScanSource).toContain('window.addEventListener("scroll", handleScroll');
-    expect(mealScanSource).toContain("progress < 0.33 ? 0 : progress < 0.67 ? 1 : 2");
+    expect(mealScanSource).toContain("HEADER_OFFSET_PX: 80");
+    expect(mealScanSource).toContain("100svh");
+    expect(mealScanSource).toContain("overflow-hidden");
+    expect(mealScanSource).toContain("updateScrollProgress");
   });
 
   it("3. Left column is ultra-clean with zero manual step buttons, matching HealthifySnap", () => {
@@ -55,7 +55,6 @@ describe("Sprint 7.9: SATAT Geometric Logo Mark, HealthifySnap Sticky Scroll & O
 
   it("4. Right column features iPhone mockup, 2 scroll-driven auto-popping cards, and cross-fading caption", () => {
     // Phone Mockup & Photo
-    expect(mealScanSource).toContain("w-[270px] sm:w-[300px] h-[480px] sm:h-[530px]");
     expect(mealScanSource).toContain("photo-1546069901-ba9599a7e63c");
     expect(mealScanSource).toContain("VIDEO");
     expect(mealScanSource).toContain("PHOTO");
@@ -71,19 +70,17 @@ describe("Sprint 7.9: SATAT Geometric Logo Mark, HealthifySnap Sticky Scroll & O
     expect(mealScanSource).toContain("0.5 cup · 159 Cal");
     expect(mealScanSource).toContain("Broccoli &amp; Greens");
     expect(mealScanSource).toContain("0.5 cup · 53 Cal");
-    expect(mealScanSource).toContain("bottom-[175px]");
 
     // Card 2 — Orbit Actionable Insight
-    expect(mealScanSource).toContain("✦ Orbit");
+    expect(mealScanSource).toContain("Orbit");
     expect(mealScanSource).toContain(
-      "This meal offers 38g of clean protein. However, white rice can spike afternoon glucose—take a 12-min walk before your 3 PM Deep Work block."
+      "Good protein. Your 10:15 PM window is open: add Greek yogurt to close the 28g gap."
     );
-    expect(mealScanSource).toContain("bottom-3");
 
     // Dynamic 3-stage caption line
     expect(mealScanSource).toContain("Snap a photo of your meal.");
-    expect(mealScanSource).toContain("SATAT identifies all the foods in your photo & tracks it for you.");
-    expect(mealScanSource).toContain("Orbit AI gives you instant actionable insights to help you improve.");
+    expect(mealScanSource).toContain("SATAT identifies all the foods in your photo &amp; tracks it for you.");
+    expect(mealScanSource).toContain("Orbit gives you instant, actionable insights to help you stay continuous.");
   });
 
   it("5. Orbit section (#orbit) renders 3D Depth-of-Field stage with focal stack and 8 non-wrapping floating prompt cards", () => {

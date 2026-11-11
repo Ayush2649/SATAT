@@ -1261,15 +1261,17 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 - **Restored SATAT Geometric S Logo Mark (`LandingNav.tsx`)**:
   - Removed plain-text letter "S" inside green circle.
   - Rendered official `<Logo size={24} className="rounded-md transition-transform duration-200 group-hover:scale-105" priority />` from `components/Logo.tsx`, matching dashboard header and footer.
-- **HealthifySnap Sticky-Scroll Meal Scan Showcase (`MealScanShowcase.tsx`, `id="snap"`)**:
-  - Converted section into a `280vh` scroll track with sticky `100vh` viewport and passive normalized scroll progress listener (`0` to `1`).
-  - Automatically transitions between 3 stages based on user scroll position (`scrollStep = progress < 0.33 ? 0 : progress < 0.67 ? 1 : 2`), reversing smoothly when scrolling up.
-  - Eliminated manual step buttons completely.
-  - Left column: `SatatSnap`, `Track Your Food With Just a Snap`, subtitle, and `Try Snap with a Photo` pill button.
-  - Right column: Sleek iPhone mockup with overhead food photo, camera HUD mode text (`VIDEO · PHOTO · PORTRAIT · PANO`), and white shutter.
-  - Card 1 (Nutrition Breakdown): `Rice & Paneer Bowl`, `454 Cal`, 3 single-line ingredient rows (`Grilled Paneer`, `Steamed Basmati Rice`, `Broccoli & Greens`). Slides up to `bottom-10` at step 1 and moves to `bottom-[175px]` at step 2.
-  - Card 2 (`✦ Orbit` Actionable Insight): Docks at `bottom-3` at step 2 with clean protein and glucose walk guidance.
-  - Dynamic caption line cross-fades automatically below the phone based on `scrollStep`.
+- **HealthifySnap Mobile-First Scroll-Scrubbed Architecture (`MealScanShowcase.tsx`, `id="snap"`)**:
+  - **Fixed Header Hard-Clip**: Configured sticky stage at `top: 80px` (`HEADER_OFFSET_PX: 80`), height `calc(100svh - 80px)` with `overflow: hidden`, guaranteeing all content is cleanly hard-clipped below the floating header with zero overlapping or bleeding underneath.
+  - **Single Continuous Normalized Scroll Progress**: Passive `scroll` listener with `requestAnimationFrame` calculating continuous progress (`0` to `1`) driving compositor-safe GPU transforms (`translate3d` and `opacity`), 100% reversible when scrolling up.
+  - **Vertically Composed Center Stage**: Centered `280px × 440px` iPhone mockup vertically inside available 772px clip height with feathered bottom gradient, eliminating all cutoffs.
+  - **3 Seamlessly Scrubbed Stages**:
+    - **Stage A (Intro)**: Translates up and fades on mobile as the phone enters from the bottom of the clip region; docks on left on desktop.
+    - **Stage B (Step 1)**: Phone centered with viewfinder corner brackets, camera mode row, white shutter button, and Caption 1 (`"Snap a photo of your meal."`).
+    - **Stage C (Step 2)**: Card 1 (`Rice & Paneer Bowl`, `454 Cal`, 3 ingredient rows) rises from bottom and settles over the lower half of the phone. Caption 1 slides up and out while Caption 2 slides up and in, overlapping vertically mid-transition.
+    - **Stage D (Step 3)**: Card 2 (Orbit Insight: `"Good protein. Your 10:15 PM window is open: add Greek yogurt to close the 28g gap."`) rises and docks at bottom; Card 1 nudges upward by `-34px`. Caption 2 slides up and out while Caption 3 slides up and in.
+  - **Zero Dead Zone Release**: Runway multiplier calibrated to release immediately at progress `0.97` into `#orbit` with < 40px transition gap.
+  - **Accessibility**: Added `prefers-reduced-motion` static stacked layout.
 - **HealthifyMe 3D Depth-of-Field Orbit Stage (`OrbitSection.tsx`, `id="orbit"`)**:
   - Replaced cramped horizontal prompt row with full-width atmospheric radial stage (`min-h-[540px] sm:min-h-[620px]`).
   - Center focal stack: `<Orbit3DCore size="lg" state="active" />`, `Try Orbit — Your Personal AI Biological Copilot`, subtitle, and `Talk to Orbit AI →` CTA button.

@@ -96,7 +96,7 @@ describe("Sprint 7.8: Landing Page Complete Overhaul Verification", () => {
     expect(mealScanSource).toContain("Rice &amp; Paneer Bowl");
     expect(mealScanSource).toContain("454 Cal");
     expect(mealScanSource).toContain("Grilled Paneer");
-    expect(mealScanSource).toContain("✦ Orbit");
+    expect(mealScanSource).toContain("Orbit");
   });
 
   it("5. Orbit Section (#orbit) showcases 3D depth-of-field stage with <Orbit3DCore /> and floating prompt cloud", () => {
