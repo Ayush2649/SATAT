@@ -1212,6 +1212,51 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ---
 
+### ✅ Sprint 7.8: Complete Landing Page Overhaul (`app/page.tsx`, `LandingNav.tsx`, `Hero.tsx`, `ProblemSection.tsx`, `MealScanShowcase.tsx`, `OrbitSection.tsx`, `ProgressSection.tsx`, `Footer.tsx`, `DesktopLandingPage.tsx`, `MobileLandingPage.tsx`, `Orbit3DCore.tsx`, `OrbitMark.tsx`, `tests/sprint7-8/sprint7-8.test.ts`, `tests/landing/production-landing.test.tsx`)
+- **Floating Glassmorphic Pill Header (`LandingNav.tsx` & `MobileLandingNav.tsx`)**:
+  - Replaced clipping sticky bar with a non-clipping fixed outer layout: `<header className="fixed top-4 inset-x-0 z-50 px-4 sm:px-8 pointer-events-none">`.
+  - Floating pill capsule: `pointer-events-auto max-w-[1440px] mx-auto bg-[#FCFBF9]/88 dark:bg-[#141916]/88 backdrop-blur-xl border border-[#1C1917]/[0.08] dark:border-white/[0.10] rounded-full px-4 sm:px-6 py-2.5 shadow-[0_10px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_12px_36px_rgba(0,0,0,0.55)] flex items-center justify-between`.
+  - Left: Circle `S` mark + `satat.` (`font-serif font-bold text-lg text-[#1C1917] dark:text-[#F4F1EA]`).
+  - Center (desktop `hidden md:flex gap-8 text-sm`): Anchor navigation links to `#rhythm` (`Timeline`), `#snap` (`AI Snap`), `#orbit` (`Orbit`), and `#proof` (`Proof`).
+  - Right: `"Dashboard →"` pill if authenticated; separated `"Sign in"` button and primary Coral Ember `"Start free →"` pill (`#E05A47`) if unauthenticated.
+- **Separated Hero CTAs & High-Contrast Google OAuth Button (`Hero.tsx` & `MobileHero.tsx`)**:
+  - Button 1: Dedicated `"Start free →"` primary Coral Ember pill (`#E05A47`), routing to `/onboarding`.
+  - Button 2: Separated `"Sign in with Google"` high-contrast button (`bg-[#FCFBF9] dark:bg-[#161D19] text-[#1C1917] dark:text-[#F4F1EA] border border-[#1C1917]/15 dark:border-white/15`) with the official 4-color Google "G" SVG logo (`#4285F4`, `#34A853`, `#FBBC05`, `#EA4335`), invoking `signIn("google", { callbackUrl: "/dashboard" })`.
+- **Interactive 4-Stage Biological Cadence Timeline (`ProblemSection.tsx` & `MobileProblemSection.tsx`, `id="rhythm"`)**:
+  - Eyebrow: `DAILY BIOLOGICAL CADENCE` (`text-[#E05A47] dark:text-[#FF7A68]`).
+  - Headline: `A single day, in seamless motion.`
+  - 4 canonical biological stages:
+    1. `07:30 AM · DAWN CHECK-IN`: Morning Readiness & Plan Sync (`7h 45m Sleep Synced · 92% Readiness`).
+    2. `01:15 PM · MIDDAY FUEL`: Zero-Anxiety Plate Recognition (`640 kcal · 42g Protein Logged in 2s`).
+    3. `06:30 PM · DUSK RECALIBRATION`: Adaptive Hypertrophy Session (`Upper Body A Condensed → 35m Compound Focus`).
+    4. `10:15 PM · NOCTURNAL RECOVERY`: Protein Window & Cortisol Downshift (`135g Protein Target Closed · 24-Day Flow Intact`).
+  - Desktop: 4-column horizontal track (`grid grid-cols-4 gap-6`) with top time nodes and horizontal connector bar.
+  - Mobile: Clean vertical timeline with photos, telemetry badges, and connecting vertical spine.
+- **HealthifySnap-Style Meal Scan Showcase (`MealScanShowcase.tsx`, `id="snap"`)**:
+  - Left column: `SATAT AI VISION · ZERO BARCODE ANXIETY`, headline `Track your food with just a snap.`, 3 interactive step pills (`1. Snap Plate`, `2. Instant Macros`, `3. Orbit Action`), and `"Try AI Plate Scanner →"` CTA link.
+  - Right column: iPhone mockup (`w-[290px] sm:w-[320px] h-[540px]`) displaying high-protein plate photo (`photo-1546069901-ba9599a7e63c`), scanning viewfinder brackets (Stage 1), docked Macro Breakdown Card with 640 kcal (Stage 2), and Orbit AI Action Card with `<Orbit3DCore size="sm" />` (Stage 3).
+- **Living Orbit Section with `<Orbit3DCore />` & Floating Prompt Cloud (`OrbitSection.tsx`, `id="orbit"`)**:
+  - Removed old lotus flower SVG; centered `<Orbit3DCore size="xl" state="active" />` inside luminous radial stage (`w-48 h-48 sm:w-56 sm:h-56`).
+  - Added support for `"xl"` container size (`224px`) in `Orbit3DCore.tsx` and `"active"` state in `OrbitMark.tsx`.
+  - 6 interactive floating prompt pills around the core (3 on left, 3 on right on desktop; horizontal chip cloud on mobile):
+    - `How was my protein intake today?`
+    - `Condense my Upper Body lift to 35m`
+    - `How do I improve my deep sleep score?`
+    - `Suggest a 40g protein vegetarian dinner`
+    - `Why is my training readiness 92%?`
+    - `Shift Deep Work to my dopamine peak`
+  - Clicking any pill dynamically updates the live Orbit quote and real-time adjustment card.
+- **Spaced Streak Milestone Tabs & High-Contrast Dark Mode Comparison Badges (`ProgressSection.tsx`, `id="proof"`)**:
+  - Generously padded milestone tab bar (`bg-[#EFECE4] dark:bg-[#1C221E] p-1.5 sm:p-2 rounded-full gap-2 sm:gap-3`) with `px-4 sm:px-6 py-2.5` buttons.
+  - 28-day organic rhythm matrix showing start, healed, and flow states.
+  - Dark mode native comparison pills: Left `Traditional Apps: Streak Reset to 0 ✕` in `bg-[#FEE2E2] dark:bg-[#2A1414] text-[#B91C1C] dark:text-[#FCA5A5]`; Right `Satat Rhythm: 14 Days Unbroken · Auto-Bridged 2 Rest Days ✓` in `bg-[#D8F3DC] dark:bg-[#132A1F] text-[#1B4332] dark:text-[#6EE7B7]`.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest test suite (`tests/sprint7-8/sprint7-8.test.ts` & `tests/landing/production-landing.test.tsx`): **9/9 tests passed (100%)**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+---
+
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
 - **Vitest Suite**: `668 passed | 26 skipped` across all 58 test suites (0 failing).
@@ -1222,4 +1267,4 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 - **Diet Tests**: `213/213 passed` across all 15 test suites in `tests/diet/*`.
 - **Workout Tests**: `42/42 passed` across `tests/workouts/*`.
 - **Onboarding Tests**: `78/78 passed` across `tests/onboarding/*`.
-- **Landing Tests**: `3/3 passed` across `tests/landing/*`.
+- **Landing Tests**: `9/9 passed` across `tests/landing/*` and `tests/sprint7-8/*`.

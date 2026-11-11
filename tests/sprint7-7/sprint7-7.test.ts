@@ -85,3 +85,4 @@ describe("Sprint 7.7: Shimmer Contrast, 7-Day Calendar Strip & 12-Column Geometr
     expect(loadingDashboard).toContain("<TodayPageSkeleton />");
   });
 });
+
