@@ -10,6 +10,7 @@ export default function AccountPrivacySettings() {
   const handleSignOut = async () => {
     setSigningOut(true);
     await signOut({ callbackUrl: "/" });
+    window.location.href = "/";
   };
 
   return (

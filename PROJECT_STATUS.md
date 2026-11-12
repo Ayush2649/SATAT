@@ -1300,6 +1300,24 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - Vitest suite (`tests/sprint7-9/sprint7-9.test.ts`, `tests/landing/production-landing.test.tsx`): **7/7 tests passed (100%)**.
   - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
 
+### ✅ Sprint 8.0: Eradicate Standalone "Welcome to SATAT" Login Screen & Route All Unauthenticated Visitors to Landing Page (`app/signin/page.tsx`, `app/login/page.tsx`, `middleware.ts`, `lib/auth.ts`, `app/dashboard/layout.tsx`, `components/Navigation.tsx`, `components/landing/Footer.tsx`)
+- **Total Eradication of Standalone Login Screen**:
+  - Replaced `app/signin/page.tsx` with an immediate server-side redirect to `"/"` (`redirect("/")`).
+  - Created `app/login/page.tsx` with an immediate server-side redirect to `"/"` (`redirect("/")`).
+  - Confirmed **0 remaining occurrences** of `"Welcome to SATAT"` and `"Sign in to continue your journey"` across the entire codebase.
+- **Unauthenticated Route Guards**:
+  - Configured `middleware.ts` with `pages: { signIn: "/" }` using NextAuth `withAuth` to automatically direct any unauthenticated hits on `/dashboard/:path*` to the Landing Page (`/`).
+  - Configured `lib/auth.ts` `authOptions.pages.signIn` to `"/"`.
+  - Added an immediate server guard in `app/dashboard/layout.tsx`: `if (!session || !userId) redirect("/")`.
+- **Sign-Out Handlers**:
+  - Updated all navigation and profile sign-out handlers (`components/Navigation.tsx`, `components/settings/AccountPrivacySettings.tsx`, `app/onboarding/under-18/page.tsx`) to execute `await signOut({ callbackUrl: "/" })` followed by `window.location.href = "/"`, ensuring users always land on the clean Landing Page upon sign-out.
+- **Landing Page Sign-In Triggers**:
+  - Converted the `"Sign in"` link in `components/landing/Footer.tsx` from `<Link href="/signin">` into a button triggering `signIn("google", { callbackUrl: "/dashboard" })`, consistent with `LandingNav.tsx`, `Hero.tsx`, and `FinalCTA.tsx`.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **62/62 test files passed, 689/689 tests passed (100%)**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 34 static and dynamic routes compiled).
+
 ---
 
 ## 4. Current Quality & Build Metrics

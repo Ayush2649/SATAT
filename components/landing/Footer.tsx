@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { signIn } from "next-auth/react";
 import Logo from "@/components/Logo";
 
 export default function Footer() {
@@ -37,9 +38,13 @@ export default function Footer() {
             <a href="#proof" className="hover:text-[#1C1917] dark:hover:text-[#F4F1EA] transition-colors">
               Proof
             </a>
-            <Link href="/signin" className="hover:text-[#1C1917] dark:hover:text-[#F4F1EA] transition-colors">
+            <button
+              type="button"
+              onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+              className="hover:text-[#1C1917] dark:hover:text-[#F4F1EA] transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-medium"
+            >
               Sign in
-            </Link>
+            </button>
           </div>
         </div>
       </div>

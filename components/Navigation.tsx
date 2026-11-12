@@ -436,7 +436,10 @@ export default function Navigation() {
                 </div>
               </div>
               <button
-                onClick={() => signOut({ callbackUrl: "/" })}
+                onClick={async () => {
+                  await signOut({ callbackUrl: "/" });
+                  window.location.href = "/";
+                }}
                 title="Sign out"
                 aria-label="Sign out"
                 className={cn(
@@ -567,9 +570,10 @@ export default function Navigation() {
                     <span>Settings & Profile</span>
                   </Link>
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       setShowProfileMenu(false);
-                      signOut({ callbackUrl: "/" });
+                      await signOut({ callbackUrl: "/" });
+                      window.location.href = "/";
                     }}
                     className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-[#E05A47] hover:bg-red-500/10 transition-colors cursor-pointer"
                   >
@@ -668,9 +672,10 @@ export default function Navigation() {
                       <span>Settings & Profile</span>
                     </Link>
                     <button
-                      onClick={() => {
+                      onClick={async () => {
                         setShowProfileMenu(false);
-                        signOut({ callbackUrl: "/" });
+                        await signOut({ callbackUrl: "/" });
+                        window.location.href = "/";
                       }}
                       className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium transition-colors hover:bg-red-500/10 cursor-pointer"
                       style={{ color: "var(--error)" }}
