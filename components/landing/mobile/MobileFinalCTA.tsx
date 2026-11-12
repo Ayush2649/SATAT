@@ -2,6 +2,7 @@
 
 import React, { useRef } from "react";
 import { signIn } from "next-auth/react";
+import { useLandingAuth } from "@/hooks/useLandingAuth";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
@@ -12,6 +13,7 @@ if (typeof window !== "undefined") {
 }
 
 export default function MobileFinalCTA() {
+  const { handleStartOrSignIn } = useLandingAuth();
   const sectionRef = useRef<HTMLElement>(null);
   const glowRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -117,7 +119,7 @@ export default function MobileFinalCTA() {
         <div className="relative z-10 shrink-0 mt-6 lg:mt-0 lg:w-[320px]">
           <button
             type="button"
-            onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+            onClick={() => handleStartOrSignIn("/dashboard")}
             className="w-full bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full py-4 text-sm font-semibold mt-6 flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
           >
             <span>Begin in 60 seconds</span>

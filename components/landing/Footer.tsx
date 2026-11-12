@@ -2,10 +2,11 @@
 
 import React from "react";
 import Link from "next/link";
-import { signIn } from "next-auth/react";
+import { useLandingAuth } from "@/hooks/useLandingAuth";
 import Logo from "@/components/Logo";
 
 export default function Footer() {
+  const { handleStartOrSignIn } = useLandingAuth();
   return (
     <footer className="border-t border-[rgba(28,25,23,0.07)] dark:border-white/10 bg-[#F6F3EC] dark:bg-[#0A0D0B] transition-colors">
       <div className="w-full max-w-[1360px] xl:max-w-[1480px] mx-auto px-6 md:px-12 lg:px-16 py-8 text-xs text-[#57534E] dark:text-[#9CA39E]">
@@ -40,7 +41,7 @@ export default function Footer() {
             </a>
             <button
               type="button"
-              onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+              onClick={() => handleStartOrSignIn("/dashboard")}
               className="hover:text-[#1C1917] dark:hover:text-[#F4F1EA] transition-colors cursor-pointer bg-transparent border-0 p-0 text-xs font-medium"
             >
               Sign in
