@@ -67,11 +67,10 @@ describe("Sprint 8.3: Honest Telemetry, Zero-States & Cognitive Declutter Verifi
     expect(homeSource).toContain('href="/dashboard/tasks"');
   });
 
-  it("7. Enables reactive date switching across 7-day week strip and collapsible mobile charts", () => {
+  it("7. Enables reactive date switching across 7-day week strip and always renders momentum & streak sections", () => {
     expect(homeSource).toContain("selectedDate, setSelectedDate");
-    expect(homeSource).toContain("showMobileTrends, setShowMobileTrends");
-    expect(homeSource).toContain("Show Weekly Momentum & Streak Calendar ⌄");
-    expect(homeSource).toContain("Hide Weekly Momentum & Streak Calendar ⌃");
+    expect(homeSource).toContain("<ProgressTrendChart");
+    expect(homeSource).toContain("<ConsistencyHeatmap");
   });
 
   it("8. Preserves all critical test contracts from previous sprints", () => {

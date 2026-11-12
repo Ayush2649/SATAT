@@ -1382,11 +1382,27 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - Vitest suite: **65/65 test files passed, 707/707 tests passed (100%)**.
   - Production Next.js build: `npm run build` exits with code **0** (all 34 static and dynamic routes compiled).
 
+### ✅ Sprint 8.4: Fix Voice Meal Modal Typography, Mobile Fuel Non-Truncation & Always-Visible Momentum (`components/diet/VoiceMealModal.tsx`, `components/diet/DietPage.tsx`, `components/dashboard/HomeView.tsx`, `tests/sprint8-4/sprint8-4.test.ts`)
+- **Voice Meal Modal Typography & Single-Line Heading** (`components/diet/VoiceMealModal.tsx`):
+  - Removed the redundant `"Tap mic to speak"` pill badge that squeezed the modal header and caused `"Speak what you ate"` to orphan `"ate"` on a second line.
+  - Positioned eyebrow `NATURAL VOICE PARSER` directly above `Speak what you ate` with `whitespace-nowrap`, guaranteeing the title stays cleanly on one single line across all viewports.
+  - Centered Coral Ember microphone button (`w-16 h-16 rounded-full bg-[#E05A47] text-white shadow-[0_8px_28px_rgba(224,90,71,0.4)] my-5 flex items-center justify-center mx-auto`).
+  - Added clean prompt text directly below the mic: `"Tap the mic and say what you had"` (idle) / `"Listening... describe your meal"` (active), with a dedicated, scannable example pill box (`"2 rotis, 1 bowl dal tadka, 100g paneer bhurji & curd"`).
+- **Mobile Fuel Non-Truncation Fix** (`components/diet/DietPage.tsx`):
+  - Replaced the truncated string (`2,665 kcal remainin...`) on mobile with `{remainingCalories.toLocaleString()} kcal left` with `whitespace-nowrap shrink-0`, preventing text truncation and ellipses on narrow 393px screens.
+- **Always-Visible Momentum & Streak Sections** (`components/dashboard/HomeView.tsx`):
+  - Removed the collapsible toggle button (`showMobileTrends`) and conditional hiding state from the `Today` page.
+  - Weekly Momentum (`ProgressTrendChart`) and Habit Compounding Streak (`ConsistencyHeatmap`) are now permanently rendered and visible by default on both Mobile and Desktop.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **66/66 test files passed, 711/711 tests passed (100%)**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 34 static and dynamic routes compiled).
+
 ---
 
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 34 static/dynamic routes compiled).
-- **Vitest Suite**: `707 passed | 26 skipped` across all 65 test suites (0 failing).
+- **Vitest Suite**: `711 passed | 26 skipped` across all 66 test suites (0 failing).
 - **Navigation & Track Sheet Tests**: `15/15 passed` across `tests/navigation/*`.
 - **Markdown & UI Tests**: `13/13 passed` in `tests/ui/markdown-text.test.tsx`.
 - **Navigation & Launcher Tests**: `5/5 passed` in `tests/navigation/navigation-orbit-launcher.test.ts`.
@@ -1395,7 +1411,7 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 - **Workout Tests**: `42/42 passed` across `tests/workouts/*`.
 - **Onboarding Tests**: `78/78 passed` across `tests/onboarding/*`.
 - **Landing Tests**: `26/26 passed` across `tests/landing/*`, `tests/sprint7-8/*`, `tests/sprint7-9/*`, `tests/sprint8-1/*`, and `tests/sprint8-2/*`.
-- **Today Dashboard Tests**: `8/8 passed` in `tests/sprint8-3/*`.
+- **Today Dashboard & Diet Polish Tests**: `12/12 passed` in `tests/sprint8-3/*` and `tests/sprint8-4/*`.
 
 
 ## SatatSnap scroll-scrub rebuild (mobile-first)

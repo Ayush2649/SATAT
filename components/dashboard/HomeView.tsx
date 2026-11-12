@@ -108,9 +108,8 @@ export default function HomeView() {
   const [profile, setProfile] = useState<UserProfileDocument | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Sprint 8.3: Reactive date selection across 7-day strip
+  // Sprint 8.3 & 8.4: Reactive date selection across 7-day strip
   const [selectedDate, setSelectedDate] = useState<string>(todayString());
-  const [showMobileTrends, setShowMobileTrends] = useState<boolean>(false);
   const [rituals, setRituals] = useState<Record<string, boolean>>({});
   const [timelineFilter, setTimelineFilter] = useState<string>("All Timeline");
 
@@ -788,21 +787,10 @@ export default function HomeView() {
           )}
         </div>
 
-        {/* Section 5 & 6: Mobile Collapsible Secondary Momentum Trends */}
-        <div className="pt-2">
-          <button
-            type="button"
-            onClick={() => setShowMobileTrends((prev) => !prev)}
-            className="w-full py-2.5 px-4 rounded-full border border-[#1C1917]/[0.08] dark:border-white/[0.1] bg-[#FCFBF9] dark:bg-[#141916] text-[#57534E] dark:text-[#9CA39E] hover:text-[#1C1917] dark:hover:text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
-          >
-            <span>{showMobileTrends ? "Hide Weekly Momentum & Streak Calendar ⌃" : "Show Weekly Momentum & Streak Calendar ⌄"}</span>
-          </button>
-          {showMobileTrends && (
-            <div className="space-y-4 mt-3 animate-fade-in">
-              <ProgressTrendChart sessions={sessions} tasks={tasks} allMeals={allMeals} goals={goals} />
-              <ConsistencyHeatmap sessions={sessions} tasks={tasks} allMeals={allMeals} streakDays={activeStreakDays} />
-            </div>
-          )}
+        {/* Section 5 & 6: Weekly Momentum & Streak Consistency (Always Visible) */}
+        <div className="space-y-4 pt-2">
+          <ProgressTrendChart sessions={sessions} tasks={tasks} allMeals={allMeals} goals={goals} />
+          <ConsistencyHeatmap sessions={sessions} tasks={tasks} allMeals={allMeals} streakDays={activeStreakDays} />
         </div>
       </div>
 

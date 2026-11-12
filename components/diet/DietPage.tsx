@@ -402,13 +402,13 @@ export default function DietPage() {
             <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7]" />
             DAILY NUTRITION SUMMARY
           </span>
-          <span className="text-xs text-stone-300 font-medium text-right truncate">
+          <span className="text-xs text-stone-300 font-medium text-right whitespace-nowrap shrink-0">
             {loading && meals.length === 0 ? (
               <span className="text-stone-400 animate-pulse">Calculating nutrition...</span>
             ) : (
               <>
                 <strong className="text-white font-bold">{remainingCalories.toLocaleString()} kcal</strong>{" "}
-                remaining · Target {targetCalories.toLocaleString()}
+                left
               </>
             )}
           </span>
