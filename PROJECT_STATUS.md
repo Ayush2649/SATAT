@@ -1356,11 +1356,37 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - Vitest suite: **64/64 test files passed, 699/699 tests passed (100%)**.
   - Production Next.js build: `npm run build` exits with code **0** (all 34 static and dynamic routes compiled).
 
+### ✅ Sprint 8.3: Eradicate Fake Fallback Telemetry on SATAT / Today, Implement Honest Zero-States & Cognitive Declutter (`components/dashboard/HomeView.tsx`, `tests/sprint8-3/sprint8-3.test.ts`)
+- **Eradicated All Fake/Hardcoded Fallback Telemetry**:
+  - Removed dummy fallback numbers (`1820`, `1,820`, `124`, `180`, `55`) completely.
+  - Telemetry is now strictly computed from actual user data for `selectedDate`:
+    - `loggedCalories = Math.round(totals.cal)` (strictly `0` when no meals logged).
+    - `loggedProtein = Math.round(totals.p)` (strictly `0` when no meals logged).
+    - `loggedCarbs = Math.round(totals.c)` (strictly `0` when no meals logged).
+    - `loggedFat = Math.round(totals.f)` (strictly `0` when no meals logged).
+- **Honest Hero Bento Zero-States**:
+  - **Calorie Energy Card**: Progress ring displays `0%` progress when empty, metric shows `0 / {goal} kcal`, and features an inviting Coral Ember action prompt (`+ Log first meal →`), with the entire card routing to `/dashboard/diet`.
+  - **Protein Synthesis Card**: Displays `0 / {targetProtein}g` with `0%` badge and status text `"Log a meal to track protein"` when empty, `{remaining}g away from goal` when partial, and `"✓ Daily protein target hit!"` when met.
+  - **Workout Card**: Reflects real session status: displays `COMPLETED · {min} MIN` and celebratory summary when completed; displays assigned split and `Start Session ▷` when uncompleted.
+- **Truthful Dynamic Whisper & Today's Rhythm Feed**:
+  - Dynamically synthesizes mindful guidance across 4 states: Fresh slate (`loggedCalories === 0`), Partial intake, Target met, and Workout done first.
+  - Eradicated phantom `"Oatmeal & Berries"` and `"Record LeetCode DSA Video"` mock items from rhythm.
+  - Renders real meals, real completed workout session, and real tasks for `selectedDate`.
+  - When empty (`0` items for `selectedDate`), renders an **Empty Day Kickoff Card** with inviting copy and 3 quick-action pill buttons: `+ Log First Meal` (`/dashboard/diet`), `+ Start Workout` (`/dashboard/workout`), and `+ Add Focus Task` (`/dashboard/tasks`).
+- **Cognitive Declutter & Interactive Date Switching**:
+  - Eradicated the unverified static `"CIRCADIAN TELEMETRY · Live Biosensors"` card (`68 ms HRV`, `7h 42m Sleep`, `10:00 AM Peak Dopamine`).
+  - Enabled reactive date switching across the 7-day strip (`selectedDate`), dynamically updating metrics and rhythm feed for the selected day.
+  - Cleaned up mobile cognitive load: moved `ProgressTrendChart` & `ConsistencyHeatmap` behind a clean toggle button (`Show Weekly Momentum & Streak Calendar ⌄`), preserving quick zero-friction access.
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **65/65 test files passed, 707/707 tests passed (100%)**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 34 static and dynamic routes compiled).
+
 ---
 
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 34 static/dynamic routes compiled).
-- **Vitest Suite**: `699 passed | 26 skipped` across all 64 test suites (0 failing).
+- **Vitest Suite**: `707 passed | 26 skipped` across all 65 test suites (0 failing).
 - **Navigation & Track Sheet Tests**: `15/15 passed` across `tests/navigation/*`.
 - **Markdown & UI Tests**: `13/13 passed` in `tests/ui/markdown-text.test.tsx`.
 - **Navigation & Launcher Tests**: `5/5 passed` in `tests/navigation/navigation-orbit-launcher.test.ts`.
@@ -1369,6 +1395,7 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 - **Workout Tests**: `42/42 passed` across `tests/workouts/*`.
 - **Onboarding Tests**: `78/78 passed` across `tests/onboarding/*`.
 - **Landing Tests**: `26/26 passed` across `tests/landing/*`, `tests/sprint7-8/*`, `tests/sprint7-9/*`, `tests/sprint8-1/*`, and `tests/sprint8-2/*`.
+- **Today Dashboard Tests**: `8/8 passed` in `tests/sprint8-3/*`.
 
 
 ## SatatSnap scroll-scrub rebuild (mobile-first)
