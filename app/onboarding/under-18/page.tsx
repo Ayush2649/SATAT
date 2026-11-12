@@ -65,7 +65,10 @@ export default function Under18TerminalPage() {
 
         <div className="pt-2 flex flex-col sm:flex-row gap-3">
           <button
-            onClick={() => signOut({ callbackUrl: "/" })}
+            onClick={async () => {
+              await signOut({ callbackUrl: "/" });
+              window.location.href = "/";
+            }}
             className="flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-xl text-sm font-medium transition-all"
             style={{
               background: "var(--surface-2)",

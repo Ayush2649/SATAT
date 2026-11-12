@@ -882,8 +882,8 @@ export default function SignInPage() {
           <div className="flex items-center justify-center mx-auto mb-4">
             <Logo size={64} className="rounded-2xl shadow-lg" priority />
           </div>
-          <h1 className="text-2xl font-extrabold" style={{ color: "var(--text-1)" }}>Welcome to SATAT</h1>
-          <p className="mt-2 text-sm" style={{ color: "var(--text-2)" }}>Sign in to continue your journey of continuous, sustainable wellness.</p>
+          <h1 className="text-2xl font-extrabold" style={{ color: "var(--text-1)" }}>SATAT</h1>
+          <p className="mt-2 text-sm" style={{ color: "var(--text-2)" }}>Continuous, sustainable wellness.</p>
         </div>
 
         <div className="card shadow-modal p-6">
