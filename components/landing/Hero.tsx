@@ -19,13 +19,13 @@ export default function Hero() {
         </div>
 
         {/* Display Headline */}
-        <h1 className="font-serif font-normal text-4xl sm:text-5xl lg:text-[62px] leading-[1.08] tracking-tight text-[#1C1917] dark:text-[#F4F1EA] mt-3 max-w-[720px] mx-auto">
-          <span>Your body doesn&apos;t live in </span>
-          <span className="italic text-[#E05A47]">five separate apps.</span>
+        <h1 className="font-serif font-normal text-[38px] sm:text-5xl lg:text-[62px] leading-[1.1] tracking-tight text-[#1C1917] dark:text-[#F4F1EA] mt-3 max-w-none mx-auto text-center">
+          <span className="block md:whitespace-nowrap">Your body doesn&apos;t live in</span>{" "}
+          <span className="block italic text-[#E05A47]">five separate apps.</span>
         </h1>
 
         {/* Subtitle */}
-        <p className="text-sm sm:text-base text-[#57534E] dark:text-[#9CA39E] mt-4 max-w-[480px] mx-auto leading-relaxed font-normal">
+        <p className="text-sm sm:text-base text-[#57534E] dark:text-[#9CA39E] mt-4 max-w-none md:whitespace-nowrap mx-auto leading-relaxed font-normal">
           Workouts, meals, and daily plans that quietly adjust to real life.
         </p>
 
@@ -74,7 +74,7 @@ export default function Hero() {
         {/* Full-bleed atmospheric gym/training photograph */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?auto=format&fit=crop&w=1600&q=85"
+          src="https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=1600&q=85"
           alt="Upper body dumbbell strength training session"
           className="w-full h-full object-cover object-center contrast-[1.03]"
         />
@@ -100,7 +100,7 @@ export default function Hero() {
         <div className="absolute bottom-5 right-5 sm:bottom-7 sm:right-7 bg-[#FCFBF9] dark:bg-[#141916] rounded-2xl p-3 sm:p-3.5 shadow-2xl border border-[#1C1917]/[0.08] dark:border-white/[0.10] flex items-center gap-3 text-left animate-[satatFloatDelayed_5s_ease-in-out_0.8s_infinite] hover:scale-105 transition-transform cursor-default">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="https://images.unsplash.com/photo-1517673400267-0251440c45dc?auto=format&fit=crop&w=400&q=80"
+            src="https://images.unsplash.com/photo-1517673132405-a56a62b18caf?auto=format&fit=crop&w=400&q=80"
             alt="Warm protein oatmeal bowl"
             className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl rounded-l-[92px] object-cover"
           />

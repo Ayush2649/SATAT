@@ -1313,16 +1313,36 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - Updated all navigation and profile sign-out handlers (`components/Navigation.tsx`, `components/settings/AccountPrivacySettings.tsx`, `app/onboarding/under-18/page.tsx`) to execute `await signOut({ callbackUrl: "/" })` followed by `window.location.href = "/"`, ensuring users always land on the clean Landing Page upon sign-out.
 - **Landing Page Sign-In Triggers**:
   - Converted the `"Sign in"` link in `components/landing/Footer.tsx` from `<Link href="/signin">` into a button triggering `signIn("google", { callbackUrl: "/dashboard" })`, consistent with `LandingNav.tsx`, `Hero.tsx`, and `FinalCTA.tsx`.
+
+### ✅ Sprint 8.1: Landing Page UX, Timeline Spine, Non-Repeating Photos, Light-Mode Orbit Contrast & Full-Width Streak Layout (`ProblemSection.tsx`, `Hero.tsx`, `HeroProductScene.tsx`, `mobile/MobileHero.tsx`, `MealScanShowcase.tsx`, `OrbitSection.tsx`, `ProgressSection.tsx`, `tests/sprint8-1/sprint8-1.test.ts`)
+- **Horizontal Timeline Spine & Dot Alignment** (`components/landing/ProblemSection.tsx`):
+  - Structured each of the 4 columns as a vertical flex stack (`flex flex-col items-center relative z-10`): Time pill on top with `mb-3`, circular node dot (`w-4 h-4 rounded-full border-4`) below.
+  - Positioned the continuous horizontal grey connector line (`h-[2px] bg-[#1C1917]/15 dark:bg-white/15`) directly through the vertical center of the dots (`bottom-[7px]`) with an active green fill progress bar (`style={{ width: \`\${((activeStageId - 1) / 3) * 100}%\` \}}`).
+  - Updated timeline headline & subtitle to `md:whitespace-nowrap max-w-none mx-auto`.
+- **Photo Uniqueness (7 Distinct Unsplash Photos)**:
+  - Eliminated all duplicate lifestyle photos across the landing page: Hero gym background (`photo-1517838277536-f5f99be501cd`), Hero oatmeal (`photo-1517673132405-a56a62b18caf`), Dawn check-in (`photo-1507652313519-d4e9174996dd`), Midday fuel (`photo-1512621776951-a57141f2eefd`), Dusk recalibration (`photo-1581009146145-b5ef050c2e1e`), Nocturnal recovery (`photo-1544787219-7f47ccb76574`), and SatatSnap food plate (`photo-1546069901-ba9599a7e63c`).
+- **High-Contrast Light-Mode `<Orbit3DCore />` Stage & Headline** (`components/landing/OrbitSection.tsx`):
+  - Housed `<Orbit3DCore />` inside a Deep Botanical Espresso container (`w-28 h-28 sm:w-32 sm:h-32 rounded-[32px] bg-[#191D1A] border border-[#34D399]/30 shadow-[0_20px_50px_rgba(25,29,26,0.28)] flex items-center justify-center mx-auto`) so the glowing green orbital nodes pop vibrantly in both light and dark mode.
+  - Widened the orbit headline container to `max-w-[680px]` with italic serif emphasis.
+- **Hero Headline Line-Breaks** (`Hero.tsx` & `mobile/MobileHero.tsx`):
+  - Formatted desktop headline across two balanced lines (`md:whitespace-nowrap`) and mobile to a 3-line balanced stack (`Your body` / `doesn't live in` / `five separate apps.`) with single-line subtitle.
+- **Full-Width Streak Layout & Day 14 Synchronization** (`components/landing/ProgressSection.tsx`):
+  - Resolved "Day 16" vs "Day 14" mismatch: renamed `Day 16 · Healed` to `Day 14 · Rested` with `key: "day14"` and `activeDay: 14`.
+  - Upgraded desktop card (`hidden md:block`) to a full-width 12-column grid (`lg:grid-cols-12`):
+    - **Left 7 Columns**: Milestone switcher pills, 4×7 calendar grid with enlarged `w-11 h-11 sm:w-12 sm:h-12` circles, and session status legend.
+    - **Right 5 Columns**: Live Momentum Telemetry card with dynamic milestone headline, explanation, 3 metric progress bars (Habit Adherence, Measured Strength, Adaptive Recovery), and stacked comparison badges.
+- **Scroll Margin Offset**:
+  - Added `scroll-mt-28` to all section anchors (`#rhythm`, `#snap`, `#orbit`, `#proof`) to ensure floating navigation links scroll with exact clearance below the pill header.
 - **Zero Regression Standard Verified**:
   - `npx tsc --noEmit`: **0 errors**.
-  - Vitest suite: **62/62 test files passed, 689/689 tests passed (100%)**.
+  - Vitest suite: **63/63 test files passed, 695/695 tests passed (100%)**.
   - Production Next.js build: `npm run build` exits with code **0** (all 34 static and dynamic routes compiled).
 
 ---
 
 ## 4. Current Quality & Build Metrics
-- **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
-- **Vitest Suite**: `668 passed | 26 skipped` across all 58 test suites (0 failing).
+- **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 34 static/dynamic routes compiled).
+- **Vitest Suite**: `695 passed | 26 skipped` across all 63 test suites (0 failing).
 - **Navigation & Track Sheet Tests**: `15/15 passed` across `tests/navigation/*`.
 - **Markdown & UI Tests**: `13/13 passed` in `tests/ui/markdown-text.test.tsx`.
 - **Navigation & Launcher Tests**: `5/5 passed` in `tests/navigation/navigation-orbit-launcher.test.ts`.
@@ -1330,7 +1350,7 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 - **Diet Tests**: `213/213 passed` across all 15 test suites in `tests/diet/*`.
 - **Workout Tests**: `42/42 passed` across `tests/workouts/*`.
 - **Onboarding Tests**: `78/78 passed` across `tests/onboarding/*`.
-- **Landing Tests**: `14/14 passed` across `tests/landing/*`, `tests/sprint7-8/*`, and `tests/sprint7-9/*`.
+- **Landing Tests**: `22/22 passed` across `tests/landing/*`, `tests/sprint7-8/*`, `tests/sprint7-9/*`, and `tests/sprint8-1/*`.
 
 
 ## SatatSnap scroll-scrub rebuild (mobile-first)

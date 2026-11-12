@@ -20,13 +20,14 @@ export default function MobileHero() {
           </div>
 
           {/* Headline */}
-          <h1 className="font-serif font-normal text-4xl sm:text-5xl lg:text-[62px] leading-[1.06] tracking-tight text-[#1C1917] dark:text-[#F4F1EA]">
-            <span className="block">Your body doesn&apos;t live in</span>
+          <h1 className="font-serif font-normal text-[38px] sm:text-5xl lg:text-[62px] leading-[1.1] tracking-tight text-[#1C1917] dark:text-[#F4F1EA]">
+            <span className="block sm:inline md:whitespace-nowrap">Your body </span>
+            <span className="block sm:inline md:whitespace-nowrap">doesn&apos;t live in</span>{" "}
             <span className="block italic text-[#E05A47]">five separate apps.</span>
           </h1>
 
           {/* Subtitle */}
-          <p className="text-sm sm:text-base lg:text-lg text-[#57534E] dark:text-[#9CA39E] mt-4 mb-8 max-w-lg leading-relaxed font-normal">
+          <p className="text-sm sm:text-base lg:text-lg text-[#57534E] dark:text-[#9CA39E] mt-4 mb-8 max-w-lg md:whitespace-nowrap leading-relaxed font-normal">
             Workouts, meals, and daily plans that quietly adjust to real life.
           </p>
 

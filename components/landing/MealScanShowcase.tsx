@@ -215,7 +215,7 @@ function applyFrame(
 }
 
 const FOOD_PHOTO =
-  "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=75";
+  "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=900&q=80";
 const FOOD_THUMB =
   "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=120&q=75";
 
@@ -317,7 +317,7 @@ export default function MealScanShowcase() {
     return (
       <section
         id="snap"
-        className="w-full max-w-[1360px] mx-auto px-6 py-16 text-center space-y-12"
+        className="w-full max-w-[1360px] mx-auto px-6 py-16 text-center space-y-12 scroll-mt-28"
       >
         <div className="max-w-xl mx-auto text-left">
           <span className="text-sm font-semibold text-[#2D6A4F] dark:text-[#6EE7B7] mb-2 block">
@@ -390,7 +390,7 @@ export default function MealScanShowcase() {
         // step 3 has finished, so there is no dead space before #orbit.
         height: `calc((100svh - ${SNAP_CONSTANTS.HEADER_OFFSET_PX}px) * ${1 + SNAP_CONSTANTS.RUNWAY_MULTIPLIER})`,
       }}
-      className="relative w-full"
+      className="relative w-full scroll-mt-28"
     >
       {/* ── PINNED STAGE: hard-clipped below the floating header ── */}
       <div

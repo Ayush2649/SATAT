@@ -17,7 +17,7 @@ export default function OrbitSection() {
   return (
     <section
       id="orbit"
-      className="relative w-full max-w-[1440px] mx-auto min-h-[540px] sm:min-h-[620px] flex flex-col items-center justify-center px-4 pt-6 pb-20 sm:py-20 overflow-hidden bg-[#F6F3EC] dark:bg-[#0A0D0B] transition-colors"
+      className="relative w-full max-w-[1440px] mx-auto min-h-[540px] sm:min-h-[620px] flex flex-col items-center justify-center px-4 pt-6 pb-20 sm:py-20 overflow-hidden bg-[#F6F3EC] dark:bg-[#0A0D0B] transition-colors scroll-mt-28"
     >
       {/* Inline styles for 3D depth-of-field floating animation keyframes */}
       <style>{`
@@ -156,10 +156,12 @@ export default function OrbitSection() {
         </div>
       </div>
 
-      {/* ── CENTER FOCAL STACK (z-20, max-w-[540px] mx-auto) ── */}
-      <div className="relative z-20 text-center max-w-[540px] mx-auto flex flex-col items-center">
-        {/* Top: 3D Orbit Core */}
-        <Orbit3DCore size="lg" state="active" />
+      {/* ── CENTER FOCAL STACK (z-20, max-w-[680px] mx-auto) ── */}
+      <div className="relative z-20 text-center max-w-[680px] mx-auto flex flex-col items-center">
+        {/* Top: 3D Orbit Core Stage Container (Botanical Espresso for 100% Contrast in Light & Dark Mode) */}
+        <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-[32px] bg-[#191D1A] border border-[#34D399]/30 shadow-[0_20px_50px_rgba(25,29,26,0.28)] flex items-center justify-center mx-auto">
+          <Orbit3DCore size="lg" state="active" />
+        </div>
 
         {/* Headline */}
         <h2 className="font-serif text-3xl sm:text-5xl text-[#1C1917] dark:text-[#F4F1EA] mt-5 leading-tight font-normal">

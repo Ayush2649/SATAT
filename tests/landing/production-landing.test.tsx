@@ -84,7 +84,7 @@ describe("Stitch Editorial Landing Page with Header, Footer & Continuous Proof",
     expect(html).toContain("perfect.");
     expect(html).toContain("Other apps punish you with a broken streak when real life happens. Satat bends with your week so your momentum compounds.");
     expect(html).toContain("Day 7 · Start");
-    expect(html).toContain("Day 16 · Healed");
+    expect(html).toContain("Day 14 · Rested");
     expect(html).toContain("Day 28 · Flow");
     expect(html).toContain("Traditional Apps: Streak Reset to 0 ✕");
     expect(html).toContain("Satat Rhythm: 14 Days Unbroken · Auto-Bridged 2 Rest Days ✓");
