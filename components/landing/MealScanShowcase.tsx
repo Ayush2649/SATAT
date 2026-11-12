@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useLandingAuth } from "@/hooks/useLandingAuth";
 import { Sparkles, Check } from "lucide-react";
 
 // ============================================================================
@@ -140,9 +141,13 @@ export function computeSnapFrame(
   // distance that places the whole unit just below the clip bottom
   const enterDist = stageHeight / 2 + (UNIT_HEIGHT_PX * scale) / 2 + 12;
   const unitY = (1 - enterT) * enterDist;
-  const unit = {
-    transform: `translate3d(-50%, calc(-50% + ${unitY.toFixed(2)}px), 0) scale(${scale.toFixed(4)})`,
-  };
+  const unit = isDesktop
+    ? {
+        transform: `translate3d(0, ${unitY.toFixed(2)}px, 0) scale(${scale.toFixed(4)})`,
+      }
+    : {
+        transform: `translate3d(-50%, calc(-50% + ${unitY.toFixed(2)}px), 0) scale(${scale.toFixed(4)})`,
+      };
 
   // Offset (in unscaled px) that parks a card fully below the clip bottom
   const riseFrom = (cardTop: number) =>
@@ -232,6 +237,7 @@ function FoodRow({ detail, children }: { detail: string; children: React.ReactNo
 }
 
 export default function MealScanShowcase() {
+  const { handleStartOrSignIn } = useLandingAuth();
   const sectionRef = useRef<HTMLElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const introRef = useRef<HTMLDivElement>(null);
@@ -330,6 +336,16 @@ export default function MealScanShowcase() {
             Snap your meal for instant nutritional details and smart, AI-driven
             cadence advice from Orbit.
           </p>
+          <Link
+            href="/onboarding"
+            onClick={(e) => {
+              e.preventDefault();
+              handleStartOrSignIn("/dashboard");
+            }}
+            className="mt-5 inline-flex items-center justify-center px-6 py-3 rounded-full border border-[#2D6A4F] dark:border-[#34D399] text-sm font-semibold text-[#2D6A4F] dark:text-[#34D399] bg-transparent hover:bg-[#2D6A4F] hover:text-white dark:hover:bg-[#34D399] dark:hover:text-[#0A0D0B] transition-colors active:scale-95 cursor-pointer"
+          >
+            Try Snap with a Photo
+          </Link>
         </div>
         <div className="flex flex-col items-center gap-6">
           <div className="w-[312px] h-[600px] rounded-[48px] border-[7px] border-[#1C1917] dark:border-[#26302B] bg-black overflow-hidden relative shadow-2xl">
@@ -399,39 +415,46 @@ export default function MealScanShowcase() {
           top: `${SNAP_CONSTANTS.HEADER_OFFSET_PX}px`,
           height: `calc(100svh - ${SNAP_CONSTANTS.HEADER_OFFSET_PX}px)`,
         }}
-        className="sticky w-full max-w-[1360px] mx-auto overflow-hidden"
+        className="sticky w-full max-w-[1440px] mx-auto overflow-hidden px-6 md:px-12 lg:px-20"
       >
-        {/* ── STAGE A: INTRO (mobile: scrolls away 1:1 · desktop: docked left) ── */}
-        <div className="absolute inset-x-5 top-6 sm:inset-x-8 lg:inset-x-auto lg:left-12 lg:top-1/2 lg:-translate-y-1/2 lg:w-[460px] z-10">
-          <div
-            ref={introRef}
-            style={initial.intro}
-            className="text-left will-change-transform"
-          >
-            <span className="text-sm font-semibold text-[#2D6A4F] dark:text-[#6EE7B7] mb-2 block">
-              SatatSnap
-            </span>
-            <h2 className="font-serif text-3xl sm:text-5xl lg:text-[54px] leading-[1.08] font-bold text-[#1C1917] dark:text-[#F4F1EA]">
-              Track Your Food With Just a Snap
-            </h2>
-            <p className="text-sm sm:text-base text-[#57534E] dark:text-[#9CA39E] mt-3.5 leading-relaxed font-normal">
-              Snap your meal for instant nutritional details and smart, AI-driven cadence advice from Orbit.
-            </p>
-            <Link
-              href="/onboarding"
-              className="mt-6 inline-flex items-center justify-center px-6 py-3 rounded-full border border-[#2D6A4F] dark:border-[#34D399] text-sm font-semibold text-[#2D6A4F] dark:text-[#34D399] bg-transparent [@media(hover:hover)]:hover:bg-[#2D6A4F] [@media(hover:hover)]:hover:text-white dark:[@media(hover:hover)]:hover:bg-[#34D399] dark:[@media(hover:hover)]:hover:text-[#0A0D0B] transition-colors active:scale-95"
+        <div className="w-full h-full max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-12 items-center gap-12 relative">
+          {/* Left Column (lg:col-span-6 text-left) */}
+          <div className="absolute inset-x-5 top-6 sm:inset-x-8 lg:static lg:inset-auto lg:col-span-6 text-left z-10">
+            <div
+              ref={introRef}
+              style={initial.intro}
+              className="text-left will-change-transform max-w-[500px]"
             >
-              Try Snap with a Photo
-            </Link>
+              <span className="text-sm font-semibold text-[#2D6A4F] dark:text-[#6EE7B7] mb-2 block">
+                SatatSnap
+              </span>
+              <h2 className="font-serif text-3xl sm:text-5xl lg:text-[54px] leading-[1.08] font-bold text-[#1C1917] dark:text-[#F4F1EA]">
+                Track Your Food With Just a Snap
+              </h2>
+              <p className="text-sm sm:text-base text-[#57534E] dark:text-[#9CA39E] mt-3.5 leading-relaxed font-normal">
+                Snap your meal for instant nutritional details and smart, AI-driven cadence advice from Orbit.
+              </p>
+              <Link
+                href="/onboarding"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleStartOrSignIn("/dashboard");
+                }}
+                className="mt-6 inline-flex items-center justify-center px-6 py-3 rounded-full border border-[#2D6A4F] dark:border-[#34D399] text-sm font-semibold text-[#2D6A4F] dark:text-[#34D399] bg-transparent [@media(hover:hover)]:hover:bg-[#2D6A4F] [@media(hover:hover)]:hover:text-white dark:[@media(hover:hover)]:hover:bg-[#34D399] dark:[@media(hover:hover)]:hover:text-[#0A0D0B] transition-colors active:scale-95 cursor-pointer"
+              >
+                Try Snap with a Photo
+              </Link>
+            </div>
           </div>
-        </div>
 
-        {/* ── STAGES B–D: UNIT = phone + cards + caption box, centred in the clip region ── */}
-        <div
-          ref={unitRef}
-          style={initial.unit}
-          className="absolute top-1/2 left-1/2 lg:left-[68%] flex flex-col items-center will-change-transform"
-        >
+          {/* Right Column (lg:col-span-6 flex flex-col items-center lg:items-end justify-center lg:pr-8 xl:pr-14) */}
+          <div className="absolute inset-0 lg:static lg:inset-auto lg:col-span-6 flex flex-col items-center lg:items-end justify-center lg:pr-8 xl:pr-14 pointer-events-none">
+            {/* ── STAGES B–D: UNIT = phone + cards + caption box, centred in the clip region ── */}
+            <div
+              ref={unitRef}
+              style={initial.unit}
+              className="absolute top-1/2 left-1/2 lg:static lg:top-auto lg:left-auto flex flex-col items-center will-change-transform pointer-events-auto"
+            >
           {/* Phone wrapper: overflow VISIBLE so cards can overhang the phone edges */}
           <div
             style={{
@@ -568,6 +591,8 @@ export default function MealScanShowcase() {
                 Orbit gives you instant, actionable insights to help you stay continuous.
               </p>
             </div>
+          </div>
+        </div>
           </div>
         </div>
       </div>

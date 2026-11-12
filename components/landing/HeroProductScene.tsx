@@ -38,7 +38,7 @@ export default function HeroProductScene() {
       <div className="relative z-20 -mt-28 sm:-mt-32 ml-auto w-[92%] bg-[#FCFBF9] p-2.5 sm:p-3 rounded-[28px] shadow-[0_22px_50px_-12px_rgba(28,25,23,0.18)] border border-[#1C1917]/[0.06]">
         <div className="relative w-full h-[185px] sm:h-[210px] rounded-l-[92px] rounded-r-[20px] overflow-hidden bg-[#EFECE4]">
           <img
-            src="https://images.unsplash.com/photo-1517673132405-a56a62b18caf?auto=format&fit=crop&w=900&q=85"
+            src="https://images.unsplash.com/photo-1511690743698-d9d85f2fbf38?auto=format&fit=crop&w=900&q=85"
             alt="Warm protein oatmeal bowl"
             className="w-full h-full object-cover object-center"
           />

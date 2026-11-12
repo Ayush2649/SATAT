@@ -3,9 +3,11 @@
 import React from "react";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
+import { useLandingAuth } from "@/hooks/useLandingAuth";
 import HeroProductScene from "../HeroProductScene";
 
 export default function MobileHero() {
+  const { handleStartOrSignIn } = useLandingAuth();
   return (
     <section className="relative pt-24 sm:pt-32 pb-12 sm:pb-20 px-6 lg:px-12 overflow-hidden">
       <div className="max-w-md lg:max-w-[1280px] mx-auto lg:grid lg:grid-cols-12 lg:gap-12 lg:items-center text-left">
@@ -35,6 +37,10 @@ export default function MobileHero() {
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <Link
               href="/onboarding"
+              onClick={(e) => {
+                e.preventDefault();
+                handleStartOrSignIn("/dashboard");
+              }}
               className="bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full px-7 py-3.5 text-sm font-semibold shadow-md active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <span>Start free</span>
@@ -42,7 +48,10 @@ export default function MobileHero() {
             </Link>
             <button
               type="button"
-              onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+              onClick={() => {
+                handleStartOrSignIn("/dashboard");
+                // fallback: signIn("google", { callbackUrl: "/dashboard" })
+              }}
               className="bg-[#FCFBF9] dark:bg-[#161D19] hover:bg-[#EFECE4] dark:hover:bg-[#1E2722] text-[#1C1917] dark:text-[#F4F1EA] border border-[#1C1917]/15 dark:border-white/15 rounded-full px-6 py-3.5 text-sm font-semibold shadow-2xs transition-all flex items-center justify-center gap-3 cursor-pointer active:scale-95"
             >
               <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">

@@ -1320,9 +1320,9 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - Positioned the continuous horizontal grey connector line (`h-[2px] bg-[#1C1917]/15 dark:bg-white/15`) directly through the vertical center of the dots (`bottom-[7px]`) with an active green fill progress bar (`style={{ width: \`\${((activeStageId - 1) / 3) * 100}%\` \}}`).
   - Updated timeline headline & subtitle to `md:whitespace-nowrap max-w-none mx-auto`.
 - **Photo Uniqueness (7 Distinct Unsplash Photos)**:
-  - Eliminated all duplicate lifestyle photos across the landing page: Hero gym background (`photo-1517838277536-f5f99be501cd`), Hero oatmeal (`photo-1517673132405-a56a62b18caf`), Dawn check-in (`photo-1507652313519-d4e9174996dd`), Midday fuel (`photo-1512621776951-a57141f2eefd`), Dusk recalibration (`photo-1581009146145-b5ef050c2e1e`), Nocturnal recovery (`photo-1544787219-7f47ccb76574`), and SatatSnap food plate (`photo-1546069901-ba9599a7e63c`).
+  - Eliminated all duplicate lifestyle photos across the landing page: Hero gym background (`photo-1517838277536-f5f99be501cd`), Hero oatmeal (`photo-1511690743698-d9d85f2fbf38`), Dawn check-in (`photo-1476480862126-209bfaa8edc8`), Midday fuel (`photo-1512621776951-a57141f2eefd`), Dusk recalibration (`photo-1581009146145-b5ef050c2e1e`), Nocturnal recovery (`photo-1488477181946-6428a0291777`), and SatatSnap food plate (`photo-1546069901-ba9599a7e63c`).
 - **High-Contrast Light-Mode `<Orbit3DCore />` Stage & Headline** (`components/landing/OrbitSection.tsx`):
-  - Housed `<Orbit3DCore />` inside a Deep Botanical Espresso container (`w-28 h-28 sm:w-32 sm:h-32 rounded-[32px] bg-[#191D1A] border border-[#34D399]/30 shadow-[0_20px_50px_rgba(25,29,26,0.28)] flex items-center justify-center mx-auto`) so the glowing green orbital nodes pop vibrantly in both light and dark mode.
+  - Housed `<Orbit3DCore />` inside a Deep Botanical Espresso container so the glowing green orbital nodes pop vibrantly in both light and dark mode.
   - Widened the orbit headline container to `max-w-[680px]` with italic serif emphasis.
 - **Hero Headline Line-Breaks** (`Hero.tsx` & `mobile/MobileHero.tsx`):
   - Formatted desktop headline across two balanced lines (`md:whitespace-nowrap`) and mobile to a 3-line balanced stack (`Your body` / `doesn't live in` / `five separate apps.`) with single-line subtitle.
@@ -1333,16 +1333,34 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
     - **Right 5 Columns**: Live Momentum Telemetry card with dynamic milestone headline, explanation, 3 metric progress bars (Habit Adherence, Measured Strength, Adaptive Recovery), and stacked comparison badges.
 - **Scroll Margin Offset**:
   - Added `scroll-mt-28` to all section anchors (`#rhythm`, `#snap`, `#orbit`, `#proof`) to ensure floating navigation links scroll with exact clearance below the pill header.
+
+### ✅ Sprint 8.2: Fix Start Free CTA Redirect Loop, Orbit 3D Aura Stage, Snap Desktop Right Anchor & Exact Photo Alignment (`hooks/useLandingAuth.ts`, `LandingNav.tsx`, `Hero.tsx`, `HeroProductScene.tsx`, `mobile/MobileHero.tsx`, `MealScanShowcase.tsx`, `OrbitSection.tsx`, `FinalCTA.tsx`, `mobile/MobileFinalCTA.tsx`, `Footer.tsx`, `ProblemSection.tsx`, `tests/sprint8-2/sprint8-2.test.ts`)
+- **Eradicated "Start free →" Black-Screen Flash & Redirect Loop** (`hooks/useLandingAuth.ts`):
+  - Created unified `handleStartOrSignIn(targetPath = "/dashboard")` hook:
+    - If user is authenticated (`session?.user`), routes cleanly via `router.push(targetPath)`.
+    - If unauthenticated, directly invokes Google OAuth popup (`signIn("google", { callbackUrl: targetPath })`) right on the landing page, eliminating any intermediate hops to `/onboarding` or `/signin` and completely preventing black-screen flash / redirect bounces.
+  - Wired all landing page CTAs: Navbar `"Start free"`, Navbar `"Sign in"`, Hero `"Start free →"`, Hero `"Sign in with Google"`, `#snap` `"Try Snap with a Photo"`, `#orbit` `"Talk to Orbit AI →"`, and Final CTA `"Begin in 60 seconds →"`.
+- **Spacious Unclipped `<Orbit3DCore />` Radial Aura & Overlap Bleed-Through Fix** (`components/landing/OrbitSection.tsx`):
+  - Replaced cramped square box with a spacious, unclipped circular radial aura (`w-44 h-44 sm:w-52 sm:h-52 mx-auto flex items-center justify-center relative overflow-visible before:absolute before:inset-2 before:rounded-full before:bg-[radial-gradient(circle,rgba(25,29,26,0.92)_0%,rgba(25,29,26,0.45)_55%,transparent_75%)] dark:before:bg-[radial-gradient(circle,rgba(45,106,79,0.28)_0%,transparent_70%)] before:-z-10`). 3D rings and satellite beads now rotate unclipped in full 360° space.
+  - Added elevated styling to `#orbit` (`relative z-20 bg-[#F6F3EC] dark:bg-[#0A0D0B] pt-24 pb-24 mt-12`), providing an opaque canvas that prevents the sticky `#snap` phone from bleeding into `#orbit`.
+- **Desktop 12-Column Layout with Right-Anchored `#snap` Phone** (`components/landing/MealScanShowcase.tsx`):
+  - Upgraded sticky stage to a full-width container (`max-w-[1440px] mx-auto w-full px-6 md:px-12 lg:px-20 grid grid-cols-1 lg:grid-cols-12 items-center gap-12`).
+  - **Left Column (`lg:col-span-6 text-left`)**: Cleanly docks `SatatSnap` eyebrow, `Track Your Food With Just a Snap` headline, subtitle, and `"Try Snap with a Photo"` button.
+  - **Right Column (`lg:col-span-6 flex flex-col items-center lg:items-end justify-center lg:pr-8 xl:pr-14`)**: Pushes the iPhone mockup, its auto-popping macro/Orbit cards, and the bottom caption cleanly to the right side on desktop, matching HealthifyMe geometry.
+- **100% Visual-to-Text Photo Alignment** (`Hero.tsx`, `HeroProductScene.tsx`, `ProblemSection.tsx`):
+  - **Hero Oatmeal Card**: Replaced stacked books photo with real berry & seed protein oatmeal bowl (`photo-1511690743698-d9d85f2fbf38`).
+  - **Timeline Card 1 (07:30 AM · Morning Readiness)**: Replaced bathtub photo with sunlit morning runner (`photo-1476480862126-209bfaa8edc8`).
+  - **Timeline Card 4 (10:15 PM · Nocturnal Recovery)**: Replaced chai & biscuits photo with authentic Greek yogurt, berries & granola bowl (`photo-1488477181946-6428a0291777`) matching text 1:1.
 - **Zero Regression Standard Verified**:
   - `npx tsc --noEmit`: **0 errors**.
-  - Vitest suite: **63/63 test files passed, 695/695 tests passed (100%)**.
+  - Vitest suite: **64/64 test files passed, 699/699 tests passed (100%)**.
   - Production Next.js build: `npm run build` exits with code **0** (all 34 static and dynamic routes compiled).
 
 ---
 
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 34 static/dynamic routes compiled).
-- **Vitest Suite**: `695 passed | 26 skipped` across all 63 test suites (0 failing).
+- **Vitest Suite**: `699 passed | 26 skipped` across all 64 test suites (0 failing).
 - **Navigation & Track Sheet Tests**: `15/15 passed` across `tests/navigation/*`.
 - **Markdown & UI Tests**: `13/13 passed` in `tests/ui/markdown-text.test.tsx`.
 - **Navigation & Launcher Tests**: `5/5 passed` in `tests/navigation/navigation-orbit-launcher.test.ts`.
@@ -1350,7 +1368,7 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 - **Diet Tests**: `213/213 passed` across all 15 test suites in `tests/diet/*`.
 - **Workout Tests**: `42/42 passed` across `tests/workouts/*`.
 - **Onboarding Tests**: `78/78 passed` across `tests/onboarding/*`.
-- **Landing Tests**: `22/22 passed` across `tests/landing/*`, `tests/sprint7-8/*`, `tests/sprint7-9/*`, and `tests/sprint8-1/*`.
+- **Landing Tests**: `26/26 passed` across `tests/landing/*`, `tests/sprint7-8/*`, `tests/sprint7-9/*`, `tests/sprint8-1/*`, and `tests/sprint8-2/*`.
 
 
 ## SatatSnap scroll-scrub rebuild (mobile-first)

@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { useLandingAuth } from "@/hooks/useLandingAuth";
 import { Orbit3DCore } from "@/components/orbit/Orbit3DCore";
 import {
   Sparkles,
@@ -14,10 +15,12 @@ import {
 } from "lucide-react";
 
 export default function OrbitSection() {
+  const { handleStartOrSignIn } = useLandingAuth();
+
   return (
     <section
       id="orbit"
-      className="relative w-full max-w-[1440px] mx-auto min-h-[540px] sm:min-h-[620px] flex flex-col items-center justify-center px-4 pt-6 pb-20 sm:py-20 overflow-hidden bg-[#F6F3EC] dark:bg-[#0A0D0B] transition-colors scroll-mt-28"
+      className="relative z-20 w-full max-w-[1440px] mx-auto min-h-[540px] sm:min-h-[620px] flex flex-col items-center justify-center px-4 pt-24 pb-24 sm:py-24 mt-12 overflow-hidden bg-[#F6F3EC] dark:bg-[#0A0D0B] transition-colors scroll-mt-28"
     >
       {/* Inline styles for 3D depth-of-field floating animation keyframes */}
       <style>{`
@@ -158,8 +161,8 @@ export default function OrbitSection() {
 
       {/* ── CENTER FOCAL STACK (z-20, max-w-[680px] mx-auto) ── */}
       <div className="relative z-20 text-center max-w-[680px] mx-auto flex flex-col items-center">
-        {/* Top: 3D Orbit Core Stage Container (Botanical Espresso for 100% Contrast in Light & Dark Mode) */}
-        <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-[32px] bg-[#191D1A] border border-[#34D399]/30 shadow-[0_20px_50px_rgba(25,29,26,0.28)] flex items-center justify-center mx-auto">
+        {/* Top: 3D Orbit Core Stage Container (Spacious Unclipped Circular Radial Aura) */}
+        <div className="w-44 h-44 sm:w-52 sm:h-52 mx-auto flex items-center justify-center relative overflow-visible before:absolute before:inset-2 before:rounded-full before:bg-[radial-gradient(circle,rgba(25,29,26,0.92)_0%,rgba(25,29,26,0.45)_55%,transparent_75%)] dark:before:bg-[radial-gradient(circle,rgba(45,106,79,0.28)_0%,transparent_70%)] before:-z-10">
           <Orbit3DCore size="lg" state="active" />
         </div>
 
@@ -176,6 +179,10 @@ export default function OrbitSection() {
         {/* Center CTA Button */}
         <Link
           href="/dashboard/orbit"
+          onClick={(e) => {
+            e.preventDefault();
+            handleStartOrSignIn("/dashboard/orbit");
+          }}
           className="mt-7 px-7 py-3.5 rounded-full bg-[#2D6A4F] hover:bg-[#23533D] text-white text-sm font-semibold shadow-lg inline-flex items-center gap-2 transition-transform active:scale-95 cursor-pointer"
         >
           <span>Talk to Orbit AI</span>

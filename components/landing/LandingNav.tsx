@@ -2,11 +2,11 @@
 
 import React from "react";
 import Link from "next/link";
-import { useSession, signIn } from "next-auth/react";
+import { useLandingAuth } from "@/hooks/useLandingAuth";
 import Logo from "@/components/Logo";
 
 export default function LandingNav() {
-  const { data: session } = useSession();
+  const { session, handleStartOrSignIn } = useLandingAuth();
 
   return (
     <header className="fixed top-4 inset-x-0 z-50 px-4 sm:px-8 pointer-events-none">
@@ -52,13 +52,17 @@ export default function LandingNav() {
             <>
               <button
                 type="button"
-                onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+                onClick={() => handleStartOrSignIn("/dashboard")}
                 className="px-4 py-2 text-xs sm:text-sm font-semibold text-[#1C1917] dark:text-[#F4F1EA] hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-all cursor-pointer"
               >
                 Sign in
               </button>
               <Link
                 href="/onboarding"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleStartOrSignIn("/dashboard");
+                }}
                 className="bg-[#E05A47] hover:bg-[#C94A38] text-white px-5 py-2.5 rounded-full text-xs sm:text-sm font-semibold shadow-md hover:shadow-lg transition-all active:scale-95 whitespace-nowrap inline-flex items-center gap-1.5 cursor-pointer"
               >
                 <span>Start free</span>

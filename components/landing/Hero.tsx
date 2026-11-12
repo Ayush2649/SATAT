@@ -3,9 +3,11 @@
 import React from "react";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
+import { useLandingAuth } from "@/hooks/useLandingAuth";
 import HeroProductScene from "./HeroProductScene";
 
 export default function Hero() {
+  const { handleStartOrSignIn } = useLandingAuth();
   return (
     <section className="relative pt-24 sm:pt-32 pb-12 sm:pb-20 px-6 md:px-12 lg:px-16 overflow-hidden w-full max-w-[1440px] xl:max-w-[1600px] mx-auto">
       {/* Centered Editorial Hook & Actions */}
@@ -34,6 +36,10 @@ export default function Hero() {
           {/* Button 1: Start free -> routes to onboarding */}
           <Link
             href="/onboarding"
+            onClick={(e) => {
+              e.preventDefault();
+              handleStartOrSignIn("/dashboard");
+            }}
             className="w-full sm:w-auto min-w-[210px] py-3.5 px-7 rounded-full bg-[#E05A47] hover:bg-[#C94A38] text-white font-semibold text-sm shadow-lg flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all cursor-pointer whitespace-nowrap"
           >
             <span>Start free</span>
@@ -43,7 +49,10 @@ export default function Hero() {
           {/* Button 2: Sign in with Google with official 4-color logo */}
           <button
             type="button"
-            onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+            onClick={() => {
+              handleStartOrSignIn("/dashboard");
+              // fallback: signIn("google", { callbackUrl: "/dashboard" })
+            }}
             className="w-full sm:w-auto min-w-[210px] py-3.5 px-7 rounded-full bg-[#FCFBF9] dark:bg-[#161D19] hover:bg-[#EFECE4] dark:hover:bg-[#1E2722] text-[#1C1917] dark:text-[#F4F1EA] border border-[#1C1917]/15 dark:border-white/15 font-semibold text-sm shadow-sm flex items-center justify-center gap-3 transition-all cursor-pointer active:scale-95 whitespace-nowrap"
           >
             <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
@@ -100,7 +109,7 @@ export default function Hero() {
         <div className="absolute bottom-5 right-5 sm:bottom-7 sm:right-7 bg-[#FCFBF9] dark:bg-[#141916] rounded-2xl p-3 sm:p-3.5 shadow-2xl border border-[#1C1917]/[0.08] dark:border-white/[0.10] flex items-center gap-3 text-left animate-[satatFloatDelayed_5s_ease-in-out_0.8s_infinite] hover:scale-105 transition-transform cursor-default">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="https://images.unsplash.com/photo-1517673132405-a56a62b18caf?auto=format&fit=crop&w=400&q=80"
+            src="https://images.unsplash.com/photo-1511690743698-d9d85f2fbf38?auto=format&fit=crop&w=400&q=80"
             alt="Warm protein oatmeal bowl"
             className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl rounded-l-[92px] object-cover"
           />

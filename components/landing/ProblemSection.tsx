@@ -24,7 +24,7 @@ const STAGES: TimelineStage[] = [
     desc: "Wake up to a gentle plan already calibrated to your 7h 45m sleep score. Deep work is locked into your 10:00 AM peak dopamine window.",
     telemetry: "✓ 7h 45m Sleep Synced · 92% Readiness",
     badgeClass: "bg-[#2D6A4F]/15 dark:bg-[#2D6A4F]/25 text-[#2D6A4F] dark:text-[#6EE7B7] border border-[#34D399]/25",
-    photo: "https://images.unsplash.com/photo-1507652313519-d4e9174996dd?auto=format&fit=crop&w=800&q=80",
+    photo: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=800&q=80",
   },
   {
     id: 2,
@@ -57,7 +57,7 @@ const STAGES: TimelineStage[] = [
     desc: "Orbit notices a 28g protein gap before bed and suggests a light bowl of Greek yogurt & berries while priming your tomorrow split.",
     telemetry: "☾ 135g Protein Target Closed · 24-Day Flow Intact",
     badgeClass: "bg-[#1E2621] text-[#6EE7B7] border border-[#34D399]/30",
-    photo: "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=800&q=80",
+    photo: "https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=800&q=80",
   },
 ];
 

@@ -50,18 +50,17 @@ describe("Sprint 8.1: Landing Page UX, Typography, Timeline Spine, Non-Repeating
 
     // Verify specific unique photos
     expect(heroSource).toContain("photo-1517838277536-f5f99be501cd"); // gym floor
-    expect(heroSource).toContain("photo-1517673132405-a56a62b18caf"); // protein oatmeal
-    expect(problemSource).toContain("photo-1507652313519-d4e9174996dd"); // dawn yoga
+    expect(heroSource).toContain("photo-1511690743698-d9d85f2fbf38"); // protein oatmeal
+    expect(problemSource).toContain("photo-1476480862126-209bfaa8edc8"); // morning runner
     expect(problemSource).toContain("photo-1512621776951-a57141f2eefd"); // nourish lunch
     expect(problemSource).toContain("photo-1581009146145-b5ef050c2e1e"); // kettlebell lift
-    expect(problemSource).toContain("photo-1544787219-7f47ccb76574"); // evening tea
+    expect(problemSource).toContain("photo-1488477181946-6428a0291777"); // Greek yogurt & berries
     expect(mealScanSource).toContain("photo-1546069901-ba9599a7e63c"); // paneer bowl
   });
 
-  it("3. Orbit Section renders <Orbit3DCore /> in Deep Botanical Espresso container with high contrast and widened headline", () => {
-    expect(orbitSource).toContain('bg-[#191D1A]');
-    expect(orbitSource).toContain('border-[#34D399]/30');
-    expect(orbitSource).toContain('max-w-[680px]');
+  it("3. Orbit Section renders <Orbit3DCore /> in Deep Botanical Espresso radial aura with high contrast and widened headline", () => {
+    expect(orbitSource).toContain("rgba(25,29,26,0.92)");
+    expect(orbitSource).toContain("max-w-[680px]");
     expect(orbitSource).toContain('<Orbit3DCore size="lg" state="active"');
   });
 
