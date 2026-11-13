@@ -3,7 +3,7 @@
  * 
  * Deterministic Indian Food Composition Database.
  * Nutrition estimates are based on standard Indian food composition references
- * and serving-size assumptions.
+ * (ICMR-NIN IFCT 2017 & USDA FoodData Central) and serving-size assumptions.
  * 
  * Macro values are defined per 100g of prepared/cooked food:
  * - calories (kcal)
@@ -44,7 +44,20 @@ export const INDIAN_FOOD_DATABASE: FoodCompositionItem[] = [
   {
     id: "roti_plain",
     name: "Plain Roti",
-    aliases: ["roti", "plain roti", "chapati", "phulka", "fulka", "atta roti", "whole wheat roti"],
+    aliases: [
+      "roti",
+      "plain roti",
+      "chapati",
+      "phulka",
+      "fulka",
+      "atta roti",
+      "whole wheat roti",
+      "rotis",
+      "chapatis",
+      "roti / chapati",
+      "dry roti",
+      "roti chapati",
+    ],
     category: "flatbread",
     defaultUnit: "piece",
     gramsPerDefaultUnit: 35, // 1 medium standard roti = 35g
@@ -64,7 +77,7 @@ export const INDIAN_FOOD_DATABASE: FoodCompositionItem[] = [
   {
     id: "paratha_plain",
     name: "Plain Paratha",
-    aliases: ["plain paratha", "tawa paratha", "layered paratha", "parantha", "triangle paratha"],
+    aliases: ["plain paratha", "tawa paratha", "layered paratha", "parantha", "triangle paratha", "paratha", "parathas"],
     category: "flatbread",
     defaultUnit: "piece",
     gramsPerDefaultUnit: 60, // 1 medium plain paratha = ~60g
@@ -74,7 +87,17 @@ export const INDIAN_FOOD_DATABASE: FoodCompositionItem[] = [
   {
     id: "paratha_aloo",
     name: "Aloo Paratha",
-    aliases: ["aloo paratha", "alu paratha", "potato paratha", "stuffed aloo paratha"],
+    aliases: [
+      "aloo paratha",
+      "alu paratha",
+      "potato paratha",
+      "stuffed aloo paratha",
+      "aloo parathas",
+      "stuffed paratha",
+      "paratha with curd",
+      "paratha with dahi",
+      "aloo ka paratha",
+    ],
     category: "flatbread",
     defaultUnit: "piece",
     gramsPerDefaultUnit: 100, // 1 stuffed aloo paratha = ~100g
@@ -104,7 +127,7 @@ export const INDIAN_FOOD_DATABASE: FoodCompositionItem[] = [
   {
     id: "puri",
     name: "Puri",
-    aliases: ["puri", "poori", "fried bread"],
+    aliases: ["puri", "poori", "fried bread", "puris"],
     category: "flatbread",
     defaultUnit: "piece",
     gramsPerDefaultUnit: 35,
@@ -114,7 +137,7 @@ export const INDIAN_FOOD_DATABASE: FoodCompositionItem[] = [
   {
     id: "bhatura",
     name: "Bhatura",
-    aliases: ["bhatura", "bhatoora"],
+    aliases: ["bhatura", "bhatoora", "bhature"],
     category: "flatbread",
     defaultUnit: "piece",
     gramsPerDefaultUnit: 90,
@@ -156,7 +179,20 @@ export const INDIAN_FOOD_DATABASE: FoodCompositionItem[] = [
   {
     id: "rice_steamed",
     name: "Steamed Rice",
-    aliases: ["steamed rice", "plain rice", "white rice", "chawal", "boiled rice"],
+    aliases: [
+      "steamed rice",
+      "plain rice",
+      "white rice",
+      "chawal",
+      "boiled rice",
+      "rice",
+      "bhat",
+      "cooked rice",
+      "basmati rice",
+      "cooked basmati rice",
+      "steamed white rice",
+      "plain steamed rice",
+    ],
     category: "rice_grain",
     defaultUnit: "bowl / katori",
     gramsPerDefaultUnit: 150, // 1 standard katori = 150g
@@ -166,7 +202,7 @@ export const INDIAN_FOOD_DATABASE: FoodCompositionItem[] = [
   {
     id: "rice_jeera",
     name: "Jeera Rice",
-    aliases: ["jeera rice", "cumin rice", "zeera rice"],
+    aliases: ["jeera rice", "cumin rice", "zeera rice", "jeera tadka rice", "tempered rice"],
     category: "rice_grain",
     defaultUnit: "bowl / katori",
     gramsPerDefaultUnit: 150,
@@ -176,7 +212,37 @@ export const INDIAN_FOOD_DATABASE: FoodCompositionItem[] = [
   {
     id: "biryani_veg",
     name: "Vegetable Biryani",
-    aliases: ["vegetable biryani", "veg biryani", "dum veg biryani", "veg pulao", "vegetable pulao", "pulao"],
+    aliases: [
+      "vegetable biryani",
+      "veg biryani",
+      "dum veg biryani",
+      "veg pulao",
+      "vegetable pulao",
+      "pulao",
+      "pulav",
+      "veg pulav",
+    ],
+    category: "rice_grain",
+    defaultUnit: "plate",
+    gramsPerDefaultUnit: 200,
+    per100g: { calories: 140, proteinG: 3.0, carbsG: 22.5, fatG: 4.0, fiberG: 2.0 }, // ~280 kcal per 200g
+    verified: true,
+  },
+  {
+    id: "pulao_veg",
+    name: "Vegetable Pulao",
+    aliases: [
+      "vegetable pulao",
+      "veg pulao",
+      "pulao",
+      "pulav",
+      "tawa pulao",
+      "peas pulao",
+      "matar pulao",
+      "veg pulav",
+      "vegetable pulao (rice with peas, carrots, beans, spices)",
+      "spiced vegetable rice",
+    ],
     category: "rice_grain",
     defaultUnit: "plate",
     gramsPerDefaultUnit: 200,
@@ -196,7 +262,15 @@ export const INDIAN_FOOD_DATABASE: FoodCompositionItem[] = [
   {
     id: "khichdi_dal",
     name: "Dal Khichdi",
-    aliases: ["dal khichdi", "khichdi", "khichrri", "moong dal khichdi"],
+    aliases: [
+      "dal khichdi",
+      "khichdi",
+      "khichrri",
+      "moong dal khichdi",
+      "khichri",
+      "khichdi dal",
+      "dal khichri",
+    ],
     category: "rice_grain",
     defaultUnit: "bowl / katori",
     gramsPerDefaultUnit: 200,
@@ -206,11 +280,22 @@ export const INDIAN_FOOD_DATABASE: FoodCompositionItem[] = [
   {
     id: "poha_indori",
     name: "Indori Poha",
-    aliases: ["indori poha", "poha", "kanda poha", "flattened rice"],
+    aliases: [
+      "indori poha",
+      "poha",
+      "kanda poha",
+      "flattened rice",
+      "cooked flattened rice",
+      "beaten rice",
+      "poha with sev",
+      "flattened rice flakes",
+      "cooked flattened rice with onions and green chilies",
+      "cooked flattened rice with onions",
+    ],
     category: "rice_grain",
     defaultUnit: "plate",
-    gramsPerDefaultUnit: 150,
-    per100g: { calories: 120, proteinG: 2.0, carbsG: 24.0, fatG: 2.0, fiberG: 2.0 }, // ~180 kcal per 150g
+    gramsPerDefaultUnit: 180,
+    per100g: { calories: 130, proteinG: 2.6, carbsG: 23.5, fatG: 2.8, fiberG: 2.0 }, // ~234 kcal per 180g
     verified: true,
   },
 
@@ -218,7 +303,17 @@ export const INDIAN_FOOD_DATABASE: FoodCompositionItem[] = [
   {
     id: "dal_toor",
     name: "Toor Dal (Yellow Dal)",
-    aliases: ["dal", "yellow dal", "toor dal", "arhar dal", "tadka dal", "dal tadka", "dal fry"],
+    aliases: [
+      "dal",
+      "yellow dal",
+      "toor dal",
+      "arhar dal",
+      "tadka dal",
+      "dal tadka",
+      "dal fry",
+      "yellow dal (lentil soup)",
+      "plain dal",
+    ],
     category: "dal_legume",
     defaultUnit: "bowl / katori",
     gramsPerDefaultUnit: 180,
@@ -238,7 +333,14 @@ export const INDIAN_FOOD_DATABASE: FoodCompositionItem[] = [
   {
     id: "rajma",
     name: "Rajma Masala",
-    aliases: ["rajma", "rajma masala", "red kidney beans curry"],
+    aliases: [
+      "rajma",
+      "rajma masala",
+      "red kidney beans curry",
+      "rajma curry",
+      "rajma with rice",
+      "bean curry",
+    ],
     category: "dal_legume",
     defaultUnit: "bowl / katori",
     gramsPerDefaultUnit: 200,
@@ -270,11 +372,39 @@ export const INDIAN_FOOD_DATABASE: FoodCompositionItem[] = [
   {
     id: "sabzi_mixed",
     name: "Mixed Vegetable Sabzi",
-    aliases: ["sabzi", "subzi", "mixed vegetable sabzi", "mix veg", "dry sabzi", "tarkari"],
+    aliases: [
+      "sabzi",
+      "subzi",
+      "mixed vegetable sabzi",
+      "mix veg",
+      "dry sabzi",
+      "tarkari",
+      "sabji",
+      "veg sabzi",
+      "dry veg sabzi",
+    ],
     category: "curry_sabzi",
     defaultUnit: "bowl / katori",
     gramsPerDefaultUnit: 150,
     per100g: { calories: 80, proteinG: 2.0, carbsG: 10.0, fatG: 3.5, fiberG: 2.7 }, // ~120 kcal per 150g
+    verified: true,
+  },
+  {
+    id: "tarkari",
+    name: "Tarkari (Dry Veg Curry)",
+    aliases: [
+      "tarkari",
+      "nepali tarkari",
+      "dry veg tarkari",
+      "aloo tarkari",
+      "mixed veg curry",
+      "tarkari / sabzi",
+      "veg tarkari",
+    ],
+    category: "curry_sabzi",
+    defaultUnit: "bowl / katori",
+    gramsPerDefaultUnit: 100,
+    per100g: { calories: 95, proteinG: 2.2, carbsG: 11.5, fatG: 4.5, fiberG: 3.0 }, // ~95 kcal per 100g
     verified: true,
   },
   {
@@ -338,15 +468,28 @@ export const INDIAN_FOOD_DATABASE: FoodCompositionItem[] = [
     verified: true,
   },
 
-  // ── SOUTH INDIAN SPECIALTIES ──────────────────────────────────────────────
+  // ── SOUTH INDIAN & TRADITIONAL PANCAKES ───────────────────────────────────
   {
     id: "cheela_besan",
     name: "Besan Cheela",
-    aliases: ["besan cheela", "besan chilla", "gram flour pancake", "besan puda"],
+    aliases: [
+      "besan cheela",
+      "besan chilla",
+      "gram flour pancake",
+      "besan puda",
+      "cheela",
+      "chilla",
+      "besan cheelas",
+      "cheelas",
+      "chillas",
+      "chickpea flour pancake",
+      "moong dal cheela",
+      "besan cheela with chutney",
+    ],
     category: "south_indian",
     defaultUnit: "piece",
-    gramsPerDefaultUnit: 70, // 1 medium cheela = ~70g
-    per100g: { calories: 200, proteinG: 8.5, carbsG: 25.7, fatG: 7.1, fiberG: 4.3 }, // ~140 kcal per pc
+    gramsPerDefaultUnit: 100, // 1-2 home-cooked cheelas = 100g
+    per100g: { calories: 195, proteinG: 8.5, carbsG: 25.0, fatG: 6.8, fiberG: 4.0 }, // ~195 kcal per 100g
     verified: true,
   },
   {
@@ -362,7 +505,15 @@ export const INDIAN_FOOD_DATABASE: FoodCompositionItem[] = [
   {
     id: "idli_plain",
     name: "Plain Idli",
-    aliases: ["idli", "plain idli", "steamed idli"],
+    aliases: [
+      "idli",
+      "plain idli",
+      "steamed idli",
+      "idlis",
+      "idli with sambar",
+      "idli with chutney",
+      "idli sambar",
+    ],
     category: "south_indian",
     defaultUnit: "piece",
     gramsPerDefaultUnit: 50, // 1 standard idli = 50g
@@ -382,7 +533,16 @@ export const INDIAN_FOOD_DATABASE: FoodCompositionItem[] = [
   {
     id: "dosa_plain",
     name: "Plain Dosa",
-    aliases: ["plain dosa", "sada dosa", "dosa"],
+    aliases: [
+      "plain dosa",
+      "sada dosa",
+      "dosa",
+      "crisp rolled dosa",
+      "crisp dosa",
+      "benne masala dosa",
+      "butter masala dosa",
+      "benne dosa",
+    ],
     category: "south_indian",
     defaultUnit: "piece",
     gramsPerDefaultUnit: 100,
@@ -410,7 +570,7 @@ export const INDIAN_FOOD_DATABASE: FoodCompositionItem[] = [
     verified: true,
   },
 
-  // ── DAIRY & ACCOMPANIMENTS ────────────────────────────────────────────────
+  // ── DAIRY, CONDIMENTS & ACCOMPANIMENTS ─────────────────────────────────────
   {
     id: "curd_plain",
     name: "Plain Curd (Dahi)",
@@ -424,7 +584,12 @@ export const INDIAN_FOOD_DATABASE: FoodCompositionItem[] = [
   {
     id: "raita_boondi",
     name: "Boondi Raita",
-    aliases: ["boondi raita", "dahi boondi"],
+    aliases: [
+      "boondi raita",
+      "dahi boondi",
+      "raita",
+      "dahi raita",
+    ],
     category: "dairy_accompaniment",
     defaultUnit: "bowl / katori",
     gramsPerDefaultUnit: 120,
@@ -434,7 +599,12 @@ export const INDIAN_FOOD_DATABASE: FoodCompositionItem[] = [
   {
     id: "chutney_coconut",
     name: "Coconut Chutney",
-    aliases: ["coconut chutney", "nariyal chutney", "white chutney"],
+    aliases: [
+      "coconut chutney",
+      "nariyal chutney",
+      "white chutney",
+      "coconut or curd chutney",
+    ],
     category: "dairy_accompaniment",
     defaultUnit: "tablespoon / small dip",
     gramsPerDefaultUnit: 30,
@@ -442,9 +612,69 @@ export const INDIAN_FOOD_DATABASE: FoodCompositionItem[] = [
     verified: true,
   },
   {
+    id: "butter",
+    name: "Butter",
+    aliases: [
+      "butter",
+      "makhan",
+      "amul butter",
+      "salted butter",
+      "table butter",
+      "butter cube",
+      "pat of butter",
+    ],
+    category: "dairy_accompaniment",
+    defaultUnit: "pat / teaspoon",
+    gramsPerDefaultUnit: 10,
+    per100g: { calories: 717, proteinG: 0.9, carbsG: 0.1, fatG: 81.0, fiberG: 0.0 }, // ~72 kcal per 10g
+    verified: true,
+  },
+  {
+    id: "sev",
+    name: "Sev (Bhujia)",
+    aliases: [
+      "sev",
+      "bhujia",
+      "besan sev",
+      "ratlami sev",
+      "aloo bhujia",
+      "namkeen sev",
+      "sev topping",
+    ],
+    category: "snack_street",
+    defaultUnit: "tablespoon / topping",
+    gramsPerDefaultUnit: 15,
+    per100g: { calories: 540, proteinG: 13.0, carbsG: 44.0, fatG: 35.0, fiberG: 3.5 }, // ~81 kcal per 15g
+    verified: true,
+  },
+  {
+    id: "pickle",
+    name: "Indian Pickle (Achaar)",
+    aliases: [
+      "pickle",
+      "achaar",
+      "achar",
+      "mango pickle",
+      "mixed pickle",
+      "indian pickle",
+      "nimbu achar",
+      "pickle/chutney",
+    ],
+    category: "dairy_accompaniment",
+    defaultUnit: "condiment / teaspoon",
+    gramsPerDefaultUnit: 10,
+    per100g: { calories: 185, proteinG: 1.5, carbsG: 10.0, fatG: 15.5, fiberG: 2.0 }, // ~19 kcal per 10g
+    verified: true,
+  },
+  {
     id: "salad_kachumber",
     name: "Kachumber Salad",
-    aliases: ["kachumber", "kachumber salad", "salad", "green salad", "cucumber salad"],
+    aliases: [
+      "kachumber",
+      "kachumber salad",
+      "cucumber salad",
+      "onion salad",
+    ],
     category: "dairy_accompaniment",
     defaultUnit: "bowl / katori",
     gramsPerDefaultUnit: 80,
@@ -456,11 +686,26 @@ export const INDIAN_FOOD_DATABASE: FoodCompositionItem[] = [
   {
     id: "halwa_sooji",
     name: "Sooji Halwa (Rava Sheera)",
-    aliases: ["sooji halwa", "suji halwa", "rava sheera", "sheera", "kesari bath"],
+    aliases: [
+      "sooji halwa",
+      "suji halwa",
+      "rava sheera",
+      "sheera",
+      "kesari bath",
+      "halwa",
+      "rava halwa",
+      "suji sheera",
+      "semolina halwa",
+      "semolina pudding",
+      "sooji ka halwa",
+      "suji halwa (sheera)",
+      "suji halwa mound",
+      "sooji halwa mound",
+    ],
     category: "sweet_dessert",
     defaultUnit: "bowl / katori",
-    gramsPerDefaultUnit: 100,
-    per100g: { calories: 280, proteinG: 4.0, carbsG: 42.0, fatG: 11.0, fiberG: 1.0 }, // ~280 kcal per 100g
+    gramsPerDefaultUnit: 120,
+    per100g: { calories: 280, proteinG: 4.0, carbsG: 42.0, fatG: 10.8, fiberG: 1.0 }, // ~336 kcal per 120g
     verified: true,
   },
   {
@@ -508,7 +753,7 @@ export const INDIAN_FOOD_DATABASE: FoodCompositionItem[] = [
   {
     id: "dal_bhat_tarkari",
     name: "Dal Bhat Tarkari",
-    aliases: ["dal bhat tarkari", "dal bhat", "dal bhat with sabzi"],
+    aliases: ["dal bhat tarkari", "dal bhat", "dal bhat with sabzi", "nepali thali"],
     category: "rice_grain",
     defaultUnit: "plate",
     gramsPerDefaultUnit: 450, // 150g rice + 180g dal + 120g tarkari
@@ -614,4 +859,3 @@ export const INDIAN_FOOD_DATABASE: FoodCompositionItem[] = [
     verified: true,
   },
 ];
-

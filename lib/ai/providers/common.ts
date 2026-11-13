@@ -17,6 +17,14 @@ Identify dishes and items in the photo. Do NOT calculate macros or calories.
 CRITICAL RULES:
 - The plate can be ANY Indian dish (cheela, dosa, uttapam, poha, upma, khichdi, halwa, rice dishes, thalis, street food, snacks, etc.). Do not assume it is a flatbread unless clearly visible.
 - Chapati vs Paratha: Chapati is thin, soft, puffed with dry tawa spots; Paratha is thicker, layered, crisp or golden-brown with ghee/oil.
+- Homestyle Default Preparation: Assume standard home-cooked preparation with moderate cooking oil/ghee (not deep-fried or drenched in restaurant butter/cream unless clearly visible).
+- Volumetric Anchors (Reference Portions):
+  * 1 standard roti / chapati: 30-35g (~90-100 kcal)
+  * 1 besan cheela: 50-60g (~100-115 kcal; 100g plate = ~195-200 kcal)
+  * 1 plain or masala dosa: 80-100g (~170-200 kcal) + sambar 100g (~55 kcal) + chutney 25g (~35 kcal) -> ~270-295 kcal total
+  * 1 katori dal / rajma / chole: 120-150g (~120-180 kcal)
+  * 1 katori sooji halwa: 100-120g (~280-340 kcal)
+  * 1 plate poha / khichdi / pulao: 180-200g (~210-290 kcal)
 - When unsure or when dishes look visually similar, explain your uncertainty in notes and lower your confidence score.
 - Notes must be concise (1-2 sentences maximum, under 40 words). Do not include conversational filler or lengthy essays.
 - For each visible food item, specify the name, approximate numeric quantity, and unit (prefer grams 'g' or 'ml' if known/estimated, e.g. 120 g, 160 g, 190 ml, or piece, katori, bowl, plate, cup, tbsp, serving).

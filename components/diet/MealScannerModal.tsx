@@ -16,6 +16,7 @@ import {
 import { cn } from "@/lib/utils";
 import MacroDonutBreakdown from "@/components/diet/MacroDonutBreakdown";
 import { resolveDishThumbnail } from "@/lib/diet/dishMatcher";
+import { resolveFoodItem } from "@/lib/ai/nutrition/calculator";
 import type { MealEntry } from "@/types";
 
 export type MealScannerModalProps = {
@@ -220,6 +221,27 @@ export default function MealScannerModal({
 
   const handleAppendHint = (modifier: string) => {
     setHint((prev) => (prev.trim() ? `${prev.trim()}, ${modifier}` : modifier));
+  };
+
+  const handleSelectCandidate = (candidateName: string) => {
+    const matched = resolveFoodItem(candidateName);
+    if (matched) {
+      const grams = matched.gramsPerDefaultUnit || 100;
+      const factor = grams / 100;
+      setResult((prev: any) => ({
+        ...prev,
+        name: candidateName,
+        calories: Math.round(matched.per100g.calories * factor),
+        proteinG: Math.round(matched.per100g.proteinG * factor),
+        carbsG: Math.round(matched.per100g.carbsG * factor),
+        fatG: Math.round(matched.per100g.fatG * factor),
+      }));
+    } else {
+      setResult((prev: any) => ({
+        ...prev,
+        name: candidateName,
+      }));
+    }
   };
 
   // Real macros extracted strictly from real AI estimation
@@ -526,17 +548,38 @@ export default function MealScannerModal({
                     </h3>
                   </div>
 
-                  <div className="flex items-center justify-between pt-1 border-t border-white/10">
-                    <span className="text-xs text-stone-300 font-medium">Portion calibration</span>
-                    <div className="bg-white/10 border border-white/10 rounded-full px-2 py-1 flex items-center gap-1.5 text-xs text-white shrink-0">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2 border-t border-white/10">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-stone-300 font-medium">Portion</span>
+                      {/* 1-tap quick multiplier chips */}
+                      <div className="flex items-center gap-1">
+                        {[0.5, 1.0, 1.5, 2.0].map((m) => (
+                          <button
+                            key={m}
+                            type="button"
+                            onClick={() => setPortionMultiplier(m)}
+                            className={cn(
+                              "px-2.5 py-0.5 rounded-full text-[11px] font-semibold transition-all cursor-pointer active:scale-95",
+                              Math.abs(portionMultiplier - m) < 0.05
+                                ? "bg-[#E05A47] text-white shadow-xs"
+                                : "bg-white/10 text-stone-300 hover:bg-white/20"
+                            )}
+                          >
+                            {m}×
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="bg-white/10 border border-white/10 rounded-full px-2 py-1 flex items-center gap-1.5 text-xs text-white shrink-0 self-end sm:self-auto">
                       <button
                         type="button"
+                        aria-label="Decrease portion"
                         onClick={() =>
                           setPortionMultiplier((prev) =>
-                            Math.max(0.5, Math.round((prev - 0.25) * 100) / 100)
+                            Math.max(0.25, Math.round((prev - 0.25) * 100) / 100)
                           )
                         }
-                        className="w-6 h-6 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center font-bold transition-all cursor-pointer"
+                        className="w-6 h-6 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center font-bold transition-all cursor-pointer active:scale-95"
                       >
                         -
                       </button>
@@ -545,12 +588,13 @@ export default function MealScannerModal({
                       </span>
                       <button
                         type="button"
+                        aria-label="Increase portion"
                         onClick={() =>
                           setPortionMultiplier((prev) =>
                             Math.min(3.0, Math.round((prev + 0.25) * 100) / 100)
                           )
                         }
-                        className="w-6 h-6 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center font-bold transition-all cursor-pointer"
+                        className="w-6 h-6 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center font-bold transition-all cursor-pointer active:scale-95"
                       >
                         +
                       </button>
@@ -596,7 +640,7 @@ export default function MealScannerModal({
                           <button
                             key={cand.name}
                             type="button"
-                            onClick={() => setResult({ ...result, name: cand.name })}
+                            onClick={() => handleSelectCandidate(cand.name)}
                             className={cn(
                               "text-xs px-3 py-1 rounded-full transition-all cursor-pointer font-medium",
                               cand.name === detectedDishName

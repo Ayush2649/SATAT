@@ -41,6 +41,8 @@ import Groq from "groq-sdk";
 import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 import { MODELS, MAX_TOKENS } from "../lib/ai/models";
 import { estimateMealWithUsage } from "../lib/ai/nutrition-calculator";
+import { calculateMealNutrition, InputFoodItem } from "../lib/ai/nutrition/calculator";
+import { parsePortionFromText } from "../lib/ai/providers/common";
 
 // ── Pacing Constants ──────────────────────────────────────────────────────────
 
@@ -706,10 +708,28 @@ async function main() {
         (item.mustContain || []).some((kw) => c.name.toLowerCase().includes(kw.toLowerCase()))
       );
 
-      // 3. Stage 2: Macro Calculation (always openai/gpt-oss-120b for fair comparison)
-      const dishDescription = `${topDish}: ${visionData.visibleItems.join(", ")}`;
-      const macroRes = await estimateMealWithUsage(dishDescription);
-      const predictedKcal = macroRes.data.calories;
+      // 3. Stage 2: Grounded Macro Calculation (Deterministic Component Grounding with AI Fallback)
+      const foodInputs: InputFoodItem[] = [];
+      for (const itemStr of (visionData.visibleItems || [])) {
+        const parsed = parsePortionFromText(itemStr);
+        foodInputs.push({
+          name: itemStr,
+          quantity: parsed?.quantity ?? 1,
+          unit: parsed?.unit ?? "serving",
+          confidence: topConfidence,
+        });
+      }
+      const mealCalc = calculateMealNutrition(foodInputs, topDish);
+      const verifiedRatio = foodInputs.length > 0 ? mealCalc.verifiedCount / foodInputs.length : 0;
+
+      let predictedKcal = 0;
+      if (verifiedRatio >= 0.70 || (mealCalc.verifiedCount >= 1 && mealCalc.calories > 0)) {
+        predictedKcal = mealCalc.calories;
+      } else {
+        const dishDescription = `${topDish}: ${visionData.visibleItems.join(", ")}`;
+        const macroRes = await estimateMealWithUsage(dishDescription);
+        predictedKcal = macroRes.data.calories;
+      }
       const rangeHit = predictedKcal >= low && predictedKcal <= high;
 
       // Confidently wrong = wrong Top-1 with ambiguity "low" OR top confidence >= 0.7

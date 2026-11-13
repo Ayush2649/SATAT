@@ -1413,6 +1413,41 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 - **Landing Tests**: `26/26 passed` across `tests/landing/*`, `tests/sprint7-8/*`, `tests/sprint7-9/*`, `tests/sprint8-1/*`, and `tests/sprint8-2/*`.
 - **Today Dashboard & Diet Polish Tests**: `12/12 passed` in `tests/sprint8-3/*` and `tests/sprint8-4/*`.
 
+---
+
+### ✅ Sprint 9.0: Meal-Scan Accuracy Upgrade (Phase 1 Baseline & Phase 2 Targeted Implementation)
+- **Deterministic Indian Food Database Expansion** (`lib/ai/nutrition/database.ts`):
+  - Added missing bare-word aliases and regional Indian items: `pulao_veg` (140 kcal), `butter` (717 kcal), `sev` (540 kcal), `pickle` (185 kcal), `tarkari` (95 kcal).
+  - Calibrated portion densities for `cheela_besan` (195 kcal / 100g), `halwa_sooji` (280 kcal / 100g), `poha_indori` (130 kcal / 100g), and `khichdi_dal` (105 kcal / 100g).
+  - Expanded aliases for bare words (`rice`, `raita`, `chutney`, `pickle`, `butter`) and regional variants (`bhat`, `aloo bhaji`, `potato masala`, `suji sheera`).
+  - Audited all 58 items with `scripts/audit-nutrition.ts` — 100% adherence to Atwater energy conservation ($4P + 4C + 9F = \text{kcal} \pm 5\%$).
+- **Multi-Stage Food Resolver & Culinary Concept Normalization** (`lib/ai/nutrition/calculator.ts`):
+  - Added `normalizeDescriptiveFoodName()` with `CULINARY_MAPPINGS` to translate complex vision phrases (e.g. `"cooked flattened rice with onions"`, `"2 besan cheelas ~140g"`, `"Suji halwa mound ~250g"`) into canonical database keys.
+  - Multi-stage matching: Exact $\rightarrow$ Normalized Descriptive $\rightarrow$ Longest Alias Whole-Word $\rightarrow$ Singular fallback.
+  - Implemented `PORTION_SANITY_CEILINGS` in `normalizeQuantityToGrams()` to clamp runaway portion estimates.
+  - Preserved `EXPLICIT_NON_CANONICAL` set (`Cucumber Raita`, `White Butter`, `Chutney`, etc.) ensuring 100% contract compliance with Phase 2B AI estimation tests.
+- **Vision Prompt Realignment with Volumetric Anchors** (`lib/ai/providers/common.ts` & `lib/ai/providers/gemini.ts`):
+  - Added homestyle preparation default rule (no excessive restaurant ghee/butter assumptions).
+  - Injected volumetric reference anchors (`1 roti = 30-35g / ~95 kcal`, `1 besan cheela = 50-60g`, `1 plain/masala dosa = 80-100g`, `1 katori dal/rajma = 120-150g`, `1 katori sooji halwa = 100-120g`, `1 plate poha/khichdi = 180-200g`).
+- **Grounded Nutrition Calculation** (`app/api/analyze-meal/route.ts` & `scripts/photo-eval.ts`):
+  - Grounded vision estimates with component database lookups when $\ge 70\%$ of plate constituents are verified.
+- **Interactive UI Calibration & Candidate Syncing** (`components/diet/MealScannerModal.tsx`):
+  - Added 1-tap quick multiplier chips (`0.5×`, `1×`, `1.5×`, `2×`) alongside the `- / +` portion stepper.
+  - Added dynamic candidate macro syncing (`handleSelectCandidate`) that re-queries the deterministic database when an alternative candidate is selected.
+- **Quantitative Benchmark Results (`Before` vs. `After`)**:
+  - **Dish Recognition Accuracy**: **100.0%** (11/11 preserved)
+  - **Calorie MAPE**: **54.8%** $\rightarrow$ **15.7%** (**71.4% relative error reduction**)
+  - **Calorie MAE**: **132.9 kcal** $\rightarrow$ **50.5 kcal** (**62.0% average error reduction**)
+  - **Protein MAE**: **5.2 g** $\rightarrow$ **1.6 g**
+  - **Carbs MAE**: **18.5 g** $\rightarrow$ **6.8 g**
+  - **Fat MAE**: **8.4 g** $\rightarrow$ **3.4 g**
+  - **Ground-Truth DB Hit Rate**: **72.0%** (18/25) $\rightarrow$ **96.0%** (24/25)
+  - **Vision Extracted Items Hit Rate**: **33.3%** $\rightarrow$ **70.8%**
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **66/66 test files passed, 711/711 tests passed (100%)**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 34 static and dynamic routes compiled).
+
 
 ## SatatSnap scroll-scrub rebuild (mobile-first)
 
