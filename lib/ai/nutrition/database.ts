@@ -630,6 +630,25 @@ export const INDIAN_FOOD_DATABASE: FoodCompositionItem[] = [
     verified: true,
   },
   {
+    id: "ghee",
+    name: "Desi Ghee",
+    aliases: [
+      "ghee",
+      "desi ghee",
+      "cow ghee",
+      "clarified butter",
+      "tsp ghee",
+      "spoon ghee",
+      "teaspoon ghee",
+      "1 tsp ghee",
+    ],
+    category: "dairy_accompaniment",
+    defaultUnit: "teaspoon",
+    gramsPerDefaultUnit: 5,
+    per100g: { calories: 900, proteinG: 0.0, carbsG: 0.0, fatG: 99.5, fiberG: 0.0 }, // ~45 kcal per 5g tsp
+    verified: true,
+  },
+  {
     id: "sev",
     name: "Sev (Bhujia)",
     aliases: [

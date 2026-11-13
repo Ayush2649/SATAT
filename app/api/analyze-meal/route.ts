@@ -265,7 +265,7 @@ export async function POST(req: NextRequest) {
     // Stage 2: Nutrition Routing & AI Estimation Fallback
     const nutritionFoods: InputFoodItem[] =
       visionData.foods && visionData.foods.length > 0
-        ? visionData.foods
+        ? [...visionData.foods]
         : visionData.visibleItems.map((item) => {
             const portion = parsePortionFromText(item);
             const name =
@@ -285,6 +285,48 @@ export async function POST(req: NextRequest) {
             };
           });
 
+    // Incorporate user hint add-ons cleanly into nutritionFoods if not already detected
+    const userHintLower = (hint || "").trim().toLowerCase();
+    const finalVisibleItems = [...visionData.visibleItems];
+
+    if (userHintLower) {
+      if (/\b(whey|protein\s+scoop|protein\s+powder)\b/i.test(userHintLower)) {
+        const hasWhey = nutritionFoods.some((f) => /whey|protein\s+powder/i.test(f.name));
+        if (!hasWhey) {
+          nutritionFoods.push({ name: "Whey Protein Isolate", quantity: 30, unit: "g" });
+          if (!finalVisibleItems.some((v) => /whey/i.test(v))) {
+            finalVisibleItems.push("Whey protein ~30 g");
+          }
+        }
+      }
+
+      if (/\b(ghee|desi\s+ghee)\b/i.test(userHintLower)) {
+        const hasGhee = nutritionFoods.some((f) => /\bghee\b/i.test(f.name));
+        if (!hasGhee) {
+          nutritionFoods.push({ name: "Desi Ghee", quantity: 5, unit: "g" });
+          if (!finalVisibleItems.some((v) => /\bghee\b/i.test(v))) {
+            finalVisibleItems.push("Ghee ~5 g");
+          }
+        }
+      }
+
+      if (/\b(boiled\s+egg|whole\s+egg|egg)\b/i.test(userHintLower)) {
+        const hasEgg = nutritionFoods.some((f) => /\b(egg|boiled\s+egg)\b/i.test(f.name));
+        if (!hasEgg) {
+          nutritionFoods.push({ name: "Whole Egg (Boiled)", quantity: 1, unit: "piece" });
+          if (!finalVisibleItems.some((v) => /\begg\b/i.test(v))) {
+            finalVisibleItems.push("Boiled egg ~50 g");
+          }
+        }
+      }
+
+      if (/\b(home[- ]cooked|low\s+oil|homemade)\b/i.test(userHintLower)) {
+        if (!finalVisibleItems.some((v) => /home[- ]cooked/i.test(v))) {
+          finalVisibleItems.push("Home-cooked (low oil)");
+        }
+      }
+    }
+
     const tDb0 = performance.now();
     const routed = routeFoodItems(nutritionFoods);
     const dbLookupMs = performance.now() - tDb0;
@@ -300,6 +342,15 @@ export async function POST(req: NextRequest) {
     const tCalc0 = performance.now();
     const nutritionResult = calculateMealNutrition(finalFoods, primaryCandidate.name);
     const nutritionCalcMs = performance.now() - tCalc0;
+
+    // Apply home-cooked modifier fat reduction if specified in hint
+    let finalCalories = nutritionResult.calories;
+    let finalFatG = nutritionResult.fatG;
+    if (userHintLower && /\b(home[- ]cooked|low\s+oil|homemade)\b/i.test(userHintLower)) {
+      const fatReduction = Math.min(8, Math.round(finalFatG * 0.25));
+      finalFatG = Math.max(0, finalFatG - fatReduction);
+      finalCalories = Math.max(0, finalCalories - fatReduction * 9);
+    }
 
     const totalServerMs = performance.now() - tServer0;
 
@@ -337,16 +388,16 @@ export async function POST(req: NextRequest) {
     // Response preserves all fields required by DietPage.tsx frontend, enriched with candidate & range details
     return NextResponse.json({
       name: primaryCandidate.name,
-      calories: nutritionResult.calories,
+      calories: finalCalories,
       calorieRange: nutritionResult.calorieRange,
       proteinG: nutritionResult.proteinG,
       carbsG: nutritionResult.carbsG,
-      fatG: nutritionResult.fatG,
+      fatG: finalFatG,
       fiberG: nutritionResult.fiberG,
       confidence: primaryCandidate.confidence,
       notes: visionData.notes,
       candidates: distinctCandidates,
-      visibleItems: visionData.visibleItems,
+      visibleItems: finalVisibleItems,
       ambiguity,
       foods: nutritionResult.items,
       unknownFoods: nutritionResult.unknownFoods,

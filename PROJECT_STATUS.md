@@ -1398,6 +1398,29 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - Vitest suite: **66/66 test files passed, 711/711 tests passed (100%)**.
   - Production Next.js build: `npm run build` exits with code **0** (all 34 static and dynamic routes compiled).
 
+### ✅ Sprint 9.2: Interactive Quick Modifier Pills & Live Scan Macro Toggling (`MealScannerModal.tsx`, `analyze-meal/route.ts`, `database.ts`, `tests/diet/mealScannerModal.test.tsx`)
+- **Deterministic Modifier Presets & Live 0ms Calculations** (`components/diet/MealScannerModal.tsx`):
+  - Defined 4 deterministic quick-modifier presets:
+    - `+ 1 Scoop Whey`: 120 kcal, 24g protein, 3g carbs, 1.5g fat.
+    - `+ 1 tsp Ghee`: 45 kcal, 0g protein, 0g carbs, 5g fat.
+    - `+ Boiled Egg`: 78 kcal, 6g protein, 1g carbs, 5g fat.
+    - `Home Cooked`: reduces base scan fat by 25% (up to 8g) and subtracts `fatReduction * 9` kcal.
+  - Implemented `calculateLiveScanMacros()` pure calculation engine to update `MacroDonutBreakdown`, total calories, and all macro bars instantly in 0ms upon pill toggle.
+  - Bidirectional sync: clicking a modifier pill updates `activeModifiers` and cleanly appends/removes its label in the `CONTEXT HINT` input string.
+  - Active modifier pills styled in signature emerald (`bg-[#2D6A4F] text-white border border-[#34D399]/40 shadow-xs` with `✓` icon) vs neutral alabaster/stone when inactive.
+  - Active add-on chips (`"Whey protein ~30 g"`, `"Ghee ~5 g"`, `"Boiled egg ~50 g"`, `"Home-cooked (low oil)"`) dynamically injected as highlighted emerald pills into `PLATE COMPONENTS DETECTED`.
+  - Saved meal name formatting: cleanly incorporates active add-ons (e.g., `"Besan Cheela + 1 Scoop Whey"` or `"Home-Cooked Aloo Paratha (1.5×)"`).
+- **Inline Custom Hint Re-Analysis Button** (`components/diet/MealScannerModal.tsx`):
+  - Embedded a compact Coral Ember `Apply Hint ↻` button inside the right edge of the Context Hint input box when a photo has been scanned, and bound `Enter` keydown to trigger instant re-analysis with custom free-form hints.
+- **Server-Side Hint Parsing & Double-Counting Safeguard** (`app/api/analyze-meal/route.ts` & `lib/ai/nutrition/database.ts`):
+  - Added canonical `ghee` item (`id: "ghee"`, 900 kcal/100g, 99.5g fat, 45 kcal / 5g tsp) to `INDIAN_FOOD_DATABASE` with 100% Atwater verification.
+  - Server inspects user hints before nutrition calculation, adding unrepresented add-ons to `nutritionFoods` and returning them in `visibleItems`.
+  - `MealScannerModal.tsx` detects if the server already included an add-on in `result.visibleItems` and adjusts `addonCalories` to 0, preventing double-counting.
+- **Verification Gate**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **66/66 test files passed, 718/718 tests passed (100%)** including 7 new unit tests in `tests/diet/mealScannerModal.test.tsx`.
+  - Production Next.js build: `npm run build` exits with code **0** (all 34 static and dynamic routes compiled).
+
 ---
 
 ## 4. Current Quality & Build Metrics
@@ -1446,6 +1469,29 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 - **Zero Regression Standard Verified**:
   - `npx tsc --noEmit`: **0 errors**.
   - Vitest suite: **66/66 test files passed, 711/711 tests passed (100%)**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 34 static and dynamic routes compiled).
+
+### ✅ Sprint 9.2: Interactive Quick Modifier Pills & Live Scan Macro Toggling (`MealScannerModal.tsx`, `analyze-meal/route.ts`, `database.ts`, `tests/diet/mealScannerModal.test.tsx`)
+- **Deterministic Modifier Presets & Live 0ms Calculations** (`components/diet/MealScannerModal.tsx`):
+  - Defined 4 deterministic quick-modifier presets:
+    - `+ 1 Scoop Whey`: 120 kcal, 24g protein, 3g carbs, 1.5g fat.
+    - `+ 1 tsp Ghee`: 45 kcal, 0g protein, 0g carbs, 5g fat.
+    - `+ Boiled Egg`: 78 kcal, 6g protein, 1g carbs, 5g fat.
+    - `Home Cooked`: reduces base scan fat by 25% (up to 8g) and subtracts `fatReduction * 9` kcal.
+  - Implemented `calculateLiveScanMacros()` pure calculation engine to update `MacroDonutBreakdown`, total calories, and all macro bars instantly in 0ms upon pill toggle.
+  - Bidirectional sync: clicking a modifier pill updates `activeModifiers` and cleanly appends/removes its label in the `CONTEXT HINT` input string.
+  - Active modifier pills styled in signature emerald (`bg-[#2D6A4F] text-white border border-[#34D399]/40 shadow-xs` with `✓` icon) vs neutral alabaster/stone when inactive.
+  - Active add-on chips (`"Whey protein ~30 g"`, `"Ghee ~5 g"`, `"Boiled egg ~50 g"`, `"Home-cooked (low oil)"`) dynamically injected as highlighted emerald pills into `PLATE COMPONENTS DETECTED`.
+  - Saved meal name formatting: cleanly incorporates active add-ons (e.g., `"Besan Cheela + 1 Scoop Whey"` or `"Home-Cooked Aloo Paratha (1.5×)"`).
+- **Inline Custom Hint Re-Analysis Button** (`components/diet/MealScannerModal.tsx`):
+  - Embedded a compact Coral Ember `Apply Hint ↻` button inside the right edge of the Context Hint input box when a photo has been scanned, and bound `Enter` keydown to trigger instant re-analysis with custom free-form hints.
+- **Server-Side Hint Parsing & Double-Counting Safeguard** (`app/api/analyze-meal/route.ts` & `lib/ai/nutrition/database.ts`):
+  - Added canonical `ghee` item (`id: "ghee"`, 900 kcal/100g, 99.5g fat, 45 kcal / 5g tsp) to `INDIAN_FOOD_DATABASE` with 100% Atwater verification.
+  - Server inspects user hints before nutrition calculation, adding unrepresented add-ons to `nutritionFoods` and returning them in `visibleItems`.
+  - `MealScannerModal.tsx` detects if the server already included an add-on in `result.visibleItems` and adjusts `addonCalories` to 0, preventing double-counting.
+- **Verification Gate**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **66/66 test files passed, 718/718 tests passed (100%)** including 7 new unit tests in `tests/diet/mealScannerModal.test.tsx`.
   - Production Next.js build: `npm run build` exits with code **0** (all 34 static and dynamic routes compiled).
 
 

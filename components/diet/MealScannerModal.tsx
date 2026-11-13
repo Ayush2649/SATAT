@@ -29,6 +29,178 @@ export type MealScannerModalProps = {
   onSwitchToVoice?: () => void;
 };
 
+export interface QuickModifierPreset {
+  label: string;
+  componentChip: string;
+  calories?: number;
+  proteinG?: number;
+  carbsG?: number;
+  fatG?: number;
+  isHomeCookedModifier?: boolean;
+}
+
+export const QUICK_MODIFIERS: QuickModifierPreset[] = [
+  {
+    label: "+ 1 Scoop Whey",
+    componentChip: "Whey protein ~30 g",
+    calories: 120,
+    proteinG: 24,
+    carbsG: 3,
+    fatG: 1.5,
+  },
+  {
+    label: "+ 1 tsp Ghee",
+    componentChip: "Ghee ~5 g",
+    calories: 45,
+    proteinG: 0,
+    carbsG: 0,
+    fatG: 5,
+  },
+  {
+    label: "+ Boiled Egg",
+    componentChip: "Boiled egg ~50 g",
+    calories: 78,
+    proteinG: 6,
+    carbsG: 1,
+    fatG: 5,
+  },
+  {
+    label: "Home Cooked",
+    componentChip: "Home-cooked (low oil)",
+    isHomeCookedModifier: true,
+  },
+];
+
+export interface LiveScanMacroOptions {
+  baseCalories: number;
+  baseProtein: number;
+  baseCarbs: number;
+  baseFat: number;
+  portionMultiplier?: number;
+  activeModifiers: string[];
+  serverVisibleItems?: string[];
+  hintText?: string;
+}
+
+export interface LiveScanMacroResult {
+  currentCalories: number;
+  currentProtein: number;
+  currentCarbs: number;
+  currentFat: number;
+  addonCalories: number;
+  addonProtein: number;
+  addonCarbs: number;
+  addonFat: number;
+  fatReduction: number;
+}
+
+export function calculateLiveScanMacros({
+  baseCalories,
+  baseProtein,
+  baseCarbs,
+  baseFat,
+  portionMultiplier = 1.0,
+  activeModifiers = [],
+  serverVisibleItems = [],
+  hintText = "",
+}: LiveScanMacroOptions): LiveScanMacroResult {
+  let scaledCalories = Math.round(baseCalories * portionMultiplier);
+  let scaledCarbs = Math.round(baseCarbs * portionMultiplier);
+  let scaledFat = Math.round(baseFat * portionMultiplier);
+  let scaledProtein = Math.round(baseProtein * portionMultiplier);
+
+  const isHomeCookedActive = activeModifiers.includes("Home Cooked");
+  const serverHasHomeCooked = serverVisibleItems.some((v) => /home[- ]cooked/i.test(v));
+  let fatReduction = 0;
+
+  if (isHomeCookedActive && !serverHasHomeCooked) {
+    fatReduction = Math.min(8, Math.round(scaledFat * 0.25));
+    scaledFat = Math.max(0, scaledFat - fatReduction);
+    scaledCalories = Math.max(0, scaledCalories - fatReduction * 9);
+  }
+
+  let addonCalories = 0;
+  let addonProtein = 0;
+  let addonCarbs = 0;
+  let addonFat = 0;
+
+  for (const mod of QUICK_MODIFIERS) {
+    if (mod.isHomeCookedModifier) continue;
+    const isActive = activeModifiers.includes(mod.label);
+    let serverHasMod = false;
+
+    if (mod.label === "+ 1 Scoop Whey") {
+      serverHasMod = serverVisibleItems.some((v) => /whey|protein powder/i.test(v));
+    } else if (mod.label === "+ 1 tsp Ghee") {
+      serverHasMod = serverVisibleItems.some((v) => /\bghee\b/i.test(v));
+    } else if (mod.label === "+ Boiled Egg") {
+      serverHasMod = serverVisibleItems.some((v) => /\b(boiled\s+egg|egg)\b/i.test(v));
+    }
+
+    if (isActive && !serverHasMod) {
+      addonCalories += mod.calories || 0;
+      addonProtein += mod.proteinG || 0;
+      addonCarbs += mod.carbsG || 0;
+      addonFat += mod.fatG || 0;
+    }
+  }
+
+  const lowerHint = hintText.toLowerCase();
+  if (
+    lowerHint &&
+    !activeModifiers.includes("+ 1 Scoop Whey") &&
+    !serverVisibleItems.some((v) => /whey/i.test(v)) &&
+    /\bwhey\b/i.test(lowerHint)
+  ) {
+    addonCalories += 120;
+    addonProtein += 24;
+    addonCarbs += 3;
+    addonFat += 1.5;
+  }
+  if (
+    lowerHint &&
+    !activeModifiers.includes("+ 1 tsp Ghee") &&
+    !serverVisibleItems.some((v) => /\bghee\b/i.test(v)) &&
+    /\bghee\b/i.test(lowerHint)
+  ) {
+    addonCalories += 45;
+    addonFat += 5;
+  }
+  if (
+    lowerHint &&
+    !activeModifiers.includes("+ Boiled Egg") &&
+    !serverVisibleItems.some((v) => /\begg\b/i.test(v)) &&
+    /\b(boiled\s+egg|egg)\b/i.test(lowerHint)
+  ) {
+    addonCalories += 78;
+    addonProtein += 6;
+    addonCarbs += 1;
+    addonFat += 5;
+  }
+  if (
+    lowerHint &&
+    !serverVisibleItems.some((v) => /curd|dahi/i.test(v)) &&
+    /\b(curd|dahi)\b/i.test(lowerHint)
+  ) {
+    addonCalories += 60;
+    addonProtein += 3.5;
+    addonCarbs += 4.7;
+    addonFat += 3.3;
+  }
+
+  return {
+    currentCalories: Math.max(0, Math.round(scaledCalories + addonCalories)),
+    currentProtein: Math.max(0, Math.round(scaledProtein + addonProtein)),
+    currentCarbs: Math.max(0, Math.round(scaledCarbs + addonCarbs)),
+    currentFat: Math.max(0, Math.round(scaledFat + addonFat)),
+    addonCalories,
+    addonProtein,
+    addonCarbs,
+    addonFat,
+    fatReduction,
+  };
+}
+
 // Client-side image resize helper (max 1024px, JPEG 0.82)
 async function resizeImageClient(
   file: File,
@@ -105,6 +277,7 @@ export default function MealScannerModal({
   const [scanStage, setScanStage] = useState("Compressing photo...");
   const [result, setResult] = useState<any>(null);
   const [hint, setHint] = useState("");
+  const [activeModifiers, setActiveModifiers] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [isPhotoUnavailable, setIsPhotoUnavailable] = useState(false);
   const [portionMultiplier, setPortionMultiplier] = useState(1.0);
@@ -141,6 +314,7 @@ export default function MealScannerModal({
     setError("");
     setIsPhotoUnavailable(false);
     setPortionMultiplier(1.0);
+    setActiveModifiers([]);
   };
 
   const handleFile = async (file: File) => {
@@ -195,6 +369,24 @@ export default function MealScannerModal({
       } else {
         setResult(data);
         setPortionMultiplier(1.0);
+
+        // Detect if any modifier was included by server
+        const detectedMods: string[] = [];
+        if (data.visibleItems?.some((v: string) => /whey|protein powder/i.test(v))) {
+          detectedMods.push("+ 1 Scoop Whey");
+        }
+        if (data.visibleItems?.some((v: string) => /\bghee\b/i.test(v))) {
+          detectedMods.push("+ 1 tsp Ghee");
+        }
+        if (data.visibleItems?.some((v: string) => /\b(boiled\s+egg|egg)\b/i.test(v))) {
+          detectedMods.push("+ Boiled Egg");
+        }
+        if (data.visibleItems?.some((v: string) => /home[- ]cooked/i.test(v))) {
+          detectedMods.push("Home Cooked");
+        }
+        if (detectedMods.length > 0) {
+          setActiveModifiers(detectedMods);
+        }
       }
     } catch (err: any) {
       if (err?.name === "AbortError") return;
@@ -219,8 +411,35 @@ export default function MealScannerModal({
         result.noFoodDetected)
   );
 
-  const handleAppendHint = (modifier: string) => {
-    setHint((prev) => (prev.trim() ? `${prev.trim()}, ${modifier}` : modifier));
+  const handleToggleModifier = (mod: QuickModifierPreset) => {
+    const isCurrentlyActive = activeModifiers.includes(mod.label);
+    let updatedModifiers: string[];
+    if (isCurrentlyActive) {
+      updatedModifiers = activeModifiers.filter((m) => m !== mod.label);
+      setHint((prev) => {
+        const parts = prev
+          .split(",")
+          .map((p) => p.trim())
+          .filter(Boolean);
+        const filtered = parts.filter(
+          (p) => p.toLowerCase() !== mod.label.toLowerCase()
+        );
+        return filtered.join(", ");
+      });
+    } else {
+      updatedModifiers = [...activeModifiers, mod.label];
+      setHint((prev) => {
+        const parts = prev
+          .split(",")
+          .map((p) => p.trim())
+          .filter(Boolean);
+        if (!parts.some((p) => p.toLowerCase() === mod.label.toLowerCase())) {
+          parts.push(mod.label);
+        }
+        return parts.join(", ");
+      });
+    }
+    setActiveModifiers(updatedModifiers);
   };
 
   const handleSelectCandidate = (candidateName: string) => {
@@ -251,10 +470,31 @@ export default function MealScannerModal({
   const rawProtein = Number(result?.proteinG) || 0;
   const detectedDishName = result?.name || "Detected Meal";
 
-  const currentCalories = Math.round(rawCalories * portionMultiplier);
-  const currentCarbs = Math.round(rawCarbs * portionMultiplier);
-  const currentFat = Math.round(rawFat * portionMultiplier);
-  const currentProtein = Math.round(rawProtein * portionMultiplier);
+  const {
+    currentCalories,
+    currentCarbs,
+    currentFat,
+    currentProtein,
+  } = calculateLiveScanMacros({
+    baseCalories: rawCalories,
+    baseProtein: rawProtein,
+    baseCarbs: rawCarbs,
+    baseFat: rawFat,
+    portionMultiplier,
+    activeModifiers,
+    serverVisibleItems: result?.visibleItems || [],
+    hintText: hint,
+  });
+
+  const activeAddonChips = QUICK_MODIFIERS
+    .filter((mod) => activeModifiers.includes(mod.label))
+    .map((mod) => mod.componentChip)
+    .filter((chip) => {
+      const keyword = chip.toLowerCase().split(" ")[0];
+      return !result?.visibleItems?.some((v: string) =>
+        v.toLowerCase().includes(keyword)
+      );
+    });
 
   const handleLogPlateMeal = () => {
     if (currentCalories <= 0) {
@@ -262,13 +502,22 @@ export default function MealScannerModal({
       return;
     }
 
+    const activeAddonsForName = activeModifiers.filter((m) => m !== "Home Cooked");
+    let savedMealName = detectedDishName;
+    if (activeModifiers.includes("Home Cooked") && !savedMealName.toLowerCase().includes("home-cooked")) {
+      savedMealName = `Home-Cooked ${savedMealName}`;
+    }
+    if (portionMultiplier !== 1.0) {
+      savedMealName = `${savedMealName} (${portionMultiplier.toFixed(1)}×)`;
+    }
+    if (activeAddonsForName.length > 0) {
+      savedMealName = `${savedMealName} ${activeAddonsForName.join(" ")}`;
+    }
+
     onSave({
       userId,
       date,
-      name:
-        portionMultiplier !== 1.0
-          ? `${detectedDishName} (${portionMultiplier.toFixed(1)}×)`
-          : detectedDishName,
+      name: savedMealName,
       macros: {
         calories: currentCalories,
         proteinG: currentProtein,
@@ -474,30 +723,62 @@ export default function MealScannerModal({
               ) : null}
 
               {/* Context Hint Card */}
-              <div className="bg-[#FCFBF9] rounded-[24px] p-4 border border-[#1C1917]/[0.06] shadow-2xs">
+              <div className="bg-[#FCFBF9] dark:bg-[#1C221E] rounded-[24px] p-4 border border-[#1C1917]/[0.06] dark:border-white/10 shadow-2xs">
                 <label className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#8C857B] block mb-1.5">
                   CONTEXT HINT (OPTIONAL — OIL, GHEE, PREPARATION)
                 </label>
-                <input
-                  type="text"
-                  placeholder="e.g. 2 aloo parathas, extra ghee, whey scoop"
-                  value={hint}
-                  onChange={(e) => setHint(e.target.value)}
-                  className="w-full bg-[#F6F3EC] rounded-xl px-3.5 py-2.5 text-xs text-[#1C1917] outline-none border border-[#1C1917]/[0.06]"
-                />
+                <div className="relative flex items-center">
+                  <input
+                    type="text"
+                    placeholder="e.g. 2 aloo parathas, extra ghee, whey scoop"
+                    value={hint}
+                    onChange={(e) => setHint(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && result && !scanning && hint.trim()) {
+                        e.preventDefault();
+                        handleReanalyzeWithHint();
+                      }
+                    }}
+                    className={cn(
+                      "w-full bg-[#F6F3EC] dark:bg-[#191D1A]/60 rounded-xl px-3.5 py-2.5 text-xs text-[#1C1917] dark:text-[#FCFBF9] outline-none border border-[#1C1917]/[0.06] dark:border-white/10 transition-all",
+                      result && !scanning && hint.trim() ? "pr-28" : ""
+                    )}
+                  />
+                  {result && !scanning && hint.trim() && (
+                    <button
+                      type="button"
+                      onClick={handleReanalyzeWithHint}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-lg px-2.5 py-1 text-[10px] font-bold shadow-xs flex items-center gap-1 transition-all cursor-pointer active:scale-95"
+                      aria-label="Apply Hint and re-analyze"
+                    >
+                      <span>Apply Hint</span>
+                      <span className="text-xs">↻</span>
+                    </button>
+                  )}
+                </div>
 
                 {/* Quick-tap modifier pills */}
                 <div className="flex flex-wrap gap-1.5 mt-2.5">
-                  {["+ 1 tsp Ghee", "+ 1 Scoop Whey", "+ Boiled Egg", "Home Cooked"].map((mod) => (
-                    <button
-                      key={mod}
-                      type="button"
-                      onClick={() => handleAppendHint(mod)}
-                      className="bg-[#EFECE4] hover:bg-[#E2DDD2] text-[#57534E] hover:text-[#1C1917] rounded-full px-2.5 py-1 text-[10px] font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0"
-                    >
-                      {mod}
-                    </button>
-                  ))}
+                  {QUICK_MODIFIERS.map((mod) => {
+                    const isActive = activeModifiers.includes(mod.label);
+                    return (
+                      <button
+                        key={mod.label}
+                        type="button"
+                        onClick={() => handleToggleModifier(mod)}
+                        className={cn(
+                          "rounded-full px-3 py-1.5 text-[11px] font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-1.5 active:scale-95",
+                          isActive
+                            ? "bg-[#2D6A4F] text-white border border-[#34D399]/40 shadow-xs"
+                            : "bg-[#EFECE4] dark:bg-[#1C221E] text-[#57534E] dark:text-[#9CA39E] hover:bg-[#E2DDD2] hover:text-[#1C1917] dark:hover:text-white border border-transparent"
+                        )}
+                        aria-pressed={isActive}
+                      >
+                        {isActive && <Check className="w-3 h-3 text-[#34D399]" />}
+                        <span>{mod.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -611,18 +892,27 @@ export default function MealScannerModal({
                   />
 
                   {/* Detected Components Breakdown */}
-                  {result?.visibleItems && result.visibleItems.length > 0 && (
+                  {((result?.visibleItems && result.visibleItems.length > 0) || activeAddonChips.length > 0) && (
                     <div className="pt-2 border-t border-white/10">
                       <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-stone-400 block mb-1.5">
                         PLATE COMPONENTS DETECTED
                       </span>
                       <div className="flex flex-wrap gap-1.5">
-                        {result.visibleItems.map((item: string, idx: number) => (
+                        {result?.visibleItems?.map((item: string, idx: number) => (
                           <span
-                            key={idx}
+                            key={`base-${idx}`}
                             className="bg-white/10 text-stone-200 border border-white/10 rounded-full px-2.5 py-1 text-[11px] font-medium"
                           >
                             {item}
+                          </span>
+                        ))}
+                        {activeAddonChips.map((chip, idx) => (
+                          <span
+                            key={`addon-${idx}`}
+                            className="bg-[#2D6A4F] text-[#D1FAE5] border border-[#34D399]/40 rounded-full px-2.5 py-1 text-[11px] font-semibold inline-flex items-center gap-1 shadow-xs animate-fade-in"
+                          >
+                            <Check className="w-3 h-3 text-[#34D399]" />
+                            {chip}
                           </span>
                         ))}
                       </div>
