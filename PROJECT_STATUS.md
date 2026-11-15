@@ -7,6 +7,12 @@
 
 ---
 
+## 15 November 2026 — Complete branch delivery checkpoint
+
+- User authorized pushing all project changes to the current `feat/complete-ui-change-e2e` branch. Fetched the remote branch: eight existing local commits ahead, no divergent remote commits. Delivery targets this branch only; no main-branch merge or push.
+- Included the remaining legacy evaluation script, fifteen photo fixtures and its existing benchmark-results cache so the scan checks can be reproduced after checkout. These files are preserved as supplied. The legacy cache's calorie targets are unweighed assumptions, not measured accuracy; use the newer `scripts/meal-scan.eval.ts` and documented category/guardrail evidence for current checks.
+- Validation rerun before delivery: **70 files passed; 779 tests passed, 26 skipped, zero failures**. Production build **passed, exit 0**, all 34 routes generated; existing non-fatal lint warnings remain. No application code changes in this checkpoint. Environment files/credentials remain ignored.
+
 ## 15 November 2026 — Fuel header alignment (complete)
 
 - Fixed the mobile Fuel heading/actions layout: the header used a column below 480 px and right-aligned the action row, leaving an orphaned row and blank space beneath the heading. It now uses two columns with a flexible text area and aligned actions.
