@@ -443,7 +443,7 @@ export function mergeRoutedNutrition(
     if (est) {
       merged.push({
         ...item,
-        estimatedNutrition: est,
+        estimatedNutrition: { ...est, calorieRangeBasis: "portion" },
       });
     } else {
       // Failed estimation or unmappable -> unresolved (no estimatedNutrition)

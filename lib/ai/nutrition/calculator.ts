@@ -35,6 +35,7 @@ export interface InputFoodItem {
     fiberG?: number;
     source?: NutritionSource;
     calorieRange?: { low: number; high: number };
+    calorieRangeBasis?: "portion";
     grams?: number | null;
     basis?: "per_100g" | "per_100ml" | "per_unit" | "per_serving";
     nutritionPer100g?: {
@@ -118,6 +119,18 @@ const CULINARY_MAPPINGS: Array<[RegExp, string]> = [
   [/\b(potato\s+masala|aloo\s+bhaji|potato\s+bhaji)\b/gi, "sabzi"],
   [/\b(sauteed\s+greens|greens|saag)\b/gi, "sabzi"],
   [/\b(sliced\s+red\s+onion|sliced\s+onion)\b/gi, "onion salad"],
+  [/\b(black\s+coffee|espresso|americano|filter\s+coffee\s+black)\b/gi, "black coffee"],
+  [/\b(pasta\s+arrabbiata|penne\s+arrabbiata|tomato\s+pasta|red\s+sauce\s+pasta|tomato\s+basil\s+pasta|spaghetti)\b/gi, "pasta arrabbiata"],
+  [/\b(avocado\s+toast|avo\s+toast)\b/gi, "avocado toast"],
+  [/\b(grilled\s+salmon|salmon\s+fillet|baked\s+salmon)\b/gi, "grilled salmon"],
+  [/\b(quinoa\s+bowl|cooked\s+quinoa)\b/gi, "quinoa"],
+  [/\b(protein\s+shake|protein\s+smoothie|fruit\s+smoothie|banana\s+smoothie|berry\s+smoothie)\b/gi, "smoothie"],
+  [/\b(grilled\s+tofu|firm\s+tofu|pan\s+fried\s+tofu)\b/gi, "grilled tofu"],
+  [/\b(steamed\s+edamame|boiled\s+edamame|edamame\s+beans)\b/gi, "edamame"],
+  [/\b(steamed\s+broccoli|saut[eé]ed\s+broccoli|cooked\s+broccoli)\b/gi, "broccoli"],
+  [/\b(fresh\s+berries|blueberries|strawberries|raspberries|chia\s+bowl)\b/gi, "mixed berries"],
+  [/\b(chia\s+seeds|soaked\s+chia)\b/gi, "chia seeds"],
+  [/\b(oatmeal|rolled\s+oats|oats\s+porridge|oatmeal\s+bowl)\b/gi, "oats"],
 ];
 
 export function normalizeDescriptiveFoodName(raw: string): string {
@@ -158,6 +171,9 @@ export function normalizeDescriptiveFoodName(raw: string): string {
     .replace(/\bchutneys\b/g, "chutney")
     .replace(/\bpulaos\b/g, "pulao")
     .replace(/\bparanthas\b/g, "paratha")
+    .replace(/\bsamosas\b/g, "samosa")
+    .replace(/\btoasts\b/g, "toast")
+    .replace(/\bfillets\b/g, "fillet")
     .trim();
 
   return cleaned;
@@ -193,6 +209,9 @@ export function resolveFoodItem(rawName: string): FoodCompositionItem | null {
     if (item.aliases.some((alias) => alias.toLowerCase() === rawClean)) return item;
   }
 
+  // Alternatives describe an uncertain identity, not a verified ingredient.
+  if (/\/|\bor\b/i.test(rawName)) return null;
+
   // Pass 2: Normalized descriptive name
   const normalized = normalizeDescriptiveFoodName(rawName);
   if (normalized) {
@@ -211,6 +230,8 @@ export function resolveFoodItem(rawName: string): FoodCompositionItem | null {
       const aliasLower = alias.toLowerCase();
       // Skip very short aliases (< 3 chars) to avoid false positives
       if (aliasLower.length < 3) continue;
+      // Generic drink words must not verify an otherwise unknown recipe.
+      if (["shake", "smoothie"].includes(aliasLower)) continue;
 
       const escaped = aliasLower.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const wordRegex = new RegExp(`(^|\\s)${escaped}(\\s|$)`, "i");
@@ -269,12 +290,8 @@ export function normalizeQuantityToGrams(
 
   // If user or model specified grams
   if (u === "g" || u === "gram" || u === "grams") {
-    let g = Math.round(q);
-    if (item && PORTION_SANITY_CEILINGS[item.id] && g > PORTION_SANITY_CEILINGS[item.id]) {
-      // Clamp ungrounded vision portion estimate to physical plate ceiling
-      g = PORTION_SANITY_CEILINGS[item.id];
-    }
-    return g;
+    // Explicit weights can describe more than one serving; never silently cap them.
+    return Math.round(q);
   }
 
   // If user or model specified ml
@@ -421,11 +438,10 @@ export function calculateMealNutrition(
         carb = Math.round(p100.carbsG * factor);
         fat = Math.round(p100.fatG * factor);
         fib = p100.fiberG !== undefined ? Math.round(p100.fiberG * factor) : Math.round(est.fiberG ?? 0);
-        if (calRange) {
-          calRange = {
-            low: Math.round(calRange.low * factor),
-            high: Math.round(calRange.high * factor),
-          };
+        // Batched estimates mark ranges already scaled for the requested portion.
+        // Older callers retain their per-100g input contract.
+        if (calRange && est.calorieRangeBasis !== "portion") {
+          calRange = { low: Math.round(calRange.low * factor), high: Math.round(calRange.high * factor) };
         }
       } else {
         cals = Math.round(est.calories);
@@ -445,6 +461,9 @@ export function calculateMealNutrition(
       prot = enforcedEst.proteinG;
       carb = enforcedEst.carbsG;
       fat = enforcedEst.fatG;
+      if (calRange) {
+        calRange = { low: Math.max(0, Math.min(calRange.low, cals)), high: Math.max(calRange.high, cals) };
+      }
 
       calculatedItems.push({
         name: rawName,

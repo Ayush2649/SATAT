@@ -301,5 +301,87 @@ describe("Vision Pipeline & Circuit Breaker Architecture", () => {
       expect(body.error).toBe("PHOTO_UNAVAILABLE");
       expect(body.message).toContain("Photo scan is busy");
     });
+
+    it("triggers Non-Food Guardrail when no food is detected in the image", async () => {
+      vi.mocked(analyzeMealWithGemini).mockResolvedValueOnce({
+        foods: [],
+        candidates: [{ name: "No Food Detected", confidence: "high", rawConfidence: 0.99 }],
+        visibleItems: [],
+        ambiguity: "low",
+        notes: "A laptop and desk with no edible food.",
+        model: "gemini-3.8-flash",
+        provider: "gemini",
+        usage: {
+          promptTokens: 100,
+          completionTokens: 20,
+          thinkingTokens: 0,
+          cachedTokens: 0,
+          totalTokens: 120,
+          latencyMs: 400,
+        },
+      });
+
+      const dummyBase64 = "/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=";
+
+      const req = new NextRequest("http://localhost/api/analyze-meal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageBase64: dummyBase64,
+          mimeType: "image/jpeg",
+        }),
+      });
+
+      const res = await analyzeMealPOST(req);
+      expect(res.status).toBe(200);
+
+      const body = await res.json();
+      expect(body.noFoodDetected).toBe(true);
+      expect(body.calories).toBe(0);
+      expect(body.proteinG).toBe(0);
+      expect(body.carbsG).toBe(0);
+      expect(body.fatG).toBe(0);
+      expect(body.name).toBe("No Food Detected");
+    });
+
+    it("evaluates Low-Calorie Beverage Guardrail for black coffee accurately under 35 kcal", async () => {
+      vi.mocked(analyzeMealWithGemini).mockResolvedValueOnce({
+        foods: [{ name: "Black Coffee", quantity: 1, unit: "cup", confidence: 0.95 }],
+        candidates: [{ name: "Black Coffee", confidence: "high", rawConfidence: 0.95 }],
+        visibleItems: ["Black coffee ~200ml"],
+        ambiguity: "low",
+        notes: "Plain black coffee with no added milk or sugar.",
+        model: "gemini-3.8-flash",
+        provider: "gemini",
+        usage: {
+          promptTokens: 100,
+          completionTokens: 20,
+          thinkingTokens: 0,
+          cachedTokens: 0,
+          totalTokens: 120,
+          latencyMs: 400,
+        },
+      });
+
+      const dummyBase64 = "/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=";
+
+      const req = new NextRequest("http://localhost/api/analyze-meal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageBase64: dummyBase64,
+          mimeType: "image/jpeg",
+        }),
+      });
+
+      const res = await analyzeMealPOST(req);
+      expect(res.status).toBe(200);
+
+      const body = await res.json();
+      expect(body.name).toBe("Black Coffee");
+      expect(body.calories).toBeLessThanOrEqual(35);
+      expect(body.calories).toBeGreaterThanOrEqual(0);
+      expect(body.allFoodsVerified).toBe(true);
+    });
   });
 });

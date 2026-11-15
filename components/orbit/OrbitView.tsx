@@ -1,6 +1,9 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { DEFAULT_MACRO_GOALS } from "@/lib/nutrition/goals";
+import { getUserKey } from "@/lib/auth/userKey";
 import { useSession } from "next-auth/react";
 import {
   ArrowUp,
@@ -84,6 +87,11 @@ const QUICK_CHIPS = [
 
 export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewProps) {
   const { data: session } = useSession();
+  const userId = getUserKey(session);
+  const storageKey = userId ? `${STORAGE_KEY}:${encodeURIComponent(userId)}` : null;
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const requestRef = useRef<AbortController | null>(null);
   const [messages, setMessages] = useState<OrbitMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -133,7 +141,11 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
   // Load in-session history
   useEffect(() => {
     try {
-      const saved = sessionStorage.getItem(STORAGE_KEY);
+      requestRef.current?.abort();
+      setMessages([]);
+      sessionStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(STORAGE_KEY);
+      const saved = storageKey ? sessionStorage.getItem(storageKey) : null;
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -143,12 +155,12 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
     } catch {
       // sessionStorage unavailable
     }
-  }, []);
+  }, [storageKey]);
 
   // Save history
   const persistMessages = (msgs: OrbitMessage[]) => {
     try {
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(msgs));
+      if (storageKey) sessionStorage.setItem(storageKey, JSON.stringify(msgs));
     } catch {
       // ignore
     }
@@ -193,33 +205,34 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
 
   // Dynamic Biometric Summaries for Stitch 1:1 Hero Stage
   const workoutSummaryText = useMemo(() => {
-    const count = liveWorkout?.recentSessions?.length ?? 5;
+    const count = liveWorkout?.recentSessions?.length ?? 0;
     const mins =
       liveWorkout?.recentSessions?.reduce(
         (acc, s) => acc + (s.durationMinutes || 45),
         0
-      ) ?? 235;
+      ) ?? 0;
     return `${count} Sessions · ${mins}m`;
   }, [liveWorkout]);
 
   const loggedProtein = useMemo(() => {
-    return Math.round(liveDiet?.totals?.proteinG ?? 87);
+    return Math.round(liveDiet?.totals?.proteinG ?? 0);
   }, [liveDiet]);
 
+  const proteinTarget = liveDiet?.goals?.proteinG ?? DEFAULT_MACRO_GOALS.proteinG;
   const proteinDeltaText = useMemo(() => {
-    const gap = Math.max(0, 135 - loggedProtein);
+    const gap = Math.max(0, proteinTarget - loggedProtein);
     return gap > 0 ? `-${gap}g Gap` : "Target Met";
-  }, [loggedProtein]);
+  }, [loggedProtein, proteinTarget]);
 
   const pendingTasksCount = useMemo(() => {
-    return liveTasks?.totalPending ?? 3;
+    return liveTasks?.totalPending ?? 0;
   }, [liveTasks]);
 
   // Send message
   const handleSend = useCallback(
     async (textToSend?: string) => {
       const text = (textToSend ?? input).trim();
-      if (!text || loading) return;
+      if (!text || loading || !userId) return;
 
       setError(null);
       setViewMode("chat");
@@ -256,7 +269,10 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
           content: m.content,
         }));
 
+        const controller = new AbortController();
+        requestRef.current = controller;
         const res = await fetch("/api/aria", {
+          signal: controller.signal,
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -273,6 +289,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
         }
 
         const data = await res.json();
+        if (controller.signal.aborted) return;
         const assistantMsg: OrbitMessage = {
           id: `assistant-${Date.now()}`,
           role: "assistant",
@@ -292,13 +309,14 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
           setOrbitState("idle");
         }, 900);
       } catch (err: any) {
+        if (err?.name === "AbortError") return;
         setError("Orbit couldn't connect right now. Please try again.");
         setOrbitState("error");
       } finally {
         setLoading(false);
       }
     },
-    [input, loading, messages, focusMode]
+    [input, loading, messages, focusMode, userId, storageKey]
   );
 
   // Retry sending the last user message without duplicating it in the message list
@@ -351,7 +369,10 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
       const workoutContext = getWorkoutContext();
       const taskContext = getTaskContext();
 
-      const res = await fetch("/api/aria", {
+      const controller = new AbortController();
+        requestRef.current = controller;
+        const res = await fetch("/api/aria", {
+          signal: controller.signal,
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -368,6 +389,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
       }
 
       const data = await res.json();
+      if (controller.signal.aborted) return;
       const assistantMsg: OrbitMessage = {
         id: `assistant-${Date.now()}`,
         role: "assistant",
@@ -395,6 +417,8 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
 
   // Clear conversation / Reset chat
   const handleReset = () => {
+    requestRef.current?.abort();
+    setLoading(false);
     lastFailedMessageRef.current = null;
     if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
     setMessages([]);
@@ -403,13 +427,21 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
     setOrbitState("idle");
     setViewMode("overview");
     try {
-      sessionStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem(STORAGE_KEY);
+      if (storageKey) sessionStorage.removeItem(storageKey);
     } catch {
       // ignore
     }
   };
   const handleResetChat = handleReset;
+  const resetRef = useRef(handleReset);
+  resetRef.current = handleReset;
+  useEffect(() => {
+    const reset = () => resetRef.current();
+    window.addEventListener("satat:reset-orbit", reset);
+    return () => { window.removeEventListener("satat:reset-orbit", reset); requestRef.current?.abort(); };
+  }, []);
+  const query = searchParams?.get("q") || "";
+  useEffect(() => { if (query) { setInput(query); inputRef.current?.focus(); } }, [query]);
 
   // Keyboard Enter handler
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -499,7 +531,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                 Orbit Intelligence
               </h1>
               <p className="text-xs text-[#57534E] font-medium tracking-normal mt-0.5">
-                Unified biological &amp; execution copilot.
+                A companion for your day.
               </p>
             </div>
 
@@ -558,13 +590,13 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                 <div className="bg-[#2D6A4F]/35 border border-[#6EE7B7]/25 rounded-2xl px-3 py-1.5 flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-[#6EE7B7] animate-pulse shrink-0" />
                   <span className="text-[10px] font-bold tracking-wider uppercase text-[#EAE6DF]">
-                    STATE: SYNAPSE READY
+                    READY TO CHAT
                   </span>
                 </div>
 
                 {/* Right Sync Pill */}
                 <div className="bg-white/[0.06] border border-white/[0.08] rounded-2xl px-3 py-1.5 text-[11px] font-semibold text-stone-200 flex items-center justify-center sm:justify-start gap-1.5">
-                  <span>3 Domains Linked · 98% Sync</span>
+                  <span>Training · Meals · Tasks</span>
                 </div>
               </div>
 
@@ -576,10 +608,10 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
               {/* Editorial Headline & Subtitle */}
               <div className="text-center mt-1.5">
                 <h2 className="font-serif text-xl sm:text-[24px] text-white leading-tight font-normal">
-                  How can Orbit optimize your cadence today?
+                  How can Orbit help today?
                 </h2>
                 <p className="text-[11px] sm:text-xs text-stone-400 mt-1 max-w-[280px] mx-auto leading-relaxed">
-                  Cross-synthesizing neuromuscular load, metabolic deficit, and circadian focus blocks.
+                  Ask about your recorded workouts, meals or tasks.
                 </p>
               </div>
 
@@ -591,7 +623,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                 </div>
                 <div className="bg-[#E05A47]/20 border border-[#E05A47]/30 text-[#FCA5A5] rounded-full px-3.5 py-1 text-[11px] font-semibold flex items-center gap-1.5 shadow-2xs">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#E05A47]" />
-                  <span>Fuel: 135g Target · {proteinDeltaText}</span>
+                  <span>Fuel: {proteinTarget}g Target · {proteinDeltaText}</span>
                 </div>
                 <div className="bg-white/[0.07] text-stone-200 rounded-full px-3.5 py-1 text-[11px] font-semibold flex items-center gap-1.5 shadow-2xs">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#2D6A4F]" />
@@ -608,14 +640,14 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[9px] font-bold tracking-wider uppercase text-[#1B4332]">
-                    CADENCE SHIFT
+                    YOUR NEXT STEP
                   </span>
                   <span className="text-[10px] font-semibold text-[#2D6A4F] bg-[#2D6A4F]/10 px-2 py-0.5 rounded-full">
-                    Auto-applied
+                    Suggestion only
                   </span>
                 </div>
                 <p className="text-xs text-[#1B4332] leading-relaxed mt-0.5 font-medium">
-                  Push session intensity elevated neuromuscular fatigue. Orbit shifted today&apos;s evening focus block by +45m and increased target protein intake.
+                  Ask Orbit to review your recent activity. Suggestions never change your tasks, workouts or nutrition goals automatically.
                 </p>
               </div>
             </div>
@@ -624,9 +656,9 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
             <div className="w-full">
               <div className="flex items-center justify-between mb-2.5 px-0.5">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-[#191D1A]">Cadence Actions</span>
+                  <span className="text-sm font-bold text-[#191D1A]">Things to explore</span>
                   <span className="text-[10px] font-semibold text-[#2D6A4F] bg-[#D8F3DC] px-2 py-0.5 rounded-full">
-                    4 Synced
+                    4 options
                   </span>
                 </div>
                 <button
@@ -649,7 +681,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-[9px] font-bold tracking-wider uppercase text-[#57534E]">
-                        TRAINING LOAD
+                        YOUR TRAINING
                       </span>
                     </div>
                     {/* SVG Ascending Curve Sparkline */}
@@ -697,7 +729,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-[9px] font-bold tracking-wider uppercase text-[#E05A47]">
-                        FUEL DEFICIT
+                        YOUR NUTRITION
                       </span>
                     </div>
                     {/* Mini Circular SVG Progress Gauge */}
@@ -720,18 +752,18 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                           strokeWidth="3.2"
                           strokeDasharray="88"
                           strokeDashoffset={
-                            88 - (88 * Math.min(135, loggedProtein)) / 135
+                            88 - (88 * Math.min(proteinTarget, loggedProtein)) / Math.max(1, proteinTarget)
                           }
                           strokeLinecap="round"
                         />
                       </svg>
                       <span className="text-xs font-mono font-bold text-[#191D1A]">
-                        {loggedProtein}g / 135g
+                        {loggedProtein}g / {proteinTarget}g
                       </span>
                     </div>
                     <h3 className="text-xs font-bold text-[#191D1A] mt-1">Protein Gap &amp; Fuel</h3>
                     <p className="text-[10px] text-[#57534E] mt-0.5 line-clamp-2 leading-snug">
-                      Calculate exact dinner macros to hit 135g
+                      Calculate exact dinner macros to reach your target
                     </p>
                   </div>
                   <button
@@ -774,7 +806,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                         />
                       </svg>
                       <span className="text-[10px] font-semibold text-[#2D6A4F] leading-tight">
-                        88% HRV · High Readiness
+                        Recovery not measured
                       </span>
                     </div>
                     <h3 className="text-xs font-bold text-[#191D1A] mt-1">Tomorrow&apos;s Split</h3>
@@ -800,7 +832,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-[9px] font-bold tracking-wider uppercase text-[#57534E]">
-                        PLAN ENGINE
+                        YOUR PLAN
                       </span>
                     </div>
                     {/* Vertical Equalizer Bars */}
@@ -838,10 +870,10 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
               <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-[#191D1A]/[0.06]">
                 <div className="flex items-center gap-2 text-xs font-bold text-[#191D1A]">
                   <span className="w-2 h-2 rounded-full bg-[#2D6A4F]" />
-                  <span>Circadian Rhythm Alignment</span>
+                  <span>Your evening routine</span>
                 </div>
                 <span className="text-[10px] font-bold tracking-wide uppercase text-[#2D6A4F] bg-[#D8F3DC] px-2.5 py-0.5 rounded-full">
-                  Optimal Phase
+                  Suggested routine
                 </span>
               </div>
 
@@ -850,11 +882,11 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                   <div>
                     <div className="font-bold text-[#191D1A]">Dusk Transition</div>
                     <p className="text-[11px] text-[#57534E] mt-0.5">
-                      Melatonin priming, blue-light attenuated
+                      Plan a quieter evening that suits you
                     </p>
                   </div>
                   <span className="font-mono text-xs font-semibold text-[#191D1A] bg-[#EFECE4] px-2.5 py-1 rounded-full shrink-0">
-                    19:30 – 21:00
+                    Your preferred evening window
                   </span>
                 </div>
 
@@ -862,11 +894,11 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                   <div>
                     <div className="font-bold text-[#191D1A]">Deep Sleep Window</div>
                     <p className="text-[11px] text-[#57534E] mt-0.5">
-                      Target: 2.1h Slow-Wave restoration
+                      Choose a sleep routine in your setup
                     </p>
                   </div>
                   <span className="font-mono text-xs font-semibold text-[#191D1A] bg-[#EFECE4] px-2.5 py-1 rounded-full shrink-0">
-                    22:30 – 06:45
+                    Set your own bedtime
                   </span>
                 </div>
               </div>
@@ -912,7 +944,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                       <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-white/[0.08]">
                         <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#2D6A4F]/40 border border-[#6EE7B7]/25 text-[#6EE7B7] text-[9px] font-bold tracking-wider uppercase select-none">
                           <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7] animate-pulse" />
-                          ORBIT SYNAPSE ACTIVE
+                          ORBIT
                         </div>
                         <span className="text-[10px] text-white/50 font-medium">
                           {new Date(m.timestamp || Date.now()).toLocaleTimeString([], {
@@ -961,7 +993,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                     </div>
 
                     <span className="text-[10px] text-[#8C857B] font-medium pl-1">
-                      Delivered by Orbit · 100% verified data
+                      Delivered by Orbit · AI response · Check important details
                     </span>
                   </div>
                 )}
@@ -981,7 +1013,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
               <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-white/[0.08]">
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#2D6A4F]/40 border border-[#6EE7B7]/25 text-[#6EE7B7] text-[9px] font-bold tracking-wider uppercase select-none">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7] animate-pulse" />
-                  ORBIT SYNAPSE ACTIVE
+                  ORBIT
                 </div>
                 <span className="text-[10px] text-white/50 font-medium">Just now</span>
               </div>
@@ -1106,13 +1138,13 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
               <div className="bg-[#2D6A4F]/35 border border-[#6EE7B7]/25 rounded-2xl px-3 py-1.5 flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-[#6EE7B7] animate-pulse shrink-0" />
                 <span className="text-[10px] font-bold tracking-wider uppercase text-[#EAE6DF]">
-                  STATE: SYNAPSE READY
+                  READY TO CHAT
                 </span>
               </div>
 
               {/* Right Sync Pill */}
               <div className="bg-white/[0.06] border border-white/[0.08] rounded-2xl px-3 py-1.5 text-[11px] font-semibold text-stone-200 flex items-center justify-center sm:justify-start gap-1.5">
-                <span>3 Domains Linked · 98% Sync</span>
+                <span>Training · Meals · Tasks</span>
               </div>
             </div>
 
@@ -1124,10 +1156,10 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
             {/* Editorial Headline & Subtitle */}
             <div className="text-center mt-2">
               <h2 className="font-serif text-2xl text-white leading-tight font-normal">
-                Unified biological &amp; execution intelligence.
+                Meals, movement and plans.
               </h2>
               <p className="text-xs text-stone-400 mt-1 max-w-[320px] mx-auto leading-relaxed">
-                Cross-synthesizing neuromuscular load, metabolic deficit, and circadian focus blocks.
+                Ask about your recorded workouts, meals or tasks.
               </p>
             </div>
 
@@ -1139,7 +1171,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
               </div>
               <div className="bg-[#E05A47]/20 border border-[#E05A47]/30 text-[#FCA5A5] rounded-full px-3.5 py-1 text-[11px] font-semibold flex items-center gap-1.5 shadow-2xs">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#E05A47]" />
-                <span>Fuel: 135g Target · {proteinDeltaText}</span>
+                <span>Fuel: {proteinTarget}g Target · {proteinDeltaText}</span>
               </div>
               <div className="bg-white/[0.07] text-stone-200 rounded-full px-3.5 py-1 text-[11px] font-semibold flex items-center gap-1.5 shadow-2xs">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#2D6A4F]" />
@@ -1156,14 +1188,14 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[9px] font-bold tracking-wider uppercase text-[#1B4332]">
-                  CADENCE SHIFT
+                  YOUR NEXT STEP
                 </span>
                 <span className="text-[10px] font-semibold text-[#2D6A4F] bg-[#2D6A4F]/10 px-2 py-0.5 rounded-full">
-                  Auto-applied
+                  Suggestion only
                 </span>
               </div>
               <p className="text-xs text-[#1B4332] leading-relaxed mt-0.5 font-medium">
-                Push session intensity elevated neuromuscular fatigue. Orbit shifted today&apos;s evening focus block by +45m and increased target protein intake.
+                Ask Orbit to review your recent activity. Suggestions never change your tasks, workouts or nutrition goals automatically.
               </p>
             </div>
           </div>
@@ -1172,9 +1204,9 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
           <div className="w-full">
             <div className="flex items-center justify-between mb-2.5 px-0.5">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-[#191D1A]">Cadence Actions</span>
+                <span className="text-sm font-bold text-[#191D1A]">Things to explore</span>
                 <span className="text-[10px] font-semibold text-[#2D6A4F] bg-[#D8F3DC] px-2 py-0.5 rounded-full">
-                  4 Synced
+                  4 options
                 </span>
               </div>
               <button
@@ -1197,7 +1229,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-[9px] font-bold tracking-wider uppercase text-[#57534E]">
-                      TRAINING LOAD
+                      YOUR TRAINING
                     </span>
                   </div>
                   {/* SVG Ascending Curve Sparkline */}
@@ -1245,7 +1277,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-[9px] font-bold tracking-wider uppercase text-[#E05A47]">
-                      FUEL DEFICIT
+                      YOUR NUTRITION
                     </span>
                   </div>
                   {/* Mini Circular SVG Progress Gauge */}
@@ -1268,18 +1300,18 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                         strokeWidth="3.2"
                         strokeDasharray="88"
                         strokeDashoffset={
-                          88 - (88 * Math.min(135, loggedProtein)) / 135
+                          88 - (88 * Math.min(proteinTarget, loggedProtein)) / Math.max(1, proteinTarget)
                         }
                         strokeLinecap="round"
                       />
                     </svg>
                     <span className="text-xs font-mono font-bold text-[#191D1A]">
-                      {loggedProtein}g / 135g
+                      {loggedProtein}g / {proteinTarget}g
                     </span>
                   </div>
                   <h3 className="text-xs font-bold text-[#191D1A] mt-1">Protein Gap &amp; Fuel</h3>
                   <p className="text-[10px] text-[#57534E] mt-0.5 line-clamp-2 leading-snug">
-                    Calculate exact dinner macros to hit 135g
+                    Calculate exact dinner macros to reach your target
                   </p>
                 </div>
                 <button
@@ -1322,7 +1354,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                       />
                     </svg>
                     <span className="text-[10px] font-semibold text-[#2D6A4F] leading-tight">
-                      88% HRV · High Readiness
+                      Recovery not measured
                     </span>
                   </div>
                   <h3 className="text-xs font-bold text-[#191D1A] mt-1">Tomorrow&apos;s Split</h3>
@@ -1348,7 +1380,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-[9px] font-bold tracking-wider uppercase text-[#57534E]">
-                      PLAN ENGINE
+                      YOUR PLAN
                     </span>
                   </div>
                   {/* Vertical Equalizer Bars */}
@@ -1386,10 +1418,10 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
             <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-[#191D1A]/[0.06]">
               <div className="flex items-center gap-2 text-xs font-bold text-[#191D1A]">
                 <span className="w-2 h-2 rounded-full bg-[#2D6A4F]" />
-                <span>Circadian Rhythm Alignment</span>
+                <span>Your evening routine</span>
               </div>
               <span className="text-[10px] font-bold tracking-wide uppercase text-[#2D6A4F] bg-[#D8F3DC] px-2.5 py-0.5 rounded-full">
-                Optimal Phase
+                Suggested routine
               </span>
             </div>
 
@@ -1398,11 +1430,11 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                 <div>
                   <div className="font-bold text-[#191D1A]">Dusk Transition</div>
                   <p className="text-[11px] text-[#57534E] mt-0.5">
-                    Melatonin priming, blue-light attenuated
+                    Plan a quieter evening that suits you
                   </p>
                 </div>
                 <span className="font-mono text-xs font-semibold text-[#191D1A] bg-[#EFECE4] px-2.5 py-1 rounded-full shrink-0">
-                  19:30 – 21:00
+                  Your preferred evening window
                 </span>
               </div>
 
@@ -1410,11 +1442,11 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                 <div>
                   <div className="font-bold text-[#191D1A]">Deep Sleep Window</div>
                   <p className="text-[11px] text-[#57534E] mt-0.5">
-                    Target: 2.1h Slow-Wave restoration
+                    Choose a sleep routine in your setup
                   </p>
                 </div>
                 <span className="font-mono text-xs font-semibold text-[#191D1A] bg-[#EFECE4] px-2.5 py-1 rounded-full shrink-0">
-                  22:30 – 06:45
+                  Set your own bedtime
                 </span>
               </div>
             </div>
@@ -1427,7 +1459,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
           <div className="px-5 py-3.5 border-b border-[#1C1917]/[0.06] bg-[#FCFBF9] flex items-center justify-between shrink-0">
             <div>
               <h3 className="font-serif text-lg text-[#191D1A] tracking-tight">Orbit Intelligence Stream</h3>
-              <p className="text-[11px] text-[#57534E] font-medium">Real-time biological cross-synthesis copilot</p>
+              <p className="text-[11px] text-[#57534E] font-medium">Ask a question about your day</p>
             </div>
 
             <div className="flex items-center gap-2">
@@ -1481,9 +1513,9 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                 <div className="w-12 h-12 rounded-2xl bg-[#191D1A] text-white flex items-center justify-center mx-auto mb-3.5 shadow-md">
                   <OrbitIcon size={24} state="idle" />
                 </div>
-                <h4 className="font-serif text-2xl text-[#191D1A]">Orbit Synapse Ready</h4>
+                <h4 className="font-serif text-2xl text-[#191D1A]">How can I help?</h4>
                 <p className="text-xs text-[#57534E] mt-1.5 leading-relaxed">
-                  Select any Cadence Action on the left to audit weekly volume, review your protein gap, or prioritize focus blocks—or submit an inquiry below.
+                  Choose a question on the left, or ask about your workouts, meals and plans below.
                 </p>
               </div>
             ) : (
@@ -1522,7 +1554,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                             <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-white/[0.08]">
                               <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#2D6A4F]/40 border border-[#6EE7B7]/25 text-[#6EE7B7] text-[9px] font-bold tracking-wider uppercase select-none">
                                 <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7] animate-pulse" />
-                                ORBIT SYNAPSE ACTIVE
+                                ORBIT
                               </div>
                               <span className="text-[10px] text-white/50 font-medium">
                                 {new Date(m.timestamp || Date.now()).toLocaleTimeString([], {
@@ -1568,7 +1600,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                           </div>
 
                           <span className="text-[10px] text-[#8C857B] font-medium pl-1">
-                            Delivered by Orbit · 100% verified data
+                            Delivered by Orbit · AI response · Check important details
                           </span>
                         </div>
                       )}
@@ -1585,7 +1617,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                   <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-white/[0.08]">
                     <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#2D6A4F]/40 border border-[#6EE7B7]/25 text-[#6EE7B7] text-[9px] font-bold tracking-wider uppercase select-none">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7] animate-pulse" />
-                      ORBIT SYNAPSE ACTIVE
+                      ORBIT
                     </div>
                     <span className="text-[10px] text-white/50 font-medium">Just now</span>
                   </div>
@@ -1662,6 +1694,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                 <button
                   type="button"
                   title="Camera Scan"
+                  onClick={() => router.push("/dashboard/diet?action=scan")}
                   className="p-1 rounded-lg hover:text-[#191D1A] hover:bg-black/5 transition-all cursor-pointer"
                 >
                   <Camera className="w-4 h-4" />
@@ -1669,13 +1702,16 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                 <button
                   type="button"
                   title="Voice Input"
+                  onClick={() => router.push("/dashboard/diet?action=voice")}
                   className="p-1 rounded-lg hover:text-[#191D1A] hover:bg-black/5 transition-all cursor-pointer"
                 >
                   <Mic className="w-4 h-4" />
                 </button>
                 <button
                   type="button"
-                  title="Attach File"
+                  title="Attach File — use Scan Meal for food photos"
+                  disabled
+                  aria-label="File attachments are not available; use Camera Scan for meal photos"
                   className="p-1 rounded-lg hover:text-[#191D1A] hover:bg-black/5 transition-all cursor-pointer"
                 >
                   <Paperclip className="w-4 h-4" />

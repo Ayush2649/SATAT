@@ -7,6 +7,21 @@
 
 ---
 
+## 15 November 2026 — Authenticated audit fixes and meal scanning (review checkpoint)
+
+- Scope is being closed at the user's requested review checkpoint. Work stays on `feat/complete-ui-change-e2e`; no push or merge is authorized.
+- Fixed the 14 recorded audit findings: unsupported personal measurements/action claims; unknown-food matching; invalid meal values; desktop workout keyboard access/cardio parity; account-scoped chat and ritual drafts; shared nutrition defaults; Orbit search/New Chat/composer actions; focus timer lifecycle; narrow-phone macro alignment; dialog/control accessibility; plain-language copy.
+- Additional fixes: Fuel scan/voice/manual deep links, Plan project deep link, persistent task focus targets, duplicate meal submissions, visible save/estimate failures, stale estimate response protection, balanced onboarding navigation, and missing-target setup copy.
+- Meal scanning now preserves all visible pieces, respects explicit weights, reconciles small condiment bowls with visible gram estimates, requires review for ambiguous/estimated results, retains the whole plate when correcting a candidate, and offers editable nutrition totals. Negated hints no longer add an egg/ghee/whey. Estimated calorie ranges carry an explicit portion basis to prevent double scaling while preserving older callers.
+- DeepSeek requests now explicitly send the supported top-level `thinking` setting. Five live production-route recognition/guardrail cases passed after fixes; mean observed latency changed from 7.50 s to 3.58 s. This small uncontrolled sample has no weighed recipes and establishes neither calorie MAPE nor clinical accuracy.
+- Verification: full Vitest **67 files passed; 740 tests passed; 26 skipped**. Final `npm run build` **passed, exit 0**, generating all 34 routes. Existing image-optimization and hook-dependency warnings remain non-fatal. Browser checks confirmed the repaired 320 px Fuel summary, invalid-meal blocking, Escape dismissal, Orbit handoffs/reset, desktop cardio/save controls and timer continuity across navigation. Simulated viewport checks are not physical-device certification.
+- Modified areas: `app/api/analyze-meal/route.ts`; settings/onboarding pages; Navigation; HomeView; DietPage, MealScannerModal, MacroDonutBreakdown; TaskBoard; WorkoutPage; OrbitView; onboarding/settings components; Firestore validation; nutrition calculator/estimator/provider prompts and DeepSeek options; app-shell CSS; regression tests. New helpers: `lib/nutrition/{goals,hints}.ts`, `lib/tasks/focus.ts`, `lib/use{DialogFocus,FocusTimer,Rituals}.ts`. New evaluation runner: `scripts/meal-scan.eval.ts`, `vitest.scan-eval.config.ts`; JSON evidence under `artifacts/scan-evaluation/`.
+- Existing nutrition/database/vocabulary work was preserved. Local photo fixtures and the separate pre-existing edge-case script remain available in the working tree.
+- Next sprint: weighed-recipe evaluation (including oil, serving mass and hidden fillings), disposable-account persistence/account-switch tests, physical camera/microphone/keyboard and wearable delivery tests. No claim that every possible UX defect has been eliminated.
+- Final preview note: production build passed, but the browser could not reconnect after restart; the final production reload remains unverified. Earlier browser evidence is retained separately from this limitation.
+
+Detailed closure matrix and reproducible checks: `docs/SATAT_AUDIT_FIXES_2026-11-15.md`.
+
 ## 1. Design System & Token Architecture
 
 The design language moves away from robotic, dark-purple SaaS boxes to an earthy, warm sunlit athletic aesthetic.

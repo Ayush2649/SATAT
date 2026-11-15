@@ -31,13 +31,13 @@ export default async function SettingsPage() {
         <div>
           <div className="flex items-center gap-2 text-[10px] font-bold tracking-[0.14em] uppercase text-[#8C857B] dark:text-[#6E7872]">
             <span className="w-1.5 h-1.5 rounded-full bg-[#2D6A4F] dark:bg-[#34D399]" />
-            SYSTEM CALIBRATION
+            YOUR PREFERENCES
           </div>
           <h1 className="page-title text-2xl sm:text-3xl font-serif tracking-tight text-[#1C1917] dark:text-[#F4F1EA] mt-0.5">
             Settings & Profile
           </h1>
           <p className="page-description text-xs mt-1 text-[#57534E] dark:text-[#9CA39E]">
-            Personal operating parameters · Natural circadian rhythm & biometric calibration
+            Your profile, reminders and daily preferences
           </p>
         </div>
       </div>
@@ -83,7 +83,7 @@ export default async function SettingsPage() {
                   </span>
                   <span className="text-stone-300 dark:text-white/20">·</span>
                   <span className="text-[10px] font-semibold text-[#8C857B] dark:text-[#6E7872]">
-                    Circadian Telemetry Synced
+                    Google account connected
                   </span>
                 </div>
               </div>
@@ -106,7 +106,7 @@ export default async function SettingsPage() {
             <div className="flex items-center gap-2 px-1">
               <Sliders className="w-4 h-4 text-[#2D6A4F] dark:text-[#34D399]" />
               <h2 className="text-xs font-semibold uppercase tracking-wider text-[#57534E] dark:text-[#9CA39E]">
-                Biometrics Calibration
+                Your personal setup
               </h2>
             </div>
             <OnboardingSetupSettings isDevAuthorized={isDevAuthorized} />

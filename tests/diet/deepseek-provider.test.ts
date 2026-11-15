@@ -42,6 +42,7 @@ describe("DeepSeek Vision Provider & Integration", () => {
     process.env = {
       ...originalEnv,
       DEEPSEEK_API_KEY: "test-deepseek-key",
+      DEEPSEEK_THINKING_MODE: "false",
       MEAL_VISION_PROVIDER: "deepseek",
     };
     createMock = (OpenAI as any).createMock;
@@ -88,6 +89,9 @@ describe("DeepSeek Vision Provider & Integration", () => {
       });
 
       expect(result.provider).toBe("deepseek");
+      // JS SDK extensions must be top-level JSON, and omission enables thinking.
+      expect(createMock.mock.calls[0][0].thinking).toEqual({ type: "disabled" });
+      expect(createMock.mock.calls[0][0]).not.toHaveProperty("extra_body");
       expect(result.model).toBe("deepseek-flash");
       expect(result.foods).toHaveLength(2);
       expect(result.foods[0].name).toBe("Plain Roti");

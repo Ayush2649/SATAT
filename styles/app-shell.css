@@ -1,5 +1,26 @@
 /* SATAT App Shell Styles */
 
+/* Allow cards, headings and separators to share their column's actual width. */
+.app-shell-content,
+.app-shell-content > *,
+.app-shell-content .grid > * {
+  min-width: 0;
+}
+
+.app-shell-content :where(h1, h2, h3, h4, h5) {
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
+
+.app-shell-content p {
+  overflow-wrap: anywhere;
+}
+
+:where(button, a, input, textarea, select):focus-visible {
+  outline: 2px solid var(--satat-sage);
+  outline-offset: 3px;
+}
+
 /* Container limits */
 .app-shell-container {
   max-width: 1280px;

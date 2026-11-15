@@ -43,10 +43,11 @@ function useIOSPWAStatus() {
 }
 
 // ── Toggle ────────────────────────────────────────────────────────────────────
-function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
     <button
       role="switch"
+      aria-label={label}
       aria-checked={checked}
       onClick={() => onChange(!checked)}
       className={cn(
@@ -89,6 +90,7 @@ function TimeRow({
       </div>
       <input
         type="time"
+        aria-label={label}
         value={value}
         onChange={e => onChange(e.target.value)}
         className="text-xs font-mono font-bold rounded-lg px-2 py-1 border border-[#1C1917]/10 dark:border-white/10 bg-[#FCFBF9] dark:bg-[#141916] text-[#1C1917] dark:text-[#F4F1EA] outline-none focus:ring-1 focus:ring-[#2D6A4F] dark:focus:ring-[#34D399]"
@@ -130,7 +132,7 @@ function SectionCard({
           <p className="text-sm font-bold text-[#1C1917] dark:text-[#F4F1EA]">{title}</p>
           <p className="text-xs mt-0.5 truncate text-[#8C857B] dark:text-[#9CA39E]">{subtitle}</p>
         </div>
-        <Toggle checked={enabled} onChange={onToggle} />
+        <Toggle checked={enabled} onChange={onToggle} label={title} />
       </div>
 
       {/* Time rows — 2x2 grid layout where applicable */}

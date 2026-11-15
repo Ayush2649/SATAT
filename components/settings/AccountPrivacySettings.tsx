@@ -29,7 +29,7 @@ export default function AccountPrivacySettings() {
       </div>
 
       <p className="text-xs text-[#57534E] dark:text-[#9CA39E] leading-relaxed">
-        All biometrics, circadian telemetry, and nutrition records are strictly private to your Google account and encrypted at rest in Firestore. SATAT never sells personal biometric telemetry.
+        Your body measurements, daily activity, and nutrition records are strictly private to your Google account and encrypted at rest in Firestore. SATAT never sells your personal records.
       </p>
 
       <div className="pt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-[#1C1917]/[0.05] dark:border-white/[0.06]">

@@ -99,7 +99,7 @@ export default function MacroDonutBreakdown({
   });
 
   return (
-    <div className={cn("flex items-center justify-between gap-3 sm:gap-4 w-full", className)}>
+    <div className={cn("flex flex-col min-[480px]:flex-row items-center justify-between gap-3 sm:gap-4 w-full min-w-0", className)}>
       {/* ── Left: SVG Donut Ring ── */}
       <div className="w-24 h-24 sm:w-28 sm:h-28 shrink-0 relative flex items-center justify-center">
         <svg
@@ -156,7 +156,7 @@ export default function MacroDonutBreakdown({
       {/* ── Right: 3-Column Macro Readout Inset Box ── */}
       <div
         className={cn(
-          "flex-1 rounded-2xl py-3 px-2 sm:p-4 border",
+          "w-full min-w-0 flex-1 rounded-2xl py-3 px-2 sm:p-4 border",
           variant === "dark"
             ? "bg-white/[0.04] border-white/[0.07] text-white"
             : "bg-[#EFECE4]/60 border-[#1C1917]/[0.05] text-[#1C1917]"
@@ -186,7 +186,7 @@ export default function MacroDonutBreakdown({
             </span>
             <span
               className={cn(
-                "text-[11px] font-normal block whitespace-nowrap mt-1 leading-none",
+                "text-[11px] font-normal block break-words mt-1 leading-snug",
                 variant === "dark" ? "text-stone-400" : "text-[#8C857B]"
               )}
             >
@@ -212,7 +212,7 @@ export default function MacroDonutBreakdown({
             </span>
             <span
               className={cn(
-                "text-[11px] font-normal block whitespace-nowrap mt-1 leading-none",
+                "text-[11px] font-normal block break-words mt-1 leading-snug",
                 variant === "dark" ? "text-stone-400" : "text-[#8C857B]"
               )}
             >
@@ -238,7 +238,7 @@ export default function MacroDonutBreakdown({
             </span>
             <span
               className={cn(
-                "text-[11px] font-normal block whitespace-nowrap mt-1 leading-none",
+                "text-[11px] font-normal block break-words mt-1 leading-snug",
                 variant === "dark" ? "text-stone-400" : "text-[#8C857B]"
               )}
             >

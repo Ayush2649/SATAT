@@ -176,12 +176,9 @@ export async function analyzeMealWithDeepSeek(
       max_tokens: maxTokens,
     };
 
-    // If thinking mode is specifically configured or requested
-    if (isThinkingEnabled) {
-      requestOptions.extra_body = {
-        thinking: { type: "enabled" },
-      };
-    }
+    // DeepSeek extensions are top-level JSON fields in the JS SDK. Omitting
+    // thinking enables reasoning by default and can exhaust the JSON budget.
+    requestOptions.thinking = { type: isThinkingEnabled ? "enabled" : "disabled" };
 
     const completion = await client.chat.completions.create(requestOptions, {
       timeout: timeoutMs,
@@ -443,6 +440,7 @@ export async function estimateNutritionWithDeepSeek(
           response_format: { type: "json_object" },
           temperature: 0,
           max_tokens: maxTokens,
+          ...({ thinking: { type: "disabled" } } as Record<string, unknown>),
         },
         { timeout: timeoutInteger }
       );

@@ -1,3 +1,4 @@
+import { includesIngredient } from "@/lib/nutrition/hints";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getServerSession } from "next-auth";
@@ -227,6 +228,51 @@ export async function POST(req: NextRequest) {
     }
     const visionProviderMs = performance.now() - tVision0;
 
+    // Non-Food guardrail check
+    const isNonFood =
+      visionData.candidates.some((c) => /no food|not food|non-food|no edible/i.test(c.name)) ||
+      (visionData.foods.length === 0 && visionData.visibleItems.length === 0);
+
+    if (isNonFood) {
+      const stageTimings = {
+        imagePrepMs: Math.round(imagePrepMs * 10) / 10,
+        visionProviderMs: Math.round(visionProviderMs * 10) / 10,
+        dbLookupMs: 0,
+        nutritionEstimationMs: 0,
+        nutritionCalcMs: 0,
+        totalServerMs: Math.round((performance.now() - tServer0) * 10) / 10,
+        retryBackoffMs: Math.round((visionResultRaw?.retryBackoffMs ?? 0) * 10) / 10,
+      };
+      const apiCalls = [...(visionResultRaw?.calls || [])];
+
+      return NextResponse.json({
+        name: "No Food Detected",
+        calories: 0,
+        calorieRange: { low: 0, high: 0 },
+        proteinG: 0,
+        carbsG: 0,
+        fatG: 0,
+        fiberG: 0,
+        confidence: "high",
+        notes: visionData.notes || "No edible food or drink detected in image.",
+        candidates: [{ name: "No Food Detected", confidence: "high" }],
+        visibleItems: [],
+        ambiguity: "low",
+        foods: [],
+        unknownFoods: [],
+        allFoodsVerified: true,
+        requiresManualReview: false,
+        hasUnresolvedItems: false,
+        unresolvedCount: 0,
+        estimatedCount: 0,
+        verifiedCount: 0,
+        hasIncompleteNutrition: false,
+        noFoodDetected: true,
+        timings: stageTimings,
+        calls: apiCalls,
+      });
+    }
+
     // Flatbread rule: check visible items and candidates for flatbread presence
     const hasFlatbread =
       visionData.visibleItems.some((i) => FLATBREAD_REGEX.test(i)) ||
@@ -290,7 +336,7 @@ export async function POST(req: NextRequest) {
     const finalVisibleItems = [...visionData.visibleItems];
 
     if (userHintLower) {
-      if (/\b(whey|protein\s+scoop|protein\s+powder)\b/i.test(userHintLower)) {
+      if (includesIngredient(userHintLower, "whey|protein\\s+scoop|protein\\s+powder")) {
         const hasWhey = nutritionFoods.some((f) => /whey|protein\s+powder/i.test(f.name));
         if (!hasWhey) {
           nutritionFoods.push({ name: "Whey Protein Isolate", quantity: 30, unit: "g" });
@@ -300,7 +346,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      if (/\b(ghee|desi\s+ghee)\b/i.test(userHintLower)) {
+      if (includesIngredient(userHintLower, "ghee|desi\\s+ghee")) {
         const hasGhee = nutritionFoods.some((f) => /\bghee\b/i.test(f.name));
         if (!hasGhee) {
           nutritionFoods.push({ name: "Desi Ghee", quantity: 5, unit: "g" });
@@ -310,7 +356,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      if (/\b(boiled\s+egg|whole\s+egg|egg)\b/i.test(userHintLower)) {
+      if (includesIngredient(userHintLower, "(?:boiled\\s+|whole\\s+)?egg")) {
         const hasEgg = nutritionFoods.some((f) => /\b(egg|boiled\s+egg)\b/i.test(f.name));
         if (!hasEgg) {
           nutritionFoods.push({ name: "Whole Egg (Boiled)", quantity: 1, unit: "piece" });

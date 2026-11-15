@@ -1,0 +1,558 @@
+{
+  "generatedAt": "2026-11-14T13:25:16.937Z",
+  "limitation": "Reference photos have no weighed portions or recipes. Recognition/guardrail smoke tests only; calorie values are estimates, not measured accuracy.",
+  "results": [
+    {
+      "file": "04_masala_dosa_sambar.jpg",
+      "recognitionMatch": true,
+      "status": 200,
+      "latencyMs": 19257,
+      "name": "Plain Dosa",
+      "calories": 416,
+      "calorieRange": {
+        "low": 354,
+        "high": 478
+      },
+      "proteinG": 11,
+      "carbsG": 65,
+      "fatG": 12,
+      "fiberG": 6,
+      "confidence": "high",
+      "notes": "Large crisp rolled dosa dominates; no visible potato filling, so plain/ghee roast dosa. Accompaniments are sambar and several chutneys, with a possible small rice/curd rice bowl.",
+      "candidates": [
+        {
+          "name": "Plain Dosa",
+          "confidence": "high"
+        },
+        {
+          "name": "Ghee Roast Dosa",
+          "confidence": "low"
+        },
+        {
+          "name": "Masala Dosa",
+          "confidence": "low"
+        }
+      ],
+      "visibleItems": [
+        "Large crisp dosa ~110 g",
+        "Sambar bowl ~100 g",
+        "Coconut chutney ~30 g",
+        "Green chutney ~30 g",
+        "Tomato chutney ~30 g",
+        "White rice/curd rice bowl ~70 g"
+      ],
+      "ambiguity": "medium",
+      "foods": [
+        {
+          "name": "Plain Dosa",
+          "matchedFoodId": "dosa_plain",
+          "matchedCanonicalName": "Plain Dosa",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 110,
+          "unit": "g",
+          "grams": 110,
+          "calories": 187,
+          "proteinG": 4,
+          "carbsG": 32,
+          "fatG": 4,
+          "fiberG": 2,
+          "confidence": 0.78,
+          "verified": true
+        },
+        {
+          "name": "Sambar",
+          "matchedFoodId": "sambar",
+          "matchedCanonicalName": "Sambar",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 100,
+          "unit": "g",
+          "grams": 100,
+          "calories": 57,
+          "proteinG": 3,
+          "carbsG": 9,
+          "fatG": 1,
+          "fiberG": 2,
+          "confidence": 0.85,
+          "verified": true
+        },
+        {
+          "name": "Coconut Chutney",
+          "matchedFoodId": "chutney_coconut",
+          "matchedCanonicalName": "Coconut Chutney",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 30,
+          "unit": "g",
+          "grams": 30,
+          "calories": 54,
+          "proteinG": 1,
+          "carbsG": 2,
+          "fatG": 5,
+          "fiberG": 1,
+          "confidence": 0.6,
+          "verified": true
+        },
+        {
+          "name": "Steamed Rice",
+          "matchedFoodId": "rice_steamed",
+          "matchedCanonicalName": "Steamed Rice",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 70,
+          "unit": "g",
+          "grams": 70,
+          "calories": 91,
+          "proteinG": 2,
+          "carbsG": 20,
+          "fatG": 0,
+          "fiberG": 0,
+          "confidence": 0.35,
+          "verified": true
+        },
+        {
+          "name": "Green Chutney",
+          "matchedFoodId": null,
+          "matchedCanonicalName": "Green Chutney",
+          "nutritionStatus": "estimated",
+          "source": "ai_estimate",
+          "quantity": 30,
+          "unit": "g",
+          "grams": 30,
+          "calories": 27,
+          "proteinG": 1,
+          "carbsG": 2,
+          "fatG": 2,
+          "fiberG": 1,
+          "confidence": 0.65,
+          "verified": false,
+          "calorieRange": {
+            "low": 6,
+            "high": 12
+          }
+        },
+        {
+          "name": "Tomato Chutney",
+          "matchedFoodId": null,
+          "matchedCanonicalName": null,
+          "nutritionStatus": "unresolved",
+          "source": "unresolved",
+          "quantity": 30,
+          "unit": "g",
+          "grams": 30,
+          "calories": null,
+          "proteinG": null,
+          "carbsG": null,
+          "fatG": null,
+          "fiberG": null,
+          "confidence": 0.4,
+          "verified": false
+        }
+      ],
+      "unknownFoods": [
+        "Tomato Chutney"
+      ],
+      "allFoodsVerified": false,
+      "requiresManualReview": true,
+      "hasUnresolvedItems": true,
+      "unresolvedCount": 1,
+      "estimatedCount": 1,
+      "verifiedCount": 4,
+      "hasIncompleteNutrition": true,
+      "timings": {
+        "imagePrepMs": 80.5,
+        "visionProviderMs": 16032.9,
+        "dbLookupMs": 19.1,
+        "nutritionEstimationMs": 3113.1,
+        "nutritionCalcMs": 1.8,
+        "totalServerMs": 19247.8,
+        "retryBackoffMs": 0
+      },
+      "calls": [
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "analyzeMeal",
+          "attempt": 1,
+          "durationMs": 16030.2,
+          "outcome": "success",
+          "promptTokens": 2465,
+          "completionTokens": 2612,
+          "cachedTokens": 0,
+          "totalTokens": 5077,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.001076,
+          "costInr": 0.0904,
+          "requestId": "12cd29d3-3715-445d-944a-84f9c485328c"
+        },
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "estimateNutrition",
+          "attempt": 1,
+          "durationMs": 3111.5,
+          "outcome": "success",
+          "promptTokens": 559,
+          "completionTokens": 434,
+          "cachedTokens": 0,
+          "totalTokens": 993,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.0002,
+          "costInr": 0.0168,
+          "requestId": "121e439d-08bc-4581-9509-f9913b9800cc"
+        }
+      ]
+    },
+    {
+      "file": "07_samosa_chutney.jpg",
+      "recognitionMatch": true,
+      "status": 200,
+      "latencyMs": 3965,
+      "name": "Samosa",
+      "calories": 421,
+      "calorieRange": {
+        "low": 358,
+        "high": 484
+      },
+      "proteinG": 7,
+      "carbsG": 51,
+      "fatG": 21,
+      "fiberG": 3,
+      "confidence": "high",
+      "notes": "Triangular fried pastry with chutney is clearly samosa; platter shows multiple, so reported one standard portion of 2 pieces.",
+      "candidates": [
+        {
+          "name": "Samosa",
+          "confidence": "high"
+        },
+        {
+          "name": "Kachori",
+          "confidence": "low"
+        },
+        {
+          "name": "Onion Pakora",
+          "confidence": "low"
+        }
+      ],
+      "visibleItems": [
+        "2 samosas ~160g",
+        "green chutney ~30g",
+        "pomegranate seeds ~5g",
+        "green chili ~10g",
+        "wooden serving board"
+      ],
+      "ambiguity": "low",
+      "foods": [
+        {
+          "name": "Samosa",
+          "matchedFoodId": "samosa",
+          "matchedCanonicalName": "Samosa",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 2,
+          "unit": "piece",
+          "grams": 160,
+          "calories": 421,
+          "proteinG": 7,
+          "carbsG": 51,
+          "fatG": 21,
+          "fiberG": 3,
+          "confidence": 0.98,
+          "verified": true
+        }
+      ],
+      "unknownFoods": [],
+      "allFoodsVerified": true,
+      "requiresManualReview": false,
+      "hasUnresolvedItems": false,
+      "unresolvedCount": 0,
+      "estimatedCount": 0,
+      "verifiedCount": 1,
+      "hasIncompleteNutrition": false,
+      "timings": {
+        "imagePrepMs": 63.1,
+        "visionProviderMs": 3899,
+        "dbLookupMs": 0.1,
+        "nutritionEstimationMs": 0,
+        "nutritionCalcMs": 0.2,
+        "totalServerMs": 3962.4,
+        "retryBackoffMs": 0
+      },
+      "calls": [
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "analyzeMeal",
+          "attempt": 1,
+          "durationMs": 3898.5,
+          "outcome": "success",
+          "promptTokens": 2465,
+          "completionTokens": 543,
+          "cachedTokens": 0,
+          "totalTokens": 3008,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000497,
+          "costInr": 0.0417,
+          "requestId": "456219a1-37d5-46f6-9ddc-d75d3892e2c6"
+        }
+      ]
+    },
+    {
+      "file": "10_eggs_avocado_toast.jpg",
+      "recognitionMatch": true,
+      "status": 200,
+      "latencyMs": 8378,
+      "name": "Avocado Toast",
+      "calories": 301,
+      "calorieRange": {
+        "low": 256,
+        "high": 346
+      },
+      "proteinG": 11,
+      "carbsG": 22,
+      "fatG": 18,
+      "fiberG": 5,
+      "confidence": "high",
+      "notes": "Single multigrain toast topped with mashed avocado and a fried egg, sprinkled with chili flakes and pepper.",
+      "candidates": [
+        {
+          "name": "Avocado Toast",
+          "confidence": "high"
+        },
+        {
+          "name": "Fried Egg Toast",
+          "confidence": "low"
+        }
+      ],
+      "visibleItems": [
+        "multigrain toast slice ~50 g",
+        "mashed avocado ~70 g",
+        "fried egg ~50 g",
+        "chili flakes and black pepper ~1 g"
+      ],
+      "ambiguity": "low",
+      "foods": [
+        {
+          "name": "Avocado Toast",
+          "matchedFoodId": "avocado_toast",
+          "matchedCanonicalName": "Avocado Toast",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 1,
+          "unit": "piece",
+          "grams": 120,
+          "calories": 227,
+          "proteinG": 5,
+          "carbsG": 22,
+          "fatG": 13,
+          "fiberG": 5,
+          "confidence": 0.98,
+          "verified": true
+        },
+        {
+          "name": "Fried Egg",
+          "matchedFoodId": "egg_whole",
+          "matchedCanonicalName": "Whole Egg (Boiled)",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 1,
+          "unit": "piece",
+          "grams": 50,
+          "calories": 74,
+          "proteinG": 6,
+          "carbsG": 0,
+          "fatG": 5,
+          "fiberG": 0,
+          "confidence": 0.95,
+          "verified": true
+        }
+      ],
+      "unknownFoods": [],
+      "allFoodsVerified": true,
+      "requiresManualReview": false,
+      "hasUnresolvedItems": false,
+      "unresolvedCount": 0,
+      "estimatedCount": 0,
+      "verifiedCount": 2,
+      "hasIncompleteNutrition": false,
+      "timings": {
+        "imagePrepMs": 88.7,
+        "visionProviderMs": 8284.7,
+        "dbLookupMs": 0.7,
+        "nutritionEstimationMs": 0,
+        "nutritionCalcMs": 0.6,
+        "totalServerMs": 8374.8,
+        "retryBackoffMs": 0
+      },
+      "calls": [
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "analyzeMeal",
+          "attempt": 1,
+          "durationMs": 8284.3,
+          "outcome": "success",
+          "promptTokens": 2460,
+          "completionTokens": 1369,
+          "cachedTokens": 0,
+          "totalTokens": 3829,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000728,
+          "costInr": 0.0612,
+          "requestId": "850245ad-201b-48df-aa13-16a4ac69b9fa"
+        }
+      ]
+    },
+    {
+      "file": "14_edge_black_coffee_only.jpg",
+      "recognitionMatch": true,
+      "status": 200,
+      "latencyMs": 3578,
+      "name": "Black Coffee",
+      "calories": 4,
+      "calorieRange": {
+        "low": 0,
+        "high": 34
+      },
+      "proteinG": 0,
+      "carbsG": 1,
+      "fatG": 0,
+      "fiberG": 0,
+      "confidence": "high",
+      "notes": "Top-down view of a white mug holding dark coffee with a light crema foam ring; no distinct milk swirl or syrup visible, so it reads as plain black coffee.",
+      "candidates": [
+        {
+          "name": "Black Coffee",
+          "confidence": "high"
+        },
+        {
+          "name": "Coffee with a splash of milk",
+          "confidence": "low"
+        }
+      ],
+      "visibleItems": [
+        "White ceramic mug ~250ml",
+        "Black coffee with crema/foam ring ~200ml"
+      ],
+      "ambiguity": "low",
+      "foods": [
+        {
+          "name": "Black Coffee",
+          "matchedFoodId": "coffee_black",
+          "matchedCanonicalName": "Black Coffee",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 200,
+          "unit": "ml",
+          "grams": 200,
+          "calories": 4,
+          "proteinG": 0,
+          "carbsG": 1,
+          "fatG": 0,
+          "fiberG": 0,
+          "confidence": 0.88,
+          "verified": true
+        }
+      ],
+      "unknownFoods": [],
+      "allFoodsVerified": true,
+      "requiresManualReview": false,
+      "hasUnresolvedItems": false,
+      "unresolvedCount": 0,
+      "estimatedCount": 0,
+      "verifiedCount": 1,
+      "hasIncompleteNutrition": false,
+      "timings": {
+        "imagePrepMs": 61.6,
+        "visionProviderMs": 3514.1,
+        "dbLookupMs": 0.1,
+        "nutritionEstimationMs": 0,
+        "nutritionCalcMs": 0.2,
+        "totalServerMs": 3576.1,
+        "retryBackoffMs": 0
+      },
+      "calls": [
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "analyzeMeal",
+          "attempt": 1,
+          "durationMs": 3513.5,
+          "outcome": "success",
+          "promptTokens": 2470,
+          "completionTokens": 301,
+          "cachedTokens": 0,
+          "totalTokens": 2771,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.00043,
+          "costInr": 0.0361,
+          "requestId": "84b81ec7-8f6f-4eac-9a77-396ade610311"
+        }
+      ]
+    },
+    {
+      "file": "15_edge_non_food_laptop_desk.jpg",
+      "recognitionMatch": true,
+      "status": 200,
+      "latencyMs": 2333,
+      "name": "No Food Detected",
+      "calories": 0,
+      "calorieRange": {
+        "low": 0,
+        "high": 0
+      },
+      "proteinG": 0,
+      "carbsG": 0,
+      "fatG": 0,
+      "fiberG": 0,
+      "confidence": "high",
+      "notes": "Office desk workspace with electronics; no meal detected.",
+      "candidates": [
+        {
+          "name": "No Food Detected",
+          "confidence": "high"
+        }
+      ],
+      "visibleItems": [],
+      "ambiguity": "low",
+      "foods": [],
+      "unknownFoods": [],
+      "allFoodsVerified": true,
+      "requiresManualReview": false,
+      "hasUnresolvedItems": false,
+      "unresolvedCount": 0,
+      "estimatedCount": 0,
+      "verifiedCount": 0,
+      "hasIncompleteNutrition": false,
+      "noFoodDetected": true,
+      "timings": {
+        "imagePrepMs": 55.8,
+        "visionProviderMs": 2273.6,
+        "dbLookupMs": 0,
+        "nutritionEstimationMs": 0,
+        "nutritionCalcMs": 0,
+        "totalServerMs": 2329.4,
+        "retryBackoffMs": 0
+      },
+      "calls": [
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "analyzeMeal",
+          "attempt": 1,
+          "durationMs": 2272.8,
+          "outcome": "success",
+          "promptTokens": 2465,
+          "completionTokens": 134,
+          "cachedTokens": 0,
+          "totalTokens": 2599,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000383,
+          "costInr": 0.0322,
+          "requestId": "b7531555-7d1c-4676-86ad-c1d9f892f984"
+        }
+      ]
+    }
+  ]
+}

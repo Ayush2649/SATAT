@@ -1,4 +1,8 @@
 "use client";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useToast } from "@/components/ui/Toast";
+import { DEFAULT_MACRO_GOALS, validMealMacros, parseMealMacroFields } from "@/lib/nutrition/goals";
+import { useDialogFocus } from "@/lib/useDialogFocus";
 
 import { createPortal } from "react-dom";
 import React, { useState, useEffect, useRef } from "react";
@@ -48,10 +52,13 @@ import type { MealEntry, MealMacros, MacroGoals, MealTemplate } from "@/types";
 import EmptyState from "@/components/ui/EmptyState";
 import { FuelPageSkeleton } from "@/components/ui/PageSkeletons";
 
-const defaultGoals: MacroGoals = { calories: 2000, proteinG: 150, carbsG: 200, fatG: 65 };
+const defaultGoals: MacroGoals = DEFAULT_MACRO_GOALS;
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function DietPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const { toast } = useToast();
   const { data: session } = useSession();
   const { firebaseUser, isReady } = useFirebaseAuth();
   const userId = firebaseUser?.uid ?? (session?.user as any)?.id ?? session?.user?.email ?? "";
@@ -60,9 +67,12 @@ export default function DietPage() {
   const [meals, setMeals] = useState<MealEntry[]>([]);
   const [goals, setGoals] = useState<MacroGoals | null>(null);
   const [loading, setLoading] = useState(true);
+  const mealSavePending = useRef(false);
+  const [savingMeal, setSavingMeal] = useState(false);
 
   // Modals state
   const [showAddMeal, setShowAddMeal] = useState(false);
+  const [scanDraft, setScanDraft] = useState<{ name: string; macros: MealMacros; incomplete?: boolean } | null>(null);
   const [showGoals, setShowGoals] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [scannerMode, setScannerMode] = useState<"plate" | "barcode">("plate");
@@ -70,6 +80,14 @@ export default function DietPage() {
   const [showVoiceMeal, setShowVoiceMeal] = useState(false);
   const [templates, setTemplates] = useState<MealTemplate[]>([]);
   const [savingTemplate, setSavingTemplate] = useState<{ name: string; macros: MealMacros } | null>(null);
+
+  useEffect(() => {
+    const action = searchParams?.get("action");
+    if (action === "scan") { setScannerMode("plate"); setShowScanner(true); }
+    if (action === "voice") setShowVoiceMeal(true);
+    if (action === "manual") setShowAddMeal(true);
+    if (["scan", "voice", "manual"].includes(action || "")) router.replace("/dashboard/diet", { scroll: false });
+  }, [searchParams, router]);
 
   // Expanded meal card accordion
   const [expandedMealId, setExpandedMealId] = useState<string | null>(null);
@@ -179,6 +197,9 @@ export default function DietPage() {
   };
 
   const handleAddMeal = async (meal: Omit<MealEntry, "id">) => {
+    if (mealSavePending.current) return;
+    mealSavePending.current = true;
+    setSavingMeal(true);
     try {
       const created = await (addMeal as any)(meal);
       setMeals((prev) => [...prev, created]);
@@ -186,9 +207,14 @@ export default function DietPage() {
         setExpandedMealId(created.id);
       }
       setShowAddMeal(false);
+      setScanDraft(null);
       setShowScanner(false);
     } catch (error) {
       console.error("Failed to add meal:", error);
+      toast("Could not save this meal. Check the nutrition values and try again.", "error");
+    } finally {
+      mealSavePending.current = false;
+      setSavingMeal(false);
     }
   };
 
@@ -221,6 +247,7 @@ export default function DietPage() {
       setShowGoals(false);
     } catch (error) {
       console.error("Failed to save macro goals:", error);
+      toast("Could not save goals. Please try again.", "error");
     }
   };
 
@@ -234,6 +261,7 @@ export default function DietPage() {
       setSavingTemplate(null);
     } catch (error) {
       console.error("Failed to save meal template:", error);
+      toast("Could not save template. Please try again.", "error");
     }
   };
 
@@ -271,6 +299,7 @@ export default function DietPage() {
       setShowSaved(false);
     } catch (error) {
       console.error("Failed to log saved meal:", error);
+      toast("Could not save saved meal. Please try again.", "error");
     }
   };
 
@@ -314,10 +343,10 @@ export default function DietPage() {
   return (
     <div className="w-full max-w-md mx-auto lg:max-w-none pb-8 animate-fade-in text-[#1C1917] dark:text-[#F4F1EA]">
       {/* ── 1. TOP HEADER & QUICK-ACTION ICON PILLS ── */}
-      <div className="flex items-start justify-between pt-1 pb-3">
+      <div className="flex flex-col min-[480px]:flex-row items-start justify-between gap-3 pt-1 pb-3">
         <div>
           <h1 className="font-serif text-3xl sm:text-4xl text-[#1C1917] tracking-tight leading-none">
-            Nourishment Studio
+            Meals &amp; nutrition
           </h1>
           <p className="text-xs text-[#57534E] mt-1.5 font-medium">
             Mindful fueling, zero calorie anxiety.
@@ -325,7 +354,7 @@ export default function DietPage() {
         </div>
 
         {/* 3 Circular Tactile Icon Buttons */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 self-end min-[480px]:self-auto">
           <button
             onClick={() => setShowVoiceMeal(true)}
             type="button"
@@ -397,12 +426,12 @@ export default function DietPage() {
         {/* ── 3. HERO DARK BOTANICAL NUTRITION SUMMARY CARD ── */}
       <div className="bg-[#191D1A] text-[#FCFBF9] rounded-[28px] p-5 shadow-xl mb-4">
         {/* Top Row */}
-        <div className="flex items-center justify-between gap-2 mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
           <span className="bg-[#2D6A4F]/30 border border-[#6EE7B7]/20 text-[#6EE7B7] rounded-full px-3 py-1 text-[10px] font-bold tracking-wider uppercase inline-flex items-center gap-1.5 whitespace-nowrap shrink-0">
             <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7]" />
             DAILY NUTRITION SUMMARY
           </span>
-          <span className="text-xs text-stone-300 font-medium text-right whitespace-nowrap shrink-0">
+          <span className="text-xs text-stone-300 font-medium break-words min-w-0">
             {loading && meals.length === 0 ? (
               <span className="text-stone-400 animate-pulse">Calculating nutrition...</span>
             ) : (
@@ -651,16 +680,16 @@ export default function DietPage() {
       {/* ─── DESKTOP VIEW (lg: 1024px+) — 12-Column Responsive Studio Architecture (image_49d42c.jpg) ─── */}
         <div className="hidden lg:grid grid-cols-12 gap-6 items-start">
           {/* ── LEFT 5 COLUMNS: Circadian Fuel Macro Card, Scanner & Hydration ── */}
-          <div className="col-span-5 space-y-5">
+          <div className="col-span-5 min-w-0 space-y-5">
             {/* 1. Dark Espresso "Circadian Fuel Balance" Macro Card */}
             <div className="bg-[#191D1A] rounded-[28px] p-5 text-white shadow-xl relative overflow-hidden border border-white/[0.08]">
               {/* Top Row with Non-Truncating Remaining Calories */}
-              <div className="flex items-center justify-between gap-2 mb-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
                 <span className="bg-[#2D6A4F]/30 border border-[#6EE7B7]/20 text-[#6EE7B7] rounded-full px-3 py-1 text-[10px] font-bold tracking-wider uppercase inline-flex items-center gap-1.5 whitespace-nowrap shrink-0">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7]" />
-                  CIRCADIAN FUEL BALANCE
+                  DAILY NUTRITION
                 </span>
-                <span className="text-xs text-stone-300 font-medium text-right whitespace-nowrap shrink-0">
+                <span className="text-xs text-stone-300 font-medium break-words min-w-0">
                   <strong className="text-white font-bold">{remainingCalories.toLocaleString()} kcal</strong>{" "}
                   remaining · Target {targetCalories.toLocaleString()}
                 </span>
@@ -732,7 +761,7 @@ export default function DietPage() {
 
               {/* Restorative Biological Ceiling Callout */}
               <div className="bg-white/[0.06] border border-white/[0.06] rounded-2xl p-3 text-xs text-stone-300 mt-4 flex items-center justify-between">
-                <span>Restorative biological ceiling</span>
+                <span>Daily calorie target</span>
                 <span className="text-[#6EE7B7] font-bold">{remainingCalories} kcal deficit</span>
               </div>
             </div>
@@ -780,7 +809,7 @@ export default function DietPage() {
 
               <div className="pt-2 border-t border-[#1C1917]/[0.06] flex items-center justify-between text-[11px] text-[#8C857B]">
                 <span>Digital Scale · Portion Mode</span>
-                <span className="text-[#2D6A4F] font-semibold">Camera Primed</span>
+                <span className="text-[#2D6A4F] font-semibold">Review before logging</span>
               </div>
             </div>
 
@@ -791,19 +820,19 @@ export default function DietPage() {
                   <span className="text-sm">💧</span>
                 </div>
                 <div>
-                  <div className="text-[10px] font-bold uppercase text-[#8C857B]">CELLULAR HYDRATION</div>
-                  <div className="text-xs font-bold text-[#1C1917]">2.4L / 3.0L Target</div>
+                  <div className="text-[10px] font-bold uppercase text-[#8C857B]">WATER & DAILY HABITS</div>
+                  <div className="text-xs font-bold text-[#1C1917]">No water logged</div>
                 </div>
               </div>
               <div className="bg-[#EFECE4] text-[#2D6A4F] rounded-full px-2.5 py-1 text-[10px] font-bold flex items-center gap-1">
                 <Check className="w-3 h-3 stroke-[3]" />
-                <span>3g Creatine</span>
+                <span>Track water in your daily rituals</span>
               </div>
             </div>
           </div>
 
           {/* ── RIGHT 7 COLUMNS: Chronological Meal Log & Orbit Adaptive Recommendation ── */}
-          <div className="col-span-7 space-y-4">
+          <div className="col-span-7 min-w-0 space-y-4">
             {/* 1. Chronological Meal Log Header */}
             <div className="bg-[#FCFBF9] rounded-[24px] p-4 border border-[#1C1917]/[0.06] shadow-xs flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
@@ -933,7 +962,7 @@ export default function DietPage() {
             <div className="bg-[#F2F9F5] dark:bg-[#131D18] border border-[#2D6A4F]/20 dark:border-[#34D399]/25 rounded-[26px] p-5 shadow-xs space-y-3.5">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#2D6A4F] dark:text-[#6EE7B7]">
-                  ORBIT AUTONOMOUS RECOMMENDATION · ADAPTIVE DINNER
+                  MEAL IDEAS
                 </span>
                 <span className="bg-[#2D6A4F] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full">
                   {Math.max(0, (goals?.proteinG || 150) - totals.proteinG)}g Gap Detected
@@ -941,7 +970,7 @@ export default function DietPage() {
               </div>
 
               <p className="text-xs text-[#57534E] dark:text-[#9CA39E] leading-relaxed">
-                To close today&apos;s protein window before your sleep cycle, Orbit synthesized 2 high-protein options tailored to your circadian timing:
+                Here are two general high-protein meal ideas. Check that they suit your preferences and adjust the portion before logging.
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -997,7 +1026,8 @@ export default function DietPage() {
           initialMode={scannerMode}
           onSave={handleAddMeal}
           onClose={() => setShowScanner(false)}
-          onSwitchToManual={() => {
+          onSwitchToManual={(draft) => {
+            setScanDraft(draft || null);
             setShowScanner(false);
             setShowAddMeal(true);
           }}
@@ -1015,7 +1045,9 @@ export default function DietPage() {
           date={date}
           onSave={handleAddMeal}
           onSaveTemplate={handleSaveTemplate}
-          onClose={() => setShowAddMeal(false)}
+          initialDraft={scanDraft}
+            saving={savingMeal}
+          onClose={() => { setShowAddMeal(false); setScanDraft(null); }}
         />
       )}
 
@@ -1065,6 +1097,7 @@ function Modal({
   children: React.ReactNode;
 }) {
   const [mounted, setMounted] = useState(false);
+  useDialogFocus(onClose, mounted);
 
   useEffect(() => {
     setMounted(true);
@@ -1118,29 +1151,37 @@ function AddMealModal({
   onSave,
   onSaveTemplate,
   onClose,
+  initialDraft,
+  saving,
 }: {
+  initialDraft?: { name: string; macros: MealMacros; incomplete?: boolean } | null;
+  saving: boolean;
   userId: string;
   date: string;
   onSave: (m: Omit<MealEntry, "id">) => void;
   onSaveTemplate: (t: Omit<MealTemplate, "id">) => void;
   onClose: () => void;
 }) {
-  const [name, setName] = useState("");
-  const [calories, setCalories] = useState("");
-  const [protein, setProtein] = useState("");
-  const [carbs, setCarbs] = useState("");
-  const [fat, setFat] = useState("");
+  const [name, setName] = useState(initialDraft?.name || "");
+  const [calories, setCalories] = useState(initialDraft ? String(initialDraft.macros.calories) : "");
+  const [protein, setProtein] = useState(initialDraft ? String(initialDraft.macros.proteinG) : "");
+  const [carbs, setCarbs] = useState(initialDraft ? String(initialDraft.macros.carbsG) : "");
+  const [fat, setFat] = useState(initialDraft ? String(initialDraft.macros.fatG) : "");
+  const [missingConfirmed, setMissingConfirmed] = useState(false);
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
   const [estimating, setEstimating] = useState(false);
   const [estimated, setEstimated] = useState(false);
-  const lastEstimated = useRef("");
+  const [estimateError, setEstimateError] = useState("");
+  const estimateVersion = useRef(0);
 
   const matchedPhoto = resolveDishThumbnail(name);
 
   const estimateMacros = async (dishName: string) => {
     if (!dishName.trim() || dishName.trim().length < 3) return;
-    if (dishName.trim() === lastEstimated.current) return;
 
+
+    const version = ++estimateVersion.current;
+    setEstimateError("");
     setEstimating(true);
     setEstimated(false);
     try {
@@ -1150,29 +1191,26 @@ function AddMealModal({
         body: JSON.stringify({ dishName: dishName.trim() }),
       });
       const data = await res.json();
+      if (version !== estimateVersion.current) return;
       if (!data.error) {
         setCalories(String(data.calories));
         setProtein(String(data.proteinG));
         setCarbs(String(data.carbsG));
         setFat(String(data.fatG));
-        lastEstimated.current = dishName.trim();
+
         setEstimated(true);
-      }
+      } else { setEstimateError("Could not estimate this dish. Enter the nutrition manually or try again."); }
     } catch {
-      // silently fail — user can fill manually
+      if (version === estimateVersion.current) setEstimateError("Could not estimate this dish. Enter the nutrition manually or try again.");
     } finally {
-      setEstimating(false);
+      if (version === estimateVersion.current) setEstimating(false);
     }
   };
 
   const handleSave = () => {
     if (!name.trim()) return;
-    const macros = {
-      calories: Number(calories) || 0,
-      proteinG: Number(protein) || 0,
-      carbsG: Number(carbs) || 0,
-      fatG: Number(fat) || 0,
-    };
+    const macros = parseMealMacroFields({ calories, proteinG: protein, carbsG: carbs, fatG: fat });
+    if (!macros || (initialDraft?.incomplete && !missingConfirmed)) return;
     if (saveAsTemplate) {
       onSaveTemplate({
         userId,
@@ -1210,11 +1248,11 @@ function AddMealModal({
         {/* Header badges */}
         <div className="flex items-center justify-between -mt-2">
           <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#E05A47]">
-            SMART DISCERNMENT
+            YOUR MEAL
           </span>
           <span className="bg-[#E0F2E9] text-[#2D6A4F] text-[10px] font-bold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
             <Sparkles className="w-3 h-3" />
-            AI Auto-Match
+            Nutrition estimate
           </span>
         </div>
 
@@ -1260,6 +1298,7 @@ function AddMealModal({
           <span>{estimating ? "Calculating Macros..." : "Recalculate Macros from Dish Name"}</span>
         </button>
 
+        {estimateError && <p role="alert" className="text-xs text-[#C94A38]">{estimateError}</p>}
         {/* 2x2 Tactile Macro Grid with Steppers */}
         <div className="grid grid-cols-2 gap-3">
           {/* Calories */}
@@ -1270,6 +1309,7 @@ function AddMealModal({
             <div className="flex items-center justify-between gap-1">
               <button
                 type="button"
+                aria-label="Decrease calories"
                 onClick={() => stepMacro(setCalories, calories, -25)}
                 className="w-6 h-6 rounded-full bg-[#EFECE4] dark:bg-[#1E2621] text-[#1C1917] dark:text-[#F4F1EA] border border-[#1C1917]/10 dark:border-white/15 hover:bg-[#2D6A4F] hover:text-white dark:hover:bg-[#34D399] dark:hover:text-[#0A0D0B] text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs transition-colors"
               >
@@ -1277,6 +1317,8 @@ function AddMealModal({
               </button>
               <input
                 type="number"
+                min="0"
+                aria-label="Calories"
                 placeholder="0"
                 value={calories}
                 onChange={(e) => {
@@ -1287,6 +1329,7 @@ function AddMealModal({
               />
               <button
                 type="button"
+                aria-label="Increase calories"
                 onClick={() => stepMacro(setCalories, calories, 25)}
                 className="w-6 h-6 rounded-full bg-[#EFECE4] dark:bg-[#1E2621] text-[#1C1917] dark:text-[#F4F1EA] border border-[#1C1917]/10 dark:border-white/15 hover:bg-[#2D6A4F] hover:text-white dark:hover:bg-[#34D399] dark:hover:text-[#0A0D0B] text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs transition-colors"
               >
@@ -1303,6 +1346,7 @@ function AddMealModal({
             <div className="flex items-center justify-between gap-1">
               <button
                 type="button"
+                aria-label="Decrease protein in grams"
                 onClick={() => stepMacro(setProtein, protein, -5)}
                 className="w-6 h-6 rounded-full bg-[#EFECE4] dark:bg-[#1E2621] text-[#1C1917] dark:text-[#F4F1EA] border border-[#1C1917]/10 dark:border-white/15 hover:bg-[#2D6A4F] hover:text-white dark:hover:bg-[#34D399] dark:hover:text-[#0A0D0B] text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs transition-colors"
               >
@@ -1310,6 +1354,8 @@ function AddMealModal({
               </button>
               <input
                 type="number"
+                min="0"
+                aria-label="Protein in grams"
                 placeholder="0"
                 value={protein}
                 onChange={(e) => {
@@ -1320,6 +1366,7 @@ function AddMealModal({
               />
               <button
                 type="button"
+                aria-label="Increase protein"
                 onClick={() => stepMacro(setProtein, protein, 5)}
                 className="w-6 h-6 rounded-full bg-[#EFECE4] dark:bg-[#1E2621] text-[#1C1917] dark:text-[#F4F1EA] border border-[#1C1917]/10 dark:border-white/15 hover:bg-[#2D6A4F] hover:text-white dark:hover:bg-[#34D399] dark:hover:text-[#0A0D0B] text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs transition-colors"
               >
@@ -1336,6 +1383,7 @@ function AddMealModal({
             <div className="flex items-center justify-between gap-1">
               <button
                 type="button"
+                aria-label="Decrease carbs in grams"
                 onClick={() => stepMacro(setCarbs, carbs, -5)}
                 className="w-6 h-6 rounded-full bg-[#EFECE4] dark:bg-[#1E2621] text-[#1C1917] dark:text-[#F4F1EA] border border-[#1C1917]/10 dark:border-white/15 hover:bg-[#2D6A4F] hover:text-white dark:hover:bg-[#34D399] dark:hover:text-[#0A0D0B] text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs transition-colors"
               >
@@ -1343,6 +1391,8 @@ function AddMealModal({
               </button>
               <input
                 type="number"
+                min="0"
+                aria-label="Carbs in grams"
                 placeholder="0"
                 value={carbs}
                 onChange={(e) => {
@@ -1353,6 +1403,7 @@ function AddMealModal({
               />
               <button
                 type="button"
+                aria-label="Increase carbs"
                 onClick={() => stepMacro(setCarbs, carbs, 5)}
                 className="w-6 h-6 rounded-full bg-[#EFECE4] dark:bg-[#1E2621] text-[#1C1917] dark:text-[#F4F1EA] border border-[#1C1917]/10 dark:border-white/15 hover:bg-[#2D6A4F] hover:text-white dark:hover:bg-[#34D399] dark:hover:text-[#0A0D0B] text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs transition-colors"
               >
@@ -1369,6 +1420,7 @@ function AddMealModal({
             <div className="flex items-center justify-between gap-1">
               <button
                 type="button"
+                aria-label="Decrease fat in grams"
                 onClick={() => stepMacro(setFat, fat, -2)}
                 className="w-6 h-6 rounded-full bg-[#EFECE4] dark:bg-[#1E2621] text-[#1C1917] dark:text-[#F4F1EA] border border-[#1C1917]/10 dark:border-white/15 hover:bg-[#2D6A4F] hover:text-white dark:hover:bg-[#34D399] dark:hover:text-[#0A0D0B] text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs transition-colors"
               >
@@ -1376,6 +1428,8 @@ function AddMealModal({
               </button>
               <input
                 type="number"
+                min="0"
+                aria-label="Fat in grams"
                 placeholder="0"
                 value={fat}
                 onChange={(e) => {
@@ -1386,6 +1440,7 @@ function AddMealModal({
               />
               <button
                 type="button"
+                aria-label="Increase fat"
                 onClick={() => stepMacro(setFat, fat, 2)}
                 className="w-6 h-6 rounded-full bg-[#EFECE4] dark:bg-[#1E2621] text-[#1C1917] dark:text-[#F4F1EA] border border-[#1C1917]/10 dark:border-white/15 hover:bg-[#2D6A4F] hover:text-white dark:hover:bg-[#34D399] dark:hover:text-[#0A0D0B] text-xs font-bold flex items-center justify-center cursor-pointer shadow-2xs transition-colors"
               >
@@ -1415,6 +1470,8 @@ function AddMealModal({
           </span>
         </button>
 
+        {initialDraft?.incomplete && <label className="flex items-start gap-2 text-xs"><input type="checkbox" checked={missingConfirmed} onChange={event => setMissingConfirmed(event.target.checked)} />The scan contained missing foods. I have included them in these nutrition totals.</label>}
+        <p className="text-xs text-[#57534E]">Fill every nutrition field. Calories must be positive; enter 0 explicitly for a nutrient that is absent.</p>
         {/* Buttons */}
         <div className="flex gap-2 pt-2">
           <button
@@ -1426,11 +1483,11 @@ function AddMealModal({
           </button>
           <button
             onClick={handleSave}
-            disabled={!name.trim()}
+            disabled={saving || !name.trim() || Boolean(initialDraft?.incomplete && !missingConfirmed) || !parseMealMacroFields({ calories, proteinG: protein, carbsG: carbs, fatG: fat })}
             type="button"
             className="flex-1 bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full py-3.5 text-xs font-semibold shadow-md transition-all cursor-pointer disabled:opacity-50"
           >
-            Add to Today&apos;s Fuel →
+            {saving ? "Saving meal…" : "Add to Today's Fuel →"}
           </button>
         </div>
       </div>
@@ -1821,7 +1878,7 @@ function GoalsModal({
     const p = Number(form.proteinG);
     const c = Number(form.carbsG);
     const f = Number(form.fatG);
-    if (!cal || !p || !c || !f || cal <= 0 || p <= 0 || c <= 0 || f <= 0) return;
+    if (!validMealMacros({ calories: cal, proteinG: p, carbsG: c, fatG: f })) return;
     onSave({
       calories: Math.round(cal),
       proteinG: Math.round(p),
@@ -1851,6 +1908,8 @@ function GoalsModal({
             <label className={cn("col-span-3 text-xs font-bold", color)}>{label}</label>
             <input
               type="number"
+              min="0"
+              aria-label={label}
               className="col-span-7 text-right text-sm font-bold bg-transparent text-[#1C1917] outline-none"
               value={form[key]}
               onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
@@ -1870,6 +1929,7 @@ function GoalsModal({
         <button
           onClick={handleSave}
           type="button"
+          disabled={!validMealMacros({ calories: Number(form.calories), proteinG: Number(form.proteinG), carbsG: Number(form.carbsG), fatG: Number(form.fatG) })}
           className="flex-1 bg-[#191D1A] hover:bg-[#2D6A4F] text-white rounded-full py-3 text-xs font-semibold shadow-md transition-all cursor-pointer"
         >
           Save Goals

@@ -54,7 +54,7 @@ export default function OnboardingSetupSettings({
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="space-y-1">
             <h3 className="text-base font-bold tracking-tight text-[#1C1917] dark:text-[#F4F1EA]">
-              SATAT Setup & Biometrics Calibration
+              SATAT Setup & Your personal setup
             </h3>
             <p className="text-xs sm:text-sm leading-relaxed max-w-xl text-[#57534E] dark:text-[#9CA39E]">
               Review and recalibrate your basal metabolic rate, macro targets, and Circadian sleep window.

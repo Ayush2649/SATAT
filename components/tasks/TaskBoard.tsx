@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useSession } from "next-auth/react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useFirebaseAuth } from "@/components/FirebaseAuthProvider";
 import {
   Plus,
@@ -44,6 +44,10 @@ import {
   deleteProject,
   ensureStarterProject,
 } from "@/lib/firestore";
+import { useDialogFocus } from "@/lib/useDialogFocus";
+import { useRituals } from "@/lib/useRituals";
+import { taskFocusMinutes, withFocusTarget } from "@/lib/tasks/focus";
+import { useFocusTimer } from "@/lib/useFocusTimer";
 import { useToast } from "@/components/ui/Toast";
 import { setTaskContext, computeTaskContext } from "@/lib/orbitContext";
 import { PlanPageSkeleton } from "@/components/ui/PageSkeletons";
@@ -230,6 +234,7 @@ export default function TaskBoard() {
     firebaseUser?.uid ?? (session?.user as any)?.id ?? session?.user?.email ?? "";
   const { toast } = useToast();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const today = todayString();
 
   // ── State ──
@@ -245,90 +250,22 @@ export default function TaskBoard() {
   const [showAddProject, setShowAddProject] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
-  // Auto-open new task modal if query param ?action=new is set
   useEffect(() => {
-    if (searchParams?.get("action") === "new") {
-      setShowAddTask(true);
-    }
-  }, [searchParams]);
+    const action = searchParams?.get("action");
+    if (action === "new") setShowAddTask(true);
+    if (action === "new_project") setShowAddProject(true);
+    if (action === "new" || action === "new_project") router.replace("/dashboard/tasks", { scroll: false });
+  }, [searchParams, router]);
 
-  // ── Feature A: Daily Non-Negotiable Rituals State (Persisted in localStorage) ──
-  const [rituals, setRituals] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const stored = localStorage.getItem(`satat_rituals_${selectedDate}`);
-      if (stored) {
-        setRituals(JSON.parse(stored));
-      } else {
-        setRituals({});
-      }
-    } catch {
-      setRituals({});
-    }
-  }, [selectedDate]);
-
-  const toggleRitual = (ritualId: string) => {
-    setRituals((prev) => {
-      const updated = { ...prev, [ritualId]: !prev[ritualId] };
-      if (typeof window !== "undefined") {
-        try {
-          localStorage.setItem(`satat_rituals_${selectedDate}`, JSON.stringify(updated));
-        } catch {}
-      }
-      return updated;
-    });
-  };
+  const { rituals, toggleRitual } = useRituals(userId, selectedDate);
 
   const completedRitualsCount = Object.values(rituals).filter(Boolean).length;
 
   // ── Feature B: Circadian Deep Work Flow Instrument State ──
-  const [targetMinutes, setTargetMinutes] = useState<25 | 50 | 90>(25);
-  const [secondsRemaining, setSecondsRemaining] = useState<number>(25 * 60);
-  const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false);
-  const [activeFocusTask, setActiveFocusTask] = useState<{
-    id: string;
-    title: string;
-    project: string;
-  } | null>(null);
-
-  const focusTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // Switch timer duration cleanly when user clicks duration capsule
-  const handleSelectDuration = (m: 25 | 50 | 90) => {
-    setTargetMinutes(m);
-    setSecondsRemaining(m * 60);
-    setIsTimerRunning(false);
-  };
-
-  useEffect(() => {
-    if (isTimerRunning) {
-      focusTimerRef.current = setInterval(() => {
-        setSecondsRemaining((prev) => {
-          if (prev <= 1) {
-            toast("Circadian deep work block completed! Outstanding momentum.", "success");
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } else if (focusTimerRef.current) {
-      clearInterval(focusTimerRef.current);
-    }
-    return () => {
-      if (focusTimerRef.current) clearInterval(focusTimerRef.current);
-    };
-  }, [isTimerRunning, toast]);
-
-  const toggleFlowTimer = () => {
-    setIsTimerRunning((prev) => !prev);
-  };
-
-  const resetFlowTimer = () => {
-    setIsTimerRunning(false);
-    setSecondsRemaining(targetMinutes * 60);
-  };
+  const { targetMinutes, secondsRemaining, isTimerRunning,
+    selectDuration: handleSelectDuration, toggle: toggleFlowTimer, reset: resetFlowTimer, start: startFlowTimer,
+  } = useFocusTimer(userId, () => toast("Focus block completed.", "success"));
+  const [activeFocusTask, setActiveFocusTask] = useState<{ id: string; title: string; project: string } | null>(null);
 
   const startFocusOnTask = (task: Task) => {
     const proj = projects.find((p) => p.id === task.projectId);
@@ -337,8 +274,7 @@ export default function TaskBoard() {
       title: task.title,
       project: proj?.name || "General",
     });
-    setSecondsRemaining(targetMinutes * 60);
-    setIsTimerRunning(true);
+    startFlowTimer(taskFocusMinutes(task.description) || targetMinutes);
     toast(`Deep focus locked: "${task.title}"`, "info");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -599,7 +535,7 @@ export default function TaskBoard() {
             type="button"
             className="text-xs font-bold text-[#2D6A4F] inline-flex items-center gap-1.5 mb-3 hover:underline cursor-pointer"
           >
-            <ChevronLeft className="w-4 h-4" /> Back to Execution Studio
+            <ChevronLeft className="w-4 h-4" /> Back to Your daily plan
           </button>
 
           {/* Project Title Row */}
@@ -645,7 +581,7 @@ export default function TaskBoard() {
 
           {/* 1. TO DO IN THIS PROJECT */}
           <div className="mb-6">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
               <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#1C1917]">
                 TO DO IN THIS PROJECT ({projectTasksPending.length})
               </span>
@@ -713,7 +649,7 @@ export default function TaskBoard() {
           )}
         </div>
       ) : (
-        /* ── VIEW A: Main Execution Studio (Default View) ── */
+        /* ── VIEW A: Main Your daily plan (Default View) ── */
         <div>
         {/* ─── MOBILE VIEW (< 1024px) ─── */}
         <div className="lg:hidden space-y-5">
@@ -722,15 +658,15 @@ export default function TaskBoard() {
           <div className="pt-1 pb-4">
             {/* Row 1 (Full-Width Eyebrow Row) */}
             <div className="flex items-center gap-2 text-[10px] font-bold tracking-[0.16em] uppercase text-[#57534E] whitespace-nowrap">
-              <span>STUDIO V2.4</span>
+              <span>DAILY PRACTICE</span>
               <span className="w-1.5 h-1.5 rounded-full bg-[#2D6A4F]" />
-              <span>PLAN · CADENCE</span>
+              <span>PLAN · TODAY</span>
             </div>
 
             {/* Row 2 (Title + Single Action Button Row) */}
             <div className="flex items-center justify-between gap-3 mt-1">
               <h1 className="font-serif text-[28px] sm:text-4xl text-[#1C1917] tracking-tight leading-none whitespace-nowrap">
-                Execution Studio
+                Your daily plan
               </h1>
               <button
                 onClick={openAddTask}
@@ -761,7 +697,7 @@ export default function TaskBoard() {
             <div className="relative z-10 flex items-center justify-between gap-2 mb-4">
               <div className="bg-[#2D6A4F]/40 border border-[#6EE7B7]/25 text-[#6EE7B7] rounded-full px-3 py-1 text-[9px] font-bold tracking-wider uppercase inline-flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7]" />
-                <span>CIRCADIAN DEEP WORK</span>
+                <span>FOCUS TIMER</span>
               </div>
 
               <div className="bg-white/[0.08] p-0.5 rounded-full inline-flex items-center text-[11px]">
@@ -1230,7 +1166,7 @@ export default function TaskBoard() {
 
           {/* ── 4. Project Workspaces Section (image_4e69b9.jpg) ── */}
           <div className="mt-8 mb-6">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
               <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#1C1917]">
                 PROJECT WORKSPACES
               </span>
@@ -1309,12 +1245,12 @@ export default function TaskBoard() {
 
           {/* ── 5. Non-Negotiable Daily Rituals (2×2 Bento Grid) ── */}
           <div className="mb-4">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
               <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#1C1917]">
                 NON-NEGOTIABLE RITUALS
               </span>
               <span className="bg-[#D1FAE5] text-[#1B4332] rounded-full px-3 py-0.5 text-[10px] font-bold">
-                {completedRitualsCount} of {RITUAL_DEFS.length} Completed · 24d Streak
+                {completedRitualsCount} of {RITUAL_DEFS.length} completed · Saved on this device
               </span>
             </div>
 
@@ -1324,6 +1260,11 @@ export default function TaskBoard() {
                 return (
                   <div
                     key={ritual.id}
+                    role="checkbox"
+                    tabIndex={0}
+                    aria-label={ritual.title}
+                    aria-checked={Boolean(rituals[ritual.id])}
+                    onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleRitual(ritual.id); } }}
                     onClick={() => toggleRitual(ritual.id)}
                     className="bg-[#FCFBF9] rounded-[24px] p-3.5 border border-[#1C1917]/[0.06] shadow-2xs flex flex-col justify-between cursor-pointer transition-all hover:border-[#1C1917]/15 active:scale-[0.99]"
                   >
@@ -1336,8 +1277,7 @@ export default function TaskBoard() {
                           loading="lazy"
                         />
                       </div>
-                      <button
-                        type="button"
+                      <span aria-hidden="true"
                         className={cn(
                           "w-6 h-6 rounded-full flex items-center justify-center transition-all shrink-0 mt-0.5",
                           isDone
@@ -1346,7 +1286,7 @@ export default function TaskBoard() {
                         )}
                       >
                         <Check className="w-3.5 h-3.5 stroke-[3]" />
-                      </button>
+                      </span>
                     </div>
 
                     <div className="mt-3">
@@ -1381,16 +1321,16 @@ export default function TaskBoard() {
             <div className="flex items-start justify-between gap-4 bg-[#FCFBF9] rounded-[28px] p-6 border border-[#1C1917]/[0.06] shadow-xs">
               <div>
                 <div className="flex items-center gap-2 text-[10px] font-bold tracking-[0.16em] uppercase text-[#57534E]">
-                  <span>STUDIO V2.4</span>
+                  <span>DAILY PRACTICE</span>
                   <span className="w-1.5 h-1.5 rounded-full bg-[#2D6A4F]" />
-                  <span>PLAN · CADENCE</span>
+                  <span>PLAN · TODAY</span>
                   <span className="bg-[#E0F2E9] text-[#2D6A4F] text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1 ml-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#2D6A4F]" />
-                    <span>Focus Engine Primed</span>
+                    <span>Ready when you are</span>
                   </span>
                 </div>
                 <h1 className="font-serif text-3xl sm:text-4xl text-[#1C1917] tracking-tight leading-tight mt-1.5">
-                  Execution Studio
+                  Your daily plan
                 </h1>
                 <p className="text-xs text-[#57534E] mt-1">
                   Design your daily rhythm, rituals, and high-impact deep work blocks.
@@ -1589,7 +1529,7 @@ export default function TaskBoard() {
 
                 {/* 4. Project Workspace Folder Cards Grid (3 Columns) */}
                 <div className="mt-8">
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                     <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#1C1917]">
                       PROJECT WORKSPACES
                     </span>
@@ -1739,10 +1679,10 @@ export default function TaskBoard() {
               <div className="flex items-center justify-between gap-2 mb-3">
                 <div className="bg-[#2D6A4F]/40 border border-[#6EE7B7]/25 text-[#6EE7B7] rounded-full px-3 py-1 text-[9px] font-bold tracking-wider uppercase inline-flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7]" />
-                  <span>CIRCADIAN FOCUS ENGINE</span>
+                  <span>FOCUS TIMER</span>
                 </div>
                 <span className="text-[10px] text-stone-300 font-semibold bg-white/10 px-2 py-0.5 rounded-full">
-                  ● Peak Dopamine
+                  Focus at your own pace
                 </span>
               </div>
 
@@ -1801,7 +1741,7 @@ export default function TaskBoard() {
                       FLOW STATE
                     </span>
                     <span className="text-[9px] font-semibold tracking-[0.14em] uppercase text-[#6EE7B7] mt-0.5">
-                      BLOCK 1/3
+                      CURRENT BLOCK
                     </span>
                   </div>
                 </div>
@@ -1844,7 +1784,12 @@ export default function TaskBoard() {
                   return (
                     <div
                       key={ritual.id}
-                      onClick={() => toggleRitual(ritual.id)}
+                      role="checkbox"
+                    tabIndex={0}
+                    aria-label={ritual.title}
+                    aria-checked={Boolean(rituals[ritual.id])}
+                    onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleRitual(ritual.id); } }}
+                    onClick={() => toggleRitual(ritual.id)}
                       className="bg-[#FCFBF9] hover:bg-[#F6F3EC] dark:bg-[#141916] dark:hover:bg-[#1C221E] p-3.5 rounded-[22px] border border-[#1C1917]/[0.08] dark:border-white/[0.08] shadow-2xs cursor-pointer transition-all flex flex-col justify-between min-h-[118px] group"
                     >
                       <div className="flex items-start justify-between gap-2">
@@ -1894,15 +1839,15 @@ export default function TaskBoard() {
                 </div>
               </div>
               <div className="bg-[#F6F3EC] rounded-2xl p-2.5">
-                <div className="text-[9px] font-bold uppercase text-[#8C857B]">FOCUS TIME</div>
+                <div className="text-[9px] font-bold uppercase text-[#8C857B]">CURRENT BLOCK</div>
                 <div className="text-lg font-bold text-[#2D6A4F] mt-0.5">
-                  {allTasks.filter((t) => t.status === "completed").length * 25}m
+                  {Math.floor((targetMinutes * 60 - secondsRemaining) / 60)}m
                 </div>
               </div>
               <div className="bg-[#F6F3EC] rounded-2xl p-2.5">
-                <div className="text-[9px] font-bold uppercase text-[#8C857B]">STREAK</div>
+                <div className="text-[9px] font-bold uppercase text-[#8C857B]">RITUALS</div>
                 <div className="text-lg font-bold text-[#E05A47] mt-0.5">
-                  🔥 5d
+                  {completedRitualsCount} / {RITUAL_DEFS.length}
                 </div>
               </div>
             </div>
@@ -2103,7 +2048,7 @@ function TaskComposerModal({
   onClose: () => void;
 }) {
   const [title, setTitle] = useState(initialTask?.title ?? "");
-  const [desc, setDesc] = useState(initialTask?.description ?? "");
+  const [desc, setDesc] = useState((initialTask?.description ?? "").replace(/(?:^|\n)Focus target: \d+ min\s*$/, "").trim());
   const [dueDate, setDueDate] = useState(initialTask?.dueDate ?? defaultDate);
   const [priority, setPriority] = useState<TaskPriority | "none">(
     initialTask?.priority ?? "high"
@@ -2111,8 +2056,9 @@ function TaskComposerModal({
   const [activeProjectId, setActiveProjectId] = useState(
     initialTask?.projectId ?? selectedProjectId
   );
-  const [focusBlocks, setFocusBlocks] = useState(1);
+  const [focusBlocks, setFocusBlocks] = useState((taskFocusMinutes(initialTask?.description) || 25) / 25);
   const [mounted, setMounted] = useState(false);
+  useDialogFocus(onClose, mounted);
 
   useEffect(() => {
     setMounted(true);
@@ -2139,13 +2085,13 @@ function TaskComposerModal({
     if (initialTask && onSave) {
       onSave({
         title: title.trim(),
-        description: desc.trim() || "",
+        description: withFocusTarget(desc, focusBlocks),
         dueDate,
         priority: priority === "none" ? null : priority,
         projectId: activeProjectId,
       });
     } else if (onAdd) {
-      onAdd(title.trim(), desc.trim(), dueDate, priority, activeProjectId);
+      onAdd(title.trim(), withFocusTarget(desc, focusBlocks), dueDate, priority, activeProjectId);
     }
   };
 
@@ -2165,7 +2111,7 @@ function TaskComposerModal({
         <div className="shrink-0 px-6 pt-5 pb-3 bg-[#FCFBF9] border-b border-[#1C1917]/[0.06] flex items-start justify-between gap-3">
           <div>
             <span className="text-[9px] font-bold tracking-[0.16em] uppercase text-[#2D6A4F] block">
-              EXECUTION ARCHITECTURE
+              PLAN YOUR DAY
             </span>
             <h2 className="font-serif text-2xl sm:text-3xl text-[#1C1917] mt-0.5 leading-tight">
               {initialTask ? "Edit Deep Work Task" : "Schedule Deep Work or Task"}
@@ -2276,10 +2222,10 @@ function TaskComposerModal({
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#8C857B]">
-                CIRCADIAN ENERGY WINDOW
+                TASK PRIORITY
               </span>
               <span className="text-[10px] text-[#2D6A4F] font-bold">
-                Optimal Window Matched
+                Choose importance
               </span>
             </div>
 
@@ -2296,7 +2242,7 @@ function TaskComposerModal({
                 )}
               >
                 <Sunrise className="w-4 h-4 mx-auto mb-1 text-[#E05A47]" />
-                <p className="text-xs font-bold leading-tight">Morning Deep</p>
+                <p className="text-xs font-bold leading-tight">High priority</p>
                 <p className="text-[10px] opacity-75 mt-0.5">High Load</p>
               </button>
 
@@ -2312,7 +2258,7 @@ function TaskComposerModal({
                 )}
               >
                 <Sun className="w-4 h-4 mx-auto mb-1 text-amber-600" />
-                <p className="text-xs font-bold leading-tight">Afternoon</p>
+                <p className="text-xs font-bold leading-tight">Medium priority</p>
                 <p className="text-[10px] opacity-75 mt-0.5">Med Load</p>
               </button>
 
@@ -2328,7 +2274,7 @@ function TaskComposerModal({
                 )}
               >
                 <Moon className="w-4 h-4 mx-auto mb-1 text-[#2D6A4F]" />
-                <p className="text-xs font-bold leading-tight">Evening</p>
+                <p className="text-xs font-bold leading-tight">Low priority</p>
                 <p className="text-[10px] opacity-75 mt-0.5">Low Load</p>
               </button>
             </div>
@@ -2343,6 +2289,7 @@ function TaskComposerModal({
               </span>
               <input
                 type="date"
+                aria-label="Task date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
                 className="w-full bg-transparent text-xs font-bold text-[#1C1917] mt-1.5 focus:outline-none"
@@ -2350,7 +2297,7 @@ function TaskComposerModal({
             </div>
 
             {/* Focus Target Stepper */}
-            <div className="bg-[#F6F3EC] rounded-2xl p-3 border border-[#1C1917]/[0.06] flex items-center justify-between">
+            <div className="bg-[#F6F3EC] rounded-2xl p-3 border border-[#1C1917]/[0.06] flex flex-wrap items-center justify-between gap-2">
               <div>
                 <span className="text-[9px] font-bold tracking-wider uppercase text-[#8C857B] flex items-center gap-1">
                   <Clock className="w-3 h-3" /> FOCUS TARGET
@@ -2363,6 +2310,7 @@ function TaskComposerModal({
               <div className="flex items-center gap-1.5 bg-white rounded-full p-0.5 shadow-2xs border border-[#1C1917]/[0.06]">
                 <button
                   type="button"
+                  aria-label="Decrease focus target"
                   onClick={() => setFocusBlocks((prev) => Math.max(1, prev - 1))}
                   className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-[#57534E] hover:bg-[#EFECE4] cursor-pointer"
                 >
@@ -2373,6 +2321,7 @@ function TaskComposerModal({
                 </span>
                 <button
                   type="button"
+                  aria-label="Increase focus target"
                   onClick={() => setFocusBlocks((prev) => Math.min(6, prev + 1))}
                   className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-[#57534E] hover:bg-[#EFECE4] cursor-pointer"
                 >
@@ -2417,6 +2366,7 @@ function AddProjectModal({
   const [name, setName] = useState("");
   const [color, setColor] = useState(PROJECT_COLORS[0]);
   const [mounted, setMounted] = useState(false);
+  useDialogFocus(onClose, mounted);
 
   useEffect(() => {
     setMounted(true);

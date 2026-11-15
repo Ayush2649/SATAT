@@ -1,0 +1,389 @@
+{
+  "generatedAt": "2026-11-14T13:35:06.075Z",
+  "limitation": "Reference photos have no weighed portions or recipes. Recognition/guardrail smoke tests only; calorie values are estimates, not measured accuracy.",
+  "results": [
+    {
+      "file": "04_masala_dosa_sambar.jpg",
+      "recognitionMatch": false,
+      "status": 503,
+      "latencyMs": 34358,
+      "error": "PHOTO_UNAVAILABLE",
+      "message": "Photo scan is busy. Type or speak your meal instead."
+    },
+    {
+      "file": "07_samosa_chutney.jpg",
+      "recognitionMatch": true,
+      "status": 200,
+      "latencyMs": 12666,
+      "name": "Samosa",
+      "calories": 661,
+      "calorieRange": {
+        "low": 562,
+        "high": 760
+      },
+      "proteinG": 12,
+      "carbsG": 80,
+      "fatG": 33,
+      "fiberG": 7,
+      "confidence": "high",
+      "notes": "Three triangular fried pastries are visible on a wooden platter with a side of green chutney; this appears to be a sharing portion.",
+      "candidates": [
+        {
+          "name": "Samosa",
+          "confidence": "high"
+        }
+      ],
+      "visibleItems": [
+        "3 samosas, approx. 210-240 g total",
+        "Green chutney, approx. 30 g"
+      ],
+      "ambiguity": "low",
+      "foods": [
+        {
+          "name": "Samosa",
+          "matchedFoodId": "samosa",
+          "matchedCanonicalName": "Samosa",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 3,
+          "unit": "piece",
+          "grams": 240,
+          "calories": 631,
+          "proteinG": 11,
+          "carbsG": 77,
+          "fatG": 31,
+          "fiberG": 5,
+          "confidence": 0.98,
+          "verified": true
+        },
+        {
+          "name": "Green chutney",
+          "matchedFoodId": null,
+          "matchedCanonicalName": "Green chutney",
+          "nutritionStatus": "estimated",
+          "source": "ai_estimate",
+          "quantity": 30,
+          "unit": "g",
+          "grams": 30,
+          "calories": 30,
+          "proteinG": 1,
+          "carbsG": 3,
+          "fatG": 2,
+          "fiberG": 2,
+          "confidence": 0.78,
+          "verified": false,
+          "calorieRange": {
+            "low": 6,
+            "high": 13
+          }
+        }
+      ],
+      "unknownFoods": [],
+      "allFoodsVerified": false,
+      "requiresManualReview": false,
+      "hasUnresolvedItems": false,
+      "unresolvedCount": 0,
+      "estimatedCount": 1,
+      "verifiedCount": 1,
+      "hasIncompleteNutrition": false,
+      "timings": {
+        "imagePrepMs": 59.7,
+        "visionProviderMs": 10322.7,
+        "dbLookupMs": 23.3,
+        "nutritionEstimationMs": 2257.3,
+        "nutritionCalcMs": 1.4,
+        "totalServerMs": 12665,
+        "retryBackoffMs": 0
+      },
+      "calls": [
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "analyzeMeal",
+          "attempt": 1,
+          "durationMs": 10321.6,
+          "outcome": "success",
+          "promptTokens": 2524,
+          "completionTokens": 1572,
+          "cachedTokens": 0,
+          "totalTokens": 4096,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000794,
+          "costInr": 0.0667,
+          "requestId": "bdbe4329-b8bc-42b9-98f8-56316acef680"
+        },
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "estimateNutrition",
+          "attempt": 1,
+          "durationMs": 2254.6,
+          "outcome": "success",
+          "promptTokens": 559,
+          "completionTokens": 326,
+          "cachedTokens": 0,
+          "totalTokens": 885,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.00017,
+          "costInr": 0.0143,
+          "requestId": "2b5e1b20-1053-4501-9b36-6e7cb9758bed"
+        }
+      ]
+    },
+    {
+      "file": "10_eggs_avocado_toast.jpg",
+      "recognitionMatch": true,
+      "status": 200,
+      "latencyMs": 3562,
+      "name": "Avocado Toast",
+      "calories": 301,
+      "calorieRange": {
+        "low": 256,
+        "high": 346
+      },
+      "proteinG": 11,
+      "carbsG": 22,
+      "fatG": 18,
+      "fiberG": 5,
+      "confidence": "high",
+      "notes": "Single toast slice topped with mashed avocado and one fried egg with runny yolk, dusted with chili flakes. No other sides visible.",
+      "candidates": [
+        {
+          "name": "Avocado Toast",
+          "confidence": "high"
+        },
+        {
+          "name": "Fried Egg on Toast",
+          "confidence": "medium"
+        },
+        {
+          "name": "Sunny Side Up Egg",
+          "confidence": "low"
+        }
+      ],
+      "visibleItems": [
+        "whole grain toast slice ~50 g",
+        "mashed avocado spread ~60 g",
+        "fried egg ~55 g",
+        "chili flakes and cracked pepper garnish <1 g"
+      ],
+      "ambiguity": "low",
+      "foods": [
+        {
+          "name": "Avocado Toast",
+          "matchedFoodId": "avocado_toast",
+          "matchedCanonicalName": "Avocado Toast",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 1,
+          "unit": "piece",
+          "grams": 120,
+          "calories": 227,
+          "proteinG": 5,
+          "carbsG": 22,
+          "fatG": 13,
+          "fiberG": 5,
+          "confidence": 0.9,
+          "verified": true
+        },
+        {
+          "name": "Fried Egg (sunny side up)",
+          "matchedFoodId": "egg_whole",
+          "matchedCanonicalName": "Whole Egg (Boiled)",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 1,
+          "unit": "piece",
+          "grams": 50,
+          "calories": 74,
+          "proteinG": 6,
+          "carbsG": 0,
+          "fatG": 5,
+          "fiberG": 0,
+          "confidence": 0.92,
+          "verified": true
+        }
+      ],
+      "unknownFoods": [],
+      "allFoodsVerified": true,
+      "requiresManualReview": false,
+      "hasUnresolvedItems": false,
+      "unresolvedCount": 0,
+      "estimatedCount": 0,
+      "verifiedCount": 2,
+      "hasIncompleteNutrition": false,
+      "timings": {
+        "imagePrepMs": 130.4,
+        "visionProviderMs": 3426,
+        "dbLookupMs": 1.1,
+        "nutritionEstimationMs": 0,
+        "nutritionCalcMs": 1.6,
+        "totalServerMs": 3559.2,
+        "retryBackoffMs": 0
+      },
+      "calls": [
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "analyzeMeal",
+          "attempt": 1,
+          "durationMs": 3425.5,
+          "outcome": "success",
+          "promptTokens": 2519,
+          "completionTokens": 399,
+          "cachedTokens": 0,
+          "totalTokens": 2918,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000464,
+          "costInr": 0.039,
+          "requestId": "bafe2f77-a6a7-4dcc-8b8d-5e117690611d"
+        }
+      ]
+    },
+    {
+      "file": "14_edge_black_coffee_only.jpg",
+      "recognitionMatch": true,
+      "status": 200,
+      "latencyMs": 4529,
+      "name": "Black Coffee",
+      "calories": 4,
+      "calorieRange": {
+        "low": 0,
+        "high": 34
+      },
+      "proteinG": 0,
+      "carbsG": 1,
+      "fatG": 0,
+      "fiberG": 0,
+      "confidence": "high",
+      "notes": "Top-down view of a white mug containing dark black coffee with crema and foam; no milk or sugar is visibly added.",
+      "candidates": [
+        {
+          "name": "Black Coffee",
+          "confidence": "high"
+        }
+      ],
+      "visibleItems": [
+        "Black coffee ~220 ml in a white mug"
+      ],
+      "ambiguity": "low",
+      "foods": [
+        {
+          "name": "Black Coffee",
+          "matchedFoodId": "coffee_black",
+          "matchedCanonicalName": "Black Coffee",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 220,
+          "unit": "ml",
+          "grams": 220,
+          "calories": 4,
+          "proteinG": 0,
+          "carbsG": 1,
+          "fatG": 0,
+          "fiberG": 0,
+          "confidence": 0.97,
+          "verified": true
+        }
+      ],
+      "unknownFoods": [],
+      "allFoodsVerified": true,
+      "requiresManualReview": false,
+      "hasUnresolvedItems": false,
+      "unresolvedCount": 0,
+      "estimatedCount": 0,
+      "verifiedCount": 1,
+      "hasIncompleteNutrition": false,
+      "timings": {
+        "imagePrepMs": 75.4,
+        "visionProviderMs": 4451.3,
+        "dbLookupMs": 0.4,
+        "nutritionEstimationMs": 0,
+        "nutritionCalcMs": 0.5,
+        "totalServerMs": 4527.7,
+        "retryBackoffMs": 0
+      },
+      "calls": [
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "analyzeMeal",
+          "attempt": 1,
+          "durationMs": 4450.9,
+          "outcome": "success",
+          "promptTokens": 2529,
+          "completionTokens": 559,
+          "cachedTokens": 0,
+          "totalTokens": 3088,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000511,
+          "costInr": 0.0429,
+          "requestId": "94a90ee8-8240-4758-bc09-b9dcd3bb13cd"
+        }
+      ]
+    },
+    {
+      "file": "15_edge_non_food_laptop_desk.jpg",
+      "recognitionMatch": true,
+      "status": 200,
+      "latencyMs": 1935,
+      "name": "No Food Detected",
+      "calories": 0,
+      "calorieRange": {
+        "low": 0,
+        "high": 0
+      },
+      "proteinG": 0,
+      "carbsG": 0,
+      "fatG": 0,
+      "fiberG": 0,
+      "confidence": "high",
+      "notes": "Office desk workspace with laptop, notebook, pen, and phone; coffee mug is incidental, no meal detected.",
+      "candidates": [
+        {
+          "name": "No Food Detected",
+          "confidence": "high"
+        }
+      ],
+      "visibleItems": [],
+      "ambiguity": "low",
+      "foods": [],
+      "unknownFoods": [],
+      "allFoodsVerified": true,
+      "requiresManualReview": false,
+      "hasUnresolvedItems": false,
+      "unresolvedCount": 0,
+      "estimatedCount": 0,
+      "verifiedCount": 0,
+      "hasIncompleteNutrition": false,
+      "noFoodDetected": true,
+      "timings": {
+        "imagePrepMs": 85.9,
+        "visionProviderMs": 1846.8,
+        "dbLookupMs": 0,
+        "nutritionEstimationMs": 0,
+        "nutritionCalcMs": 0,
+        "totalServerMs": 1932.7,
+        "retryBackoffMs": 0
+      },
+      "calls": [
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "analyzeMeal",
+          "attempt": 1,
+          "durationMs": 1846.2,
+          "outcome": "success",
+          "promptTokens": 2524,
+          "completionTokens": 100,
+          "cachedTokens": 0,
+          "totalTokens": 2624,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000381,
+          "costInr": 0.032,
+          "requestId": "c5909fac-32a1-41ec-bc17-d1dcb1ab7edd"
+        }
+      ]
+    }
+  ]
+}

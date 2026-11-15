@@ -188,7 +188,7 @@ export default function HealthSyncSettings() {
           </button>
         </div>
 
-        <div className="flex items-center gap-2 mt-3">
+        <div className="flex flex-wrap items-center gap-2 mt-3">
           <button
             onClick={sendTest}
             disabled={testing || !token}
