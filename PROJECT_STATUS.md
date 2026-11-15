@@ -7,6 +7,11 @@
 
 ---
 
+## 15 November 2026 — Fuel header alignment (complete)
+
+- Fixed the mobile Fuel heading/actions layout: the header used a column below 480 px and right-aligned the action row, leaving an orphaned row and blank space beneath the heading. It now uses two columns with a flexible text area and aligned actions.
+- Sized title/actions for 320 px phones, retained the larger desktop title, allowed subtitle wrapping and preserved all three action handlers/accessible labels. Changes limited to `components/diet/DietPage.tsx` and this status file. Verified at actual 320/393/1440 px: title/actions share a row without horizontal overflow; 320 px title fits one line, desktop title remains 36 px. Saved Meals and Macro Goals open/close correctly; no data saved. Screenshot: `fuel-header-fixed-393.jpg` in the existing visualization folder. Full suite **70 files passed; 779 passed, 26 skipped, zero failures**. Production build **passed, exit 0**, all 34 routes generated; existing non-fatal lint warnings remain. Current branch only, no push.
+
 ## 15 November 2026 — Deployed-style scan details and broader checks (implemented; visual review pending)
 
 - Implemented the deployed scan-detail hierarchy: one botanical dark result card, compact component pills, horizontal donut/macros, and log action within the card. Preserve individual edits and ambiguity gates; do not restore duplicate display-label counting or unverified alternative-dish replacements.

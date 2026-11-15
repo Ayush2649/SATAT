@@ -346,22 +346,22 @@ export default function DietPage() {
   return (
     <div className="w-full max-w-md mx-auto lg:max-w-none pb-8 animate-fade-in text-[#1C1917] dark:text-[#F4F1EA]">
       {/* ── 1. TOP HEADER & QUICK-ACTION ICON PILLS ── */}
-      <div className="flex flex-col min-[480px]:flex-row items-start justify-between gap-3 pt-1 pb-3">
-        <div>
-          <h1 className="font-serif text-3xl sm:text-4xl text-[#1C1917] tracking-tight leading-none">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 pt-1 pb-3">
+        <div className="min-w-0">
+          <h1 className="font-serif text-xl min-[360px]:text-2xl sm:text-4xl text-[#1C1917] tracking-tight leading-tight">
             Meals &amp; nutrition
           </h1>
-          <p className="text-xs text-[#57534E] mt-1.5 font-medium">
+          <p className="text-[11px] sm:text-xs text-[#57534E] mt-1 font-medium leading-relaxed">
             Mindful fueling, zero calorie anxiety.
           </p>
         </div>
 
         {/* 3 Circular Tactile Icon Buttons */}
-        <div className="flex items-center gap-2 shrink-0 self-end min-[480px]:self-auto">
+        <div className="flex items-center gap-1.5 min-[360px]:gap-2 shrink-0">
           <button
             onClick={() => setShowVoiceMeal(true)}
             type="button"
-            className="w-9 h-9 rounded-full bg-[#EFECE4] hover:bg-[#E2DDD2] text-[#1C1917] flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+            className="w-8 h-8 min-[360px]:w-9 min-[360px]:h-9 rounded-full bg-[#EFECE4] hover:bg-[#E2DDD2] text-[#1C1917] flex items-center justify-center transition-all cursor-pointer shadow-2xs"
             title="Log meal by voice"
             aria-label="Log meal by voice"
           >
@@ -371,7 +371,7 @@ export default function DietPage() {
           <button
             onClick={() => setShowSaved(true)}
             type="button"
-            className="w-9 h-9 rounded-full bg-[#EFECE4] hover:bg-[#E2DDD2] text-[#1C1917] flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+            className="w-8 h-8 min-[360px]:w-9 min-[360px]:h-9 rounded-full bg-[#EFECE4] hover:bg-[#E2DDD2] text-[#1C1917] flex items-center justify-center transition-all cursor-pointer shadow-2xs"
             title="Saved meals"
             aria-label="Saved meals"
           >
@@ -381,7 +381,7 @@ export default function DietPage() {
           <button
             onClick={() => setShowGoals(true)}
             type="button"
-            className="w-9 h-9 rounded-full bg-[#EFECE4] hover:bg-[#E2DDD2] text-[#1C1917] flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+            className="w-8 h-8 min-[360px]:w-9 min-[360px]:h-9 rounded-full bg-[#EFECE4] hover:bg-[#E2DDD2] text-[#1C1917] flex items-center justify-center transition-all cursor-pointer shadow-2xs"
             title="Nutrition goals"
             aria-label="Daily macro goals"
           >
