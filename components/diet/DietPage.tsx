@@ -49,7 +49,7 @@ import {
   deleteMealTemplate,
 } from "@/lib/firestore";
 import { setDietContext } from "@/lib/orbitContext";
-import { useToast } from "@/components/ui/Toast";
+// import { useToast } from "@/components/ui/Toast";
 import type { MealEntry, MealMacros, MacroGoals, MealTemplate } from "@/types";
 import EmptyState from "@/components/ui/EmptyState";
 import { FuelPageSkeleton } from "@/components/ui/PageSkeletons";
@@ -64,7 +64,7 @@ export default function DietPage() {
   const { data: session } = useSession();
   const { firebaseUser, isReady } = useFirebaseAuth();
   const userId = firebaseUser?.uid ?? (session?.user as any)?.id ?? session?.user?.email ?? "";
-  const { toast } = useToast();
+  // const { toast } = useToast();
 
   const [date, setDate] = useState(todayString());
   const [meals, setMeals] = useState<MealEntry[]>([]);
