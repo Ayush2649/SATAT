@@ -7,6 +7,14 @@
 
 ---
 
+## 15 November 2026 — Compact meal scan review
+
+- Simplified the scan result to editable dish/amount pills, an Add food action, the calorie/macro donut immediately afterward, and one **Looks right · Log meal** action. Removed repeated dish confirmations and long explanatory forms from the default view.
+- Editing is on demand, one dish at a time. Name, amount/unit and +50 g are the primary controls; recipe, source and micronutrient fields remain behind a details disclosure. Save/Cancel are atomic, removal is available inside Edit, and logging is disabled while editing or when nutrition is incomplete. Logging itself records the user's confirmation.
+- Fixed undefined `--satat-matcha` / `--satat-terracotta` references in the scanner components by using the existing `--satat-sage` / `--satat-brand` tokens, restoring button contrast. Removed repeated photo-overlay tags and kept optional scan notes secondary.
+- Browser verified at actual 320 px, 391 px and 1440 px: no page-wide horizontal overflow, donut follows dishes, add/edit/remove works, +50 g changes only the selected food, Cancel preserves totals, Save updates totals, and no checkboxes remain in the default view. Existing user draft restored after temporary UI test additions; no meal logged.
+- Modified files: `components/diet/ScanComponentEditor.tsx`, `components/diet/MealScannerModal.tsx`, `PROJECT_STATUS.md`. Final verification: **69 test files passed; 763 tests passed; 26 skipped**. **Production build passed, exit 0**, all 34 routes generated; existing non-fatal lint warnings remain. Screenshots: `scan-pills-mobile.jpg` and `scan-pills-desktop.jpg` in the existing local audit artifact folder. Accuracy/data acceptance work from the previous checkpoint remains unchanged. Commit to current branch only; no push.
+
 ## 15 November 2026 — Component-level meal scan implementation checkpoint
 
 - Replaced the whole-plate-only result with editable food rows: independent identity/amount/unit, add/remove missing foods or oil, recipe ingredient/oil/cooked-yield edits, explicit per-food confirmation, incomplete subtotal labels, and source-labelled nutrition. User corrections are calculated locally and retained in account/date-scoped drafts for 24 hours; re-analysis cannot silently replace them.

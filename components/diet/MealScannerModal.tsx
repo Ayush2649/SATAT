@@ -346,7 +346,6 @@ export default function MealScannerModal({
     abortControllerRef.current = controller;
 
     setResult(null);
-    setReviewConfirmed(false);
     setScanning(true);
     setScanStage("Compressing photo...");
 
@@ -410,7 +409,7 @@ export default function MealScannerModal({
   };
 
   const isNoFoodDetected = Boolean(result?.noFoodDetected);
-  const [reviewConfirmed, setReviewConfirmed] = useState(false);
+  const [editingFood, setEditingFood] = useState(false);
   useDialogFocus(handleClose, mounted);
 
   const componentSummary = summarizeComponents(components);
@@ -418,13 +417,13 @@ export default function MealScannerModal({
   const detectedDishName = components.map(row => row.name.trim()).filter(Boolean).join(" + ") || "Meal estimate";
   const handleLogPlateMeal = async () => {
     if (saving) return;
-    if (!componentSummary.complete || !componentSummary.reviewed || !reviewConfirmed || currentCalories <= 0) {
-      setError("Resolve missing nutrition and check every food and amount before logging."); return;
+    if (!componentSummary.complete || editingFood || currentCalories <= 0) {
+      setError("Finish editing your meal before logging."); return;
     }
     setSaving(true);
     try {
       const thumbnail = lastUploadedFileRef.current ? await resizeImageClient(lastUploadedFileRef.current, 500, 0.78) : null;
-      const saved = await onSave({ userId, date, name: detectedDishName, macros: { calories: currentCalories, proteinG: currentProtein, carbsG: currentCarbs, fatG: currentFat }, ...(thumbnail && thumbnail.base64.length < 150000 ? { photoUrl: `data:${thumbnail.mimeType};base64,${thumbnail.base64}` } : {}), createdAt: Date.now(), nutritionStatus: "estimated", hasIncompleteNutrition: false, scanReview: JSON.parse(JSON.stringify({ version: 1, components, micronutrients: componentSummary.micronutrients })) });
+      const saved = await onSave({ userId, date, name: detectedDishName, macros: { calories: currentCalories, proteinG: currentProtein, carbsG: currentCarbs, fatG: currentFat }, ...(thumbnail && thumbnail.base64.length < 150000 ? { photoUrl: `data:${thumbnail.mimeType};base64,${thumbnail.base64}` } : {}), createdAt: Date.now(), nutritionStatus: "estimated", hasIncompleteNutrition: false, scanReview: JSON.parse(JSON.stringify({ version: 1, components: components.map(row => ({ ...row, confirmed: true })), micronutrients: componentSummary.micronutrients })) });
       if (saved !== false) { try { localStorage.removeItem(draftKey); } catch { /* Storage restricted. */ } }
     } catch { setError("Could not save. Your reviewed components are kept; try again."); }
     finally { setSaving(false); }
@@ -456,7 +455,7 @@ export default function MealScannerModal({
 
           <div className="text-center flex-1 min-w-0">
             <span className="text-[9px] font-bold tracking-[0.16em] uppercase text-[#2D6A4F] block leading-none">
-              RITUAL SCAN
+              MEAL PHOTO
             </span>
             <span className="font-sans font-bold text-base text-[#1C1917] leading-tight mt-0.5 block truncate">
               Fuel Scanner
@@ -471,14 +470,14 @@ export default function MealScannerModal({
         {/* Independently Scrollable Modal Body */}
         <div className="flex-1 overflow-y-auto overscroll-contain px-4 sm:px-6 py-4 space-y-4 no-scrollbar">
           {/* Editorial Serif Title */}
-          <div className="text-center sm:text-left">
+          {!result && <div className="text-center sm:text-left">
             <h2 className="font-serif text-2xl sm:text-3xl text-[#1C1917] tracking-tight leading-snug">
-              Review your meal
+              Scan your meal
             </h2>
             <p className="text-xs text-[#57534E] mt-0.5">
-              Hold plate in clear daylight for component-by-component macro estimation.
+              {result ? "Check the dishes, adjust anything, and log." : "Take a clear photo of your whole meal."}
             </p>
-          </div>
+          </div>}
 
           <div className="space-y-4 animate-fade-in">
             <input
@@ -527,60 +526,13 @@ export default function MealScannerModal({
 
               {/* STATE 2 & 3: PHOTO SELECTED */}
               {preview && (
-                <div className="rounded-[26px] overflow-hidden relative aspect-[4/3] bg-[#191D1A] shadow-md border border-white/10 group">
-                  <NextImage src={preview} alt="User plate scan" fill unoptimized className="object-cover" />
+                <div className="rounded-[26px] overflow-hidden relative aspect-[4/3] bg-[var(--satat-bg)] border border-[var(--satat-border)] group">
+                  <NextImage src={preview} alt="User plate scan" fill unoptimized className="object-contain" />
 
                   <div className="absolute top-3.5 left-3.5 w-6 h-6 border-t-2 border-l-2 border-[#E05A47] rounded-tl-lg pointer-events-none" />
                   <div className="absolute top-3.5 right-3.5 w-6 h-6 border-t-2 border-r-2 border-[#E05A47] rounded-tr-lg pointer-events-none" />
                   <div className="absolute bottom-3.5 left-3.5 w-6 h-6 border-b-2 border-l-2 border-[#E05A47] rounded-bl-lg pointer-events-none" />
                   <div className="absolute bottom-3.5 right-3.5 w-6 h-6 border-b-2 border-r-2 border-[#E05A47] rounded-br-lg pointer-events-none" />
-
-                  {/* Real AI tags (only when food detected) */}
-                  {result && !scanning && !isNoFoodDetected && (
-                    <div className="absolute top-4 inset-x-4 flex flex-wrap gap-1.5 pointer-events-none">
-                      <span className="bg-[#191D1A]/85 backdrop-blur-md text-white rounded-full px-3 py-1 text-[11px] font-semibold shadow-md inline-flex items-center gap-1 border border-white/15">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#E05A47]" />
-                        {detectedDishName}
-                      </span>
-                      {components.slice(0, 3).map(row => `${row.name} ~${row.amount}${row.unit}`).map((item: string) => (
-                        <span
-                          key={item}
-                          className="bg-[#191D1A]/75 backdrop-blur-md text-stone-200 rounded-full px-2.5 py-1 text-[10px] font-medium shadow-md border border-white/10"
-                        >
-                          {item}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Bottom confidence badge */}
-                  {result && !scanning && !isNoFoodDetected && (
-                    <div className="absolute bottom-3.5 left-3.5">
-                      {(() => {
-                        const conf = (result.confidence || "high").toLowerCase();
-                        if (conf === "high") {
-                          return (
-                            <span className="bg-[#D1FAE5] text-[#065F46] rounded-full px-2.5 py-1 text-[10px] font-bold shadow-md inline-flex items-center gap-1 border border-[#065F46]/10">
-                              <Check className="w-3 h-3 text-[#065F46]" />
-                              <span>Photo suggestion · check below</span>
-                            </span>
-                          );
-                        }
-                        if (conf === "medium") {
-                          return (
-                            <span className="bg-[#FEF3C7] text-[#92400E] rounded-full px-2.5 py-1 text-[10px] font-bold shadow-md inline-flex items-center gap-1 border border-[#92400E]/10">
-                              <span>Photo suggestion · check every food below</span>
-                            </span>
-                          );
-                        }
-                        return (
-                          <span className="bg-[#FEE2E2] text-[#991B1B] rounded-full px-2.5 py-1 text-[10px] font-bold shadow-md inline-flex items-center gap-1 border border-[#991B1B]/10">
-                            <span>Low Confidence · Add a Context Hint below</span>
-                          </span>
-                        );
-                      })()}
-                    </div>
-                  )}
 
                   {/* STATE 2: SCANNING OVERLAY */}
                   {scanning && (
@@ -628,7 +580,7 @@ export default function MealScannerModal({
                 </div>
               ) : null}
 
-              {/* Context Hint Card */}
+              {!result && (
               <div className="bg-[#FCFBF9] dark:bg-[#1C221E] rounded-[24px] p-4 border border-[#1C1917]/[0.06] dark:border-white/10 shadow-2xs">
                 <label className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#8C857B] block mb-1.5">
                   CONTEXT HINT (OPTIONAL — OIL, GHEE, PREPARATION)
@@ -664,6 +616,7 @@ export default function MealScannerModal({
                 </div>
 
               </div>
+              )}
 
               {/* STATE 3A: NON-FOOD OR 0-CALORIE AMBER GUIDANCE CARD */}
               {result && !scanning && isNoFoodDetected && (
@@ -701,18 +654,55 @@ export default function MealScannerModal({
               )}
 
               {result && !scanning && !isNoFoodDetected && (
-                <div className="rounded-[26px] p-4 sm:p-5 border border-[var(--satat-surface-inset)] bg-[var(--satat-surface)] text-[var(--satat-anchor-dark)] space-y-4">
-                  <button type="button" className="text-xs underline" onClick={resetPlateState}>Discard review and start again</button>
-                  <ScanComponentEditor rows={components} onChange={rows => { setComponents(rows); setReviewConfirmed(false); setError(""); }} />
-                  <div role="status" className="rounded-2xl bg-[var(--satat-bg)] p-3 space-y-2">
-                    <h3 className="text-sm font-semibold">{componentSummary.complete ? "Estimated total" : "Incomplete — known-food subtotal"}</h3>
-                    {!componentSummary.complete && <p className="text-xs">{componentSummary.unresolved} food(s) need nutrition or an amount. This subtotal is not the whole meal.</p>}
+                <div className="space-y-4">
+                  <ScanComponentEditor rows={components} onChange={rows => { setComponents(rows); setError(""); }} onEditingChange={setEditingFood} />
+                  <div role="status" className="rounded-2xl border border-[var(--satat-border)] bg-[var(--satat-bg)] p-3">
+                    {!componentSummary.complete && <p className="mb-2 text-xs text-[var(--satat-brand)]">Check the marked dishes to complete this estimate.</p>}
                     <MacroDonutBreakdown variant="light" calories={currentCalories} carbs={currentCarbs} fat={currentFat} protein={currentProtein} />
-                    <p className="text-xs">Approximation, not a measured result or calibrated confidence interval. Hidden ingredients and oil can change it.</p>
+                    <p className="mt-2 text-center text-[11px] text-[var(--satat-text-muted)]">{componentSummary.complete ? "Estimated nutrition · portions and cooking oil may vary." : "Partial total · some nutrition is missing."}</p>
                   </div>
-                  <label className="flex items-start gap-2 text-xs"><input type="checkbox" checked={reviewConfirmed} onChange={event => setReviewConfirmed(event.target.checked)} />I checked the whole meal, added missed foods, and reviewed oil and portions.</label>
-                  <button type="button" onClick={handleLogPlateMeal} disabled={saving || !componentSummary.complete || !componentSummary.reviewed || !reviewConfirmed || currentCalories <= 0} className="w-full rounded-full bg-[var(--satat-terracotta)] text-white py-3 text-sm font-semibold disabled:opacity-50">{saving ? "Saving meal…" : "Log to Today's Fuel"}</button>
-                  <button type="button" className="text-sm underline" onClick={() => { handleClose(); onSwitchToManual?.({ name: detectedDishName, macros: { calories: currentCalories, proteinG: currentProtein, carbsG: currentCarbs, fatG: currentFat }, incomplete: !componentSummary.complete }); }}>Edit dish and nutrition totals</button>
+                  <button type="button" onClick={handleLogPlateMeal} disabled={saving || !componentSummary.complete || editingFood || currentCalories <= 0} className="w-full rounded-full bg-[var(--satat-brand)] text-white py-3.5 text-sm font-semibold disabled:opacity-50">{saving ? "Saving meal…" : "Looks right · Log meal"}</button>
+                  <div className="flex justify-center gap-5 text-xs text-[var(--satat-text-secondary)]">
+                    <button type="button" onClick={resetPlateState}>Scan again</button>
+                    <button type="button" onClick={() => { handleClose(); onSwitchToManual?.({ name: detectedDishName, macros: { calories: currentCalories, proteinG: currentProtein, carbsG: currentCarbs, fatG: currentFat }, incomplete: !componentSummary.complete }); }}>Enter manually</button>
+                  </div>
+                  <details className="text-xs text-[var(--satat-text-muted)]"><summary className="cursor-pointer text-center">Add a note for the scan</summary>
+              <div className="bg-[#FCFBF9] dark:bg-[#1C221E] rounded-[24px] p-4 border border-[#1C1917]/[0.06] dark:border-white/10 shadow-2xs">
+                <label className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#8C857B] block mb-1.5">
+                  CONTEXT HINT (OPTIONAL — OIL, GHEE, PREPARATION)
+                </label>
+                <div className="relative flex items-center">
+                  <input
+                    type="text"
+                    placeholder="e.g. 2 aloo parathas, extra ghee, whey scoop"
+                    value={hint}
+                    onChange={(e) => setHint(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && result && !scanning && hint.trim()) {
+                        e.preventDefault();
+                        handleReanalyzeWithHint();
+                      }
+                    }}
+                    className={cn(
+                      "w-full bg-[#F6F3EC] dark:bg-[#191D1A]/60 rounded-xl px-3.5 py-2.5 text-xs text-[#1C1917] dark:text-[#FCFBF9] outline-none border border-[#1C1917]/[0.06] dark:border-white/10 transition-all",
+                      result && !scanning && hint.trim() ? "pr-28" : ""
+                    )}
+                  />
+                  {result && !scanning && hint.trim() && (
+                    <button
+                      type="button"
+                      onClick={handleReanalyzeWithHint}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-lg px-2.5 py-1 text-[10px] font-bold shadow-xs flex items-center gap-1 transition-all cursor-pointer active:scale-95"
+                      aria-label="Apply Hint and re-analyze"
+                    >
+                      <span>Apply Hint</span>
+                      <span className="text-xs">↻</span>
+                    </button>
+                  )}
+                </div>
+
+              </div>
+                  </details>
                 </div>
               )}
             </div>
