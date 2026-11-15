@@ -1075,3 +1075,22 @@ button:disabled { cursor: not-allowed; }
 .animate-timeline-beam {
   animation: timelineBeam 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
+
+/* Physical Floating Badges & Cards Keyframes */
+@keyframes satatFloatSlow {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+@keyframes satatFloatDelayed {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}

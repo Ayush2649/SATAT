@@ -15,6 +15,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const session = await getServerSession(authOptions);
   const userId = getUserKey(session);
 
+  if (!session || !userId) {
+    redirect("/");
+  }
+
   if (userId) {
     const isExempt = PRELAUNCH_EXEMPT_USER_IDS.includes(userId);
     const isSessionOnboarded = (session?.user as any)?.onboarded === true;

@@ -199,17 +199,19 @@
   --motion-scale-pop: 1.03;
 }
 
-.dark {
+.dark,
+html.dark,
+[data-theme="dark"] {
   color-scheme: dark;
 
-  /* Foundation — Harmonious Deep Botanical Canvas & Surface */
-  --satat-bg: #0F1210;
-  --satat-surface: #171B18;
-  --satat-surface-elevated: #1F2420;
-  --satat-surface-high: #272E29;
-  --satat-surface-subtle: #141715;
-  --satat-surface-inset: #0B0E0C;
-  --satat-anchor-dark: #191D1A;
+  /* Foundation — Nocturnal Botanical Editorial Foundation */
+  --satat-bg: #0A0D0B;
+  --satat-surface: #141916;
+  --satat-surface-elevated: #1A201C;
+  --satat-surface-high: #222924;
+  --satat-surface-subtle: #1C221E;
+  --satat-surface-inset: #0F1310;
+  --satat-anchor-dark: #1B241E;
 
   --background: var(--satat-bg);
   --surface: var(--satat-surface);
@@ -218,19 +220,19 @@
   --surface-subtle: var(--satat-surface-subtle);
   --surface-inset: var(--satat-surface-inset);
 
-  /* Content — Harmonious High-Legibility Neutral */
-  --satat-text-primary: #F5F7FA;
-  --satat-text-secondary: #9FA69F;
-  --satat-text-muted: #6B756C;
+  /* Content — Warm Alabaster & Muted Sage-Stone */
+  --satat-text-primary: #F4F1EA;
+  --satat-text-secondary: #9CA39E;
+  --satat-text-muted: #6E7872;
 
   --text-primary: var(--satat-text-primary);
   --text-secondary: var(--satat-text-secondary);
   --text-muted: var(--satat-text-muted);
 
   /* Hairline Precision Borders */
-  --satat-border: rgba(255, 255, 255, 0.08);
+  --satat-border: rgba(255, 255, 255, 0.07);
   --satat-border-subtle: rgba(255, 255, 255, 0.04);
-  --satat-border-strong: rgba(255, 255, 255, 0.14);
+  --satat-border-strong: rgba(255, 255, 255, 0.12);
 
   --border: var(--satat-border);
   --border-subtle: var(--satat-border-subtle);

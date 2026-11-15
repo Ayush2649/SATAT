@@ -113,23 +113,27 @@ export default function VoiceMealModal({
         className="relative w-full max-w-md bg-[#FCFBF9] text-[#1C1917] rounded-t-[32px] sm:rounded-[32px] max-h-[92dvh] flex flex-col overflow-hidden shadow-2xl border border-[#1C1917]/10 animate-slide-up"
       >
         {/* Sticky Header */}
-        <div className="shrink-0 px-5 pt-4 pb-3 bg-[#FCFBF9] border-b border-[#1C1917]/[0.06] flex items-start justify-between gap-3">
-          <div>
-            <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#E05A47] block">
+        <div className="shrink-0 px-5 pt-4 pb-3 bg-[#FCFBF9] dark:bg-[#141916] border-b border-[#1C1917]/[0.06] dark:border-white/[0.06] flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <span className="text-[10px] font-bold tracking-[0.16em] uppercase text-[#E05A47] block">
               NATURAL VOICE PARSER
             </span>
-            <h3 className="font-serif italic text-2xl text-[#1C1917] mt-0.5 leading-tight">
+            <h3 className="font-serif text-2xl sm:text-3xl text-[#1C1917] dark:text-[#F4F1EA] mt-0.5 leading-tight whitespace-nowrap">
               Speak what you ate
             </h3>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="bg-[#EFECE4] text-[#57534E] rounded-full px-2.5 py-1 text-[10px] font-semibold whitespace-nowrap">
-              {phase === "recording" ? "Listening..." : "Tap mic to speak"}
-            </span>
+          <div className="flex items-center gap-2 shrink-0">
+            {phase === "recording" && (
+              <span className="bg-[#E05A47]/10 text-[#E05A47] rounded-full px-2.5 py-1 text-[10px] font-bold whitespace-nowrap inline-flex items-center gap-1.5 animate-pulse">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#E05A47]" />
+                Listening...
+              </span>
+            )}
             <button
               onClick={onClose}
               type="button"
-              className="w-8 h-8 rounded-full bg-[#EFECE4] hover:bg-[#E2DDD2] text-[#1C1917] flex items-center justify-center transition-all cursor-pointer"
+              aria-label="Close modal"
+              className="w-8 h-8 rounded-full bg-[#EFECE4] dark:bg-[#1E2621] hover:bg-[#E2DDD2] dark:hover:bg-[#28332C] text-[#1C1917] dark:text-[#F4F1EA] flex items-center justify-center transition-all cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -141,23 +145,21 @@ export default function VoiceMealModal({
 
         {/* ── Idle Phase ── */}
         {phase === "idle" && (
-          <div className="text-center py-6">
+          <div className="text-center py-5">
             <button
               onClick={startRecording}
               type="button"
-              className="w-20 h-20 rounded-full bg-[#E05A47] hover:bg-[#C94A38] text-white flex items-center justify-center mx-auto shadow-lg transition-transform active:scale-95 cursor-pointer"
+              aria-label="Start recording"
+              className="w-16 h-16 rounded-full bg-[#E05A47] hover:bg-[#C94A38] text-white shadow-[0_8px_28px_rgba(224,90,71,0.4)] my-5 flex items-center justify-center mx-auto transition-transform active:scale-95 cursor-pointer"
             >
-              <Mic className="w-8 h-8" />
+              <Mic className="w-7 h-7" />
             </button>
-            <p className="font-serif text-lg text-[#1C1917] mt-5">
-              Tap and describe your meal naturally
+            <p className="text-sm font-semibold text-[#1C1917] dark:text-[#F4F1EA]">
+              Tap the mic and say what you had
             </p>
-            <p className="text-xs text-[#57534E] mt-1.5 leading-relaxed px-4 max-w-xs mx-auto">
-              For example:{" "}
-              <span className="font-serif italic text-[#1C1917]">
-                “Two rotis with dal tadka, a small bowl of curd, and a boiled egg.”
-              </span>
-            </p>
+            <div className="mt-2.5 max-w-[300px] mx-auto px-3.5 py-2 rounded-xl bg-[#F6F3EC] dark:bg-[#1C221E] border border-[#1C1917]/[0.06] dark:border-white/[0.07] text-xs text-[#57534E] dark:text-[#9CA39E] leading-relaxed not-italic">
+              2 rotis, 1 bowl dal tadka, 100g paneer bhurji & curd
+            </div>
           </div>
         )}
 
@@ -166,9 +168,12 @@ export default function VoiceMealModal({
           <div className="py-2 animate-fade-in space-y-4">
             {/* Top Timer & Status */}
             <div className="text-center">
-              <span className="text-4xl sm:text-5xl font-mono font-bold tracking-tight text-[#1C1917] tabular-nums block">
+              <span className="text-4xl sm:text-5xl font-mono font-bold tracking-tight text-[#1C1917] dark:text-[#F4F1EA] tabular-nums block">
                 {mmss}
               </span>
+              <p className="text-sm font-semibold text-[#1C1917] dark:text-[#F4F1EA] mt-1">
+                Listening... describe your meal
+              </p>
               <span className="text-xs font-semibold text-[#E05A47] mt-1 inline-flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-[#E05A47] animate-pulse" />
                 Recording…

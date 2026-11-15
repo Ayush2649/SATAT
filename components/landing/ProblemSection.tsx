@@ -1,203 +1,234 @@
 "use client";
 
 import React, { useState } from "react";
-import { Moon } from "lucide-react";
 
-interface Milestone {
+interface TimelineStage {
   id: number;
   time: string;
+  shortTime: string;
   title: string;
+  subtitle: string;
   desc: string;
-  pulseColor: string;
-  renderMedia: () => React.ReactNode;
-  signalPill: React.ReactNode;
+  telemetry: string;
+  badgeClass: string;
+  photo: string;
 }
 
-export default function ProblemSection() {
-  const [activeMilestone, setActiveMilestone] = useState<number | null>(null);
+const STAGES: TimelineStage[] = [
+  {
+    id: 1,
+    time: "07:30 AM · DAWN CHECK-IN",
+    shortTime: "07:30 AM",
+    title: "Morning Readiness & Plan Sync",
+    subtitle: "Circadian Rhythm Calibration",
+    desc: "Wake up to a gentle plan already calibrated to your 7h 45m sleep score. Deep work is locked into your 10:00 AM peak dopamine window.",
+    telemetry: "✓ 7h 45m Sleep Synced · 92% Readiness",
+    badgeClass: "bg-[#2D6A4F]/15 dark:bg-[#2D6A4F]/25 text-[#2D6A4F] dark:text-[#6EE7B7] border border-[#34D399]/25",
+    photo: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    id: 2,
+    time: "01:15 PM · MIDDAY FUEL",
+    shortTime: "01:15 PM",
+    title: "Zero-Anxiety Plate Recognition",
+    subtitle: "Instant Macro Telemetry",
+    desc: "Point your camera at your lunch thali or rice bowl. Macros, protein gaps, and glycemic load are logged in 2 seconds flat.",
+    telemetry: "✦ 640 kcal · 42g Protein Logged in 2s",
+    badgeClass: "bg-[#F59E0B]/15 text-[#D97706] dark:text-[#FBBF24] border border-[#F59E0B]/25",
+    photo: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    id: 3,
+    time: "06:30 PM · DUSK RECALIBRATION",
+    shortTime: "06:30 PM",
+    title: "Adaptive Hypertrophy Session",
+    subtitle: "Autonomous Time Condensation",
+    desc: "Late team call ran over? Instead of a broken streak, SATAT condenses your 60-minute Upper Body lift into a high-density 35-minute compound session.",
+    telemetry: "⚡ Upper Body A Condensed → 35m Compound Focus",
+    badgeClass: "bg-[#E05A47]/15 text-[#C84331] dark:text-[#F87171] border border-[#E05A47]/25",
+    photo: "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    id: 4,
+    time: "10:15 PM · NOCTURNAL RECOVERY",
+    shortTime: "10:15 PM",
+    title: "Protein Window & Cortisol Downshift",
+    subtitle: "Restorative Biological Priming",
+    desc: "Orbit notices a 28g protein gap before bed and suggests a light bowl of Greek yogurt & berries while priming your tomorrow split.",
+    telemetry: "☾ 135g Protein Target Closed · 24-Day Flow Intact",
+    badgeClass: "bg-[#1E2621] text-[#6EE7B7] border border-[#34D399]/30",
+    photo: "https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=800&q=80",
+  },
+];
 
-  const milestones: Milestone[] = [
-    {
-      id: 1,
-      time: "🌅 DAWN · 7:30 AM",
-      title: "Morning check-in",
-      desc: "Wake up to a gentle plan that already knows how you slept—recalibrated before your feet touch the floor.",
-      pulseColor: "#D97706",
-      renderMedia: () => (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src="https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=120&q=80"
-          alt="Bedside morning sunlight"
-          className="w-full h-full object-cover"
-          loading="lazy"
-        />
-      ),
-      signalPill: (
-        <div className="bg-[#E6F2EC] text-[#2D6A4F] rounded-full px-3 py-1 text-[11px] font-medium inline-flex items-center gap-1.5 mt-2.5">
-          <span className="text-xs">↻</span>
-          <span>7h 45m sleep synced → Training readiness 92%</span>
-        </div>
-      ),
-    },
-    {
-      id: 2,
-      time: "🍴 MIDDAY · 1:15 PM",
-      title: "Mindful nourishment",
-      desc: "Snap a photo of your plate. No stressful barcode scanning, weighing grams, or calorie anxieties.",
-      pulseColor: "#2D6A4F",
-      renderMedia: () => (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src="https://images.unsplash.com/photo-1495214783159-3503fd1b572d?auto=format&fit=crop&w=120&q=80"
-          alt="Warm protein oatmeal bowl"
-          className="w-full h-full object-cover"
-          loading="lazy"
-        />
-      ),
-      signalPill: (
-        <div className="bg-[#FEF3C7] text-[#92400E] rounded-full px-3 py-1 text-[11px] font-medium inline-flex items-center gap-1.5 mt-2.5">
-          <span className="text-xs">✦</span>
-          <span>Plate photo scanned → 540 kcal · 34g protein logged in 2s</span>
-        </div>
-      ),
-    },
-    {
-      id: 3,
-      time: "✨ DUSK · 6:30 PM",
-      title: "Adaptive recalibration",
-      desc: "Missed your workout for a late team call? Satat gently shifts your sets to Thursday automatically—streak unbroken.",
-      pulseColor: "#E05A47",
-      renderMedia: () => (
-        <div className="w-full h-full bg-[#FADCD5] text-[#E05A47] flex items-center justify-center">
-          <Moon className="w-4 h-4 fill-current stroke-current" />
-        </div>
-      ),
-      signalPill: (
-        <div className="bg-[#FADCD5]/70 text-[#C94A38] rounded-full px-3 py-1 text-[11px] font-medium inline-flex items-center gap-1.5 mt-2.5">
-          <span className="text-xs">⚡</span>
-          <span>Upper Body A merged into Thursday → 24-day flow preserved</span>
-        </div>
-      ),
-    },
-  ];
+export default function ProblemSection() {
+  const [activeStageId, setActiveStageId] = useState<number>(1);
 
   return (
-    <section id="problem" className="py-16 sm:py-24 px-6 lg:px-12 text-left">
-      <div className="max-w-md lg:max-w-[1280px] mx-auto">
-        {/* Header (Left-Aligned) */}
-        <div className="mb-8">
-          <span className="text-[10px] font-bold tracking-[0.16em] uppercase text-[#E05A47] block">
-            RHYTHMIC CADENCE
-          </span>
-          <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl text-[#1C1917] mt-1 mb-0">
-            A single day, in seamless motion
-          </h2>
-        </div>
+    <section
+      id="rhythm"
+      className="py-16 sm:py-24 px-4 sm:px-8 w-full max-w-[1400px] mx-auto text-center relative scroll-mt-28"
+    >
+      {/* Compatibility anchor for #problem */}
+      <div id="problem" className="relative -top-24 pointer-events-none" aria-hidden="true" />
 
-        {/* Mobile Timeline View */}
-        <div className="lg:hidden flex flex-col">
-          {milestones.map((milestone, idx) => {
-            const isActive = activeMilestone === milestone.id;
-            return (
-              <div
-                key={milestone.id}
-                className="flex items-stretch gap-4 group cursor-pointer"
-                onClick={() => setActiveMilestone(isActive ? null : milestone.id)}
-                onMouseEnter={() => setActiveMilestone(milestone.id)}
-                onMouseLeave={() => setActiveMilestone(null)}
-              >
-                {/* Left Rail Column: Node + Inter-Node Beam */}
-                <div className="flex flex-col items-center shrink-0 w-12">
-                  {/* The Node */}
-                  <div className="w-11 h-11 rounded-full relative flex items-center justify-center shrink-0 z-10">
-                    <span
-                      className="absolute -inset-1 rounded-full animate-ping opacity-20 pointer-events-none"
-                      style={{ backgroundColor: milestone.pulseColor }}
-                    />
-                    <div className="w-11 h-11 rounded-full overflow-hidden ring-[3px] ring-[#F6F3EC] shadow-md relative z-10 bg-[#EFECE4]">
-                      {milestone.renderMedia()}
-                    </div>
+      {/* Section Header */}
+      <div className="mb-12 sm:mb-16 text-center max-w-none mx-auto">
+        <span className="text-[11px] font-bold tracking-[0.18em] uppercase text-[#E05A47] dark:text-[#FF7A68] block">
+          DAILY BIOLOGICAL CADENCE
+          <span className="sr-only"> · RHYTHMIC CADENCE</span>
+        </span>
+        <h2 className="font-serif text-3xl sm:text-5xl text-[#1C1917] dark:text-[#F4F1EA] mt-2 mb-3 leading-tight md:whitespace-nowrap">
+          A single day, in seamless motion.
+        </h2>
+        <p className="text-sm sm:text-base text-[#57534E] dark:text-[#9CA39E] leading-relaxed md:whitespace-nowrap mt-3">
+          Follow how SATAT quietly recalibrates your training, nutrition, and focus from dawn to sleep.
+        </p>
+      </div>
+
+      {/* ── DESKTOP TIMELINE TRACK (hidden md:grid grid-cols-4 gap-6) ── */}
+      <div className="hidden md:block relative">
+        {/* Continuous Horizontal Connector Spine */}
+        <div className="relative mb-8">
+          {/* Continuous Track Line centered exactly on the bottom circular dots */}
+          <div className="absolute left-[12.5%] right-[12.5%] bottom-[7px] h-[2px] bg-[#1C1917]/15 dark:bg-white/15 z-0">
+            <div
+              className="h-full bg-[#2D6A4F] dark:bg-[#34D399] transition-all duration-500 rounded-full"
+              style={{ width: `${((activeStageId - 1) / 3) * 100}%` }}
+            />
+          </div>
+
+          <div className="grid grid-cols-4 relative z-10">
+            {STAGES.map((stage) => {
+              const isActive = stage.id === activeStageId;
+              return (
+                <button
+                  key={stage.id}
+                  type="button"
+                  onClick={() => setActiveStageId(stage.id)}
+                  className="flex flex-col items-center group cursor-pointer relative z-10"
+                >
+                  {/* Top: Time Pill */}
+                  <div
+                    className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all shadow-xs mb-3 ${
+                      isActive
+                        ? "bg-[#191D1A] dark:bg-[#FCFBF9] text-white dark:text-[#191D1A] scale-105 shadow-md"
+                        : "bg-[#FCFBF9] dark:bg-[#141916] text-[#57534E] dark:text-[#9CA39E] border border-[#1C1917]/10 dark:border-white/10 group-hover:border-[#2D6A4F]"
+                    }`}
+                  >
+                    {stage.shortTime}
                   </div>
 
-                  {/* Inter-Node Beam Connector: ONLY rendered between nodes, NEVER below the last node */}
-                  {idx < milestones.length - 1 && (
-                    <div className="w-[2.5px] flex-1 my-1.5 rounded-full bg-[#1C1917]/10 relative overflow-hidden min-h-[76px]">
-                      {/* Static subtle gradient spine */}
-                      <div
-                        className="absolute inset-0 opacity-45"
-                        style={{
-                          background:
-                            idx === 0
-                              ? "linear-gradient(180deg, #D97706 0%, #2D6A4F 100%)"
-                              : "linear-gradient(180deg, #2D6A4F 0%, #E05A47 100%)",
-                        }}
-                      />
-                      {/* Animated flowing light beam */}
-                      <div
-                        className="w-full h-12 rounded-full animate-timeline-beam"
-                        style={{
-                          background:
-                            idx === 0
-                              ? "linear-gradient(180deg, transparent 0%, #D97706 50%, #2D6A4F 100%)"
-                              : "linear-gradient(180deg, transparent 0%, #2D6A4F 50%, #E05A47 100%)",
-                          animationDelay: idx === 0 ? "0s" : "1.1s",
-                        }}
-                      />
-                    </div>
-                  )}
+                  {/* Bottom: Circular Node Dot with track line running through its center */}
+                  <div
+                    className={`w-4 h-4 rounded-full border-4 border-[#FCFBF9] dark:border-[#0A0D0B] transition-all relative z-10 ${
+                      isActive
+                        ? "bg-[#2D6A4F] dark:bg-[#34D399] ring-2 ring-[#2D6A4F]/30 dark:ring-[#34D399]/40 scale-110"
+                        : "bg-[#1C1917]/25 dark:bg-white/30 group-hover:bg-[#2D6A4F]"
+                    }`}
+                  />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 4 Responsive Desktop Cards */}
+        <div className="grid grid-cols-4 gap-6 text-left">
+          {STAGES.map((stage) => {
+            const isActive = stage.id === activeStageId;
+            return (
+              <div
+                key={stage.id}
+                onClick={() => setActiveStageId(stage.id)}
+                className={`bg-[#FCFBF9] dark:bg-[#141916] border border-[#1C1917]/[0.07] dark:border-white/[0.08] rounded-[28px] p-5 shadow-xs flex flex-col justify-between transition-all duration-300 cursor-pointer ${
+                  isActive
+                    ? "ring-2 ring-[#34D399]/50 -translate-y-1.5 shadow-xl bg-[#FCFBF9] dark:bg-[#18211C]"
+                    : "hover:-translate-y-1 hover:shadow-md"
+                }`}
+              >
+                <div>
+                  <div className="h-44 w-full rounded-2xl overflow-hidden mb-4 bg-[#EFECE4] dark:bg-[#1C2420]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={stage.photo}
+                      alt={stage.title}
+                      className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                      loading="lazy"
+                    />
+                  </div>
+
+                  <span className="text-[10px] font-bold tracking-wider uppercase text-[#E05A47] dark:text-[#FF7A68]">
+                    {stage.time}
+                  </span>
+                  <h3 className="font-serif text-lg font-bold text-[#1C1917] dark:text-[#F4F1EA] mt-1 mb-1.5 leading-snug">
+                    {stage.title}
+                  </h3>
+                  <p className="text-xs text-[#57534E] dark:text-[#9CA39E] leading-relaxed">
+                    {stage.desc}
+                  </p>
                 </div>
 
-                {/* Right Content Column */}
-                <div
-                  className={`flex-1 pb-6 transition-all duration-200 rounded-2xl p-2.5 -m-2.5 ${
-                    isActive ? "bg-[#FCFBF9] shadow-xs" : "group-hover:bg-[#FCFBF9]/60"
-                  }`}
-                >
-                  <span className="text-[10px] font-mono tracking-widest text-[#8C857B] uppercase block mb-1">
-                    {milestone.time}
+                <div className="mt-4 pt-3 border-t border-[#1C1917]/[0.06] dark:border-white/[0.06]">
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold ${stage.badgeClass}`}
+                  >
+                    {stage.telemetry}
                   </span>
-                  <h3 className="font-sans font-bold text-base text-[#1C1917] mb-1">
-                    {milestone.title}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-[#57534E] leading-relaxed">
-                    {milestone.desc}
-                  </p>
-                  {milestone.signalPill}
                 </div>
               </div>
             );
           })}
         </div>
+      </div>
 
-        {/* Desktop 3-Column Horizontal Bento Grid */}
-        <div className="hidden lg:grid grid-cols-3 gap-6 items-stretch">
-          {milestones.map((milestone) => (
+      {/* ── MOBILE VERTICAL TIMELINE TRACK (md:hidden) ── */}
+      <div className="md:hidden space-y-6 text-left relative">
+        {/* Continuous Vertical Connecting Spine */}
+        <div className="absolute top-8 bottom-8 left-6 w-[2px] bg-[#1C1917]/10 dark:bg-white/10 pointer-events-none" />
+
+        {STAGES.map((stage) => {
+          return (
             <div
-              key={milestone.id}
-              className="bg-[#FCFBF9] rounded-[28px] p-6 border border-[#1C1917]/[0.06] shadow-xs flex flex-col justify-between hover:shadow-md transition-all group"
+              key={stage.id}
+              className="relative z-10 bg-[#FCFBF9] dark:bg-[#141916] border border-[#1C1917]/[0.07] dark:border-white/[0.08] rounded-[26px] p-5 shadow-xs"
             >
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-[10px] font-mono tracking-widest text-[#8C857B] uppercase">
-                    {milestone.time}
-                  </span>
-                  <div className="w-10 h-10 rounded-full overflow-hidden shadow-sm border border-stone-200">
-                    {milestone.renderMedia()}
-                  </div>
-                </div>
-                <h3 className="font-serif text-2xl text-[#1C1917] mb-2 font-normal">
-                  {milestone.title}
-                </h3>
-                <p className="text-xs sm:text-sm text-[#57534E] leading-relaxed">
-                  {milestone.desc}
-                </p>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[10px] font-bold tracking-wider uppercase text-[#E05A47] dark:text-[#FF7A68] bg-[#E05A47]/10 dark:bg-[#E05A47]/20 px-2.5 py-0.5 rounded-full">
+                  {stage.time}
+                </span>
+                <span className="text-xs font-semibold text-[#8C857B] dark:text-[#9CA39E]">
+                  Stage {stage.id}/4
+                </span>
               </div>
-              <div className="mt-6 pt-4 border-t border-[#1C1917]/[0.05]">
-                {milestone.signalPill}
+
+              <div className="h-36 w-full rounded-2xl overflow-hidden mb-3.5 bg-[#EFECE4] dark:bg-[#1C2420]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={stage.photo}
+                  alt={stage.title}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+              </div>
+
+              <h3 className="font-serif text-lg font-bold text-[#1C1917] dark:text-[#F4F1EA] mb-1.5 leading-snug">
+                {stage.title}
+              </h3>
+              <p className="text-xs text-[#57534E] dark:text-[#9CA39E] leading-relaxed mb-4">
+                {stage.desc}
+              </p>
+
+              <div className="pt-3 border-t border-[#1C1917]/[0.06] dark:border-white/[0.06]">
+                <span
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold w-full justify-center ${stage.badgeClass}`}
+                >
+                  {stage.telemetry}
+                </span>
               </div>
             </div>
-          ))}
-        </div>
+          );
+        })}
       </div>
     </section>
   );

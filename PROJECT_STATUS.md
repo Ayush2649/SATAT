@@ -7,6 +7,88 @@
 
 ---
 
+## 15 November 2026 — Complete branch delivery checkpoint
+
+- User authorized pushing all project changes to the current `feat/complete-ui-change-e2e` branch. Fetched the remote branch: eight existing local commits ahead, no divergent remote commits. Delivery targets this branch only; no main-branch merge or push.
+- Included the remaining legacy evaluation script, fifteen photo fixtures and its existing benchmark-results cache so the scan checks can be reproduced after checkout. These files are preserved as supplied. The legacy cache's calorie targets are unweighed assumptions, not measured accuracy; use the newer `scripts/meal-scan.eval.ts` and documented category/guardrail evidence for current checks.
+- Validation rerun before delivery: **70 files passed; 779 tests passed, 26 skipped, zero failures**. Production build **passed, exit 0**, all 34 routes generated; existing non-fatal lint warnings remain. No application code changes in this checkpoint. Environment files/credentials remain ignored.
+
+## 15 November 2026 — Fuel header alignment (complete)
+
+- Fixed the mobile Fuel heading/actions layout: the header used a column below 480 px and right-aligned the action row, leaving an orphaned row and blank space beneath the heading. It now uses two columns with a flexible text area and aligned actions.
+- Sized title/actions for 320 px phones, retained the larger desktop title, allowed subtitle wrapping and preserved all three action handlers/accessible labels. Changes limited to `components/diet/DietPage.tsx` and this status file. Verified at actual 320/393/1440 px: title/actions share a row without horizontal overflow; 320 px title fits one line, desktop title remains 36 px. Saved Meals and Macro Goals open/close correctly; no data saved. Screenshot: `fuel-header-fixed-393.jpg` in the existing visualization folder. Full suite **70 files passed; 779 passed, 26 skipped, zero failures**. Production build **passed, exit 0**, all 34 routes generated; existing non-fatal lint warnings remain. Current branch only, no push.
+
+## 15 November 2026 — Deployed-style scan details and broader checks (implemented; visual review pending)
+
+- Implemented the deployed scan-detail hierarchy: one botanical dark result card, compact component pills, horizontal donut/macros, and log action within the card. Preserve individual edits and ambiguity gates; do not restore duplicate display-label counting or unverified alternative-dish replacements.
+- Expanding the live production-route smoke check from five to fifteen available photos. Manual visual review found misleading legacy filenames (pav bhaji labelled chole bhature; mushroom pasta labelled arrabbiata; berry drinks labelled protein shake). Expected visual categories now reflect what can actually be seen; filenames and assumed calories are not ground truth.
+- Fixed additional calculation bugs exposed by broader checks: Butter Chicken no longer maps to pure butter; explicit per-unit AI values scale all requested pieces; prepared oats no longer use dry-oat nutrition; unsupported prepared-rice recipes do not collapse to plain rice. Added regression coverage and removed the dry-oat “oatmeal” alias to keep editor lookup consistent.
+- Live checks: first run 14/15 coarse categories; one curry-family regex omitted Butter Chicken. Corrected that lexical expectation, with protein identity still unverified. Second run 15/15, mean observed latency ~8 s; subsequent prepared-oats/rice checks 2/2. These are developmental category/guardrail checks, not component or calorie accuracy. All three JSON runs are retained under `artifacts/scan-evaluation/`.
+- Numerical calorie/protein accuracy across normal dishes remains unmeasured without weighed portions/recipes. Remaining concerns include unsuitable piece/container reference masses, ambiguous ingredients, composite-food overlap and redundant missing-food questions. Pasta was unresolved in one run and estimated in another. No universal accuracy claim.
+- Browser control repeatedly timed out; new UI revision has no fresh browser screenshot/interaction verification. Final full suite: **70 files passed; 779 tests passed, 26 skipped, zero failures**. Production build **passed, exit 0**, all 34 routes generated; existing non-fatal lint warnings remain. Current branch only; no push. Detailed report: `docs/SCAN_DETAIL_AND_NORMAL_DISH_CHECKS_2026-11-15.md`.
+- Modified files: scanner modal/component editor; nutrition calculator/AI estimator/database; two regression files; expanded live evaluation runner; three result JSON files; this status file and the new detail/normal-dish report. No persisted meals modified; pre-existing photo fixtures and edge-case script remain untracked and untouched.
+
+## 15 November 2026 — Fuel layout and counted-inventory repair (complete)
+
+- Restored the horizontal donut/macros layout on phone widths, using a smaller ring and labels below 360 px. Removed verbose logged-meal provenance/component paragraphs and missing-nutrient placeholders; only finite supplied micronutrients are displayed.
+- Replaced automatic label-to-food additions with one counted structured inventory. Alternate labels annotate existing foods; possible missing foods remain uncounted suggestions until explicitly added. Conflicting portions and low-confidence identities require editing/review before logging. Separate bowls and user additions remain separate; serving IDs survive calculation and AI-estimate merging.
+- Old photo-derived drafts are retained and marked for review rather than silently discarded or auto-logged. Explicit user corrections are preserved. Existing saved meal totals are not rewritten.
+- Exact four-to-seven regression now calculates four items / 629 fixture kcal rather than 1,083. This fixes duplicate arithmetic, not measured calorie accuracy; the portions remain unweighed estimates. Final full suite: **70 files passed; 776 tests passed, 26 skipped, zero failures**. Production build **passed, exit 0**, all 34 routes generated; existing non-fatal lint warnings remain.
+- Live supplied-photo scan returned four foods / 629 estimated kcal, without duplicates. Browser verified at actual 320/391/1440 px: horizontal donut/macros, no horizontal overflow, Cancel preserves 70 g/629 kcal and Save of only roti to 90 g gives 688 kcal; logging disabled while editing. No test meal saved. Today's pre-existing draft retained; temporary prior-day scan cleared. Browser account showed an empty log, so logged-meal nutrient visibility is covered by render regressions rather than an opened persisted record. Dark-theme and physical-device checks remain acceptance work.
+- Screenshots: `fuel-scan-repaired-{mobile,320,desktop}.jpg` and `fuel-summary-repaired-{mobile,320}.jpg` in the existing local visualization folder. Detailed reproduction and limitations: `docs/MEAL_SCAN_COMPONENT_REVIEW_2026-11-15.md`. Repair stays below the user's 10% file limit; current branch only, no push.
+- Modified files so far: `DietPage.tsx`, `MacroDonutBreakdown.tsx`, `MealScannerModal.tsx`, `ScanComponentEditor.tsx`, `scan-review.ts`, nutrition calculator/AI estimator, shared vision prompt, analyze-meal route, `AvailableMicronutrients.tsx`, four regression test files, the updated component-review report, and this status file. Current branch only, no push.
+
+## 15 November 2026 — P1 duplicate meal inventory diagnosis (resolved above)
+
+- User supplied Google AI Mode output, SATAT output and an original rice/roti/dal/okra meal photo. Confirmed a deterministic regression in the inventory reconciliation added earlier: alternate `visibleItems` descriptions are appended as new foods when exact aliases/token overlap do not match structured `foods`.
+- Reproduced locally without an API call: structured Rice 180 g, Dal Fry 150 g, Plain Roti 70 g and Bhindi Masala 70 g calculate **629 kcal / 21 g protein / 122 g carbs / 8 g fat**. Reconciling the labels `yellow dal with tomato 150g`, `two whole wheat roti 90g` and `bhindi okra sabzi 70g` adds three duplicates, producing **1,083 kcal / 39 g protein / 204 g carbs / 15 g fat**, exactly matching the user's screenshot. These are fixture calculations from guessed portions, not measured meal nutrition.
+- Root cause: `lib/nutrition/scan-review.ts:reconcileScanInventory` interprets unmatched display text as an independent edible item; the route passes those additions into nutrition calculation. Existing tests cover counted samosa/roti aliases but not this descriptive synonym case. Passing the existing suite does not validate this scenario.
+- Required next fix: one structured inventory with IDs per physical serving/region; labels reference those components rather than creating foods. Treat unmatched descriptions as possible missing items requiring review; never automatically add calories from alternate descriptions. Flag conflicting portion estimates instead of adding them. Preserve genuinely separate servings and explicit user-added foods. Add this exact 4-to-7 reproduction plus multiple-bowl and legitimate-missing-food regression cases; review old automatic scan drafts too.
+- Current-meal workaround: keep one rice, one dal, one roti-stack entry and one sabzi entry; remove the three alternate-description duplicates. Google’s 650–790 kcal is also an unweighed estimate and is not a target to hard-code. No application code changed during this diagnosis. Existing full suite rerun: **763 passed, 26 skipped, 69 files passed**; production build **passed, exit 0**, all 34 routes generated. This passing baseline lacks the newly reproduced synonym case. Diagnosis remains open; no application code changes and no push.
+
+## 15 November 2026 — Compact meal scan review
+
+- Simplified the scan result to editable dish/amount pills, an Add food action, the calorie/macro donut immediately afterward, and one **Looks right · Log meal** action. Removed repeated dish confirmations and long explanatory forms from the default view.
+- Editing is on demand, one dish at a time. Name, amount/unit and +50 g are the primary controls; recipe, source and micronutrient fields remain behind a details disclosure. Save/Cancel are atomic, removal is available inside Edit, and logging is disabled while editing or when nutrition is incomplete. Logging itself records the user's confirmation.
+- Fixed undefined `--satat-matcha` / `--satat-terracotta` references in the scanner components by using the existing `--satat-sage` / `--satat-brand` tokens, restoring button contrast. Removed repeated photo-overlay tags and kept optional scan notes secondary.
+- Browser verified at actual 320 px, 391 px and 1440 px: no page-wide horizontal overflow, donut follows dishes, add/edit/remove works, +50 g changes only the selected food, Cancel preserves totals, Save updates totals, and no checkboxes remain in the default view. Existing user draft restored after temporary UI test additions; no meal logged.
+- Modified files: `components/diet/ScanComponentEditor.tsx`, `components/diet/MealScannerModal.tsx`, `PROJECT_STATUS.md`. Final verification: **69 test files passed; 763 tests passed; 26 skipped**. **Production build passed, exit 0**, all 34 routes generated; existing non-fatal lint warnings remain. Screenshots: `scan-pills-mobile.jpg` and `scan-pills-desktop.jpg` in the existing local audit artifact folder. Accuracy/data acceptance work from the previous checkpoint remains unchanged. Commit to current branch only; no push.
+
+## 15 November 2026 — Component-level meal scan implementation checkpoint
+
+- Replaced the whole-plate-only result with editable food rows: independent identity/amount/unit, add/remove missing foods or oil, recipe ingredient/oil/cooked-yield edits, explicit per-food confirmation, incomplete subtotal labels, and source-labelled nutrition. User corrections are calculated locally and retained in account/date-scoped drafts for 24 hours; re-analysis cannot silently replace them.
+- Raised scan preprocessing to a bounded 1536 px profile and DeepSeek high detail (including local non-secret config), retaining the legacy 768 px helper default for existing callers. Removed calorie/typical-serving prompt anchors, home-cooked automatic fat subtraction and recognition-inferred add-on chips. Visible labels are reconciled with calculation inventory; egg/fish preparation names no longer collapse to a generic ingredient alias.
+- Added optional backwards-compatible reviewed scan details to meal records. Vitamins/minerals carry source and units, remain null if any component is missing data, and can be supplied from a label/reference. No invented automatic micronutrient values. Raw-banana recipe explicitly uses a USDA plantain proxy; paneer/dal templates remain editable SATAT estimates, not measured recipes.
+- Added component/recipe regression tests and evaluation metrics for component precision/recall, gram errors, calorie/protein errors only with measured provenance, missed foods and catastrophic undercounts. The user confirmed no weighed references yet; held-out numerical accuracy remains unmeasured.
+- Live comparison: DeepSeek low/high returned 10/10 successful recognition/guardrail cases; totals and latency differ, so no accuracy winner is claimed. Gemini requests timed out; the model listing returned older names, but generation rejected those for this account. Retained the original configurable Gemini model defaults after that probe. Failure evidence is retained.
+- Final verification: full suite **69 files passed, 763 passed, 26 skipped**; `npm run build` **passed, exit 0**, all 34 routes generated. Existing non-fatal image/hook lint warnings remain. Browser confirmed the real upload/review flow, independent corrections, invalid/blank-food blocking, confirmation gates, recipe oil edits, draft restoration and no horizontal overflow at actual 320 px / 1440 px widths. No test meal was saved; the synthetic test draft was discarded.
+- New files: `ScanComponentEditor.tsx`, `lib/nutrition/scan-review.ts`, `scan-evaluation.ts`, two regression files and `scripts/meal-scan-reference.example.json`; scanner/route/provider/preprocessing/types/evaluation files modified. Optional logged meal details expose reviewed components/nutrients. Build/test logs stay ignored; provider comparison JSON is included. Existing untracked photo fixtures/edge-case script are preserved separately. No push.
+- Delivery report: `docs/MEAL_SCAN_COMPONENT_REVIEW_2026-11-15.md`. Next acceptance work: weighed held-out meals, full curated recipe/micronutrient provenance/retention data, Gemini generation access, physical-device and disposable-record persistence checks. Higher detail is not a demonstrated accuracy improvement without those references.
+
+## 15 November 2026 — Meal scan accuracy research checkpoint
+
+- User reported a real mixed-meal failure: rice estimated at 200 g instead of their approximately 400 g, paneer bhurji mistaken for egg, raw banana sabzi mistaken for another side, dal missed and a 393 kcal result. This shows the prior five-case smoke test did not establish meal accuracy. Earlier wording about preserving all visible pieces is a targeted change, not a guarantee across meals.
+- Research/source review confirmed compounded image reduction (client 1024 px, server 768 px, configured DeepSeek low detail), generic recipe aliases, canonical-match-before-confidence routing, no guaranteed reconciliation of visible labels against calculated components, whole-plate correction limitations, egg-text auto-selecting a Boiled Egg modifier, fixed uncertainty spread and unsupported homestyle fat discounts. Current nutrient schema lacks micronutrients and per-record provenance.
+- DeepSeek currently supports image input; the latest local scan trace succeeded. There is no evidence that replacing the API key fixes the error. Model choice, detail level, food inventory, portion evidence, preparation-aware database matching and correction UX must be evaluated separately.
+- Researched official DeepSeek/MyFitnessPal documentation, Nutrition5k, DietAI24, NIN IFCT and USDA data guidance. MyFitnessPal documents user selection/serving corrections and missed-food additions; its superiority on this meal is not established. Vitamin/mineral estimates require nutrient records and quantities, not visual measurement.
+- No application-code changes or external uploads of the user's screenshot in this research phase. Proposed next work: editable component rows, deterministic user corrections, explicit partial totals, original-image quality/model comparison, weighed held-out meals and source-backed recipes/micronutrients. Do not tune this photo to an assumed 1,000 kcal target.
+- Full tests rerun: **67 files passed; 740 passed; 26 skipped**. Production build rerun **passed, exit 0**, all 34 routes generated; existing non-fatal image/hook lint warnings remain. Changes limited to this status entry and `docs/MEAL_SCAN_RESEARCH_2026-11-15.md`; no push.
+
+## 15 November 2026 — Authenticated audit fixes and meal scanning (review checkpoint)
+
+- Scope is being closed at the user's requested review checkpoint. Work stays on `feat/complete-ui-change-e2e`; no push or merge is authorized.
+- Fixed the 14 recorded audit findings: unsupported personal measurements/action claims; unknown-food matching; invalid meal values; desktop workout keyboard access/cardio parity; account-scoped chat and ritual drafts; shared nutrition defaults; Orbit search/New Chat/composer actions; focus timer lifecycle; narrow-phone macro alignment; dialog/control accessibility; plain-language copy.
+- Additional fixes: Fuel scan/voice/manual deep links, Plan project deep link, persistent task focus targets, duplicate meal submissions, visible save/estimate failures, stale estimate response protection, balanced onboarding navigation, and missing-target setup copy.
+- Meal scanning now preserves all visible pieces, respects explicit weights, reconciles small condiment bowls with visible gram estimates, requires review for ambiguous/estimated results, retains the whole plate when correcting a candidate, and offers editable nutrition totals. Negated hints no longer add an egg/ghee/whey. Estimated calorie ranges carry an explicit portion basis to prevent double scaling while preserving older callers.
+- DeepSeek requests now explicitly send the supported top-level `thinking` setting. Five live production-route recognition/guardrail cases passed after fixes; mean observed latency changed from 7.50 s to 3.58 s. This small uncontrolled sample has no weighed recipes and establishes neither calorie MAPE nor clinical accuracy.
+- Verification: full Vitest **67 files passed; 740 tests passed; 26 skipped**. Final `npm run build` **passed, exit 0**, generating all 34 routes. Existing image-optimization and hook-dependency warnings remain non-fatal. Browser checks confirmed the repaired 320 px Fuel summary, invalid-meal blocking, Escape dismissal, Orbit handoffs/reset, desktop cardio/save controls and timer continuity across navigation. Simulated viewport checks are not physical-device certification.
+- Modified areas: `app/api/analyze-meal/route.ts`; settings/onboarding pages; Navigation; HomeView; DietPage, MealScannerModal, MacroDonutBreakdown; TaskBoard; WorkoutPage; OrbitView; onboarding/settings components; Firestore validation; nutrition calculator/estimator/provider prompts and DeepSeek options; app-shell CSS; regression tests. New helpers: `lib/nutrition/{goals,hints}.ts`, `lib/tasks/focus.ts`, `lib/use{DialogFocus,FocusTimer,Rituals}.ts`. New evaluation runner: `scripts/meal-scan.eval.ts`, `vitest.scan-eval.config.ts`; JSON evidence under `artifacts/scan-evaluation/`.
+- Existing nutrition/database/vocabulary work was preserved. Local photo fixtures and the separate pre-existing edge-case script remain available in the working tree.
+- Next sprint: weighed-recipe evaluation (including oil, serving mass and hidden fillings), disposable-account persistence/account-switch tests, physical camera/microphone/keyboard and wearable delivery tests. No claim that every possible UX defect has been eliminated.
+- Final preview note: production build passed, but the browser could not reconnect after restart; the final production reload remains unverified. Earlier browser evidence is retained separately from this limitation.
+
+Detailed closure matrix and reproducible checks: `docs/SATAT_AUDIT_FIXES_2026-11-15.md`.
+
 ## 1. Design System & Token Architecture
 
 The design language moves away from robotic, dark-purple SaaS boxes to an earthy, warm sunlit athletic aesthetic.
@@ -569,10 +651,6 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - Vitest suite: **51 passed (51 files), 617 passed | 26 skipped (643 total), 0 failing**.
   - Next.js production build: `npm run build` exits with code **0** (all 33 static/dynamic routes compiled).
 
----
-
-## 3. Pending / Upcoming Sprints
-
 ### ✅ Sprint 5.4: Orbit AI Date-Window Unification & Removal of Rigid Weekly Template Hijacking
 - **Date-Window Unification (`lib/orbit/temporalResolver.ts`)**:
   - Unified `"last week"`, `"this week"`, `"past week"`, `"previous week"`, and `"last 7 days"` so they consistently resolve to the rolling last 7 days (`today - 6 days` through `today`, e.g. Oct 25 – Oct 31) rather than an outdated calendar Monday–Sunday block.
@@ -592,10 +670,6 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - TypeScript compilation: `npx tsc --noEmit` exits with **0 errors**.
   - Vitest suite: **53 passed (53 files), 636 passed | 26 skipped (662 total), 0 failing**.
   - Next.js production build: `npm run build` exits with code **0** (all 33 static/dynamic routes compiled).
-
----
-
-## 3. Pending / Upcoming Sprints
 
 ### ✅ Sprint 5.5: Fix Groq 413 Request Too Large via Context Compaction, Strict Domain Pruning, & Automatic Model Fallback
 - **Workouts Compaction (`app/api/aria/route.ts`)**:
@@ -623,15 +697,6 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - Vitest suite: **53 passed (53 files), 638 passed | 26 skipped (664 total), 0 failing**.
   - Next.js production build: `npm run build` exits with code **0** (all 33 static/dynamic routes compiled).
 
----
-
-## 3. Pending / Upcoming Sprints
-
-### ⏳ Sprint 5.6: Multi-Device Responsive & Final E2E QA
-- **Tablet Optimization**: iPad 10th Gen (1024×768) 2-column bento grid verification.
-- **Desktop Optimization**: Desktop (1440×900) 3-column layout verification.
-- **End-to-End Testing**: Full automated test verification and Playwright regression sweep.
-
 ### ✅ Sprint 5.7: Port Mobile Companion Design into Production OrbitView (`components/orbit/OrbitView.tsx`)
 - **Top Editorial Header & Context Filter Pills (`components/orbit/OrbitView.tsx`)**:
   - Editorial `Instrument Serif` headline: *"Orbit Intelligence"* with subtitle *"Unified biological & execution copilot."*
@@ -658,8 +723,6 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - Full Vitest suite: 53 passed (53 files), 638 passed | 26 skipped (664 total), 0 failing.
   - Production Next.js build: `npm run build` exits with code 0 (all 33 routes compiled).
 
----
-
 ### ✅ Sprint 5.8: Fix All 6 Orbit UI & Context Retrieval Bugs
 - **Markdown Table Clipping Fix (`MarkdownText.tsx` & `styles/app-shell.css`)**:
   - Wrapped every table in a scrollable touch container (`overflow-x-auto my-2.5 rounded-xl border border-white/[0.08] bg-white/[0.04] [-webkit-overflow-scrolling:touch]`).
@@ -680,16 +743,6 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - `npx tsc --noEmit`: 0 errors.
   - Full Vitest suite: 53 passed (53 files), 638 passed | 26 skipped (664 total), 0 failing.
   - Production Next.js build: `npm run build` exits with code 0 (all 33 routes compiled).
-
----
-
-### ⏳ Sprint 5.9: Multi-Device Responsive & Final E2E QA
-- **Tablet Optimization**: iPad 10th Gen (1024×768) 2-column bento grid verification.
-- **Desktop Optimization**: Desktop (1440×900) 3-column layout verification.
-- **Settings & Profile** (`app/dashboard/settings/page.tsx`):
-  - Alabaster preference controls, notification settings, and biometric targets.
-
----
 
 ### ✅ Sprint 6.0: 1:1 Stitch Implementation of OrbitView with Dead-Center Radar Stage Alignment & Calm Celestial 3D Orbital Physics
 - **Dead-Center <Orbit3DCore /> Alignment & Physics (`components/orbit/Orbit3DCore.tsx`)**:
@@ -728,8 +781,6 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - Vitest suite: **54 passed (54 files), 642 passed | 26 skipped (668 total), 0 failing**.
   - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
 
----
-
 ### ✅ Sprint 6.1: Global Orbit 3D Launcher, Orbit New Chat / Reset Action, & Zero Vertical Gap
 - **Global 3D Orbit Launcher Across All Screens (`components/Navigation.tsx`)**:
   - **Floating Bottom-Right 3D Orbit Launcher FAB**: Added floating `Orbit AI` FAB positioned at `fixed right-4 bottom-[calc(62px+max(14px,env(safe-area-inset-bottom))+12px)] z-40` whenever `pathname !== "/dashboard/orbit"` with `<Orbit3DCore size="sm" state="idle" />`, `"Orbit AI"` typography, and pulsing `#6EE7B7` synapse dot.
@@ -745,8 +796,6 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - `npx tsc --noEmit`: **0 errors**.
   - Vitest suite: **55 passed (55 files), 646 passed | 26 skipped (672 total), 0 failing**.
   - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
-
----
 
 ### ✅ Sprint 6.2: Redesign Global Orbit Launchers into Clean, Rounded-Square 3D Emblem Badges with Moving Orbital Rings and Hover Tooltips
 - **Dedicated `<OrbitLauncherBadge />` Component (`components/orbit/OrbitLauncherBadge.tsx`)**:
@@ -768,8 +817,6 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - `npx tsc --noEmit`: **0 errors**.
   - Vitest suite: **55 passed (55 files), 648 passed | 26 skipped (674 total), 0 failing**.
   - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
-
----
 
 ### ✅ Sprint 6.3: Mobile Viewport Optimization, Hero Stage Rescaling, Ultra-Crisp Orbit Core & Markdown Footnote / Table Wrapping
 - **Ultra-Clear, High-Contrast Orbit 3D Core (`components/orbit/Orbit3DCore.tsx`)**:
@@ -798,41 +845,31 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - Vitest suite: **55 passed (55 files), 650 passed | 26 skipped (676 total), 0 failing**.
   - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
 
----
-
 ### ✅ Sprint 6.4: Responsive Desktop (lg: 1024px+ / xl: 1280px+) & Tablet (md: 768px–1023px) YouTube-Style Architecture Across All 5 SATAT Screens
 - **YouTube-Style Responsive App Shell (`components/Navigation.tsx` & `app/globals.css`)**:
   - **Collapsible Navigation Rail**: Implemented a responsive left sidebar (`hidden md:flex fixed left-0 top-0 bottom-0 z-40 bg-[#F6F3EC] border-r border-[#1C1917]/[0.08]`) with two states: `w-[76px]` (Tablet / collapsed) and `w-[240px]` (expanded Desktop).
   - **Brand Header & Dynamic Workspaces**: Features a top brand row with Menu hamburger toggle, `SATAT` serif wordmark, and `OS v2.4` status pill, plus a live `WORKSPACES` section rendering dynamic Firestore user projects (`getProjects(userId)`).
   - **Unified Sticky Top Command Bar**: Implemented `h-16 fixed top-0 right-0 z-30` header for Tablet/Desktop with breadcrumb trail, live synced mint badge, centered `⌘K` command/orbit search bar, context-aware primary Terracotta CTA pill (`+ Quick Track` / `+ New Task` / `+ Scan Meal` / `↻ New Chat`), `<OrbitLauncherBadge size="md" />`, bell, and avatar.
   - **Responsive Layout Tokens**: Added `@media (min-width: 768px)` and `@media (min-width: 1024px)` padding rules to `.app-shell-main` and `.app-shell-content`, with specialized zero-padding overrides for `.orbit-view-root`.
-
 - **Screen 1: `Today` Responsive 12-Column Grid (`components/dashboard/HomeView.tsx`)**:
   - **Left 8 Columns**: Top Greeting + 7-Day Calendar row, 2-Column Hero Row (Dark `#191D1A` Training Split Card + Calorie Budget & Target Protein Synthesis Cards), Today's Rhythm with category filter pills (`All Timeline`, `Meals`, `Movement`, `Deep Work`) and photo-backed cards, plus `ProgressTrendChart` and `ConsistencyHeatmap`.
   - **Right 4 Columns (Sticky Top-20)**: Orbit Adaptive Whisper Card (editorial italic quote with "Open in Orbit AI →"), Daily Rituals 2×2 Photo-Backed Grid with live toggle state, and Circadian Telemetry Card (HRV Readiness, Restful Sleep, Peak Dopamine Window).
-
 - **Screen 2: `Plan` Execution Studio 12-Column Grid (`components/tasks/TaskBoard.tsx`)**:
   - **Left 8 Columns**: Studio Header & Switcher Row (`STUDIO V2.4 · PLAN · CADENCE` + `● Focus Engine Primed`), 7-Day Week Strip & Project Filter Pills (with `+ New Project` having `whitespace-nowrap shrink-0` preventing clipping), Today's Execution Queue (with `onError` fallback on all task thumbnails), and 3-column Project Workspace Folder Cards Grid (`grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3.5`).
   - **Right 4 Columns (Sticky Top-20)**: Vertical Dark Espresso "Circadian Focus Engine" Timer Card (`bg-[#191D1A] rounded-[28px] p-5 text-white`) with 3 duration selector pills (`25m Sprint`, `50m Deep`, `90m Flow`), engaged task title, centered `160px × 160px` circular SVG progress ring, full-width `#E05A47` button (`▷ Enter Flow State`), Daily Rituals 2×2 Photo-Backed Overlay Grid with interactive checkboxes, and 3-Column Execution Metrics Mini-Card (`TASKS DONE` | `FOCUS TIME` | `STREAK`).
-
 - **Screen 3: `Train` Training Studio 12-Column Grid (`components/workout/WorkoutPage.tsx`)**:
   - **Left 5 Columns**: Dark Espresso Assigned Split Hero Card (`bg-[#191D1A] rounded-[28px] p-5 text-white`) with top badges (`● ASSIGNED SPLIT · 5 DAYS/WK`, `Target Strain: 14.5`), wide `h-40` gym dumbbell photo banner with `UPPER HYPERTROPHY BIAS` badge, `primarySession.name` title, full-width `Load Compound Upper A →` `#E05A47` button, quick-switch template pills, 2-column Session Date & Duration row, and Weekly Muscle Recovery & Volume Telemetry Card (Chest 85%, Back 92%, Shoulders 78%, Posterior Chain 64% + Orbit readiness whisper).
   - **Right 7 Columns**: Strength Movements Header Row (`STRENGTH MOVEMENTS`, `+ Add Movement`, `Voice Log`), Tabular Exercise Set Cards with 6-column desktop set table (`SET` | `PREVIOUS` | `WEIGHT (KG)` | `REPS` | `RPE` | `STATUS`) + `Rest Timer: 90s`, and Full-Width Botanical Matcha Sage Save Banner (`bg-[#2D6A4F]` with `Complete & Save Training Session →` and `≈ 380 kcal · Strain 14.2` badge).
-
 - **Screen 4: `Fuel` Nourishment Studio 12-Column Grid (`components/diet/DietPage.tsx`)**:
   - **Left 5 Columns**: Dark Espresso "Circadian Fuel Balance" Macro Card with centered `w-28 h-28` (`112px × 112px`) SVG progress ring (eliminating calorie number green stroke overlap bug), 3 horizontal macro progress bars (Protein `#E05A47`, Carbs `#6EE7B7`, Fats `#D6CFC2`), restorative biological ceiling callout, Orbit Vision Instant Meal Scanner Card, and Cellular Hydration & Creatine Card.
   - **Right 7 Columns**: Chronological Meal Log Header, photo-backed meal cards with `resolveDishThumbnail` and `onError` fallback, and Orbit Autonomous Recommendation ("Adaptive Protein-Gap Dinner") Card with options and 1-tap `+ Log This Recommended Dinner →` button.
-
 - **Screen 5: `Orbit` AI Companion Studio Split Copilot (`components/orbit/OrbitView.tsx`)**:
   - **Left 5 Columns**: Persistent 3D Orbit Core & Biological Telemetry card (`STATE: SYNAPSE READY`, `3 Domains Linked · 98% Sync`, centered `148px × 148px` `<Orbit3DCore size={148} />`, editorial headline, 3 stacked live context pills), Cadence Shift mint insight banner, 2×2 Cadence Actions Bento Grid (`Weekly Training Audit`, `Protein Gap & Fuel`, `Tomorrow's Split`, `Deep Work Focus`), and Circadian Rhythm Alignment Card.
   - **Right 7 Columns**: Studio Top Header with title, context filter pills (`All Context`, `Train`, `Fuel`, `Plan`), and Reset/New Chat button, Conversational Stream (welcoming empty state or Alabaster user bubbles & Espresso Orbit cards with `MarkdownText`, `OrbitRecommendationCard`, and `OrbitInsightCard`), loading thinking state, error retry banner, and Studio Input Dock with Camera, Mic, Paperclip action buttons, auto-resizing textarea, and Terracotta send button.
-
 - **Zero Regression Standard Verified**:
   - `npx tsc --noEmit`: **0 errors**.
   - Vitest suite: **55 passed (55 files), 650 passed | 26 skipped (676 total), 0 failing**.
   - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
-
----
 
 ### ✅ Sprint 6.6: Fix All 7 Desktop Layout, Clipping, and Drawer Bugs Captured in Live Desktop Recording
 - **Bug 1: Fixed Drawer Overflow & Orbit 12-Column Grid Splitting (`OrbitView.tsx` & `AriaChatbot.tsx`)**:
@@ -866,8 +903,6 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - Vitest suite: **55 passed (55 files), 650 passed | 26 skipped (676 total), 0 failing**.
   - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
 
----
-
 ### ✅ Sprint 6.7: Revert Orbit Mobile Header Back to Pristine State & Enforce Absolute Mobile Layout Invariant
 - **Reverted Orbit Mobile Header to Pristine State (`components/orbit/OrbitView.tsx`)**:
   - Removed unauthorized clutter (`AI ACTIVE` badge on right, `Cadence` and `Chat` view mode split pills) that crammed into the mobile top bar.
@@ -885,7 +920,9 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 
 ---
 
-### ✅ Sprint 6.8: Orbit Dual-Layer Schema, Input UI Outline, Ordinal Exercise Resolution & Targeted Network Sync
+## 3. Orbit Engine Track (`orbit-context` Sprints 6.8-O – 6.15-O)
+
+### ✅ Sprint 6.8-O: Orbit Dual-Layer Schema, Input UI Outline, Ordinal Exercise Resolution & Targeted Network Sync
 - **Standardized Dual-Layer API Response Schema (`app/api/aria/route.ts`)**:
   - Wired `executeMutation` from `lib/orbit/mutationEngine.ts` to deterministically execute state updates (`UPSERT_MEAL`, `MODIFY_MEAL`, `UPDATE_WORKOUT`, `MODIFY_PLAN`).
   - Standardized all API responses via `makeOrbitResponse` to return `{ message, reply, action_executed, suggested_actions, activeContext }`.
@@ -907,11 +944,8 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - `npm run typecheck`: **0 errors**.
   - `npm run lint`: **0 errors**.
   - Vitest suite: **56 passed (56 files), 667 passed | 26 skipped (693 total), 0 failing**.
-  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
 
----
-
-### ✅ Sprint 6.9: Universal Orbit Entity Context, Mutation Engine & Suggestion Engine Across All Editable Domains
+### ✅ Sprint 6.9-O: Universal Orbit Entity Context, Mutation Engine & Suggestion Engine Across All Editable Domains
 - **Universal Type Definitions (`types/orbit.ts`)**:
   - Expanded `OrbitEntityContext` to include full cross-domain entity state: `activeWorkoutName`, `activeExerciseIndex`, `activeTaskId`, `activeTaskTitle`, `activePlanId`, `activeHabitType`, `activeSprintId`, and `activeSprintDay`.
   - Standardized `OrbitActionType` across all 5 manually editable domains:
@@ -940,19 +974,12 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - Dispatched `satat:data-refresh` event using `data.action_executed.domain` for granular per-studio UI cache invalidation without page reloads.
 - **Comprehensive Vitest Suite (`tests/orbit/continuity-mutations.test.ts`)**:
   - Expanded in-memory Firestore mocks to support `habits` and `sprints` collections alongside `meals`, `workouts`, and `tasks`.
-  - Added multi-turn task scheduling & rescheduling tests (`"Add 25 min coding sprint at 5 PM"` -> `"Move that sprint to 6 PM"`).
-  - Added 3-turn workout lifecycle and rep delta tests (`"Start Push Day"` -> `"Set first exercise to 10 reps at 20kg"` -> `"Add 2 more reps"`).
-  - Added daily rituals test (`"Log 1000ml water and 8000 steps"`).
-  - Added sprint progress tracking test (`"Solved Group Anagrams and Valid Balloons on LeetCode using hash map"`).
-  - All 21 tests pass with 100% success rate.
+  - Added multi-turn task scheduling & rescheduling tests (`"Add 25 min coding sprint at 5 PM"` -> `"Move that sprint to 6 PM"`), 3-turn workout lifecycle and rep delta tests, daily rituals tests, and sprint progress tracking tests (21/21 passing).
 - **Zero Regression Standard Verified**:
   - `npm run typecheck`: **0 errors**.
   - Vitest suite: **56 passed (56 files), 671 passed | 26 skipped (697 total), 0 failing**.
-  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
 
----
-
-### ✅ Sprint 6.10: Fix Silent Save Failures in Train/Plan & Conversational Clarification Engine
+### ✅ Sprint 6.10-O: Fix Silent Save Failures in Train/Plan & Conversational Clarification Engine
 - **Conversational Clarification Loop & Parameter Validation (`lib/orbit/mutationEngine.ts` & `types/orbit.ts`)**:
   - Expanded `OrbitEntityContext` with `awaitingParam` and `partialIntent` to retain multi-turn conversational intent when parameters are incomplete.
   - Defined `ClarificationResult` interface (`type: "CLARIFICATION_NEEDED"`, `domain`, `missingParam`, `clarificationMessage`, `suggestedActions`, `updatedContext`).
@@ -965,21 +992,11 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - Converted `modify_plan_schedule` to use `set(updates, { merge: true })` ensuring upserts create missing plan documents rather than failing on absent documents.
 - **Real-Time Studio Refresh Listeners (`WorkoutPage.tsx`, `TaskBoard.tsx`, `DietPage.tsx`)**:
   - Added `satat:data-refresh` event listeners across Training Studio, Execution Studio, and Fuel Studio so that UI views immediately reload and reflect Orbit mutations in real time without requiring browser refreshes.
-- **Comprehensive Verification Suite (`tests/orbit/continuity-mutations.test.ts`)**:
-  - Added 4 new integration test cases:
-    1. Incomplete workout input triggers clarification prompt with set options and `action_executed: null`.
-    2. Multi-turn follow-up resolves pending slot (`"10 reps at 24kg"`), creates workout session, and returns `status: "success"`.
-    3. Incomplete plan scheduling triggers clarification prompt for time/duration with `action_executed: null`.
-    4. Database write failure explicitly returns `"Unable to save"` and `status: "failed"`.
-  - All 25 tests pass clean (100% pass rate).
 - **Zero Regression Standard Verified**:
   - `npm run typecheck`: **0 errors**.
   - Vitest suite: **56 passed (56 files), 675 passed | 26 skipped (701 total), 0 failing**.
-  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
 
----
-
-### ✅ Sprint 6.11: Multi-Intent Parsing, Timed Exercise Mutations, Task Persistence & Zero False-Positive Confirmations
+### ✅ Sprint 6.11-O: Multi-Intent Parsing, Timed Exercise Mutations, Task Persistence & Zero False-Positive Confirmations
 - **Compound Sentence Clause Segmentation & Multi-Intent Batching (`lib/orbit/mutationEngine.ts` & `app/api/aria/route.ts`)**:
   - Implemented `splitCompoundPrompt` to segment multi-command prompts across punctuation (`;`, `\n`), transitions (`also`, `and also`, `additionally`), and conjunctions (`and`) preceding domain markers or actions, without splitting internal entity lists (such as `"tea and chapati"`).
   - Implemented `parseMutationIntents` returning an array of distinct domain mutations (`ParsedMutation | ClarificationResult`), while preserving `parseMutationIntent` as a single-operation backwards-compatible wrapper.
@@ -994,136 +1011,211 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - Persists tasks with `dueDate: todayStr` (`YYYY-MM-DD`), `priority: "high"`, and `status: "pending"`, aligning with Execution Studio's `TaskBoard.tsx` date filtering and eliminating "No tasks scheduled for this date".
 - **Elimination of False-Positive Confirmations & Strict Database Grounding**:
   - Injected exact database-verified execution results into the system prompt with a critical truthfulness directive, guaranteeing Orbit only acknowledges items successfully written to Firestore.
-- **Comprehensive Verification Suite (`tests/orbit/continuity-mutations.test.ts`)**:
-  - Added 3 new integration tests (suite expanded from 25 to 28 passing tests):
-    1. Compound multi-intent batching: 4 distinct operations (breakfast, lunch, plank 45s, high-priority task) executed and verified across `mockMealStore`, `mockWorkoutStore`, and `mockTaskStore`.
-    2. Timed isometric exercise mutation: Plank (45s) auto-creates session with `durationSeconds: 45`.
-    3. Task creation schema alignment: `priority: "high"`, `dueDate: todayStr`, `status: "pending"` matching TaskBoard filters.
-  - 100% test pass rate across all 28 tests in `tests/orbit/continuity-mutations.test.ts`.
 - **Zero Regression Standard Verified**:
   - `npm run typecheck`: **0 errors**.
   - Vitest suite: **56 passed (56 files), 678 passed | 26 skipped (704 total), 0 failing**.
-  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
 
----
-
-### ✅ Sprint 6.12: Workout & Training Studio Auto-Session Creation, Schema Alignment & Movement Persistence
+### ✅ Sprint 6.12-O: Workout & Training Studio Auto-Session Creation, Schema Alignment & Movement Persistence
 - **Dual Schema Alignment (`movements` & `exercises`) in Firestore (`lib/orbit/mutationEngine.ts`, `types/index.ts`)**:
   - Expanded `WorkoutSession` and `ExerciseLog` type definitions to support `movements?: any[]`, `status?: "in-progress" | "completed"`, `duration?: number`, `title?: string`, `type?: "strength" | "isometric"`, and `durationUnit?: string`.
-  - In `add_exercise_to_workout` and `update_workout_session`, ensured both `movements` and `exercises` are always populated in sync:
-    - Isometric/timed movements: `type: "isometric"`, `duration: dur`, `durationUnit: "seconds"`, `sets: [{ setNumber: 1, reps: 1, duration: dur, durationSeconds: dur, weight: 0, completed: true }]`, `completed: true`.
-    - Standard strength movements: `type: "strength"`, `sets: sets.map((s, idx) => ({ setNumber: idx + 1, reps: s.reps, weight: s.weight, unit: s.unit || "kg", completed: s.completed ?? true }))`.
-  - When no session exists for today, automatically creates a workout session document with:
-    `{ userId, date: todayStr, title: "Daily Workout", name: "Daily Workout", routineTitle: "Daily Workout", status: "in-progress", duration: 45, durationMinutes: 45, movements: [movement], exercises: [newExercise], createdAt: Date.now(), updatedAt: new Date().toISOString() }`.
-  - When a session exists, updates both `movements` and `exercises` with `{ merge: true }` preserving existing sets and movements.
+  - In `add_exercise_to_workout` and `update_workout_session`, ensured both `movements` and `exercises` are always populated in sync.
+  - When no session exists for today, automatically creates a workout session document (`status: "in-progress"`, `duration: 45`). When a session exists, updates both `movements` and `exercises` with `{ merge: true }` preserving existing sets and movements.
 - **Training Studio Active Logger State Sync (`components/workout/WorkoutPage.tsx`)**:
   - Implemented `normalizeSessionExercises` helper ensuring seamless conversion from either `exercises` or `movements` array into component `ExerciseLog[]` state.
-  - In initial mount `useEffect` and `satat:data-refresh` listener, when a workout session for today exists and is in-progress (or has movements while not completed), automatically populates `exercises` state, sets `isEditingSession: true`, and updates session title/duration.
+  - In initial mount `useEffect` and `satat:data-refresh` listener, when a workout session for today exists and is in-progress, automatically populates `exercises` state, sets `isEditingSession: true`, and updates session title/duration.
   - Eliminated the empty state bug ("No Movements Loaded Yet") when logging exercises via Orbit.
-  - In VIEW 1B (Completed Session state), guarded with `todaySession.status !== "in-progress" && !isEditingSession` and added fallback to `todaySession.movements` if `todaySession.exercises` is empty, preventing runtime crashes or blank completed cards.
-- **Mock Firestore & Integration Test Expansion (`tests/orbit/continuity-mutations.test.ts`)**:
-  - Enhanced mock collection's `doc(id)` implementation to support `set: vi.fn(async (data, options) => { ... merge ... })` and `delete: vi.fn()`.
-  - Added test `it("auto-creates workout session and appends timed movement (Plank 45s) when no active session exists")` verifying `status: "in-progress"`, `title: "Daily Workout"`, `duration: 45`, `movements` isometric schema, and `exercises` duration schema.
-  - Added test `it("updates existing workout movements when session already exists")` verifying both existing movements (Bench Press) and new movements (Plank 45s) persist correctly in both `movements` and `exercises`.
 
----
-
-### ✅ Sprint 6.13: Cardio & Calisthenics Movement Parsing, Anti-Hallucination Guard & Meal Slot Sanitization
+### ✅ Sprint 6.13-O: Cardio & Calisthenics Movement Parsing, Anti-Hallucination Guard & Meal Slot Sanitization
 - **Compound Prompt Boundary Expansion & Dedicated Parsers (`lib/orbit/mutationEngine.ts`)**:
-  - Extended `splitCompoundPrompt` boundary regex with lookahead for cardio and calisthenics movement verbs (`running|run\b|jogging|cycling|bike|skipping|pull\s*ups?|push\s*ups?|dips?`), ensuring compound workout requests like `"add running 2.5 km and skipping 30 reps 3 sets in training"` are cleanly split into individual movement actions.
-  - Added dedicated `isCardioMovement` parser recognizing running, jogging, cycling, treadmill, swimming, rowing, walking with distance (`2.5 km`, `miles`) and duration (`30 mins`), returning `type: "ADD_EXERCISE"`, `movementType: "cardio"`.
-  - Added dedicated `isCalisthenicsMovement` parser recognizing bodyweight exercises (skipping, pull ups, push ups, dips, crunches, burpees) with reps-and-sets extraction (`"30 reps 3 sets"` or `"3 sets of 30 reps"`), returning `type: "ADD_EXERCISE"`, `movementType: "calisthenics"`, `unit: "bodyweight"`, `weight: 0`.
+  - Extended `splitCompoundPrompt` boundary regex with lookahead for cardio and calisthenics movement verbs (`running|run\b|jogging|cycling|bike|skipping|pull\s*ups?|push\s*ups?|dips?`), ensuring compound workout requests are cleanly split into individual movement actions.
+  - Added dedicated `isCardioMovement` parser (`movementType: "cardio"`) and `isCalisthenicsMovement` parser (`movementType: "calisthenics"`, `unit: "bodyweight"`, `weight: 0`).
   - Removed all Bench Press / 60kg defaults when unknown movements are entered, preventing Orbit from hallucinating unrequested exercises.
-- **Cardio & Bodyweight Movement Persistence (`lib/orbit/mutationEngine.ts`, `types/index.ts`)**:
-  - Updated `add_exercise_to_workout` to handle `movementType: "cardio"` and `movementType: "calisthenics"`.
-  - For cardio movements, stores `type: "cardio"`, `distance`, `distanceUnit`, and auto-creates/appends to `cardioLogs` in the workout document.
-  - For calisthenics movements, stores `type: "calisthenics"`, sets with `unit: "bodyweight"` and `weight: 0`.
-  - Automatically initializes or updates today's session in Firestore (`status: "in-progress"`), ensuring Training Studio immediately loads both movements and dismisses "No Movements Loaded Yet".
-- **Training Studio UI Rendering of Distance & Bodyweight (`components/workout/WorkoutPage.tsx`)**:
-  - Enhanced `normalizeSessionExercises` to preserve `distance`, `distanceUnit`, and `type: "cardio"` / `"calisthenics"`.
-  - In exercise set rows: for cardio, displays distance (`2.5 km`) instead of weight input; for calisthenics, displays `BW` placeholder and disables weight input.
-  - In completed workout cards: renders `${set.distance} ${set.distanceUnit}` for cardio and `BW × ${set.reps}` for calisthenics.
+- **Cardio & Bodyweight Movement Persistence (`lib/orbit/mutationEngine.ts`, `types/index.ts`, `components/workout/WorkoutPage.tsx`)**:
+  - Updated `add_exercise_to_workout` and `WorkoutPage.tsx` to store and render `distance`/`distanceUnit` for cardio and `BW` bodyweight sets for calisthenics.
 - **Meal Slot Badge Fix & Item Sanitization (`lib/diet/dishMatcher.ts`, `components/diet/DietPage.tsx`, `lib/orbit/mutationEngine.ts`)**:
-  - Updated `formatMealTimeAndCategory(createdAt, mealType, mealName)` to accept explicit `mealType` and `mealName`, strictly respecting the target slot badge (`BREAKFAST`, `LUNCH`, `DINNER`, `SNACK`) over the current system clock (resolving the 8:17 PM evening clock override).
-  - Sanitized food item parsing in `parseSingleMutationIntent`: stripped conversational prefix words (`"in breakfast"`, `"in lunch"`, `"today's meal"`, `"add"`, `"also"`), ensuring dishes are stored cleanly (e.g. `["tea", "chapati"]` -> `"Breakfast: tea, chapati"`).
-  - In `DietPage.tsx`, stripped redundant leading slot prefix when displaying dish titles on cards (`meal.name.replace(/^(breakfast|lunch|dinner|snack):\s* /i, "")`).
+  - Updated `formatMealTimeAndCategory(createdAt, mealType, mealName)` to strictly respect the target slot badge (`BREAKFAST`, `LUNCH`, `DINNER`, `SNACK`) over the current system clock.
+  - Sanitized food item parsing in `parseSingleMutationIntent` and stripped redundant leading slot prefixes when displaying dish titles on cards.
 - **Response Guard Directive (`app/api/aria/route.ts`)**:
-  - Injected strict instruction in system prompt: `CRITICAL INSTRUCTION: You MUST strictly echo and acknowledge ONLY the actions and movements listed above (${executedNote}). NEVER mention, claim, or hallucinate an unrequested exercise (such as Bench Press) that was not executed in this turn!`.
-- **Comprehensive Verification Suite (`tests/orbit/continuity-mutations.test.ts`)**:
-  - Added 2 new integration tests (suite expanded from 29 to 31 passing tests):
-    1. `correctly parses cardio (running 2.5km) and calisthenics (skipping 30 reps 3 sets) without hallucinating bench press`: verifies both movements are persisted to Firestore with proper distance/sets, and Bench Press is nowhere in the store or response.
-    2. `sanitizes food item names, stripping conversational phrases and respecting explicit meal slot`: verifies clean dish titles without `"in breakfast"`/`"in lunch"` and validates that `formatMealTimeAndCategory` returns `"BREAKFAST"` and `"LUNCH"` even at 8:17 PM.
+  - Injected strict instruction in system prompt commanding Orbit to acknowledge ONLY executed actions and movements, suppressing unrequested exercise hallucinations.
 - **Zero Regression Standard Verified**:
   - `npm run typecheck`: **0 errors**.
   - Vitest suite: **56 passed (56 files), 681 passed | 26 skipped (707 total), 0 failing**.
-  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
 
----
-
-### ✅ Sprint 6.14: Orbit Chat Auto-Scroll & Nutrition/Fuel Logging Restoration
+### ✅ Sprint 6.14-O: Orbit Chat Auto-Scroll & Nutrition/Fuel Logging Restoration
 - **Dedicated Responsive Auto-Scroll in Orbit Chat (`components/orbit/OrbitView.tsx`, `components/ui/AriaChatbot.tsx`)**:
   - Eliminated duplicate `messagesEndRef` ref shadowing across mobile and 12-column desktop viewports by adding separate `mobileScrollContainerRef` / `mobileMessagesEndRef` and `desktopScrollContainerRef` / `desktopMessagesEndRef`.
-  - Implemented `scrollToBottom(behavior)` targeting the scrollable chat containers (with smooth fallback) and scrolling via `"auto"` on initial `sessionStorage` restore or overlay open (`isOpen` prop passed from `AriaChatbot.tsx`) and `"smooth"` on subsequent messages/loading updates.
+  - Implemented `scrollToBottom(behavior)` targeting the scrollable chat containers via `"auto"` on initial restore/overlay open and `"smooth"` on subsequent messages.
 - **Multi-Intent UI Refresh & Client Date Synchronization (`components/orbit/OrbitView.tsx`, `app/api/aria/route.ts`, `lib/orbit/mutationEngine.ts`)**:
-  - Added `dispatchMutationRefreshEvents(data)` iterating over both `data.actions_executed` and array/single `data.action_executed` payloads so Nourishment Studio (`DietPage.tsx`), Training Studio (`WorkoutPage.tsx`), and Execution Studio (`TaskBoard.tsx`) receive `satat:data-refresh` events reliably for compound multi-intent turns.
-  - Propagated browser local `clientDate` (`todayString()`) from `OrbitView` through `/api/aria` into `parseMutationIntents` and `executeMutation` across all domains (preventing UTC/local midnight date drift between `/api/aria` writes and `DietPage.tsx` `getMeals(userId, date)` queries).
-  - Updated `executeMutation` to clear stale `awaitingParam` state after mutation execution and updated `/api/aria` to scan only user turns (`messages[i].role === "user"`) during fallback entity recovery and check `executedActions` across all multi-intent domains during focus pruning.
+  - Added `dispatchMutationRefreshEvents(data)` iterating over both `data.actions_executed` and array/single `data.action_executed` payloads.
+  - Propagated browser local `clientDate` (`todayString()`) from `OrbitView` through `/api/aria` into `parseMutationIntents` and `executeMutation` across all domains.
+  - Updated `executeMutation` to clear stale `awaitingParam` state after mutation execution and updated `/api/aria` to scan only user turns (`messages[i].role === "user"`) during fallback entity recovery.
 - **Nutrition Parsing, Anti-Ghosting & Indian Staple Macros (`lib/orbit/mutationEngine.ts`)**:
-  - Stripped standalone/leading generic meal preambles (e.g., `"log today's meal, in breakfast..."`) in `splitCompoundPrompt` and removed the phantom `"Custom Meal"` fallback so empty meal phrases or questions (e.g., `"What did I eat for lunch?"`) no longer write phantom records to Firestore.
-  - Added shorthand multi-slot boundary/prefix support (`"breakfast: tea and chapati, lunch: dal and rice"`), expanded `FOOD_KEYWORD_REGEX`, added cross-domain guards in `isCreateTask`, `isRescheduleTask`, `isHydration`, `isWorkoutMutation`, and `awaitingParam === "time"` follow-up resolution (`"add 2 bananas at 4 PM"` logs a meal rather than a task), and added macro heuristics for common staples (`tea/chai`, `curd/yoghurt`, `potato/sabzi`, `banana`, `poha`, `idli/dosa`, `whey/protein shake`, `oats`, `milk/lassi`, `toast/bread`).
-- **Verification Expansion (`tests/orbit/continuity-mutations.test.ts`, `tests/orbit/orbit-retry.test.ts`)**:
-  - Expanded `tests/orbit/continuity-mutations.test.ts` to 36 tests (testing generic preamble stripping without `"Custom Meal"`, shorthand multi-slot parsing, timed food-vs-task disambiguation, question non-mutation guards, and `clientDate` propagation) and `tests/orbit/orbit-retry.test.ts` to 7 tests (auto-scroll refs, overlay reopen, multi-intent refresh dispatch, `clientDate`).
+  - Stripped standalone/leading generic meal preambles in `splitCompoundPrompt` and removed the phantom `"Custom Meal"` fallback so empty meal phrases or questions no longer write phantom records to Firestore.
+  - Added shorthand multi-slot boundary/prefix support (`"breakfast: tea and chapati, lunch: dal and rice"`), expanded `FOOD_KEYWORD_REGEX`, added cross-domain guards, and added macro heuristics for common Indian staples.
 - **Zero Regression Standard Verified**:
   - `npm run typecheck`: **0 errors**.
   - `npm run lint`: **0 errors**.
-  - Vitest suite: **56 passed (56 files), 688 passed | 26 skipped in `tests/security/firestore-rules.test.ts` without Firestore emulator (714 total), 0 failing**.
+  - Vitest suite: **56 passed (56 files), 688 passed | 26 skipped (714 total), 0 failing**.
   - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
 
-### ✅ Sprint 6.15: End-to-End Diagnostic Audit & Fault Remediation across Nutrition, Training, and Planning Logging Pipelines
+### ✅ Sprint 6.15-O: End-to-End Diagnostic Audit & Fault Remediation across Nutrition, Training, and Planning Logging Pipelines
 - **Exhaustive Diagnostic Audit Across All 3 Core Logging Pipelines**:
   - Traced end-to-end execution path across **Nutrition (Diet / Fuel Studio)**, **Training (Exercise / Training Studio)**, and **Planning (Tasks & Schedules / Execution Studio)** from user intent parsing to Firestore persistence and client UI synchronization.
 - **Nutrition (Diet / Fuel Studio) Fault Remediation (`lib/orbit/mutationEngine.ts`, `components/diet/DietPage.tsx`)**:
-  - **Slot-Filling & Incomplete Intent Clarification**: Remediated the bug where bare meal slot queries (e.g. `"Log my lunch"`, `"Track breakfast"`) stripped the slot and returned `null`. The parser now detects slot intents with missing dish items and emits `CLARIFICATION_NEEDED` (`missingParam: "title"`, `domain: "meals"`, `clarificationMessage: "What did you have for ${slot}? (e.g. 2 rotis with dal and salad)"`) with suggested dishes and sets `activeMealSlot: slot` and `awaitingParam: "title"`.
-  - **Two-Turn Slot Continuity**: Wired `activeContext.awaitingParam === "title"` + `activeMealSlot` at the top of the parser so that when the user responds with dishes in Turn 2, items are immediately upserted to the active slot without dropping entity reference.
-  - **Macro Number Hygiene & NaN Guards**: Implemented `safeMacro(val)` sanitizing all calculated calories and macros (`safeMacro((existingMeal.macros?.calories || 0) + addedCalories)`), guaranteeing zero `NaN`, null, or negative macro values hit Firestore.
-  - **Zero-Falsification Contract**: Verified `docRef.id` existence before returning `status: "success"`, replaced optional chaining `delete?.()` with verified method execution, and throw explicit exceptions on missing IDs.
-  - **Client UI Error Resilience & Notification**: Integrated `useToast` in `components/diet/DietPage.tsx`, adding optimistic rollback (`setMeals(prevMeals)`) and error toasts on write rejections in `handleAddMeal`, `handleDeleteMeal`, `handleSaveGoals`, and `handleSaveTemplate`.
+  - **Slot-Filling & Incomplete Intent Clarification**: Bare meal slot queries (`"Log my lunch"`) now emit `CLARIFICATION_NEEDED` (`missingParam: "title"`, `domain: "meals"`) and set `activeMealSlot` and `awaitingParam: "title"` for seamless two-turn resolution.
+  - **Macro Number Hygiene & NaN Guards**: Implemented `safeMacro(val)` sanitizing all calculated calories and macros, guaranteeing zero `NaN`, null, or negative macro values hit Firestore.
+  - **Zero-Falsification Contract & UI Resilience**: Verified `docRef.id` existence before returning `status: "success"`, and integrated `useToast` error alerting and state rollbacks in `DietPage.tsx`.
 - **Training (Exercise / Training Studio) Fault Remediation (`lib/orbit/mutationEngine.ts`, `components/workout/WorkoutPage.tsx`)**:
-  - **Missing Exercise Name Clarification**: Remediated fallback where queries without exercise name defaulted to `"Workout Exercise"` and asked for sets/reps. The parser now emits `CLARIFICATION_NEEDED` with `missingParam: "exerciseName"`, prompting: `"Which exercise would you like to add, and how many sets and reps?"` with popular lift chips (`Bench Press 3x10`, `Squats 3x10`, `Pull Ups`).
-  - **Sets & Reps Number Hygiene**: Implemented `safeReps(val, 10)`, `safeWeight(val)`, and `safeDuration(val, 45)` preventing non-finite or `NaN` numbers in `update_workout_session` and `add_exercise_to_workout`.
-  - **Zero-Falsification Contract**: Verified session IDs (`ref.id`, `session.id`) before confirming `status: "success"` across `start_workout_session`, `update_workout_session`, `add_exercise_to_workout`, and `complete_workout_session`.
+  - **Missing Exercise Name Clarification**: Replaced generic `"Workout Exercise"` fallbacks with `CLARIFICATION_NEEDED` (`missingParam: "exerciseName"`) and popular lift suggestion chips.
+  - **Sets & Reps Number Hygiene**: Implemented `safeReps`, `safeWeight`, and `safeDuration` guards and verified session IDs before confirming success.
   - **Client Error Toast**: Wrapped `handleLogBodyWeight` in `WorkoutPage.tsx` with try/catch and error toast feedback.
 - **Planning (Tasks & Schedules / Execution Studio) Fault Remediation (`lib/orbit/mutationEngine.ts`, `components/tasks/TaskBoard.tsx`, `types/orbit.ts`)**:
-  - **Missing Task Title Clarification**: Remediated the bug where scheduling a task at a specific time (e.g., `"Schedule a task for 5:00 PM"`) silently defaulted the title to `"Coding sprint"`. The parser now detects bare time strings and triggers `CLARIFICATION_NEEDED` (`missingParam: "title"`, `domain: "tasks"`, `clarificationMessage: "What task would you like to schedule for 5:00 PM?"`, storing `activeTaskTime: "17:00"`). Added `activeTaskTime` to `OrbitEntityContext` in `types/orbit.ts` and wired Turn 2 follow-up resolution.
-  - **Validation & Number Hygiene**: Sanitized `durationMinutes` (`safeDuration(durationMinutes, 25)`) and validated `scheduledTime` (`HH:mm`), throwing errors if task title is empty or generic.
-  - **Zero-Falsification Contract**: Verified `ref.id` on `create_task_entry` and `modify_plan_schedule`, and replaced optional chaining `delete?.()` in `delete_task_entry`.
-  - **Client Optimistic UI Rollback & Error Toasts**: Implemented rollback (`setAllTasks(prevTasks)`) and error toasts in `handleAddTask`, `handleToggleTask`, `handleDeleteTask`, `handleUpdateTask`, and `handleAddProject` in `TaskBoard.tsx`.
+  - **Missing Task Title Clarification**: Bare scheduling queries (`"Schedule a task for 5:00 PM"`) now emit `CLARIFICATION_NEEDED` (`missingParam: "title"`, `domain: "tasks"`, storing `activeTaskTime: "17:00"`).
+  - **Validation, Zero-Falsification & Optimistic UI Rollback**: Sanitized `durationMinutes` and `scheduledTime`, verified `ref.id`, and implemented snapshot-based rollbacks (`setAllTasks(prevTasks)`) and error toasts in `TaskBoard.tsx`.
 - **API Routing Layer System Prompt Segregation (`app/api/aria/route.ts`)**:
-  - Enforced zero-falsification in multi-action system prompts by strictly segregating `successfulActions` under `=== ACTIONS SUCCESSFULLY COMPLETED IN DATABASE ===` and `failedActions` under `=== ACTIONS THAT FAILED TO SAVE (DATABASE ERROR) ===`, explicitly instructing the LLM to inform the user of failures and never claim failed writes succeeded.
-- **Automated Vitest Integration Suite (`tests/orbit/continuity-mutations.test.ts`)**:
-  - Added new integration suite `Comprehensive Logging Pipeline Audit: Nutrition, Training, Planning`:
-    1. Nutrition Happy Path: asserts verified doc ID in store, finite positive macros, and 0 `NaN`.
-    2. Training Happy Path: asserts verified session ID in store, dual schema (`exercises` + `movements`), and set telemetry.
-    3. Planning Happy Path: asserts verified task ID in store, sanitized title, `15:00` scheduled time, and priority.
-    4. Nutrition Incomplete Intent: asserts clarification triggered for `"Log my lunch"` and 0 documents created.
-    5. Planning Incomplete Intent: asserts clarification triggered for `"Schedule a task for 5:00 PM"` and 0 documents created.
-    6. Training Incomplete Intent: asserts clarification triggered for `"Add an exercise to workout"` and 0 documents created.
-    7. Zero-Falsification Contract: simulates Firestore rejection on task write, asserting `status: "failed"`, `details.error` populated, and affirmative response suppressed.
+  - Segregated `successfulActions` under `=== ACTIONS SUCCESSFULLY COMPLETED IN DATABASE ===` and `failedActions` under `=== ACTIONS THAT FAILED TO SAVE (DATABASE ERROR) ===` to prevent false confirmations on write rejections.
 - **Zero Regression Standard Verified**:
-  - `npm run typecheck` (`tsc --noEmit`): **0 errors**.
-  - Vitest suite: **56 passed (56 files), 695 passed | 26 skipped in `tests/security/firestore-rules.test.ts` (721 total), 0 failing**.
-  - `tests/orbit/continuity-mutations.test.ts`: **43/43 passed**.
+  - `npm run typecheck`: **0 errors**.
+  - Vitest suite: **56 passed (56 files), 695 passed | 26 skipped in `tests/security/firestore-rules.test.ts` (721 total), 0 failing** (`43/43 passed` in `tests/orbit/continuity-mutations.test.ts`).
   - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
 
 ---
 
-## 4. Current Quality & Build Metrics
-- **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
-- **ESLint & Typecheck**: `npm run typecheck` and `npm run lint` exit with code `0`.
-- **Vitest Suite**: `695 passed | 26 skipped` (Firestore security rules suite skipped without emulator on `127.0.0.1:8088`) across `56` test suites (`0` failing), including `43/43 passed` in `tests/orbit/continuity-mutations.test.ts` and `7/7 passed` in `tests/orbit/orbit-retry.test.ts`.
-- **Markdown & UI Tests**: `13/13 passed` in `tests/ui/markdown-text.test.tsx`.
-- **Navigation & Launcher Tests**: `5/5 passed` in `tests/navigation/navigation-orbit-launcher.test.ts`.
-- **Diet Tests**: `213/213 passed` across all 15 test suites in `tests/diet/*`.
-- **Workout Tests**: `42/42 passed` across `tests/workouts/*`.
-- **Onboarding Tests**: `78/78 passed` across `tests/onboarding/*`.
-- **Landing Tests**: `3/3 passed` across `tests/landing/*`.
+## 4. UI, Landing Page, Dark Mode & Nutrition Scan Sprints (Sprints 6.8 – 9.2)
+
+### ✅ Sprint 6.8: Unify Orbit Mobile Header with Today & Build Responsive Desktop Landing Page
+- **Unify `/dashboard/orbit` Mobile Header with `SATAT / Today` (`components/orbit/OrbitView.tsx`)**:
+  - Upgraded mobile top bar to match `SATAT / Today` 1:1 (`h-14 px-4 bg-[#FCFBF9] border-b border-[#1C1917]/[0.06]`), with geometric `S` mark, `SATAT / Orbit`, 3D `<OrbitLauncherBadge size="md" />`, terracotta `<NotificationBell />`, and user avatar.
+  - Scoped Orbit title (`Orbit Intelligence`) and `↻ New Chat` button below the top bar, and suppressed scrollbar clutter on the context filter row.
+- **Responsive Widescreen Desktop Landing Page Overhaul (`components/landing/*`)**:
+  - Floating Alabaster capsule navbar (`LandingNav.tsx`), centered hero and widescreen visual card (`Hero.tsx` & `HeroProductScene.tsx`), 3-column studio grid (`ProblemSection.tsx`), 28-day continuity calendar (`ProgressSection.tsx`), and grounded footer (`FinalCTA.tsx` & `Footer.tsx`).
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **55 passed (55 files), 650 passed | 26 skipped (676 total), 0 failing**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
+### ✅ Sprint 6.9: Full-Bleed Desktop Width Overhaul, Broken Image Fixes, Floating Tag Keyframes & Interactive Streak Tabs
+- **Full-Bleed Desktop Widescreen Layout (`max-w-[1440px] xl:max-w-[1600px]`)**:
+  - Expanded `LandingNav.tsx`, `Hero.tsx`, `ProblemSection.tsx`, `ProgressSection.tsx`, `OrbitSection.tsx`, `FinalCTA.tsx`, and `Footer.tsx` to widescreen desktop containers.
+- **Card 1 Image Fix & Floating Animations**:
+  - Replaced 404ing image URL in Card 1 with sunlit desk photography and added `onError` fallbacks.
+  - Defined `@keyframes satatFloatSlow` and `@keyframes satatFloatDelayed` in `app/globals.css` for floating hero pills and hover lifts.
+- **Interactive Streak Tabs (`ProgressSection.tsx`)**:
+  - Added clickable milestone tabs (`Day 7 · Start`, `Day 14 · Rested`, `Day 28 · Flow`) dynamically updating the calendar grid and bottom comparison banner.
+
+### ✅ Sprint 6.9.1 & 6.9.2: 28-Day Calendar Grid (Days 1–28), Inline Footer, Mathematical Timeline Centering & Large CTA Buttons
+- **Full 28-Day Calendar Grid (`ProgressSection.tsx`)**:
+  - Replaced 21-day grid with complete 28-day matrix (`Array.from({ length: 28 })` in 4 rows of 7 columns) with rest day bridges (`days 9, 10, 17, 18, 24`) and milestone highlights.
+- **Single-Line Inline Footer Tagline, Timeline Centering & Large CTA Buttons**:
+  - Inlined Sanskrit lineage note beside `सतत्` in `Footer.tsx`, centered vertical cadence timeline nodes in `ProblemSection.tsx`, and upgraded CTA buttons to `min-h-[44px]`.
+
+### ✅ Sprint 6.9.3: Multi-Segment Macro Doughnut Ring on Desktop Fuel Summary Card (`components/diet/DietPage.tsx`, `components/diet/MacroDonutBreakdown.tsx`)
+- **3-Segment SVG Macro Doughnut Ring & 3-Column Macro Breakdown Box**:
+  - Replaced single-color green ring on desktop with 3-segment SVG Macro Doughnut Ring (Carbs `#F59E0B`, Fat `#E05A47`, Protein `#2D6A4F`) paired with a 3-column macro breakdown box and non-truncating remaining calories header.
+
+### ✅ Sprint 6.10: Restore Exact origin/main Mobile Landing Page (< 768px) & Strictly Split from Desktop Widescreen Layout
+- **Strict Viewport Partitioning (`app/page.tsx`)**:
+  - Extracted verbatim mobile landing components into `components/landing/mobile/*` (`<div className="block md:hidden"><MobileLandingPage /></div>`) and isolated desktop layout into `DesktopLandingPage.tsx` (`<div className="hidden md:block"><DesktopLandingPage /></div>`).
+
+### ✅ Sprint 7.0: Full-App "Nocturnal Botanical Editorial" Dark Mode (`styles/satat.tokens.css`, `styles/app-shell.css`, `components/settings/AppearanceSettings.tsx`, `app/dashboard/settings/page.tsx`, `app/layout.tsx`)
+- **Nocturnal Botanical Editorial Palette Tokens & Scoped Overrides**:
+  - Configured dark mode tokens under `.dark`, `html.dark`, and `[data-theme="dark"]` (`--satat-bg: #0A0D0B`, `--satat-surface: #141916`, `--satat-surface-subtle: #1C221E`, `--satat-anchor-dark: #1B241E`).
+  - Upgraded `AppearanceSettings.tsx` with tactile SATAT theme buttons (`Dark (Nocturnal)`, `Light (Sunlit)`, `System`) and immediate `document.documentElement.classList` synchronization.
+
+### ✅ Sprint 7.1: Habit Compounding Compact Grid, Full-Width Weekly Momentum SVG, & Total Elimination of Dark Mode Light Surfaces (`HomeView.tsx`, `ConsistencyHeatmap.tsx`, `ProgressTrendChart.tsx`, `TaskBoard.tsx`, `DietPage.tsx`, `app-shell.css`)
+- **Compact Habit Compounding Grid & Full-Width Weekly Momentum SVG**:
+  - Reduced calendar cell height (`h-10 sm:h-11 md:h-12`) with deep botanical dark-mode intensity tones and stretched Weekly Momentum Bezier SVG across 100% of the parent card width.
+- **Dark Mode Surface Overhaul**:
+  - Converted overdue task banners, daily ritual checkboxes, and Orbit autonomous recommendation dinner cards to deep nocturnal botanical surfaces.
+
+### ✅ Sprint 7.2: Translucent Quick Track Modal Backdrop & Orbit AI 4th Tile (`TrackSheet.tsx`, `app-shell.css`, `tests/navigation/track-sheet.test.ts`)
+- **Translucent Modal Backdrop & Orbit AI 4th Tile**:
+  - Configured `rgba(10, 13, 11, 0.58)` translucent backdrop with `backdrop-blur-md` and replaced the 4th Quick Track tile with **Ask Orbit AI** featuring `<Orbit3DCore size="sm" state="idle" />`.
+
+### ✅ Sprint 7.3: Inactive Sidebar Styling & Coral Ember Orbit AI (`Navigation.tsx`, `styles/app-shell.css`)
+- **Transparent Inactive Sidebar Links & Coral Ember Orbit AI Button**:
+  - Removed permanent gray pills on inactive sidebar links and styled the Orbit AI launcher button in signature SATAT Coral Ember (`#E05A47`).
+
+### ✅ Sprint 7.4: Settings Dropdown Click Reliability, Today Eyebrow Fix, Smooth Weekly Momentum Curve, & Photographic Orbit Card (`Navigation.tsx`, `HomeView.tsx`, `ProgressTrendChart.tsx`, `TrackSheet.tsx`)
+- **Dual Profile Menu Refs & Non-Wrapping Today Eyebrow**:
+  - Fixed desktop profile dropdown outside-click collision using separate `desktopProfileRef` and `mobileProfileRef`.
+  - Prevented Today greeting eyebrow and streak badge from wrapping on narrow screens, smoothed Weekly Momentum curve, and added atmospheric space photography to the Orbit Quick Track tile.
+
+### ✅ Sprint 7.5: Unified Weekly Momentum SVG Math, Dark Mode Steppers & Volume Highlight, Tactile Workout Sets, Filtered Completed Session Save, Streak Pill Relocation, & 12-Column Settings Bento Grid
+- **Unified SVG Coordinate Space & Dark Mode Polish**:
+  - Rendered both the Weekly Momentum cubic Bezier spline and 7 circular markers inside the exact same SVG `viewBox="0 0 700 140"` coordinate space.
+  - Restyled macro stepper buttons and workout `VOLUME HIGHLIGHT` boxes for dark mode, added tactile `Click` / `Done` set buttons, filtered `handleSave` to persist only completed sets, relocated the streak pill above the 7-day strip, and redesigned Settings into a 12-column bento grid.
+
+### ✅ Sprint 7.6: Focus Ring 2-Line Sub-Label, Nocturnal Workout Templates, 100% Full Desktop Studio Width, & 12-Column Dark Shimmer Skeletons
+- **Full-Width Desktop Workspaces & Dark Shimmer Skeletons**:
+  - Expanded focus timer ring diameter with 2-line stacked sub-labels, restyled workout template cards for dark mode, removed constraining `lg:max-w-5xl` / `lg:max-w-7xl` wrappers for full-width desktop studios, and rebuilt all studio skeletons with 12-column dark-aware shimmer layouts.
+
+### ✅ Sprint 7.7: High-Contrast Dark Shimmer Wave, Non-Overflowing 7-Day Strip, & 1:1 Studio Geometry (`PageSkeletons.tsx`, `app-shell.css`, `tailwind.config.ts`, `HomeView.tsx`, `loading.tsx`)
+- **Sweeping Shimmer Wave & 7-Day Strip Grid**:
+  - Added `@keyframes shimmer` sweeping wave highlights across dark skeleton cards and converted the 7-day calendar strip skeleton to a non-overflowing `grid-cols-7` layout.
+
+### ✅ Sprint 7.8: Complete Landing Page Overhaul (`app/page.tsx`, `LandingNav.tsx`, `Hero.tsx`, `ProblemSection.tsx`, `MealScanShowcase.tsx`, `OrbitSection.tsx`, `ProgressSection.tsx`, `Footer.tsx`, `DesktopLandingPage.tsx`, `MobileLandingPage.tsx`, `Orbit3DCore.tsx`, `OrbitMark.tsx`)
+- **Floating Glassmorphic Pill Header, Separated Hero CTAs & 4-Stage Cadence Timeline**:
+  - Built non-clipping fixed pill header, separated `"Start free →"` and `"Sign in with Google"` CTAs, 4-stage daily biological cadence timeline, HealthifySnap-style meal scan showcase, `<Orbit3DCore size="xl" />` floating prompt cloud, and spaced streak milestone tabs.
+
+### ✅ Sprint 7.9: Restored SATAT Geometric Logo, HealthifySnap Sticky Scroll & Orbit 3D Stage (`app/page.tsx`, `LandingNav.tsx`, `MealScanShowcase.tsx`, `OrbitSection.tsx`)
+- **Geometric Logo & Scroll-Scrubbed SatatSnap Showcase**:
+  - Restored official `<Logo size={24} />` mark in `LandingNav.tsx`, implemented passive `requestAnimationFrame` scroll-scrubbed transitions in `MealScanShowcase.tsx` with `prefers-reduced-motion` support, and upgraded `OrbitSection.tsx` to a 3D depth-of-field radial stage with 8 floating prompt cards.
+
+### ✅ Sprint 7.10: iPhone 17 Pro Max Scale Mockup & Tight Caption/Pill Spacing (`MealScanShowcase.tsx`, `OrbitSection.tsx`)
+- **Authentic iPhone 17 Pro Max Proportions**:
+  - Upgraded phone mockup to `312px × 600px` with dynamic island pill and tightened spacing between the phone frame, captions, and Orbit mobile prompt pills.
+
+### ✅ Sprint 8.0: Eradicate Standalone "Welcome to SATAT" Login Screen & Route All Unauthenticated Visitors to Landing Page (`app/signin/page.tsx`, `app/login/page.tsx`, `middleware.ts`, `lib/auth.ts`, `app/dashboard/layout.tsx`, `components/Navigation.tsx`, `components/landing/Footer.tsx`)
+- **Unified Landing Page Entry & Auth Guards**:
+  - Replaced `/signin` and `/login` with immediate server redirects to `"/"`, configured NextAuth middleware and dashboard layout guards to route unauthenticated visitors to `"/"`, and updated all sign-out handlers to return to `"/"`.
+
+### ✅ Sprint 8.1: Landing Page UX, Timeline Spine, Non-Repeating Photos, Light-Mode Orbit Contrast & Full-Width Streak Layout
+- **Timeline Connector Alignment, 7 Distinct Photos & Day 14 Synchronization**:
+  - Aligned horizontal timeline spine through node centers, deduplicated all 7 Unsplash landing photos, housed `<Orbit3DCore />` in a high-contrast dark stage, synchronized `Day 14 · Rested` across tabs and telemetry, and added `scroll-mt-28` anchor offsets.
+
+### ✅ Sprint 8.2: Fix Start Free CTA Redirect Loop, Orbit 3D Aura Stage, Snap Desktop Right Anchor & Exact Photo Alignment (`hooks/useLandingAuth.ts`, `MealScanShowcase.tsx`, `OrbitSection.tsx`, `ProblemSection.tsx`)
+- **Direct OAuth Trigger & Right-Anchored Desktop Snap Stage**:
+  - Created `useLandingAuth` hook invoking Google OAuth directly without intermediate redirect flashes, prevented `#snap` bleed-through into `#orbit` with elevated z-index background, right-anchored the desktop `#snap` phone in a 12-column grid, and aligned all timeline photos to their copy.
+
+### ✅ Sprint 8.3: Eradicate Fake Fallback Telemetry on SATAT / Today, Implement Honest Zero-States & Cognitive Declutter (`components/dashboard/HomeView.tsx`)
+- **Honest Zero-States & Reactive Date Switching**:
+  - Purged all hardcoded fallback numbers (`1820`, `124`, `180`, `55`) and unverified static biosensor cards, displaying truthful `0` states with Empty Day Kickoff actions when no items are logged and enabling reactive 7-day strip date switching.
+
+### ✅ Sprint 8.4: Fix Voice Meal Modal Typography, Mobile Fuel Non-Truncation & Always-Visible Momentum (`components/diet/VoiceMealModal.tsx`, `components/diet/DietPage.tsx`, `components/dashboard/HomeView.tsx`)
+- **Single-Line Voice Heading, Non-Truncating Fuel Calories & Always-Visible Trends**:
+  - Removed header pill squeezing in `VoiceMealModal.tsx`, replaced truncated calorie strings on mobile Fuel with `{remainingCalories} kcal left`, and made Weekly Momentum and Habit Compounding permanently visible on `Today`.
+
+### ✅ Sprint 9.0: Meal-Scan Accuracy Upgrade (Phase 1 Baseline & Phase 2 Targeted Implementation)
+- **Deterministic Food Database Expansion & Multi-Stage Resolver (`lib/ai/nutrition/database.ts`, `lib/ai/nutrition/calculator.ts`, `lib/ai/providers/common.ts`)**:
+  - Expanded `INDIAN_FOOD_DATABASE` to 58 Atwater-audited items, added `normalizeDescriptiveFoodName()` and `PORTION_SANITY_CEILINGS`, injected volumetric reference anchors into vision prompts, and added 1-tap multiplier chips (`0.5×`–`2×`) in `MealScannerModal.tsx`.
+  - Reduced Calorie MAPE from **54.8% $\rightarrow$ 15.7%** (71.4% relative error reduction) and Calorie MAE from **132.9 kcal $\rightarrow$ 50.5 kcal**.
+
+### ✅ Sprint 9.2: Interactive Quick Modifier Pills & Live Scan Macro Toggling (`MealScannerModal.tsx`, `analyze-meal/route.ts`, `database.ts`, `tests/diet/mealScannerModal.test.tsx`)
+- **Live 0ms Modifier Presets & Double-Counting Safeguard**:
+  - Added 4 deterministic quick-modifier presets (`+ 1 Scoop Whey`, `+ 1 tsp Ghee`, `+ Boiled Egg`, `Home Cooked`) with bidirectional Context Hint synchronization, inline `Apply Hint ↻` re-analysis, canonical `ghee` database support, and server-side double-counting prevention.
+
+### ✅ SatatSnap Scroll-Scrub Rebuild (Mobile-First) (`components/landing/MealScanShowcase.tsx`, `app/page.tsx`)
+- **Pinned Scroll-Scrubbed Stage & `overflow-x-clip` Fix**:
+  - Replaced `overflow-x-hidden` with `overflow-x-clip` on `<main>` in `app/page.tsx` so `position: sticky` works reliably below the 80px header.
+  - Rebuilt `MealScanShowcase.tsx` with pure `computeSnapFrame(progress)` transforms written via refs (zero per-frame React re-renders), overhanging cards, and a `prefers-reduced-motion` static fallback.
+
+---
+
+## 5. Current Quality & Build Metrics
+- **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 34 static/dynamic routes compiled).
+- **ESLint & Typecheck**: `npm run typecheck` (`tsc --noEmit`) exits with code `0` (existing non-fatal lint warnings remain).
+- **Vitest Suite**: `779 passed | 26 skipped` (Firestore security rules suite skipped without local emulator on `127.0.0.1:8088`) across `70` test files (`0` failing):
+  - **Orbit Continuity & Mutations**: `43/43 passed` in `tests/orbit/continuity-mutations.test.ts` and `7/7 passed` in `tests/orbit/orbit-retry.test.ts`.
+  - **Markdown & UI Tests**: `13/13 passed` in `tests/ui/markdown-text.test.tsx`.
+  - **Navigation & Track Sheet Tests**: `20/20 passed` across `tests/navigation/*`.
+  - **Diet & Scan Review Tests**: `220/220 passed` across all `tests/diet/*` suites.
+  - **Workout Tests**: `42/42 passed` across `tests/workouts/*`.
+  - **Onboarding Tests**: `78/78 passed` across `tests/onboarding/*`.
+  - **Landing & Sprint 7.8–8.4 Tests**: `38/38 passed` across `tests/landing/*` and `tests/sprint7-8/*` through `tests/sprint8-4/*`.
+
+---
+
+## 6. Pending / Open Acceptance Work
+- **Multi-Device & Physical-Device QA**: Physical camera/microphone/keyboard verification, iPad (1024×768) 2-column bento verification, Desktop (1440×900) HealthifySnap two-column layout parity, and dark-theme visual acceptance across persisted meal records.
+- **Clinical & Persistence Verification**: Weighed held-out meal evaluation (including oil, serving mass, and hidden fillings), curated micronutrient provenance data, disposable-account persistence/account-switch tests, and running `tests/security/firestore-rules.test.ts` against the local Firestore emulator.

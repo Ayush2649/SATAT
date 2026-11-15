@@ -121,6 +121,12 @@ export interface MealEntry {
   createdAt: number;
   nutritionStatus?: "verified" | "estimated" | "unresolved" | "mixed";
   hasIncompleteNutrition?: boolean;
+  /** Optional reviewed scan details; older meal documents remain valid. */
+  scanReview?: {
+    version: 1;
+    components: import("@/lib/nutrition/scan-review").ScanComponent[];
+    micronutrients: import("@/lib/nutrition/scan-review").Micros;
+  };
 }
 
 export interface DietDay {

@@ -102,7 +102,7 @@ function OnboardingContent() {
         {/* Top Navigation Bar */}
         <header className="flex items-center justify-between w-full h-10 mb-2">
           {/* Left: Back arrow button */}
-          <div className="w-10 flex items-center justify-start">
+          <div className="w-24 flex items-center justify-start">
             {!isFirstStep && (
               <button
                 type="button"
@@ -117,7 +117,7 @@ function OnboardingContent() {
 
           {/* Center: Dynamic Step Title */}
           <h2 className="font-sans font-semibold text-base text-[#1C1917] tracking-tight text-center flex-1">
-            {STEP_TITLES[state.currentStep] || ""}
+            {STEP_TITLES[state.currentStep] || "Your goals"}
           </h2>
 
           {/* Right: Skip button + User icon badge */}

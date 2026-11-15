@@ -331,35 +331,35 @@ export default function ConsistencyHeatmap({
   const getPebbleStyle = (tier: string) => {
     switch (tier) {
       case "rest":
-        return "bg-[#EFECE4] text-[#8C857B]";
+        return "bg-[#EFECE4] dark:bg-[#181E1A] text-[#8C857B] dark:text-[#6E7872]";
       case "mid":
-        return "bg-[#C6F6D5] text-[#22543D]";
+        return "bg-[#A7F3D0] text-[#065F46] dark:bg-[#163828] dark:text-[#6EE7B7] dark:border dark:border-[#34D399]/25";
       case "target":
-        return "bg-[#2D6A4F] text-white shadow-2xs";
+        return "bg-[#2D6A4F] text-white dark:bg-[#2D6A4F] dark:text-white shadow-2xs";
       case "today":
-        return "bg-[#2D6A4F] text-white font-bold ring-2 ring-[#E05A47] ring-offset-2 ring-offset-[#FCFBF9]";
+        return "bg-[#2D6A4F] text-white font-bold ring-2 ring-[#E05A47] dark:ring-[#34D399] ring-offset-2 ring-offset-[#FCFBF9] dark:ring-offset-[#141916]";
       case "overflow":
-        return "bg-[#EFECE4]/40 text-[#8C857B]/40";
+        return "bg-[#EFECE4]/40 dark:bg-[#181E1A]/40 text-[#8C857B]/40 dark:text-[#6E7872]/40";
       default:
-        return "bg-[#EFECE4] text-[#8C857B]";
+        return "bg-[#EFECE4] dark:bg-[#181E1A] text-[#8C857B] dark:text-[#6E7872]";
     }
   };
 
   return (
-    <div className="bg-[#FCFBF9] rounded-[28px] p-5 border border-[#1C1917]/[0.06] shadow-xs mb-2">
+    <div className="bg-[#FCFBF9] dark:bg-[#141916] rounded-[28px] p-5 border border-[#1C1917]/[0.06] dark:border-white/[0.07] shadow-xs mb-2">
       {/* 1. Header Row — Fixed Single-Line Title without truncation */}
       <div className="flex items-center justify-between gap-2 min-w-0">
         <div className="shrink-0">
-          <div className="text-[9px] font-bold tracking-[0.15em] uppercase text-[#8C857B]">
+          <div className="text-[9px] font-bold tracking-[0.15em] uppercase text-[#8C857B] dark:text-[#6E7872]">
             CONTINUITY · सतत्
           </div>
-          <h2 className="font-serif text-[1.15rem] sm:text-xl text-[#1C1917] leading-tight whitespace-nowrap">
+          <h2 className="font-serif text-[1.15rem] sm:text-xl text-[#1C1917] dark:text-[#F4F1EA] leading-tight whitespace-nowrap">
             Habit Compounding
           </h2>
         </div>
 
         {/* 2-Pill View Toggle */}
-        <div className="bg-[#EFECE4] p-1 rounded-full inline-flex items-center gap-0.5 shrink-0">
+        <div className="bg-[#EFECE4] dark:bg-[#1C221E] p-1 rounded-full inline-flex items-center gap-0.5 shrink-0">
           <button
             type="button"
             onClick={() => {
@@ -368,8 +368,8 @@ export default function ConsistencyHeatmap({
             }}
             className={`rounded-full py-1 text-[10px] transition-all ${
               viewMode === "month"
-                ? "bg-[#191D1A] text-white px-3.5 font-bold shadow-xs"
-                : "text-[#8C857B] hover:text-[#1C1917] px-3 font-semibold"
+                ? "bg-[#191D1A] dark:bg-[#1E4D38] text-white dark:text-[#E6F4ED] px-3.5 font-bold shadow-xs"
+                : "text-[#8C857B] dark:text-[#6E7872] hover:text-[#1C1917] dark:hover:text-[#F4F1EA] px-3 font-semibold"
             }`}
           >
             Month
@@ -382,8 +382,8 @@ export default function ConsistencyHeatmap({
             }}
             className={`rounded-full py-1 text-[10px] transition-all ${
               viewMode === "year"
-                ? "bg-[#191D1A] text-white px-3.5 font-bold shadow-xs"
-                : "text-[#8C857B] hover:text-[#1C1917] px-3 font-semibold"
+                ? "bg-[#191D1A] dark:bg-[#1E4D38] text-white dark:text-[#E6F4ED] px-3.5 font-bold shadow-xs"
+                : "text-[#8C857B] dark:text-[#6E7872] hover:text-[#1C1917] dark:hover:text-[#F4F1EA] px-3 font-semibold"
             }`}
           >
             Year
@@ -394,25 +394,25 @@ export default function ConsistencyHeatmap({
       {/* 2. 2x2 Dynamic Summary Pill Grid */}
       <div className="grid grid-cols-2 gap-2.5 mt-4">
         {/* Pill 1: Streak */}
-        <div className="bg-[#FDF2EC] border border-[#E05A47]/15 text-[#9A3412] rounded-full py-2 px-3 text-[11px] font-semibold flex items-center justify-center gap-1.5 whitespace-nowrap">
+        <div className="bg-[#FDF2F0] text-[#C84331] dark:bg-[#2A1816] dark:text-[#F87171] dark:border dark:border-[#E05A47]/25 border border-[#E05A47]/15 rounded-full py-2 px-3 text-[11px] font-semibold flex items-center justify-center gap-1.5 whitespace-nowrap">
           <span>🔥</span>
           <span>{currentSummary.streak} Streak</span>
         </div>
 
         {/* Pill 2: Adherence */}
-        <div className="bg-[#E6F7F0] border border-[#2D6A4F]/15 text-[#1B4332] rounded-full py-2 px-3 text-[11px] font-semibold flex items-center justify-center gap-1.5 whitespace-nowrap">
+        <div className="bg-[#D8F3DC] text-[#1B4332] dark:bg-[#142E22] dark:text-[#6EE7B7] dark:border dark:border-[#34D399]/25 border border-[#2D6A4F]/15 rounded-full py-2 px-3 text-[11px] font-semibold flex items-center justify-center gap-1.5 whitespace-nowrap">
           <span>🌿</span>
           <span>{currentSummary.adherence} Adherence</span>
         </div>
 
         {/* Pill 3: Best */}
-        <div className="bg-[#FEF9E7] border border-[#D97706]/20 text-[#92400E] rounded-full py-2 px-3 text-[11px] font-semibold flex items-center justify-center gap-1.5 whitespace-nowrap">
+        <div className="bg-[#F6F3EC] text-[#1C1917] dark:bg-[#1C221E] dark:text-[#F4F1EA] dark:border dark:border-white/[0.07] border border-[#1C1917]/[0.06] rounded-full py-2 px-3 text-[11px] font-semibold flex items-center justify-center gap-1.5 whitespace-nowrap">
           <span>🏆</span>
           <span>{currentSummary.best} Best</span>
         </div>
 
         {/* Pill 4: Active */}
-        <div className="bg-[#EFECE4] border border-[#1C1917]/[0.06] text-[#1C1917] rounded-full py-2 px-3 text-[11px] font-semibold flex items-center justify-center gap-1.5 whitespace-nowrap">
+        <div className="bg-[#F6F3EC] text-[#1C1917] dark:bg-[#1C221E] dark:text-[#F4F1EA] dark:border dark:border-white/[0.07] border border-[#1C1917]/[0.06] rounded-full py-2 px-3 text-[11px] font-semibold flex items-center justify-center gap-1.5 whitespace-nowrap">
           <span>✓</span>
           <span>{currentSummary.active} Active</span>
         </div>
@@ -422,7 +422,7 @@ export default function ConsistencyHeatmap({
       {viewMode === "month" ? (
         <>
           {/* 3. Weekday Header Row */}
-          <div className="grid grid-cols-7 gap-2 text-center text-[10px] font-semibold text-[#8C857B] mt-5 mb-2 select-none">
+          <div className="grid grid-cols-7 gap-1.5 sm:gap-2 text-center text-[10px] font-semibold text-[#8C857B] dark:text-[#6E7872] mt-4 mb-2 select-none">
             <span>M</span>
             <span>T</span>
             <span>W</span>
@@ -433,7 +433,7 @@ export default function ConsistencyHeatmap({
           </div>
 
           {/* 4. Rounded Pebble Calendar Grid */}
-          <div className="grid grid-cols-7 gap-2">
+          <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
             {monthData.cells.map((cell, idx) => (
               <button
                 key={`${cell.dateStr}-${idx}`}
@@ -450,7 +450,7 @@ export default function ConsistencyHeatmap({
                   }
                 }}
                 disabled={cell.isOverflow}
-                className={`aspect-square rounded-[12px] flex items-center justify-center text-xs font-semibold transition-transform active:scale-95 ${
+                className={`h-10 sm:h-11 md:h-12 w-full rounded-xl flex items-center justify-center text-xs font-semibold transition-transform active:scale-95 ${
                   cell.isOverflow ? "cursor-default opacity-30" : "cursor-pointer"
                 } ${getPebbleStyle(cell.tier)}`}
               >
@@ -487,12 +487,12 @@ export default function ConsistencyHeatmap({
                   }}
                   className={`w-2.5 h-2.5 rounded-[2px] transition-transform hover:scale-125 ${
                     c.isToday
-                      ? "bg-[#2D6A4F] ring-1 ring-[#E05A47]"
+                      ? "bg-[#2D6A4F] ring-1 ring-[#E05A47] dark:ring-[#34D399]"
                       : c.tier === "target"
                       ? "bg-[#2D6A4F]"
                       : c.tier === "mid"
-                      ? "bg-[#C6F6D5]"
-                      : "bg-[#EFECE4]"
+                      ? "bg-[#A7F3D0] dark:bg-[#163828]"
+                      : "bg-[#EFECE4] dark:bg-[#181E1A]"
                   }`}
                 />
               ))}
@@ -502,13 +502,13 @@ export default function ConsistencyHeatmap({
       )}
 
       {/* 5. Bottom Legend Strip */}
-      <div className="flex items-center justify-between text-[10px] text-[#8C857B] mt-4 pt-2 border-t border-[#1C1917]/[0.05] flex-wrap gap-2">
+      <div className="flex items-center justify-between text-[10px] text-[#8C857B] dark:text-[#6E7872] mt-4 pt-2 border-t border-[#1C1917]/[0.05] dark:border-white/[0.06] flex-wrap gap-2">
         <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-[3px] bg-[#EFECE4] inline-block" />
+          <span className="w-2.5 h-2.5 rounded-[3px] bg-[#EFECE4] dark:bg-[#181E1A] inline-block" />
           <span>Rest</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-[3px] bg-[#C6F6D5] inline-block" />
+          <span className="w-2.5 h-2.5 rounded-[3px] bg-[#A7F3D0] dark:bg-[#163828] dark:border dark:border-[#34D399]/25 inline-block" />
           <span>1-2 habits</span>
         </div>
         <div className="flex items-center gap-1.5">
@@ -516,19 +516,19 @@ export default function ConsistencyHeatmap({
           <span>Target Hit (3)</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-[3px] bg-[#2D6A4F] ring-1 ring-[#E05A47] inline-block" />
-          <span className="text-[#E05A47] font-semibold">Today</span>
+          <span className="w-2.5 h-2.5 rounded-[3px] bg-[#2D6A4F] ring-1 ring-[#E05A47] dark:ring-[#34D399] inline-block" />
+          <span className="text-[#E05A47] dark:text-[#34D399] font-semibold">Today</span>
         </div>
       </div>
 
       {/* Compact Interactive Detail Pill (When user taps any day) */}
       {activeSelectedCell && (
-        <div className="mt-3.5 bg-[#F6F3EC] rounded-2xl p-2.5 px-3.5 border border-[#1C1917]/[0.05] flex items-center justify-between text-xs animate-fade-in gap-2 min-w-0">
+        <div className="mt-3.5 bg-[#F6F3EC] dark:bg-[#1C221E] rounded-2xl p-2.5 px-3.5 border border-[#1C1917]/[0.05] dark:border-white/[0.07] flex items-center justify-between text-xs animate-fade-in gap-2 min-w-0">
           <div className="flex items-center gap-2 min-w-0 flex-1">
-            <span className="font-semibold text-[#1C1917] shrink-0">
+            <span className="font-semibold text-[#1C1917] dark:text-[#F4F1EA] shrink-0">
               {activeSelectedCell.label}:
             </span>
-            <span className="text-[#57534E] truncate">
+            <span className="text-[#57534E] dark:text-[#9CA39E] truncate">
               {activeSelectedCell.habitsCount === 0
                 ? "No logs recorded on this date"
                 : [activeSelectedCell.mealSummary, activeSelectedCell.workoutSummary, activeSelectedCell.taskSummary]
@@ -537,7 +537,7 @@ export default function ConsistencyHeatmap({
             </span>
           </div>
           {activeSelectedCell.habitsCount > 0 && (
-            <span className="text-[11px] font-semibold text-[#2D6A4F] tabular-nums shrink-0">
+            <span className="text-[11px] font-semibold text-[#2D6A4F] dark:text-[#34D399] tabular-nums shrink-0">
               {activeSelectedCell.habitsCount}/3 habits
             </span>
           )}

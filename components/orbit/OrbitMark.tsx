@@ -4,7 +4,7 @@ import React, { useId } from "react";
 import { cn } from "@/lib/utils";
 import { OrbitLivingOrb } from "./OrbitLivingOrb";
 
-export type OrbitState = "idle" | "thinking" | "responding" | "success" | "error";
+export type OrbitState = "idle" | "thinking" | "responding" | "success" | "error" | "active";
 
 export interface OrbitIconProps extends React.SVGProps<SVGSVGElement> {
   size?: number;

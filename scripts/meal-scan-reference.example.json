@@ -1,0 +1,13 @@
+[
+  {
+    "id": "example-replace-with-real-meal",
+    "file": "your-original-meal.jpg",
+    "split": "held-out",
+    "foods": [
+      { "name": "Steamed Rice", "aliases": ["Cooked Rice"] },
+      { "name": "Paneer Bhurji" },
+      { "name": "Dal", "aliases": ["Toor Dal", "Dal Tadka"] },
+      { "name": "Raw Banana Sabzi" }
+    ]
+  }
+]

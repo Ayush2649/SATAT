@@ -132,7 +132,7 @@ function Step0({ onNext, onDismiss }: { onNext: () => void; onDismiss: () => voi
         </div>
 
         <h1 className="text-xl font-semibold mb-2 leading-tight" style={{ color: "var(--text-1)" }}>
-          Welcome to SATAT
+          Explore SATAT
         </h1>
         <p className="text-sm leading-relaxed max-w-[300px] mx-auto" style={{ color: "var(--text-2)" }}>
           Plan tasks, record workouts, and keep track of meals in one place.

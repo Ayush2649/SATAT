@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { localDateString, todayString } from "@/lib/utils";
+import { cn, localDateString, todayString } from "@/lib/utils";
 import type { Task, WorkoutSession, MealEntry, MacroGoals } from "@/types";
 
 interface ProgressTrendChartProps {
@@ -104,15 +104,15 @@ export default function ProgressTrendChart({
       else fuel = "Balanced";
     }
 
-    // Sample exactly 7 points across the range for the responsive SVG
+    // Sample exactly 7 points across the range for the full-width responsive SVG
     const sampledDays: DayPoint[] = [];
-    const xCoords = [20, 66, 112, 158, 205, 252, 300];
+    const xCoords = [40, 148, 256, 364, 472, 580, 660];
 
     for (let j = 0; j < 7; j++) {
       const idx = Math.min(rawDays.length - 1, Math.round((j / 6) * (rawDays.length - 1)));
       const src = rawDays[idx];
-      // Map score 0..100 to y=88..32
-      const y = Math.round(88 - (src.score / 100) * 56);
+      // Map score 0..100 smoothly into [34, 98]
+      const y = Math.round(98 - (src.score / 100) * 64);
       sampledDays.push({
         ...src,
         x: xCoords[j],
@@ -158,7 +158,7 @@ export default function ProgressTrendChart({
     return `${p.dayLabel}: ${p.score}% · ${desc}`;
   }, [selectedNodeIndex, chartData]);
 
-  // Construct smooth cubic Bezier path for SVG
+  // Construct smooth monotone cubic Bezier path for SVG
   const pathD = useMemo(() => {
     const pts = chartData.points;
     if (pts.length < 2) return "";
@@ -166,8 +166,9 @@ export default function ProgressTrendChart({
     for (let i = 0; i < pts.length - 1; i++) {
       const p0 = pts[i];
       const p1 = pts[i + 1];
-      const midX = (p0.x + p1.x) / 2;
-      d += ` C ${midX} ${p0.y}, ${midX} ${p1.y}, ${p1.x} ${p1.y}`;
+      const smoothing = 0.35;
+      const dx = (p1.x - p0.x) * smoothing;
+      d += ` C ${p0.x + dx} ${p0.y}, ${p1.x - dx} ${p1.y}, ${p1.x} ${p1.y}`;
     }
     return d;
   }, [chartData.points]);
@@ -177,24 +178,24 @@ export default function ProgressTrendChart({
     const pts = chartData.points;
     const last = pts[pts.length - 1];
     const first = pts[0];
-    return `${pathD} L ${last.x} 110 L ${first.x} 110 Z`;
+    return `${pathD} L ${last.x} 128 L ${first.x} 128 Z`;
   }, [pathD, chartData.points]);
 
   return (
-    <div className="bg-[#FCFBF9] rounded-[28px] p-5 border border-[#1C1917]/[0.06] shadow-xs">
+    <div className="bg-[#FCFBF9] dark:bg-[#141916] rounded-[28px] p-5 border border-[#1C1917]/[0.06] dark:border-white/[0.07] shadow-xs">
       {/* 1. Header Row — Fixed Single-Line Title without truncation */}
       <div className="flex items-center justify-between gap-2 min-w-0">
         <div className="shrink-0">
-          <div className="text-[9px] font-bold tracking-[0.15em] uppercase text-[#8C857B]">
+          <div className="text-[9px] font-bold tracking-[0.15em] uppercase text-[#8C857B] dark:text-[#6E7872]">
             PROGRESS TRAJECTORY
           </div>
-          <h2 className="font-serif text-[1.15rem] sm:text-xl text-[#1C1917] leading-tight whitespace-nowrap">
+          <h2 className="font-serif text-[1.15rem] sm:text-xl text-[#1C1917] dark:text-[#F4F1EA] leading-tight whitespace-nowrap">
             Weekly Momentum
           </h2>
         </div>
 
         {/* 3-Pill Range Switcher */}
-        <div className="bg-[#EFECE4] p-1 rounded-full inline-flex items-center gap-0.5 shrink-0">
+        <div className="bg-[#EFECE4] dark:bg-[#1C221E] p-1 rounded-full inline-flex items-center gap-0.5 shrink-0">
           {(["7D", "30D", "90D"] as const).map((r) => (
             <button
               key={r}
@@ -205,8 +206,8 @@ export default function ProgressTrendChart({
               }}
               className={`rounded-full py-1 text-[10px] font-semibold transition-all ${
                 range === r
-                  ? "bg-[#191D1A] text-white px-3 font-bold shadow-xs"
-                  : "text-[#8C857B] hover:text-[#1C1917] px-2.5"
+                  ? "bg-[#191D1A] dark:bg-[#1E4D38] text-white dark:text-[#E6F4ED] px-3 font-bold shadow-xs"
+                  : "text-[#8C857B] dark:text-[#6E7872] hover:text-[#1C1917] dark:hover:text-[#F4F1EA] px-2.5"
               }`}
             >
               {r}
@@ -216,13 +217,13 @@ export default function ProgressTrendChart({
       </div>
 
       {/* 2. 3-Column KPI Strip */}
-      <div className="bg-[#F6F3EC] rounded-2xl p-3 grid grid-cols-3 divide-x divide-[#1C1917]/[0.07] mt-4 text-center">
+      <div className="bg-[#F6F3EC] dark:bg-[#181E1A] rounded-2xl p-3 grid grid-cols-3 divide-x divide-[#1C1917]/[0.07] dark:divide-white/[0.08] mt-4 text-center">
         {/* Column 1: Adherence */}
         <div className="px-2">
           <div className="text-[9px] font-bold tracking-wider uppercase text-[#8C857B]">
             ADHERENCE
           </div>
-          <div className="flex items-center justify-center gap-1.5 mt-0.5 text-xs font-bold text-[#1C1917]">
+          <div className="flex items-center justify-center gap-1.5 mt-0.5 text-xs font-bold text-[#1C1917] dark:text-[#F4F1EA]">
             <span className="w-1.5 h-1.5 rounded-full bg-[#2D6A4F]" />
             <span>{chartData.adherence}</span>
           </div>
@@ -233,8 +234,8 @@ export default function ProgressTrendChart({
           <div className="text-[9px] font-bold tracking-wider uppercase text-[#8C857B]">
             STRENGTH
           </div>
-          <div className="flex items-center justify-center gap-1 mt-0.5 text-xs font-bold text-[#1C1917]">
-            <span className="text-[#2D6A4F]">{chartData.strength}</span>
+          <div className="flex items-center justify-center gap-1 mt-0.5 text-xs font-bold text-[#1C1917] dark:text-[#F4F1EA]">
+            <span className="text-[#2D6A4F] dark:text-[#34D399]">{chartData.strength}</span>
           </div>
         </div>
 
@@ -243,7 +244,7 @@ export default function ProgressTrendChart({
           <div className="text-[9px] font-bold tracking-wider uppercase text-[#8C857B]">
             FUEL
           </div>
-          <div className="mt-0.5 text-xs font-bold text-[#2D6A4F]">
+          <div className="mt-0.5 text-xs font-bold text-[#2D6A4F] dark:text-[#34D399]">
             {chartData.fuel}
           </div>
         </div>
@@ -251,44 +252,47 @@ export default function ProgressTrendChart({
 
       {/* 3. Smooth Bezier Area Curve SVG + Floating Tooltip */}
       <div className="mt-7 relative pt-4">
-        {/* Floating Dark Tooltip Positioned Over Active Node */}
+        {/* Floating Dark Tooltip Positioned Cleanly Above Curve */}
         <div
-          className="absolute -top-1 bg-[#191D1A] text-white rounded-2xl px-3.5 py-1.5 text-[10px] font-semibold shadow-lg whitespace-nowrap z-10 pointer-events-none transition-all duration-300"
-          style={{
-            left: `${(activePoint.x / 320) * 100}%`,
-            transform: "translate(-50%, -100%)",
-          }}
+          className="absolute top-0 right-2 sm:right-4 bg-[#191D1A] dark:bg-[#1E2822] text-white dark:text-[#F4F1EA] border border-transparent dark:border-white/10 rounded-full px-3 py-1 text-[10px] font-semibold shadow-md whitespace-nowrap z-20 pointer-events-none transition-all duration-200 flex items-center gap-1.5"
         >
+          <span className="w-1.5 h-1.5 rounded-full bg-[#34D399]" />
           <span>{tooltipText}</span>
         </div>
 
-        {/* Responsive Bezier SVG */}
+        {/* Full-Width Responsive Bezier Area SVG */}
         <svg
-          viewBox="0 0 320 110"
-          className="w-full h-28 overflow-visible"
+          viewBox="0 0 700 140"
+          className="w-full h-auto overflow-visible block"
           aria-hidden="true"
         >
           <defs>
-            <linearGradient id="momentumWash" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#2D6A4F" stopOpacity="0.22" />
+            <linearGradient id="momentumGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#2D6A4F" stopOpacity="0.32" />
+              <stop offset="70%" stopColor="#2D6A4F" stopOpacity="0.08" />
               <stop offset="100%" stopColor="#2D6A4F" stopOpacity="0.0" />
             </linearGradient>
           </defs>
 
+          {/* Subtle Horizontal Reference Grid Lines */}
+          <line x1="20" y1="34" x2="680" y2="34" stroke="currentColor" strokeDasharray="4 4" className="text-stone-200 dark:text-white/[0.06]" />
+          <line x1="20" y1="66" x2="680" y2="66" stroke="currentColor" strokeDasharray="4 4" className="text-stone-200 dark:text-white/[0.06]" />
+          <line x1="20" y1="98" x2="680" y2="98" stroke="currentColor" strokeDasharray="4 4" className="text-stone-200 dark:text-white/[0.06]" />
+
           {/* Area Fill */}
-          <path d={areaD} fill="url(#momentumWash)" />
+          <path d={areaD} fill="url(#momentumGradient)" />
 
           {/* Vertical dashed guide line from Active Node down to baseline */}
           <line
             x1={activePoint.x}
             y1={activePoint.y}
             x2={activePoint.x}
-            y2="110"
+            y2="120"
             stroke="#2D6A4F"
-            strokeWidth="1"
-            strokeDasharray="3 3"
-            opacity="0.45"
-            className="transition-all duration-300"
+            strokeWidth="1.5"
+            strokeDasharray="4 4"
+            opacity="0.5"
+            className="transition-all duration-300 dark:stroke-[#34D399]"
           />
 
           {/* Smooth Bezier Line Stroke */}
@@ -296,11 +300,13 @@ export default function ProgressTrendChart({
             d={pathD}
             stroke="#2D6A4F"
             strokeWidth="2.5"
+            vectorEffect="non-scaling-stroke"
             fill="none"
             strokeLinecap="round"
+            className="dark:stroke-[#34D399]"
           />
 
-          {/* Interactive Clickable Nodes */}
+          {/* 7 SVG Circular Markers — Rendered inside SVG on exact same coordinate system */}
           {chartData.points.map((pt, idx) => {
             const isSelected = idx === activeIdx;
             const isToday = pt.isToday;
@@ -308,60 +314,64 @@ export default function ProgressTrendChart({
             return (
               <g
                 key={idx}
-                className="cursor-pointer"
+                className="cursor-pointer group"
                 onClick={() => setSelectedNodeIndex(idx)}
+                tabIndex={0}
+                role="button"
+                aria-label={`${pt.dayLabel}: ${pt.score}%`}
               >
-                {/* Invisible larger hit target for mobile tapping */}
-                <circle cx={pt.x} cy={pt.y} r="12" fill="transparent" />
+                {/* Hit target */}
+                <circle cx={pt.x} cy={pt.y} r="16" fill="transparent" />
 
-                {isSelected ? (
+                {/* Outer halo when selected */}
+                {isSelected && (
                   <circle
                     cx={pt.x}
                     cy={pt.y}
-                    r="5.5"
-                    fill="#2D6A4F"
-                    stroke="#FCFBF9"
-                    strokeWidth="2.5"
-                    className="transition-all"
-                  />
-                ) : isToday ? (
-                  <circle
-                    cx={pt.x}
-                    cy={pt.y}
-                    r="4"
-                    fill="#E05A47"
-                    className="transition-all"
-                  />
-                ) : (
-                  <circle
-                    cx={pt.x}
-                    cy={pt.y}
-                    r="3.5"
-                    fill="#FCFBF9"
-                    stroke="#2D6A4F"
+                    r="10"
+                    fill="none"
+                    stroke={isToday ? "#E05A47" : "#2D6A4F"}
                     strokeWidth="2"
-                    className="transition-all hover:scale-125"
+                    opacity="0.35"
+                    className="dark:stroke-[#34D399]"
                   />
                 )}
+
+                {/* Solid Dot sitting dead-center on the curve */}
+                <circle
+                  cx={pt.x}
+                  cy={pt.y}
+                  r={isSelected ? 6.5 : 5.5}
+                  fill={isSelected ? (isToday ? "#E05A47" : "#2D6A4F") : (isToday ? "#E05A47" : "#FCFBF9")}
+                  stroke={isToday ? "#E05A47" : (isSelected ? "#FCFBF9" : "#2D6A4F")}
+                  strokeWidth={isSelected ? 2.5 : 2}
+                  className={cn(
+                    "transition-all duration-200",
+                    !isSelected && !isToday && "dark:fill-[#141916] dark:stroke-[#34D399]",
+                    isSelected && !isToday && "dark:fill-[#34D399] dark:stroke-[#141916]"
+                  )}
+                />
               </g>
             );
           })}
         </svg>
 
-        {/* Bottom X-Axis Day Labels */}
-        <div className="grid grid-cols-7 text-center text-[10px] font-semibold mt-2 select-none">
+        {/* Bottom X-Axis Day Labels aligned with xCoords */}
+        <div className="relative h-6 mt-1.5 select-none">
           {chartData.points.map((pt, idx) => (
             <button
               key={idx}
               type="button"
               onClick={() => setSelectedNodeIndex(idx)}
-              className={`transition-colors ${
+              style={{ left: `${(pt.x / 700) * 100}%` }}
+              className={cn(
+                "absolute -translate-x-1/2 text-[11px] font-semibold transition-colors cursor-pointer",
                 idx === activeIdx
-                  ? "text-[#2D6A4F] font-bold"
+                  ? "text-[#2D6A4F] dark:text-[#34D399] font-bold"
                   : pt.isToday
-                  ? "text-[#E05A47] font-bold"
-                  : "text-[#8C857B] hover:text-[#1C1917]"
-              }`}
+                  ? "text-[#E05A47] dark:text-[#F87171] font-bold"
+                  : "text-[#8C857B] dark:text-[#6E7872] hover:text-[#1C1917] dark:hover:text-[#F4F1EA]"
+              )}
             >
               {pt.dayLabel}
             </button>

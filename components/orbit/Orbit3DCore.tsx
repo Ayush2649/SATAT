@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import type { OrbitState } from "./OrbitMark";
 
 export interface Orbit3DCoreProps {
-  size?: "sm" | "md" | "lg" | number;
+  size?: "sm" | "md" | "lg" | "xl" | number;
   state?: OrbitState;
   className?: string;
   showRadar?: boolean;
@@ -53,6 +53,9 @@ export function Orbit3DCore({
   } else if (size === "md") {
     containerPx = 92;
     scaleRatio = 92 / 184;
+  } else if (size === "xl") {
+    containerPx = 224;
+    scaleRatio = 224 / 184;
   }
 
   const shouldShowRadar = showRadar && !isSm;
@@ -64,7 +67,10 @@ export function Orbit3DCore({
 
   return (
     <div
+      id={id}
+      data-testid="orbit-3d-core"
       className={cn(
+        "orbit-3d-core",
         isSm
           ? "relative flex items-center justify-center select-none shrink-0"
           : "relative mx-auto my-2 flex items-center justify-center select-none overflow-visible",

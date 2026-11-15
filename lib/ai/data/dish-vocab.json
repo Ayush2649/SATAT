@@ -158,5 +158,14 @@
   { "name": "Roti Sabzi Raita", "aliases": ["roti sabzi raita", "roti with sabzi and raita", "roti sabzi"] },
   { "name": "North Indian Thali", "aliases": ["north indian thali", "thali", "veg thali"] },
   { "name": "South Indian Thali", "aliases": ["south indian thali", "south indian meal"] },
-  { "name": "Gujarati Thali", "aliases": ["gujarati thali", "kathiyawadi thali"] }
+  { "name": "Gujarati Thali", "aliases": ["gujarati thali", "kathiyawadi thali"] },
+  { "name": "Samosa", "aliases": ["samosa", "samosas", "aloo samosa", "samosa with chutney"] },
+  { "name": "Oatmeal Bowl", "aliases": ["oatmeal", "oats bowl", "porridge", "oats with berries", "smoothie bowl"] },
+  { "name": "Protein Salad Bowl", "aliases": ["protein salad", "buddha bowl", "quinoa salad", "grilled chicken salad", "salad bowl"] },
+  { "name": "Avocado Toast", "aliases": ["avocado toast", "avo toast", "eggs avocado toast", "avocado toast with eggs"] },
+  { "name": "Grilled Salmon with Vegetables", "aliases": ["grilled salmon", "salmon with broccoli", "salmon rice broccoli", "fish with vegetables"] },
+  { "name": "Pasta Arrabbiata", "aliases": ["pasta arrabbiata", "penne arrabbiata", "tomato basil pasta", "red sauce pasta"] },
+  { "name": "Protein Smoothie", "aliases": ["protein smoothie", "banana smoothie", "berry smoothie", "protein shake"] },
+  { "name": "Black Coffee", "aliases": ["black coffee", "espresso", "americano"] },
+  { "name": "No Food Detected", "aliases": ["no food", "not food", "non food"] }
 ]
