@@ -1,4 +1,5 @@
 import { includesIngredient } from "@/lib/nutrition/hints";
+import { reconcileScanInventory } from "@/lib/nutrition/scan-review";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getServerSession } from "next-auth";
@@ -134,7 +135,7 @@ export async function POST(req: NextRequest) {
   let scaledMime = mimeType;
   const tPrep0 = performance.now();
   try {
-    const preprocessed = await preprocessMealImage(imageBase64, mimeType);
+    const preprocessed = await preprocessMealImage(imageBase64, mimeType, { maxDimension: Number(process.env.MEAL_SCAN_MAX_DIMENSION) || 1536 });
     scaledBase64 = preprocessed.base64;
     scaledMime = preprocessed.mimeType;
   } catch (prepErr: any) {
@@ -374,12 +375,13 @@ export async function POST(req: NextRequest) {
     }
 
     const tDb0 = performance.now();
-    const routed = routeFoodItems(nutritionFoods);
+    const inventory = reconcileScanInventory(nutritionFoods, finalVisibleItems, parsePortionFromText);
+    const routed = routeFoodItems(inventory);
     const dbLookupMs = performance.now() - tDb0;
 
     const tEst0 = performance.now();
     const estimatedMap = routed.aiEligible.length > 0
-      ? await estimateNutritionBatch(routed.aiEligible, { userKey: userId })
+      ? await estimateNutritionBatch(routed.aiEligible, { userKey: userId, timeoutMs: Math.max(500, Math.min(10000, 28000 - (performance.now() - tServer0))) })
       : new Map();
     const nutritionEstimationMs = performance.now() - tEst0;
 
@@ -392,11 +394,7 @@ export async function POST(req: NextRequest) {
     // Apply home-cooked modifier fat reduction if specified in hint
     let finalCalories = nutritionResult.calories;
     let finalFatG = nutritionResult.fatG;
-    if (userHintLower && /\b(home[- ]cooked|low\s+oil|homemade)\b/i.test(userHintLower)) {
-      const fatReduction = Math.min(8, Math.round(finalFatG * 0.25));
-      finalFatG = Math.max(0, finalFatG - fatReduction);
-      finalCalories = Math.max(0, finalCalories - fatReduction * 9);
-    }
+    // "Home cooked" is context, not evidence for subtracting oil or calories.
 
     const totalServerMs = performance.now() - tServer0;
 
@@ -448,12 +446,17 @@ export async function POST(req: NextRequest) {
       foods: nutritionResult.items,
       unknownFoods: nutritionResult.unknownFoods,
       allFoodsVerified: nutritionResult.allFoodsVerified,
-      requiresManualReview: nutritionResult.requiresManualReview,
+      requiresManualReview: true,
       hasUnresolvedItems: nutritionResult.hasUnresolvedItems,
       unresolvedCount: nutritionResult.unresolvedCount,
       estimatedCount: nutritionResult.estimatedCount,
       verifiedCount: nutritionResult.verifiedCount,
       hasIncompleteNutrition: nutritionResult.hasIncompleteNutrition,
+      totalLabel: nutritionResult.hasIncompleteNutrition ? "Known-food subtotal" : "Estimated total — review every component",
+      recognitionVerified: false,
+      portionBasis: "photo_estimate",
+      uncertainty: "Not calibrated; ingredients, oil and portion mass need confirmation",
+      inventoryReconciled: true,
       timings: stageTimings,
       calls: apiCalls,
       ...(needsClarification ? { needsClarification } : {}),

@@ -211,6 +211,8 @@ export function resolveFoodItem(rawName: string): FoodCompositionItem | null {
 
   // Alternatives describe an uncertain identity, not a verified ingredient.
   if (/\/|\bor\b/i.test(rawName)) return null;
+  // A preparation is a recipe, not a synonym for a generic ingredient.
+  if (/\b(egg|fish)\b/i.test(rawName) && /\b(scrambled|bhurji|masala|fried|fry|curry)\b/i.test(rawName)) return null;
 
   // Pass 2: Normalized descriptive name
   const normalized = normalizeDescriptiveFoodName(rawName);

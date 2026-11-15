@@ -36,8 +36,10 @@ export const MAX_REASONABLE_SIZE_BYTES = 200 * 1024; // 200 KB threshold to chec
  */
 export async function preprocessMealImage(
   rawBase64: string,
-  rawMimeType: string
+  rawMimeType: string,
+  options: { maxDimension?: number } = {}
 ): Promise<PreprocessingResult> {
+  const maxDimension = Math.max(768, Math.min(2048, options.maxDimension || MAX_IMAGE_DIMENSION));
   if (!rawBase64 || typeof rawBase64 !== "string") {
     throw new Error("Invalid image input: base64 string is required");
   }
@@ -64,11 +66,11 @@ export async function preprocessMealImage(
   // 2. Check if already sufficiently small (< 200 KB, <= 768px in both dimensions, and is JPEG)
   const isAlreadySmall =
     originalSizeBytes <= MAX_REASONABLE_SIZE_BYTES &&
-    origWidth <= MAX_IMAGE_DIMENSION &&
-    origHeight <= MAX_IMAGE_DIMENSION &&
+    origWidth <= maxDimension &&
+    origHeight <= maxDimension &&
     origWidth > 0 &&
     origHeight > 0 &&
-    metadata.format === "jpeg";
+    metadata.format === "jpeg" && (!metadata.orientation || metadata.orientation === 1);
 
   if (isAlreadySmall) {
     return {
@@ -92,8 +94,8 @@ export async function preprocessMealImage(
     let pipeline = sharp(inputBuffer).rotate();
 
     // Only resize if larger than maximum dimension
-    if (origWidth > MAX_IMAGE_DIMENSION || origHeight > MAX_IMAGE_DIMENSION || origWidth === 0) {
-      pipeline = pipeline.resize(MAX_IMAGE_DIMENSION, MAX_IMAGE_DIMENSION, {
+    if (origWidth > maxDimension || origHeight > maxDimension || origWidth === 0) {
+      pipeline = pipeline.resize(maxDimension, maxDimension, {
         fit: "inside",
         withoutEnlargement: true,
       });
@@ -104,7 +106,7 @@ export async function preprocessMealImage(
 
     const processedBuffer = await pipeline
       .jpeg({
-        quality: 80,
+        quality: maxDimension > 768 ? 90 : 80,
         mozjpeg: true,
       })
       .toBuffer();

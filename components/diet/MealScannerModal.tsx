@@ -1,5 +1,7 @@
 "use client";
 
+import ScanComponentEditor from "@/components/diet/ScanComponentEditor";
+import { componentsFromScan, summarizeComponents, type ScanComponent } from "@/lib/nutrition/scan-review";
 import { includesIngredient } from "@/lib/nutrition/hints";
 import { useDialogFocus } from "@/lib/useDialogFocus";
 import { createPortal } from "react-dom";
@@ -18,14 +20,13 @@ import {
 import { cn } from "@/lib/utils";
 import MacroDonutBreakdown from "@/components/diet/MacroDonutBreakdown";
 import { resolveDishThumbnail } from "@/lib/diet/dishMatcher";
-import { resolveFoodItem } from "@/lib/ai/nutrition/calculator";
 import type { MealEntry } from "@/types";
 
 export type MealScannerModalProps = {
   userId: string;
   date: string;
   initialMode?: "plate" | "barcode";
-  onSave: (m: Omit<MealEntry, "id">) => void;
+  onSave: (m: Omit<MealEntry, "id">) => unknown | Promise<unknown>;
   onClose: () => void;
   onSwitchToManual?: (draft?: { name: string; macros: MealEntry["macros"]; incomplete?: boolean }) => void;
   onSwitchToVoice?: () => void;
@@ -111,15 +112,8 @@ export function calculateLiveScanMacros({
   let scaledFat = Math.round(baseFat * portionMultiplier);
   let scaledProtein = Math.round(baseProtein * portionMultiplier);
 
-  const isHomeCookedActive = activeModifiers.includes("Home Cooked");
-  const serverHasHomeCooked = serverVisibleItems.some((v) => /home[- ]cooked/i.test(v));
-  let fatReduction = 0;
-
-  if (isHomeCookedActive && !serverHasHomeCooked) {
-    fatReduction = Math.min(8, Math.round(scaledFat * 0.25));
-    scaledFat = Math.max(0, scaledFat - fatReduction);
-    scaledCalories = Math.max(0, scaledCalories - fatReduction * 9);
-  }
+  // Preparation labels do not establish an oil quantity.
+  const fatReduction = 0;
 
   let addonCalories = 0;
   let addonProtein = 0;
@@ -203,11 +197,11 @@ export function calculateLiveScanMacros({
   };
 }
 
-// Client-side image resize helper (max 1024px, JPEG 0.82)
+// Preserve scan detail; a separate small thumbnail is produced when logging.
 async function resizeImageClient(
   file: File,
-  maxDim = 1024,
-  quality = 0.82
+  maxDim = 1536,
+  quality = 0.92
 ): Promise<{ base64: string; mimeType: string }> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -278,11 +272,28 @@ export default function MealScannerModal({
   const [scanning, setScanning] = useState(false);
   const [scanStage, setScanStage] = useState("Compressing photo...");
   const [result, setResult] = useState<any>(null);
+  const [components, setComponents] = useState<ScanComponent[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [draftReady, setDraftReady] = useState("");
+  const draftKey = `satat_scan_review_${encodeURIComponent(userId)}_${date}`;
+  useEffect(() => {
+    setDraftReady("");
+    setComponents([]); setResult(null);
+    try {
+      const draft = JSON.parse(localStorage.getItem(draftKey) || "null");
+      if (draft?.version === 1 && Array.isArray(draft.rows) && draft.rows.length && Date.now() - draft.savedAt < 86400000 && draft.rows.every((row: any) => typeof row.id === "string" && typeof row.name === "string" && typeof row.amount === "string" && typeof row.unit === "string" && row.micros)) {
+        setComponents(draft.rows); setResult({ name: "Saved meal review", foods: [], confidence: "low", ambiguity: "high" });
+      }
+    } catch { /* Invalid or unavailable local drafts are ignored. */ }
+    setDraftReady(draftKey);
+  }, [draftKey]);
+  useEffect(() => {
+    if (draftReady !== draftKey || !components.length) return;
+    try { localStorage.setItem(draftKey, JSON.stringify({ version: 1, savedAt: Date.now(), rows: components })); } catch { /* Review still works without local storage. */ }
+  }, [components, draftKey, draftReady]);
   const [hint, setHint] = useState("");
-  const [activeModifiers, setActiveModifiers] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [isPhotoUnavailable, setIsPhotoUnavailable] = useState(false);
-  const [portionMultiplier, setPortionMultiplier] = useState(1.0);
   const [mounted, setMounted] = useState(false);
   const lastUploadedFileRef = useRef<File | null>(null);
 
@@ -313,13 +324,16 @@ export default function MealScannerModal({
   const resetPlateState = () => {
     setPreview("");
     setResult(null);
+    setComponents([]);
+    try { localStorage.removeItem(draftKey); } catch { /* Storage restricted. */ }
     setError("");
     setIsPhotoUnavailable(false);
-    setPortionMultiplier(1.0);
-    setActiveModifiers([]);
   };
 
   const handleFile = async (file: File, hintOverride?: string) => {
+    if (file === lastUploadedFileRef.current && components.some(row => row.portionSource === "user")) {
+      setError("Your component corrections are kept. Choose another photo to start a new scan."); return;
+    }
     lastUploadedFileRef.current = file;
     if (scanning) return;
     setError("");
@@ -375,26 +389,10 @@ export default function MealScannerModal({
         }
       } else {
         setResult(data);
-        setPortionMultiplier(1.0);
+        setComponents(componentsFromScan(data.foods || []));
 
-        // Detect if any modifier was included by server
-        const detectedMods: string[] = [];
-        if (data.visibleItems?.some((v: string) => /whey|protein powder/i.test(v))) {
-          detectedMods.push("+ 1 Scoop Whey");
-        }
-        if (data.visibleItems?.some((v: string) => /\bghee\b/i.test(v))) {
-          detectedMods.push("+ 1 tsp Ghee");
-        }
-        if (data.visibleItems?.some((v: string) => /\b(boiled\s+egg|egg)\b/i.test(v))) {
-          detectedMods.push("+ Boiled Egg");
-        }
-        if (data.visibleItems?.some((v: string) => /home[- ]cooked/i.test(v))) {
-          detectedMods.push("Home Cooked");
-        }
-        if (detectedMods.length > 0) {
-          setActiveModifiers(detectedMods);
-        }
-      }
+        // Add-ons are explicit user edits, never inferred selections.
+          }
     } catch (err: any) {
       if (err?.name === "AbortError") { setError("The scan took too long. Try again, or enter your meal manually."); return; }
       setError(err?.message === "Choose an image under 15 MB." ? err.message : "Failed to analyze image. Please try again.");
@@ -412,117 +410,24 @@ export default function MealScannerModal({
   };
 
   const isNoFoodDetected = Boolean(result?.noFoodDetected);
-  const needsReview = Boolean(result?.requiresManualReview || result?.hasUnresolvedItems || result?.needsClarification || (result && (result.confidence !== "high" || result.ambiguity !== "low" || result.estimatedCount > 0)));
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
   useDialogFocus(handleClose, mounted);
 
-  const handleToggleModifier = (mod: QuickModifierPreset) => {
-    const isCurrentlyActive = activeModifiers.includes(mod.label);
-    let updatedModifiers: string[];
-    if (isCurrentlyActive) {
-      updatedModifiers = activeModifiers.filter((m) => m !== mod.label);
-      setHint((prev) => {
-        const parts = prev
-          .split(",")
-          .map((p) => p.trim())
-          .filter(Boolean);
-        const filtered = parts.filter(
-          (p) => p.toLowerCase() !== mod.label.toLowerCase()
-        );
-        return filtered.join(", ");
-      });
-    } else {
-      updatedModifiers = [...activeModifiers, mod.label];
-      setHint((prev) => {
-        const parts = prev
-          .split(",")
-          .map((p) => p.trim())
-          .filter(Boolean);
-        if (!parts.some((p) => p.toLowerCase() === mod.label.toLowerCase())) {
-          parts.push(mod.label);
-        }
-        return parts.join(", ");
-      });
+  const componentSummary = summarizeComponents(components);
+  const { calories: currentCalories, proteinG: currentProtein, carbsG: currentCarbs, fatG: currentFat } = componentSummary.totals;
+  const detectedDishName = components.map(row => row.name.trim()).filter(Boolean).join(" + ") || "Meal estimate";
+  const handleLogPlateMeal = async () => {
+    if (saving) return;
+    if (!componentSummary.complete || !componentSummary.reviewed || !reviewConfirmed || currentCalories <= 0) {
+      setError("Resolve missing nutrition and check every food and amount before logging."); return;
     }
-    setActiveModifiers(updatedModifiers);
-  };
-
-  const handleSelectCandidate = (candidateName: string) => {
-    // Reanalyse the complete plate. Replacing totals with a single canonical
-    // serving loses the side dishes and the originally detected portion.
-    if (!lastUploadedFileRef.current || scanning) return;
-    const correction = `${hint.trim()} Primary dish correction: ${candidateName}. Keep all visible side dishes and their portions.`.trim();
-    setHint(correction);
-    void handleFile(lastUploadedFileRef.current, correction);
-  };
-
-  // Real macros extracted strictly from real AI estimation
-  const rawCalories = Number(result?.calories) || 0;
-  const rawCarbs = Number(result?.carbsG) || 0;
-  const rawFat = Number(result?.fatG) || 0;
-  const rawProtein = Number(result?.proteinG) || 0;
-  const detectedDishName = result?.name || "Detected Meal";
-
-  const {
-    currentCalories,
-    currentCarbs,
-    currentFat,
-    currentProtein,
-  } = calculateLiveScanMacros({
-    baseCalories: rawCalories,
-    baseProtein: rawProtein,
-    baseCarbs: rawCarbs,
-    baseFat: rawFat,
-    portionMultiplier,
-    activeModifiers,
-    serverVisibleItems: result?.visibleItems || [],
-    hintText: hint,
-  });
-
-  const activeAddonChips = QUICK_MODIFIERS
-    .filter((mod) => activeModifiers.includes(mod.label))
-    .map((mod) => mod.componentChip)
-    .filter((chip) => {
-      const keyword = chip.toLowerCase().split(" ")[0];
-      return !result?.visibleItems?.some((v: string) =>
-        v.toLowerCase().includes(keyword)
-      );
-    });
-
-  const handleLogPlateMeal = () => {
-    if (result?.hasUnresolvedItems || (needsReview && !reviewConfirmed)) {
-      setError("Review the estimate or enter missing nutrition manually before logging."); return;
-    }
-    if (currentCalories <= 0) {
-      setError("Cannot log a meal with 0 calories.");
-      return;
-    }
-
-    const activeAddonsForName = activeModifiers.filter((m) => m !== "Home Cooked");
-    let savedMealName = detectedDishName;
-    if (activeModifiers.includes("Home Cooked") && !savedMealName.toLowerCase().includes("home-cooked")) {
-      savedMealName = `Home-Cooked ${savedMealName}`;
-    }
-    if (portionMultiplier !== 1.0) {
-      savedMealName = `${savedMealName} (${portionMultiplier.toFixed(1)}×)`;
-    }
-    if (activeAddonsForName.length > 0) {
-      savedMealName = `${savedMealName} ${activeAddonsForName.join(" ")}`;
-    }
-
-    onSave({
-      userId,
-      date,
-      name: savedMealName,
-      macros: {
-        calories: currentCalories,
-        proteinG: currentProtein,
-        carbsG: currentCarbs,
-        fatG: currentFat,
-      },
-      photoUrl: preview || undefined,
-      createdAt: Date.now(),
-    });
+    setSaving(true);
+    try {
+      const thumbnail = lastUploadedFileRef.current ? await resizeImageClient(lastUploadedFileRef.current, 500, 0.78) : null;
+      const saved = await onSave({ userId, date, name: detectedDishName, macros: { calories: currentCalories, proteinG: currentProtein, carbsG: currentCarbs, fatG: currentFat }, ...(thumbnail && thumbnail.base64.length < 150000 ? { photoUrl: `data:${thumbnail.mimeType};base64,${thumbnail.base64}` } : {}), createdAt: Date.now(), nutritionStatus: "estimated", hasIncompleteNutrition: false, scanReview: JSON.parse(JSON.stringify({ version: 1, components, micronutrients: componentSummary.micronutrients })) });
+      if (saved !== false) { try { localStorage.removeItem(draftKey); } catch { /* Storage restricted. */ } }
+    } catch { setError("Could not save. Your reviewed components are kept; try again."); }
+    finally { setSaving(false); }
   };
 
   if (!mounted || typeof document === "undefined") {
@@ -637,7 +542,7 @@ export default function MealScannerModal({
                         <span className="w-1.5 h-1.5 rounded-full bg-[#E05A47]" />
                         {detectedDishName}
                       </span>
-                      {result?.visibleItems?.slice(0, 3).map((item: string) => (
+                      {components.slice(0, 3).map(row => `${row.name} ~${row.amount}${row.unit}`).map((item: string) => (
                         <span
                           key={item}
                           className="bg-[#191D1A]/75 backdrop-blur-md text-stone-200 rounded-full px-2.5 py-1 text-[10px] font-medium shadow-md border border-white/10"
@@ -657,14 +562,14 @@ export default function MealScannerModal({
                           return (
                             <span className="bg-[#D1FAE5] text-[#065F46] rounded-full px-2.5 py-1 text-[10px] font-bold shadow-md inline-flex items-center gap-1 border border-[#065F46]/10">
                               <Check className="w-3 h-3 text-[#065F46]" />
-                              <span>Dish recognized · Portion estimated</span>
+                              <span>Photo suggestion · check below</span>
                             </span>
                           );
                         }
                         if (conf === "medium") {
                           return (
                             <span className="bg-[#FEF3C7] text-[#92400E] rounded-full px-2.5 py-1 text-[10px] font-bold shadow-md inline-flex items-center gap-1 border border-[#92400E]/10">
-                              <span>Medium Confidence · Portion Estimated</span>
+                              <span>Photo suggestion · check every food below</span>
                             </span>
                           );
                         }
@@ -758,29 +663,6 @@ export default function MealScannerModal({
                   )}
                 </div>
 
-                {/* Quick-tap modifier pills */}
-                <div className="flex flex-wrap gap-1.5 mt-2.5">
-                  {QUICK_MODIFIERS.map((mod) => {
-                    const isActive = activeModifiers.includes(mod.label);
-                    return (
-                      <button
-                        key={mod.label}
-                        type="button"
-                        onClick={() => handleToggleModifier(mod)}
-                        className={cn(
-                          "rounded-full px-3 py-1.5 text-[11px] font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 flex items-center gap-1.5 active:scale-95",
-                          isActive
-                            ? "bg-[#2D6A4F] text-white border border-[#34D399]/40 shadow-xs"
-                            : "bg-[#EFECE4] dark:bg-[#1C221E] text-[#57534E] dark:text-[#9CA39E] hover:bg-[#E2DDD2] hover:text-[#1C1917] dark:hover:text-white border border-transparent"
-                        )}
-                        aria-pressed={isActive}
-                      >
-                        {isActive && <Check className="w-3 h-3 text-[#34D399]" />}
-                        <span>{mod.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
               </div>
 
               {/* STATE 3A: NON-FOOD OR 0-CALORIE AMBER GUIDANCE CARD */}
@@ -818,158 +700,19 @@ export default function MealScannerModal({
                 </div>
               )}
 
-              {/* STATE 3B: REAL FOOD ESTIMATION RETURNED (Stacked Full-Width Title — Never Truncated) */}
               {result && !scanning && !isNoFoodDetected && (
-                <div className="bg-[#191D1A] text-[#FCFBF9] rounded-[26px] p-4 sm:p-5 shadow-xl animate-slide-up space-y-3">
-                  <div>
-                    <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#6EE7B7] block leading-none mb-1">
-                      DETECTED DISH
-                    </span>
-                    <h3 className="font-serif text-xl sm:text-2xl text-white leading-snug break-words">
-                      {detectedDishName}
-                    </h3>
+                <div className="rounded-[26px] p-4 sm:p-5 border border-[var(--satat-surface-inset)] bg-[var(--satat-surface)] text-[var(--satat-anchor-dark)] space-y-4">
+                  <button type="button" className="text-xs underline" onClick={resetPlateState}>Discard review and start again</button>
+                  <ScanComponentEditor rows={components} onChange={rows => { setComponents(rows); setReviewConfirmed(false); setError(""); }} />
+                  <div role="status" className="rounded-2xl bg-[var(--satat-bg)] p-3 space-y-2">
+                    <h3 className="text-sm font-semibold">{componentSummary.complete ? "Estimated total" : "Incomplete — known-food subtotal"}</h3>
+                    {!componentSummary.complete && <p className="text-xs">{componentSummary.unresolved} food(s) need nutrition or an amount. This subtotal is not the whole meal.</p>}
+                    <MacroDonutBreakdown variant="light" calories={currentCalories} carbs={currentCarbs} fat={currentFat} protein={currentProtein} />
+                    <p className="text-xs">Approximation, not a measured result or calibrated confidence interval. Hidden ingredients and oil can change it.</p>
                   </div>
-
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2 border-t border-white/10">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-stone-300 font-medium">Portion</span>
-                      {/* 1-tap quick multiplier chips */}
-                      <div className="flex items-center gap-1">
-                        {[0.5, 1.0, 1.5, 2.0].map((m) => (
-                          <button
-                            key={m}
-                            type="button"
-                            onClick={() => setPortionMultiplier(m)}
-                            className={cn(
-                              "px-2.5 py-0.5 rounded-full text-[11px] font-semibold transition-all cursor-pointer active:scale-95",
-                              Math.abs(portionMultiplier - m) < 0.05
-                                ? "bg-[#E05A47] text-white shadow-xs"
-                                : "bg-white/10 text-stone-300 hover:bg-white/20"
-                            )}
-                          >
-                            {m}×
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="bg-white/10 border border-white/10 rounded-full px-2 py-1 flex items-center gap-1.5 text-xs text-white shrink-0 self-end sm:self-auto">
-                      <button
-                        type="button"
-                        aria-label="Decrease portion"
-                        onClick={() =>
-                          setPortionMultiplier((prev) =>
-                            Math.max(0.25, Math.round((prev - 0.25) * 100) / 100)
-                          )
-                        }
-                        className="w-6 h-6 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center font-bold transition-all cursor-pointer active:scale-95"
-                      >
-                        -
-                      </button>
-                      <span className="font-semibold text-xs whitespace-nowrap px-1">
-                        {portionMultiplier.toFixed(2).replace(/0$/, "")}× plate
-                      </span>
-                      <button
-                        type="button"
-                        aria-label="Increase portion"
-                        onClick={() =>
-                          setPortionMultiplier((prev) =>
-                            Math.min(3.0, Math.round((prev + 0.25) * 100) / 100)
-                          )
-                        }
-                        className="w-6 h-6 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center font-bold transition-all cursor-pointer active:scale-95"
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* 3-Segment Macro Donut Breakdown */}
-                  <MacroDonutBreakdown
-                    variant="dark"
-                    calories={currentCalories}
-                    carbs={currentCarbs}
-                    fat={currentFat}
-                    protein={currentProtein}
-                  />
-
-                  {/* Detected Components Breakdown */}
-                  {((result?.visibleItems && result.visibleItems.length > 0) || activeAddonChips.length > 0) && (
-                    <div className="pt-2 border-t border-white/10">
-                      <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-stone-400 block mb-1.5">
-                        PLATE COMPONENTS DETECTED
-                      </span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {result?.visibleItems?.map((item: string, idx: number) => (
-                          <span
-                            key={`base-${idx}`}
-                            className="bg-white/10 text-stone-200 border border-white/10 rounded-full px-2.5 py-1 text-[11px] font-medium"
-                          >
-                            {item}
-                          </span>
-                        ))}
-                        {activeAddonChips.map((chip, idx) => (
-                          <span
-                            key={`addon-${idx}`}
-                            className="bg-[#2D6A4F] text-[#D1FAE5] border border-[#34D399]/40 rounded-full px-2.5 py-1 text-[11px] font-semibold inline-flex items-center gap-1 shadow-xs animate-fade-in"
-                          >
-                            <Check className="w-3 h-3 text-[#34D399]" />
-                            {chip}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Candidate alternatives if multiple */}
-                  {result?.candidates && result.candidates.length > 1 && (
-                    <div className="pt-1">
-                      <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-stone-400 block mb-1.5">
-                        OR SELECT MATCHING DISH
-                      </span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {result.candidates.map((cand: any) => (
-                          <button
-                            key={cand.name}
-                            type="button"
-                            onClick={() => handleSelectCandidate(cand.name)}
-                            className={cn(
-                              "text-xs px-3 py-1 rounded-full transition-all cursor-pointer font-medium",
-                              cand.name === detectedDishName
-                                ? "bg-[#E05A47] text-white"
-                                : "bg-white/10 text-stone-200 hover:bg-white/20"
-                            )}
-                          >
-                            {cand.name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {needsReview && (
-                <div className="rounded-2xl border border-[#E05A47]/30 bg-[#FCFBF9] text-[#1C1917] p-3 space-y-2">
-                  <p className="text-xs">This estimate needs a check. Hidden ingredients and portions cannot be measured from a photo.</p>
-                  {result?.hasUnresolvedItems ? (
-                    <button type="button" onClick={() => { handleClose(); onSwitchToManual?.({ name: detectedDishName, macros: { calories: currentCalories, proteinG: currentProtein, carbsG: currentCarbs, fatG: currentFat }, incomplete: true }); }} className="underline text-sm">Enter missing nutrition manually</button>
-                  ) : (
-                    <label className="flex items-start gap-2 text-xs"><input type="checkbox" checked={reviewConfirmed} onChange={event => setReviewConfirmed(event.target.checked)} />I have checked the dish and portion estimate.</label>
-                  )}
-                </div>
-              )}
-              <button type="button" className="text-sm underline" onClick={() => { handleClose(); onSwitchToManual?.({ name: detectedDishName, macros: { calories: currentCalories, proteinG: currentProtein, carbsG: currentCarbs, fatG: currentFat }, incomplete: Boolean(result?.hasUnresolvedItems) }); }}>Edit dish and nutrition totals</button>
-              <p className="text-xs text-stone-300">Approximate nutrition. Adjust your share of the pictured plate before logging.</p>
-              {/* Log to Today's Fuel button */}
-                  <div className="pt-2">
-                    <button
-                      type="button"
-                      onClick={handleLogPlateMeal}
-                      disabled={currentCalories <= 0 || Boolean(result?.hasUnresolvedItems) || (needsReview && !reviewConfirmed)}
-                      className="w-full bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full py-3.5 px-6 text-sm font-semibold shadow-lg flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98] disabled:opacity-50"
-                    >
-                      <Check className="w-4 h-4" />
-                      <span>Log to Today&apos;s Fuel</span>
-                    </button>
-                  </div>
+                  <label className="flex items-start gap-2 text-xs"><input type="checkbox" checked={reviewConfirmed} onChange={event => setReviewConfirmed(event.target.checked)} />I checked the whole meal, added missed foods, and reviewed oil and portions.</label>
+                  <button type="button" onClick={handleLogPlateMeal} disabled={saving || !componentSummary.complete || !componentSummary.reviewed || !reviewConfirmed || currentCalories <= 0} className="w-full rounded-full bg-[var(--satat-terracotta)] text-white py-3 text-sm font-semibold disabled:opacity-50">{saving ? "Saving meal…" : "Log to Today's Fuel"}</button>
+                  <button type="button" className="text-sm underline" onClick={() => { handleClose(); onSwitchToManual?.({ name: detectedDishName, macros: { calories: currentCalories, proteinG: currentProtein, carbsG: currentCarbs, fatG: currentFat }, incomplete: !componentSummary.complete }); }}>Edit dish and nutrition totals</button>
                 </div>
               )}
             </div>

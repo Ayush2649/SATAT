@@ -1,0 +1,72 @@
+{
+  "generatedAt": "2026-11-15T02:31:51.256Z",
+  "limitation": "Calorie accuracy is reported only for supplied measured references with provenance. Default photos are recognition/guardrail smoke tests, not measured nutrition accuracy.",
+  "skippedProfiles": [],
+  "results": [
+    {
+      "file": "04_masala_dosa_sambar.jpg",
+      "profile": {
+        "provider": "gemini",
+        "detail": "high"
+      },
+      "recognitionMatch": false,
+      "status": 503,
+      "latencyMs": 3228,
+      "error": "PHOTO_UNAVAILABLE",
+      "message": "Photo scan is busy. Type or speak your meal instead.",
+      "metrics": null
+    },
+    {
+      "file": "07_samosa_chutney.jpg",
+      "profile": {
+        "provider": "gemini",
+        "detail": "high"
+      },
+      "recognitionMatch": false,
+      "status": 503,
+      "latencyMs": 2556,
+      "error": "PHOTO_UNAVAILABLE",
+      "message": "Photo scan is busy. Type or speak your meal instead.",
+      "metrics": null
+    },
+    {
+      "file": "10_eggs_avocado_toast.jpg",
+      "profile": {
+        "provider": "gemini",
+        "detail": "high"
+      },
+      "recognitionMatch": false,
+      "status": 503,
+      "latencyMs": 2625,
+      "error": "PHOTO_UNAVAILABLE",
+      "message": "Photo scan is busy. Type or speak your meal instead.",
+      "metrics": null
+    },
+    {
+      "file": "14_edge_black_coffee_only.jpg",
+      "profile": {
+        "provider": "gemini",
+        "detail": "high"
+      },
+      "recognitionMatch": false,
+      "status": 503,
+      "latencyMs": 2,
+      "error": "PHOTO_UNAVAILABLE",
+      "message": "Photo scan is busy. Type or speak your meal instead.",
+      "metrics": null
+    },
+    {
+      "file": "15_edge_non_food_laptop_desk.jpg",
+      "profile": {
+        "provider": "gemini",
+        "detail": "high"
+      },
+      "recognitionMatch": false,
+      "status": 503,
+      "latencyMs": 2,
+      "error": "PHOTO_UNAVAILABLE",
+      "message": "Photo scan is busy. Type or speak your meal instead.",
+      "metrics": null
+    }
+  ]
+}

@@ -24,24 +24,8 @@ CRITICAL RULES:
 - Low-Calorie Beverage Guardrail: Plain black coffee, espresso, americano, black tea, or green tea without milk or sugar has virtually zero calories (~2-10 kcal). Classify plain black coffee/espresso as 'Black Coffee' (e.g. 'Black coffee ~200ml'), NOT as a latte, mocha, or sugary beverage unless milk/cream/syrup is distinctly visible.
 - The plate can be ANY Indian dish (cheela, dosa, uttapam, poha, upma, khichdi, halwa, rice dishes, thalis, street food, snacks, samosas, etc.) or global fitness/cafe meal (oatmeal bowls, quinoa/buddha bowls, avocado toast, grilled salmon/fish with veggies, pasta arrabbiata, protein smoothies/shakes). Do not assume it is a flatbread unless clearly visible.
 - Chapati vs Paratha: Chapati is thin, soft, puffed with dry tawa spots; Paratha is thicker, layered, crisp or golden-brown with ghee/oil.
-- Homestyle Default Preparation: Assume standard home-cooked preparation with moderate cooking oil/ghee (not deep-fried or drenched in restaurant butter/cream unless clearly visible).
-- Volumetric Anchors (Reference Portions):
-  * 1 standard roti / chapati: 30-35g (~90-100 kcal)
-  * 1 besan cheela: 50-60g (~100-115 kcal; 100g plate = ~195-200 kcal)
-  * 1 plain or masala dosa: 80-100g (~170-200 kcal) + sambar 100g (~55 kcal) + chutney 25g (~35 kcal) -> ~270-295 kcal total
-  * 1 katori dal / rajma / chole: 120-150g (~120-180 kcal)
-  * 1 katori sooji halwa: 100-120g (~280-340 kcal)
-  * 1 plate poha / khichdi / pulao: 180-200g (~210-290 kcal)
-  * 1 piece samosa: 70-80g (~200-220 kcal) (typical serving = 2 pieces ~400-450 kcal)
-  * 1 cup black coffee: 180-240ml (~2-5 kcal)
-  * 1 plate chole bhature: 2 bhature (~160-180g) + 1 bowl chole (~180g) -> ~600-680 kcal total
-  * 1 plate chicken / egg biryani: 250-300g -> ~440-500 kcal
-  * 1 paneer tikka masala / butter gravy + naan: 1 bowl gravy (~150-180g) + 1 naan (~90g) -> ~550-620 kcal
-  * 1 north indian thali: 1 small katori rice (~100g) + 1 roti/naan (~50-80g) + 1 katori dal/curry (~120-150g) -> ~560-650 kcal total
-  * 1 avocado toast with eggs: toast slice (~50g) + avocado (~70g) + 1-2 eggs (~50-100g) -> ~390-440 kcal total
-  * 1 protein salad / buddha bowl: salad greens/veg + 1 portion grilled chicken/tofu/edamame -> ~420-480 kcal total
-  * 1 plate pasta arrabbiata: 220-250g cooked pasta in tomato sauce -> ~400-450 kcal
-  * 1 protein/fruit smoothie glass: 280-320ml -> ~240-280 kcal
+- Preparation: Do not assume home cooking means low oil. Oil, fillings and preparation can be hidden; state uncertainty and ask for a correction.
+- Portions: Estimate each visible component independently. Never force a usual serving or calorie target. A single photo has no reliable gram scale: state uncertainty in notes. Large rice mounds can exceed a typical serving. Distinguish paneer from egg bhurji and cooking banana from fish/potato; when unclear, describe the appearance instead of inventing identity. Inspect dal poured over rice as well as separate bowls.
 - Portion accounting: Describe ALL edible food visible in the photo. Count every piece, bowl and glass; never silently replace a sharing platter with one standard serving. State when the photo may show multiple servings, so the user can adjust their share.
 - Inspect every side bowl separately. Potato masala, semolina halwa, rice, chutneys and sambar are different foods; do not omit a side merely because the main dish is recognized. Do not include tableware, garnishes too small to affect nutrition, or the background as food components.
 - Do not infer protein powder, hidden fillings, oil amount, precise depth or weighed quantities from appearance. Offer alternatives or request a hint when identity is ambiguous. Reference portions are examples, not mandatory caps or targets.

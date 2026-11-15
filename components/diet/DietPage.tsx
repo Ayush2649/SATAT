@@ -197,7 +197,7 @@ export default function DietPage() {
   };
 
   const handleAddMeal = async (meal: Omit<MealEntry, "id">) => {
-    if (mealSavePending.current) return;
+    if (mealSavePending.current) return false;
     mealSavePending.current = true;
     setSavingMeal(true);
     try {
@@ -209,9 +209,11 @@ export default function DietPage() {
       setShowAddMeal(false);
       setScanDraft(null);
       setShowScanner(false);
+      return true;
     } catch (error) {
       console.error("Failed to add meal:", error);
       toast("Could not save this meal. Check the nutrition values and try again.", "error");
+      return false;
     } finally {
       mealSavePending.current = false;
       setSavingMeal(false);
@@ -654,6 +656,7 @@ export default function DietPage() {
                   </div>
 
                   {/* Expanded Macro Donut Drawer */}
+                  <ReviewedNutrition meal={meal} />
                   {isExpanded && (
                     <div className="bg-[#F6F3EC] rounded-[20px] p-3.5 mt-3.5 border border-[#1C1917]/[0.04] animate-slide-down">
                       <div className="flex items-center justify-between text-[10px] font-bold text-[#8C857B] tracking-wider uppercase mb-2">
@@ -931,6 +934,7 @@ export default function DietPage() {
                               F: {meal.macros?.fatG || 0}g
                             </span>
                           </div>
+                          <ReviewedNutrition meal={meal} />
                         </div>
                       </div>
 
@@ -1087,6 +1091,23 @@ export default function DietPage() {
 }
 
 // ── MODAL DIALOG CONTAINER ───────────────────────────────────────────────────
+function ReviewedNutrition({ meal }: { meal: MealEntry }) {
+  if (!meal.scanReview) return null;
+  const labels = { vitaminAMcg: "Vitamin A (µg)", vitaminCMg: "Vitamin C (mg)", calciumMg: "Calcium (mg)", ironMg: "Iron (mg)", potassiumMg: "Potassium (mg)" };
+  return (
+    <details className="mt-3 text-xs min-w-0">
+      <summary className="cursor-pointer underline">Reviewed foods and nutrients</summary>
+      <p className="mt-2">Estimated nutrition from your reviewed foods and quantities.</p>
+      <ul className="mt-2 space-y-1">
+        {meal.scanReview.components.map(row => <li key={row.id} className="break-words">{row.name}: {row.amount} {row.unit} · {row.source}</li>)}
+      </ul>
+      <dl className="grid grid-cols-2 gap-2 mt-3">
+        {(Object.keys(labels) as (keyof typeof labels)[]).map(key => <div key={key}><dt>{labels[key]}</dt><dd>{meal.scanReview!.micronutrients[key] == null ? "Not available" : meal.scanReview!.micronutrients[key]!.toFixed(1)}</dd></div>)}
+      </dl>
+    </details>
+  );
+}
+
 function Modal({
   title,
   onClose,

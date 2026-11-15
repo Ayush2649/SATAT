@@ -220,7 +220,9 @@ describe("Vision Pipeline & Circuit Breaker Architecture", () => {
       expect(body.candidates[1].name).toContain("Aloo Paratha");
       expect(body.visibleItems).toEqual(["2 rotis", "1 bowl dal tadka"]);
       expect(body.allFoodsVerified).toBe(true);
-      expect(body.requiresManualReview).toBe(false);
+      // Database coverage does not verify photo identity or portion weight.
+      expect(body.requiresManualReview).toBe(true);
+      expect(body.recognitionVerified).toBe(false);
       expect(body.unknownFoods).toHaveLength(0);
       expect(body.foods).toHaveLength(2);
 

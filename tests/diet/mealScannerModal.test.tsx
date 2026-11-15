@@ -73,7 +73,7 @@ describe("Sprint 9.2: Quick Modifier Pills & Live Scan Macro Toggling", () => {
     expect(result.currentCarbs).toBe(35 + 1); // 36 g
   });
 
-  it("reduces base scan fat by 25% (up to 8g) and subtracts fatReduction * 9 kcal when Home Cooked is active", () => {
+  it("does not infer a fat or energy reduction from Home Cooked", () => {
     // With 20g fat, 25% is 5g fat reduction -> 5 * 9 = 45 kcal reduction
     const oilyScan = {
       baseCalories: 400,
@@ -86,9 +86,9 @@ describe("Sprint 9.2: Quick Modifier Pills & Live Scan Macro Toggling", () => {
       activeModifiers: ["Home Cooked"],
     });
 
-    expect(result.fatReduction).toBe(5);
-    expect(result.currentFat).toBe(20 - 5); // 15 g
-    expect(result.currentCalories).toBe(400 - 45); // 355 kcal
+    expect(result.fatReduction).toBe(0);
+    expect(result.currentFat).toBe(20);
+    expect(result.currentCalories).toBe(400);
   });
 
   it("accumulates multiple active modifiers additively without interference", () => {
