@@ -7,6 +7,14 @@
 
 ---
 
+## 15 November 2026 — P1 duplicate meal inventory diagnosis (open)
+
+- User supplied Google AI Mode output, SATAT output and an original rice/roti/dal/okra meal photo. Confirmed a deterministic regression in the inventory reconciliation added earlier: alternate `visibleItems` descriptions are appended as new foods when exact aliases/token overlap do not match structured `foods`.
+- Reproduced locally without an API call: structured Rice 180 g, Dal Fry 150 g, Plain Roti 70 g and Bhindi Masala 70 g calculate **629 kcal / 21 g protein / 122 g carbs / 8 g fat**. Reconciling the labels `yellow dal with tomato 150g`, `two whole wheat roti 90g` and `bhindi okra sabzi 70g` adds three duplicates, producing **1,083 kcal / 39 g protein / 204 g carbs / 15 g fat**, exactly matching the user's screenshot. These are fixture calculations from guessed portions, not measured meal nutrition.
+- Root cause: `lib/nutrition/scan-review.ts:reconcileScanInventory` interprets unmatched display text as an independent edible item; the route passes those additions into nutrition calculation. Existing tests cover counted samosa/roti aliases but not this descriptive synonym case. Passing the existing suite does not validate this scenario.
+- Required next fix: one structured inventory with IDs per physical serving/region; labels reference those components rather than creating foods. Treat unmatched descriptions as possible missing items requiring review; never automatically add calories from alternate descriptions. Flag conflicting portion estimates instead of adding them. Preserve genuinely separate servings and explicit user-added foods. Add this exact 4-to-7 reproduction plus multiple-bowl and legitimate-missing-food regression cases; review old automatic scan drafts too.
+- Current-meal workaround: keep one rice, one dal, one roti-stack entry and one sabzi entry; remove the three alternate-description duplicates. Google’s 650–790 kcal is also an unweighed estimate and is not a target to hard-code. No application code changed during this diagnosis. Existing full suite rerun: **763 passed, 26 skipped, 69 files passed**; production build **passed, exit 0**, all 34 routes generated. This passing baseline lacks the newly reproduced synonym case. Diagnosis remains open; no application code changes and no push.
+
 ## 15 November 2026 — Compact meal scan review
 
 - Simplified the scan result to editable dish/amount pills, an Add food action, the calorie/macro donut immediately afterward, and one **Looks right · Log meal** action. Removed repeated dish confirmations and long explanatory forms from the default view.
