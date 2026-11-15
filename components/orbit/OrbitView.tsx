@@ -26,7 +26,7 @@ import {
   Mic,
   Paperclip,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, todayString } from "@/lib/utils";
 import { OrbitIcon, type OrbitState } from "@/components/orbit/OrbitMark";
 import { Orbit3DCore } from "@/components/orbit/Orbit3DCore";
 import NotificationBell from "@/components/ui/NotificationBell";
@@ -35,11 +35,17 @@ import { OrbitLauncherBadge } from "@/components/orbit/OrbitLauncherBadge";
 import { MarkdownText } from "@/components/ui/MarkdownText";
 import { OrbitRecommendationCard, OrbitInsightCard } from "@/components/orbit/OrbitActionCard";
 import { getDietContext, getWorkoutContext, getTaskContext } from "@/lib/orbitContext";
-import type { OrbitMessage, OrbitFocusMode } from "@/types/orbit";
+import type {
+  OrbitMessage,
+  OrbitFocusMode,
+  OrbitEntityContext,
+  OrbitActionExecuted,
+} from "@/types/orbit";
 import { classifyOrbitIntent, type OrbitIntent } from "@/lib/orbit/intentClassifier";
 
 interface OrbitViewProps {
   isOverlay?: boolean;
+  isOpen?: boolean;
   onClose?: () => void;
   className?: string;
 }
@@ -85,7 +91,7 @@ const QUICK_CHIPS = [
   },
 ];
 
-export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewProps) {
+export function OrbitView({ isOverlay = false, isOpen = true, onClose, className }: OrbitViewProps) {
   const { data: session } = useSession();
   const userId = getUserKey(session);
   const storageKey = userId ? `${STORAGE_KEY}:${encodeURIComponent(userId)}` : null;
@@ -93,6 +99,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
   const router = useRouter();
   const requestRef = useRef<AbortController | null>(null);
   const [messages, setMessages] = useState<OrbitMessage[]>([]);
+  const [activeContext, setActiveContext] = useState<OrbitEntityContext>({});
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [focusMode, setFocusMode] = useState<OrbitFocusMode>("all");
@@ -103,7 +110,10 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
   const [viewMode, setViewMode] = useState<"overview" | "chat">("overview");
 
   const transitionTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const mobileMessagesEndRef = useRef<HTMLDivElement | null>(null);
+  const desktopMessagesEndRef = useRef<HTMLDivElement | null>(null);
+  const mobileScrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const desktopScrollContainerRef = useRef<HTMLDivElement | null>(null);
   const lastAssistantMessageRef = useRef<HTMLDivElement>(null);
   const lastUserMessageRef = useRef<HTMLDivElement>(null);
   const loadingCardRef = useRef<HTMLDivElement>(null);
@@ -111,6 +121,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
   const lastFailedMessageRef = useRef<string | null>(null);
   const prevLoadingRef = useRef(false);
   const prevMessagesLengthRef = useRef(0);
+  const wasOpenRef = useRef(isOpen);
 
   // Clean up any pending state transition timers on unmount
   useEffect(() => {
@@ -138,7 +149,36 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
   // User first name
   const firstName = session?.user?.name?.split(" ")[0] || "there";
 
-  // Load in-session history
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+    const scrollContainer = (
+      container: HTMLDivElement | null,
+      anchor: HTMLDivElement | null
+    ) => {
+      if (container) {
+        if (typeof container.scrollTo === "function") {
+          try {
+            container.scrollTo({ top: container.scrollHeight, behavior });
+            return;
+          } catch {
+            // Fall through to scrollTop / scrollIntoView
+          }
+        }
+        container.scrollTop = container.scrollHeight;
+        if (anchor && typeof anchor.scrollIntoView === "function") {
+          anchor.scrollIntoView({ behavior, block: "end" });
+        }
+        return;
+      }
+      if (anchor && typeof anchor.scrollIntoView === "function") {
+        anchor.scrollIntoView({ behavior, block: "end" });
+      }
+    };
+
+    scrollContainer(mobileScrollContainerRef.current, mobileMessagesEndRef.current);
+    scrollContainer(desktopScrollContainerRef.current, desktopMessagesEndRef.current);
+  }, []);
+
+  // Load in-session history & jump to latest message on initial open
   useEffect(() => {
     try {
       requestRef.current?.abort();
@@ -150,53 +190,60 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
           setMessages(parsed);
+          setViewMode("chat");
+          setTimeout(() => {
+            scrollToBottom("auto");
+          }, 50);
         }
       }
     } catch {
       // sessionStorage unavailable
     }
-  }, [storageKey]);
+  }, [scrollToBottom, storageKey]);
 
   // Save history
-  const persistMessages = (msgs: OrbitMessage[]) => {
-    try {
-      if (storageKey) sessionStorage.setItem(storageKey, JSON.stringify(msgs));
-    } catch {
-      // ignore
-    }
-  };
+  const persistMessages = useCallback(
+    (msgs: OrbitMessage[]) => {
+      try {
+        if (storageKey) sessionStorage.setItem(storageKey, JSON.stringify(msgs));
+      } catch {
+        // ignore
+      }
+    },
+    [storageKey]
+  );
 
-  // Auto-scroll handler:
-  // - When user sends a message (loading starts), scroll user message + loading card into view
-  // - When assistant response arrives (loading finished / assistant message added), scroll to TOP of the assistant response card
+  // Scroll to bottom when overlay re-opens
   useEffect(() => {
-    if (messages.length === 0) return;
-
-    const hadMessages = prevMessagesLengthRef.current;
-    const currentMessages = messages.length;
-    const wasLoading = prevLoadingRef.current;
-
-    prevMessagesLengthRef.current = currentMessages;
-    prevLoadingRef.current = loading;
-
-    // A. User just sent message & loading started -> scroll to loading card or user message
-    if (loading && !wasLoading) {
-      setTimeout(() => {
-        loadingCardRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    const justOpened = isOpen && !wasOpenRef.current;
+    wasOpenRef.current = isOpen;
+    if (justOpened && messages.length > 0) {
+      const timer = setTimeout(() => {
+        scrollToBottom("auto");
       }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, messages.length, scrollToBottom]);
+
+  // Auto-scroll to latest message whenever messages or loading indicator updates
+  useEffect(() => {
+    if (messages.length === 0 && !loading) {
+      prevMessagesLengthRef.current = 0;
+      prevLoadingRef.current = loading;
       return;
     }
 
-    // B. Loading finished and new assistant message arrived -> scroll to TOP of latest assistant message
-    if (!loading && currentMessages > hadMessages) {
-      const lastMsg = messages[messages.length - 1];
-      if (lastMsg && lastMsg.role === "assistant") {
-        setTimeout(() => {
-          lastAssistantMessageRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-        }, 60);
-      }
-    }
-  }, [messages, loading]);
+    const hadMessages = prevMessagesLengthRef.current;
+    prevMessagesLengthRef.current = messages.length;
+    prevLoadingRef.current = loading;
+
+    const behavior: ScrollBehavior = hadMessages === 0 && !loading ? "auto" : "smooth";
+    const timer = setTimeout(() => {
+      scrollToBottom(behavior);
+    }, 50);
+
+    return () => clearTimeout(timer);
+  }, [messages, loading, scrollToBottom]);
 
   // Read actual context from orbitContext store
   const liveDiet = getDietContext();
@@ -227,6 +274,48 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
   const pendingTasksCount = useMemo(() => {
     return liveTasks?.totalPending ?? 0;
   }, [liveTasks]);
+
+  const dispatchMutationRefreshEvents = useCallback((data: any) => {
+    if (typeof window === "undefined" || !data) return;
+
+    const executedList: OrbitActionExecuted[] = Array.isArray(data.actions_executed)
+      ? data.actions_executed
+      : Array.isArray(data.action_executed)
+      ? data.action_executed
+      : data.action_executed
+      ? [data.action_executed]
+      : [];
+
+    for (const act of executedList) {
+      if (!act || act.status !== "success") continue;
+      const domain =
+        act.domain ||
+        (act.type === "UPSERT_MEAL" || act.type === "MODIFY_MEAL" || act.type === "DELETE_MEAL"
+          ? "meals"
+          : act.type === "START_WORKOUT" ||
+            act.type === "UPDATE_WORKOUT" ||
+            act.type === "UPDATE_WORKOUT_SET" ||
+            act.type === "ADD_EXERCISE" ||
+            act.type === "DELETE_EXERCISE" ||
+            act.type === "COMPLETE_WORKOUT"
+          ? "workouts"
+          : act.type === "LOG_RITUAL"
+          ? "rituals"
+          : act.type === "UPDATE_SPRINT_PROGRESS"
+          ? "sprints"
+          : "tasks");
+
+      window.dispatchEvent(
+        new CustomEvent("satat:data-refresh", {
+          detail: {
+            domain,
+            type: act.type,
+            details: act.details,
+          },
+        })
+      );
+    }
+  }, []);
 
   // Send message
   const handleSend = useCallback(
@@ -278,6 +367,8 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
           body: JSON.stringify({
             messages: payloadMessages,
             mode: focusMode === "all" ? null : focusMode,
+            clientDate: todayString(),
+            activeContext,
             dietContext,
             workoutContext,
             taskContext,
@@ -290,10 +381,20 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
 
         const data = await res.json();
         if (controller.signal.aborted) return;
+
+        if (data.activeContext) {
+          setActiveContext((prev) => ({ ...prev, ...data.activeContext }));
+        }
+
+        dispatchMutationRefreshEvents(data);
+
         const assistantMsg: OrbitMessage = {
           id: `assistant-${Date.now()}`,
           role: "assistant",
-          content: data.reply || "I encountered an issue processing your request.",
+          content: data.reply || data.message || "I encountered an issue processing your request.",
+          action_executed: data.action_executed ?? null,
+          suggested_actions: data.suggested_actions ?? [],
+          activeContext: data.activeContext,
           timestamp: Date.now(),
           type: "markdown",
         };
@@ -316,7 +417,16 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
         setLoading(false);
       }
     },
-    [input, loading, messages, focusMode, userId, storageKey]
+    [
+      input,
+      loading,
+      messages,
+      focusMode,
+      userId,
+      persistMessages,
+      activeContext,
+      dispatchMutationRefreshEvents,
+    ]
   );
 
   // Retry sending the last user message without duplicating it in the message list
@@ -370,14 +480,16 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
       const taskContext = getTaskContext();
 
       const controller = new AbortController();
-        requestRef.current = controller;
-        const res = await fetch("/api/aria", {
-          signal: controller.signal,
+      requestRef.current = controller;
+      const res = await fetch("/api/aria", {
+        signal: controller.signal,
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: payloadMessages,
           mode: focusMode === "all" ? null : focusMode,
+          clientDate: todayString(),
+          activeContext,
           dietContext,
           workoutContext,
           taskContext,
@@ -390,10 +502,20 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
 
       const data = await res.json();
       if (controller.signal.aborted) return;
+
+      if (data.activeContext) {
+        setActiveContext((prev) => ({ ...prev, ...data.activeContext }));
+      }
+
+      dispatchMutationRefreshEvents(data);
+
       const assistantMsg: OrbitMessage = {
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: data.reply || "I encountered an issue processing your request.",
+        content: data.reply || data.message || "I encountered an issue processing your request.",
+        action_executed: data.action_executed ?? null,
+        suggested_actions: data.suggested_actions ?? [],
+        activeContext: data.activeContext,
         timestamp: Date.now(),
         type: "markdown",
       };
@@ -408,12 +530,13 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
         setOrbitState("idle");
       }, 900);
     } catch (err: any) {
+      if (err?.name === "AbortError") return;
       setError("Orbit couldn't connect right now. Please try again.");
       setOrbitState("error");
     } finally {
       setLoading(false);
     }
-  }, [loading, messages, focusMode]);
+  }, [loading, messages, focusMode, persistMessages, activeContext, dispatchMutationRefreshEvents]);
 
   // Clear conversation / Reset chat
   const handleReset = () => {
@@ -438,10 +561,18 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
   useEffect(() => {
     const reset = () => resetRef.current();
     window.addEventListener("satat:reset-orbit", reset);
-    return () => { window.removeEventListener("satat:reset-orbit", reset); requestRef.current?.abort(); };
+    return () => {
+      window.removeEventListener("satat:reset-orbit", reset);
+      requestRef.current?.abort();
+    };
   }, []);
   const query = searchParams?.get("q") || "";
-  useEffect(() => { if (query) { setInput(query); inputRef.current?.focus(); } }, [query]);
+  useEffect(() => {
+    if (query) {
+      setInput(query);
+      inputRef.current?.focus();
+    }
+  }, [query]);
 
   // Keyboard Enter handler
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -466,126 +597,710 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
       )}
     >
       {/* ── MOBILE & COMPACT OVERLAY VIEW ── */}
-      <div className={cn("orbit-mobile-stage flex flex-col h-full w-full max-w-4xl mx-auto overflow-hidden min-w-0 relative", !isOverlay && "lg:hidden")}>
+      <div
+        className={cn(
+          "orbit-mobile-stage flex flex-col h-full w-full max-w-4xl mx-auto overflow-hidden min-w-0 relative",
+          !isOverlay && "lg:hidden"
+        )}
+      >
         {/* ── 1. ORBIT EDITORIAL HEADER ── */}
-      <header className="shrink-0 bg-[#F6F3EC] z-20 transition-all">
-        {/* App Bar Top Row (1:1 with SATAT / Today - image_23a8f9.png) */}
-        <div className="h-14 px-4 flex items-center justify-between border-b border-[#1C1917]/[0.06] bg-[#FCFBF9] shrink-0">
-          {/* Left: Circular emblem container with geometric S mark + SATAT / Orbit */}
-          <div className="flex items-center gap-2 min-w-0">
-            <Logo size={22} className="rounded-md shrink-0" priority />
-            <div className="flex items-center gap-1.5 text-sm tracking-tight select-none">
-              <span className="font-bold tracking-tight text-[#1C1917]">SATAT</span>
-              <span className="text-[#8C857B] font-light">/</span>
-              <span className="font-normal text-[#57534E]">Orbit</span>
+        <header className="shrink-0 bg-[#F6F3EC] z-20 transition-all">
+          {/* App Bar Top Row (1:1 with SATAT / Today - image_23a8f9.png) */}
+          <div className="h-14 px-4 flex items-center justify-between border-b border-[#1C1917]/[0.06] bg-[#FCFBF9] shrink-0">
+            {/* Left: Circular emblem container with geometric S mark + SATAT / Orbit */}
+            <div className="flex items-center gap-2 min-w-0">
+              <Logo size={22} className="rounded-md shrink-0" priority />
+              <div className="flex items-center gap-1.5 text-sm tracking-tight select-none">
+                <span className="font-bold tracking-tight text-[#1C1917]">SATAT</span>
+                <span className="text-[#8C857B] font-light">/</span>
+                <span className="font-normal text-[#57534E]">Orbit</span>
+              </div>
+            </div>
+
+            {/* Right: OrbitLauncherBadge + terracotta NotificationBell + circular user profile avatar */}
+            <div className="flex items-center gap-2 shrink-0">
+              <OrbitLauncherBadge size="md" tooltipPosition="bottom" />
+              <NotificationBell />
+
+              {session?.user ? (
+                <div className="w-8 h-8 rounded-full flex items-center justify-center bg-[#191D1A] text-white shadow-sm border border-white/10 overflow-hidden shrink-0">
+                  {session.user.image ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={session.user.image}
+                      alt={session.user.name || "User"}
+                      className="w-full h-full rounded-full object-cover"
+                    />
+                  ) : session.user.name ? (
+                    <span className="text-xs font-semibold text-[#FCFBF9]">
+                      {session.user.name.charAt(0).toUpperCase()}
+                    </span>
+                  ) : (
+                    <span className="text-xs font-semibold text-[#FCFBF9]">A</span>
+                  )}
+                </div>
+              ) : (
+                <div className="w-8 h-8 rounded-full flex items-center justify-center bg-[#191D1A] text-white/60 border border-white/10 shrink-0">
+                  <span className="text-xs font-semibold text-[#FCFBF9]">A</span>
+                </div>
+              )}
+
+              {isOverlay && onClose && (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="p-1.5 rounded-full text-[#57534E] hover:text-[#191D1A] hover:bg-[#EFECE4] transition-all cursor-pointer"
+                  aria-label="Close Orbit"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Right: OrbitLauncherBadge + terracotta NotificationBell + circular user profile avatar */}
-          <div className="flex items-center gap-2 shrink-0">
-            <OrbitLauncherBadge size="md" tooltipPosition="bottom" />
-            <NotificationBell />
-
-            {session?.user ? (
-              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-[#191D1A] text-white shadow-sm border border-white/10 overflow-hidden shrink-0">
-                {session.user.image ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img
-                    src={session.user.image}
-                    alt={session.user.name || "User"}
-                    className="w-full h-full rounded-full object-cover"
-                  />
-                ) : session.user.name ? (
-                  <span className="text-xs font-semibold text-[#FCFBF9]">
-                    {session.user.name.charAt(0).toUpperCase()}
-                  </span>
-                ) : (
-                  <span className="text-xs font-semibold text-[#FCFBF9]">A</span>
-                )}
+          {/* Orbit Title Row & Context Filter Pills */}
+          <div className="px-4 pt-3 pb-2.5 border-b border-[#1C1917]/[0.06] flex flex-col gap-2.5 bg-[#F6F3EC]">
+            {/* Title Row with New Chat / Reset Action */}
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <h1 className="font-serif font-normal text-[22px] sm:text-[26px] leading-[1.08] text-[#191D1A] tracking-[-0.02em]">
+                  Orbit Intelligence
+                </h1>
+                <p className="text-xs text-[#57534E] font-medium tracking-normal mt-0.5">
+                  A companion for your day.
+                </p>
               </div>
-            ) : (
-              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-[#191D1A] text-white/60 border border-white/10 shrink-0">
-                <span className="text-xs font-semibold text-[#FCFBF9]">A</span>
-              </div>
-            )}
 
-            {isOverlay && onClose && (
+              {/* Clean New Chat / Reset Pill Button */}
               <button
                 type="button"
-                onClick={onClose}
-                className="p-1.5 rounded-full text-[#57534E] hover:text-[#191D1A] hover:bg-[#EFECE4] transition-all cursor-pointer"
-                aria-label="Close Orbit"
+                onClick={handleResetChat}
+                aria-label="Reset chat"
+                className="bg-[#EFECE4] hover:bg-[#191D1A] hover:text-white text-[#1C1917] rounded-full px-3 py-1.5 text-xs font-semibold inline-flex items-center gap-1.5 transition-all shrink-0 cursor-pointer shadow-2xs active:scale-95"
               >
-                <X className="w-4 h-4" />
+                <RotateCcw className="w-3 h-3" />
+                <span>New Chat</span>
               </button>
-            )}
-          </div>
-        </div>
-
-        {/* Orbit Title Row & Context Filter Pills */}
-        <div className="px-4 pt-3 pb-2.5 border-b border-[#1C1917]/[0.06] flex flex-col gap-2.5 bg-[#F6F3EC]">
-          {/* Title Row with New Chat / Reset Action */}
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <h1 className="font-serif font-normal text-[22px] sm:text-[26px] leading-[1.08] text-[#191D1A] tracking-[-0.02em]">
-                Orbit Intelligence
-              </h1>
-              <p className="text-xs text-[#57534E] font-medium tracking-normal mt-0.5">
-                A companion for your day.
-              </p>
             </div>
 
-            {/* Clean New Chat / Reset Pill Button */}
+            {/* Active Context Filter Bar (Horizontal Pill Row — No scrollbar & tightened padding) */}
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] py-0.5">
+              {FOCUS_MODES.map((m) => {
+                const isSelected = focusMode === m.id;
+                const Icon = m.icon;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setFocusMode(m.id)}
+                    className={cn(
+                      "shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold inline-flex items-center gap-1.5 transition-all select-none cursor-pointer whitespace-nowrap",
+                      isSelected
+                        ? "bg-[#191D1A] text-white shadow-2xs"
+                        : "bg-[#EFECE4] text-[#57534E] hover:text-[#1C1917] hover:bg-[#E5E1D8] font-medium"
+                    )}
+                  >
+                    {isSelected ? (
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7]" />
+                    ) : (
+                      <Icon className="w-3.5 h-3.5 text-[#57534E]" />
+                    )}
+                    <span>{m.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </header>
+
+        {/* ── 2. MAIN VIEWPORT (STITCH 1:1 DASHBOARD OVERVIEW vs CHAT STREAM) ── */}
+        <div
+          ref={mobileScrollContainerRef}
+          className="flex-1 min-h-0 min-w-0 w-full overflow-y-auto overflow-x-hidden px-4 sm:px-6 pt-3 pb-2 space-y-3 scrollbar-none bg-[#F6F3EC] flex flex-col overscroll-contain touch-pan-y"
+        >
+          {/* ── 2A. STITCH 1:1 TELEMETRY OVERVIEW (Initial state when no messages) ── */}
+          {messages.length === 0 && (
+            <div className="w-full max-w-xl mx-auto space-y-3.5 animate-fade-in pb-2">
+              {/* 1. DARK BOTANICAL ESPRESSO HERO STAGE (#191D1A) */}
+              <div className="w-full bg-[#191D1A] rounded-[28px] p-4 text-[#FCFBF9] shadow-xl border border-white/[0.08] relative overflow-hidden">
+                {/* Top Status Pills Row */}
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  {/* Left Status Pill */}
+                  <div className="bg-[#2D6A4F]/35 border border-[#6EE7B7]/25 rounded-2xl px-3 py-1.5 flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-[#6EE7B7] animate-pulse shrink-0" />
+                    <span className="text-[10px] font-bold tracking-wider uppercase text-[#EAE6DF]">
+                      READY TO CHAT
+                    </span>
+                  </div>
+
+                  {/* Right Sync Pill */}
+                  <div className="bg-white/[0.06] border border-white/[0.08] rounded-2xl px-3 py-1.5 text-[11px] font-semibold text-stone-200 flex items-center justify-center sm:justify-start gap-1.5">
+                    <span>Training · Meals · Tasks</span>
+                  </div>
+                </div>
+
+                {/* Dead-Centered 132×132 Radar + 3D Planet Stage */}
+                <div className="w-[132px] h-[132px] mx-auto my-1 flex items-center justify-center">
+                  <Orbit3DCore size={132} state={orbitState} />
+                </div>
+
+                {/* Editorial Headline & Subtitle */}
+                <div className="text-center mt-1.5">
+                  <h2 className="font-serif text-xl sm:text-[24px] text-white leading-tight font-normal">
+                    How can Orbit help today?
+                  </h2>
+                  <p className="text-[11px] sm:text-xs text-stone-400 mt-1 max-w-[280px] mx-auto leading-relaxed">
+                    Ask about your recorded workouts, meals or tasks.
+                  </p>
+                </div>
+
+                {/* 3 Stacked Live Context Pills */}
+                <div className="flex flex-col items-center gap-1.5 mt-3">
+                  <div className="bg-white/[0.07] text-stone-200 rounded-full px-3.5 py-1 text-[11px] font-semibold flex items-center gap-1.5 shadow-2xs">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#2D6A4F]" />
+                    <span>Train: {workoutSummaryText}</span>
+                  </div>
+                  <div className="bg-[#E05A47]/20 border border-[#E05A47]/30 text-[#FCA5A5] rounded-full px-3.5 py-1 text-[11px] font-semibold flex items-center gap-1.5 shadow-2xs">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#E05A47]" />
+                    <span>
+                      Fuel: {proteinTarget}g Target · {proteinDeltaText}
+                    </span>
+                  </div>
+                  <div className="bg-white/[0.07] text-stone-200 rounded-full px-3.5 py-1 text-[11px] font-semibold flex items-center gap-1.5 shadow-2xs">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#2D6A4F]" />
+                    <span>
+                      Plan: {pendingTasksCount} High-Load Slot{pendingTasksCount === 1 ? "" : "s"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. "CADENCE SHIFT" MINT INSIGHT BANNER */}
+              <div className="bg-[#D8F3DC]/75 border border-[#2D6A4F]/15 rounded-[22px] p-3.5 flex items-start gap-3 shadow-2xs">
+                <div className="w-8 h-8 rounded-full bg-[#2D6A4F] text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+                  <Zap className="w-4 h-4 fill-white text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[9px] font-bold tracking-wider uppercase text-[#1B4332]">
+                      YOUR NEXT STEP
+                    </span>
+                    <span className="text-[10px] font-semibold text-[#2D6A4F] bg-[#2D6A4F]/10 px-2 py-0.5 rounded-full">
+                      Suggestion only
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#1B4332] leading-relaxed mt-0.5 font-medium">
+                    Ask Orbit to review your recent activity. Suggestions never change your tasks, workouts or nutrition goals automatically.
+                  </p>
+                </div>
+              </div>
+
+              {/* 3. "CADENCE ACTIONS" 2×2 INTERACTIVE TELEMETRY BENTO GRID */}
+              <div className="w-full">
+                <div className="flex items-center justify-between mb-2.5 px-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-[#191D1A]">Things to explore</span>
+                    <span className="text-[10px] font-semibold text-[#2D6A4F] bg-[#D8F3DC] px-2 py-0.5 rounded-full">
+                      4 options
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleSend(
+                        "Run an automated audit across all 4 synced domains: training load, fuel deficit, circadian readiness, and focus blocks."
+                      )
+                    }
+                    className="text-xs font-semibold text-[#57534E] hover:text-[#191D1A] flex items-center gap-1 transition-colors"
+                  >
+                    <span>Auto-Audit</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Card 1: Weekly Training Audit */}
+                  <div className="bg-[#FCFBF9] rounded-[22px] p-3.5 border border-[#1C1917]/[0.06] flex flex-col justify-between shadow-2xs hover:shadow-sm transition-all text-left">
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[9px] font-bold tracking-wider uppercase text-[#57534E]">
+                          YOUR TRAINING
+                        </span>
+                      </div>
+                      {/* SVG Ascending Curve Sparkline */}
+                      <div className="w-full h-7 my-1 flex items-center">
+                        <svg className="w-full h-full overflow-visible" viewBox="0 0 100 24" fill="none">
+                          <defs>
+                            <linearGradient id="sparkline-grad" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#2D6A4F" stopOpacity="0.3" />
+                              <stop offset="100%" stopColor="#2D6A4F" stopOpacity="0.0" />
+                            </linearGradient>
+                          </defs>
+                          <path
+                            d="M0 20 C20 18, 35 14, 55 11 C75 8, 85 5, 100 2 L100 24 L0 24 Z"
+                            fill="url(#sparkline-grad)"
+                          />
+                          <path
+                            d="M0 20 C20 18, 35 14, 55 11 C75 8, 85 5, 100 2"
+                            stroke="#2D6A4F"
+                            strokeWidth="2.2"
+                            strokeLinecap="round"
+                          />
+                          <circle cx="100" cy="2" r="2.5" fill="#2D6A4F" />
+                        </svg>
+                      </div>
+                      <h3 className="text-xs font-bold text-[#191D1A] mt-1">Weekly Training Audit</h3>
+                      <p className="text-[10px] text-[#57534E] mt-0.5 line-clamp-2 leading-snug">
+                        Rate 5-day split balance &amp; recovery
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleSend(
+                          "Analyze my workout from last week and rate my structure and volume."
+                        )
+                      }
+                      className="w-full bg-[#E05A47] hover:bg-[#D04936] text-white rounded-full py-1.5 text-xs font-semibold mt-3 text-center transition-all shadow-2xs active:scale-[0.98]"
+                    >
+                      Run Audit &rarr;
+                    </button>
+                  </div>
+
+                  {/* Card 2: Protein Gap & Fuel */}
+                  <div className="bg-[#FCFBF9] rounded-[22px] p-3.5 border border-[#1C1917]/[0.06] flex flex-col justify-between shadow-2xs hover:shadow-sm transition-all text-left">
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[9px] font-bold tracking-wider uppercase text-[#E05A47]">
+                          YOUR NUTRITION
+                        </span>
+                      </div>
+                      {/* Mini Circular SVG Progress Gauge */}
+                      <div className="flex items-center gap-2 my-1">
+                        <svg className="w-7 h-7 -rotate-90 shrink-0" viewBox="0 0 36 36">
+                          <circle
+                            cx="18"
+                            cy="18"
+                            r="14"
+                            fill="none"
+                            stroke="#EFECE4"
+                            strokeWidth="3.2"
+                          />
+                          <circle
+                            cx="18"
+                            cy="18"
+                            r="14"
+                            fill="none"
+                            stroke="#E05A47"
+                            strokeWidth="3.2"
+                            strokeDasharray="88"
+                            strokeDashoffset={
+                              88 - (88 * Math.min(proteinTarget, loggedProtein)) / Math.max(1, proteinTarget)
+                            }
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        <span className="text-xs font-mono font-bold text-[#191D1A]">
+                          {loggedProtein}g / {proteinTarget}g
+                        </span>
+                      </div>
+                      <h3 className="text-xs font-bold text-[#191D1A] mt-1">Protein Gap &amp; Fuel</h3>
+                      <p className="text-[10px] text-[#57534E] mt-0.5 line-clamp-2 leading-snug">
+                        Calculate exact dinner macros to reach your target
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleSend(
+                          "Review my protein intake today and calculate remaining protein gap."
+                        )
+                      }
+                      className="w-full bg-[#2D6A4F] hover:bg-[#245740] text-white rounded-full py-1.5 text-xs font-semibold mt-3 text-center transition-all shadow-2xs active:scale-[0.98]"
+                    >
+                      Curate Meal &rarr;
+                    </button>
+                  </div>
+
+                  {/* Card 3: Tomorrow's Split */}
+                  <div className="bg-[#FCFBF9] rounded-[22px] p-3.5 border border-[#1C1917]/[0.06] flex flex-col justify-between shadow-2xs hover:shadow-sm transition-all text-left">
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[9px] font-bold tracking-wider uppercase text-[#2D6A4F]">
+                          CIRCADIAN
+                        </span>
+                      </div>
+                      {/* Semi-circle Readiness Arc */}
+                      <div className="flex items-center gap-2 my-1">
+                        <svg className="w-8 h-5 shrink-0 overflow-visible" viewBox="0 0 32 18">
+                          <path
+                            d="M2 16 A14 14 0 0 1 30 16"
+                            fill="none"
+                            stroke="#EFECE4"
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                          />
+                          <path
+                            d="M2 16 A14 14 0 0 1 26 6"
+                            fill="none"
+                            stroke="#2D6A4F"
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        <span className="text-[10px] font-semibold text-[#2D6A4F] leading-tight">
+                          Recovery not measured
+                        </span>
+                      </div>
+                      <h3 className="text-xs font-bold text-[#191D1A] mt-1">Tomorrow&apos;s Split</h3>
+                      <p className="text-[10px] text-[#57534E] mt-0.5 line-clamp-2 leading-snug">
+                        Generate next session based on recovery
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleSend(
+                          "Recommend tomorrow's workout split based on muscle groups trained this week."
+                        )
+                      }
+                      className="w-full bg-[#EFECE4] hover:bg-[#E5E1D8] text-[#191D1A] rounded-full py-1.5 text-xs font-semibold mt-3 text-center transition-all active:scale-[0.98]"
+                    >
+                      Preview Split &rarr;
+                    </button>
+                  </div>
+
+                  {/* Card 4: Deep Work Focus */}
+                  <div className="bg-[#FCFBF9] rounded-[22px] p-3.5 border border-[#1C1917]/[0.06] flex flex-col justify-between shadow-2xs hover:shadow-sm transition-all text-left">
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[9px] font-bold tracking-wider uppercase text-[#57534E]">
+                          YOUR PLAN
+                        </span>
+                      </div>
+                      {/* Vertical Equalizer Bars */}
+                      <div className="flex items-center gap-2 my-1">
+                        <div className="flex items-end gap-1 h-5">
+                          <span className="w-1 bg-[#191D1A] rounded-full h-2.5" />
+                          <span className="w-1 bg-[#2D6A4F] rounded-full h-4.5" />
+                          <span className="w-1 bg-[#191D1A] rounded-full h-3" />
+                          <span className="w-1 bg-[#E05A47] rounded-full h-5" />
+                        </div>
+                        <span className="text-xs font-mono font-bold text-[#191D1A]">90m</span>
+                      </div>
+                      <h3 className="text-xs font-bold text-[#191D1A] mt-1">Deep Work Focus</h3>
+                      <p className="text-[10px] text-[#57534E] mt-0.5 line-clamp-2 leading-snug">
+                        Rank pending backlog into high-focus blocks
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleSend(
+                          "Prioritize my pending tasks and recommend deep work focus blocks."
+                        )
+                      }
+                      className="w-full bg-[#EFECE4] hover:bg-[#E5E1D8] text-[#191D1A] rounded-full py-1.5 text-xs font-semibold mt-3 text-center transition-all active:scale-[0.98]"
+                    >
+                      Rank Slot &rarr;
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4. "CIRCADIAN RHYTHM ALIGNMENT" CARD */}
+              <div className="bg-[#FCFBF9] rounded-[24px] p-4 border border-[#1C1917]/[0.06] mb-4 shadow-2xs">
+                <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-[#191D1A]/[0.06]">
+                  <div className="flex items-center gap-2 text-xs font-bold text-[#191D1A]">
+                    <span className="w-2 h-2 rounded-full bg-[#2D6A4F]" />
+                    <span>Your evening routine</span>
+                  </div>
+                  <span className="text-[10px] font-bold tracking-wide uppercase text-[#2D6A4F] bg-[#D8F3DC] px-2.5 py-0.5 rounded-full">
+                    Suggested routine
+                  </span>
+                </div>
+
+                <div className="space-y-2.5">
+                  <div className="flex items-start justify-between gap-3 text-xs">
+                    <div>
+                      <div className="font-bold text-[#191D1A]">Dusk Transition</div>
+                      <p className="text-[11px] text-[#57534E] mt-0.5">
+                        Plan a quieter evening that suits you
+                      </p>
+                    </div>
+                    <span className="font-mono text-xs font-semibold text-[#191D1A] bg-[#EFECE4] px-2.5 py-1 rounded-full shrink-0">
+                      Your preferred evening window
+                    </span>
+                  </div>
+
+                  <div className="flex items-start justify-between gap-3 text-xs pt-2 border-t border-[#191D1A]/[0.04]">
+                    <div>
+                      <div className="font-bold text-[#191D1A]">Deep Sleep Window</div>
+                      <p className="text-[11px] text-[#57534E] mt-0.5">
+                        Choose a sleep routine in your setup
+                      </p>
+                    </div>
+                    <span className="font-mono text-xs font-semibold text-[#191D1A] bg-[#EFECE4] px-2.5 py-1 rounded-full shrink-0">
+                      Set your own bedtime
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── 2B. CONVERSATIONAL STREAM (When messages exist) ── */}
+          {messages.length > 0 && (
+            <div className="space-y-3 animate-fade-in max-w-2xl mx-auto w-full mt-auto">
+              {messages.map((m, idx) => {
+                const isLastAssistant = m.role === "assistant" && idx === messages.length - 1;
+                const isLastUser =
+                  m.role === "user" && (idx === messages.length - 1 || idx === messages.length - 2);
+
+                return (
+                  <div
+                    key={m.id}
+                    ref={
+                      isLastAssistant
+                        ? lastAssistantMessageRef
+                        : isLastUser
+                        ? lastUserMessageRef
+                        : undefined
+                    }
+                    className={cn(
+                      "flex flex-col w-full min-w-0",
+                      m.role === "user" ? "items-end" : "items-start"
+                    )}
+                  >
+                    {m.role === "user" ? (
+                      /* User Bubble: Right-aligned Pure Cream Alabaster (#FCFBF9) */
+                      <div className="flex flex-col items-end gap-1 max-w-[85%]">
+                        <div className="w-full bg-[#FCFBF9] text-[#1C1917] rounded-[20px] rounded-br-sm p-3.5 border border-[#1C1917]/[0.06] shadow-2xs text-sm leading-relaxed font-normal">
+                          <p className="whitespace-pre-wrap break-words">{m.content}</p>
+                        </div>
+                        <span className="text-[10px] text-[#8C857B] font-medium pr-1">
+                          {new Date(m.timestamp || Date.now()).toLocaleTimeString([], {
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })}{" "}
+                          · Sent
+                        </span>
+                      </div>
+                    ) : (
+                      /* Orbit AI Response Card: Left-aligned Deep Botanical Espresso (#191D1A) */
+                      <div className="flex flex-col items-start gap-1 w-full min-w-0">
+                        <div className="w-full max-w-[94%] min-w-0 bg-[#191D1A] text-[#FCFBF9] rounded-[24px] rounded-tl-sm p-4 shadow-xl border border-white/[0.06] overflow-hidden">
+                          {/* Top Header Row inside Card */}
+                          <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-white/[0.08]">
+                            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#2D6A4F]/40 border border-[#6EE7B7]/25 text-[#6EE7B7] text-[9px] font-bold tracking-wider uppercase select-none">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7] animate-pulse" />
+                              ORBIT
+                            </div>
+                            <span className="text-[10px] text-white/50 font-medium">
+                              {new Date(m.timestamp || Date.now()).toLocaleTimeString([], {
+                                hour: "numeric",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          </div>
+
+                          {/* Markdown & Table Rendering */}
+                          <div
+                            className="orbit-card-content text-white/90 text-sm leading-relaxed"
+                            style={
+                              {
+                                "--text-primary": "#FCFBF9",
+                                "--text-secondary": "rgba(252, 251, 249, 0.8)",
+                                "--text-muted": "rgba(252, 251, 249, 0.5)",
+                                "--border": "rgba(255, 255, 255, 0.08)",
+                                "--border-subtle": "rgba(255, 255, 255, 0.05)",
+                                "--surface": "rgba(255, 255, 255, 0.04)",
+                                "--satat-brand": "#6EE7B7",
+                              } as React.CSSProperties
+                            }
+                          >
+                            <MarkdownText text={m.content} />
+                          </div>
+
+                          {/* Recommendation Card Attachment */}
+                          {m.recommendation && (
+                            <div className="mt-3 pt-2.5 border-t border-white/[0.08]">
+                              <OrbitRecommendationCard
+                                recommendation={m.recommendation}
+                                onExecuteAction={(act) => {
+                                  if (act.href) window.location.href = act.href;
+                                }}
+                              />
+                            </div>
+                          )}
+
+                          {/* Insight Card Attachment */}
+                          {m.insight && (
+                            <div className="mt-2.5">
+                              <OrbitInsightCard insight={m.insight} />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Contextual Suggestion Chips */}
+                        {m.suggested_actions && m.suggested_actions.length > 0 && isLastAssistant && (
+                          <div className="flex flex-wrap items-center gap-1.5 mt-1.5 max-w-[94%]">
+                            {m.suggested_actions.map((act, actIdx) => (
+                              <button
+                                key={actIdx}
+                                type="button"
+                                onClick={() => handleSend(act.prompt)}
+                                className="px-3 py-1.5 rounded-full bg-[#FCFBF9] hover:bg-[#EFECE4] text-[#191D1A] border border-[#191D1A]/10 text-xs font-semibold tracking-tight shadow-2xs flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                              >
+                                <Sparkles className="w-3.5 h-3.5 text-[#E05A47]" />
+                                <span>{act.label}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
+                        <span className="text-[10px] text-[#8C857B] font-medium pl-1">
+                          Delivered by Orbit · AI response · Check important details
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* THINKING STATE */}
+          {loading && (
+            <div
+              ref={loadingCardRef}
+              className="flex flex-col items-start w-full max-w-2xl mx-auto animate-fade-in"
+            >
+              <div className="w-full max-w-[94%] bg-[#191D1A] text-[#FCFBF9] rounded-[24px] rounded-tl-sm p-4 shadow-xl border border-white/[0.06]">
+                <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-white/[0.08]">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#2D6A4F]/40 border border-[#6EE7B7]/25 text-[#6EE7B7] text-[9px] font-bold tracking-wider uppercase select-none">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7] animate-pulse" />
+                    ORBIT
+                  </div>
+                  <span className="text-[10px] text-white/50 font-medium">Just now</span>
+                </div>
+                <div className="flex items-center gap-3 pt-1">
+                  <div className="w-5 h-5 flex items-center justify-center shrink-0 text-[#6EE7B7]">
+                    <OrbitIcon
+                      size={18}
+                      state={orbitState === "responding" ? "responding" : "thinking"}
+                    />
+                  </div>
+                  <span className="text-xs text-white/80 font-medium">
+                    {orbitState === "responding"
+                      ? "Formulating recommendation..."
+                      : pendingIntent === "SIMPLE_CONVERSATION"
+                      ? "Thinking..."
+                      : pendingIntent === "HISTORICAL_ANALYSIS"
+                      ? "Analyzing rolling 7-day records..."
+                      : "Analyzing context..."}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ERROR STATE & RETRY MECHANISM */}
+          {error && (
+            <div className="p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-xs bg-[#E05A47]/10 border-[#E05A47]/25 text-[#E05A47] shadow-sm animate-shake max-w-2xl mx-auto w-full">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-lg bg-[#E05A47]/20 flex items-center justify-center shrink-0 text-[#E05A47]">
+                  <AlertCircle className="w-3.5 h-3.5" />
+                </div>
+                <span className="font-medium text-[#191D1A]">{error}</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleRetry}
+                className="px-3 py-1 rounded-full font-semibold text-xs border border-[#E05A47]/40 bg-[#FCFBF9] text-[#E05A47] hover:bg-[#E05A47] hover:text-white transition-all flex items-center gap-1 shadow-2xs"
+              >
+                <RefreshCw className="w-3 h-3" />
+                <span>Retry</span>
+              </button>
+            </div>
+          )}
+
+          {/* Spacer to guarantee the final line sits tightly above composer */}
+          <div className="h-1 shrink-0" aria-hidden="true" />
+          <div ref={mobileMessagesEndRef} />
+        </div>
+
+        {/* ── 3. COMPOSER DOCK (Docked Above Bottom Navigation) ── */}
+        <div
+          className={cn(
+            "px-4 sm:px-6 pt-1 shrink-0 z-30 transition-all duration-150 bg-gradient-to-t from-[#F6F3EC] via-[#F6F3EC]/95 to-transparent",
+            !isOverlay
+              ? "pb-[calc(56px+max(16px,env(safe-area-inset-bottom,0px))+16px)] lg:pb-6"
+              : "pb-4"
+          )}
+          style={{
+            transform: keyboardOffset > 0 ? `translateY(-${keyboardOffset}px)` : undefined,
+          }}
+        >
+          {/* Suggested Quick-Prompt Chips (Only displayed when messages exist to keep empty state clean) */}
+          {messages.length > 0 && (
+            <div className="w-full overflow-x-auto no-scrollbar py-0.5 mb-1.5 scroll-px-4 px-0.5 animate-fade-in">
+              <div className="flex items-center gap-1.5 w-max">
+                {QUICK_CHIPS.map((chip, idx) => {
+                  const Icon = chip.icon;
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleSend(chip.query)}
+                      className="shrink-0 px-3 py-1.5 rounded-full bg-[#FCFBF9] hover:bg-[#EFECE4] text-[#191D1A] border border-[#191D1A]/10 text-xs font-semibold tracking-tight shadow-[0_1px_4px_rgba(0,0,0,0.03)] flex items-center gap-1.5 transition-all active:scale-95 select-none"
+                    >
+                      <Icon className={cn("w-3.5 h-3.5", chip.iconColor)} />
+                      <span>{chip.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Floating Input Dock (Cream Alabaster #FCFBF9, rounded-full) */}
+          <div className="relative w-full bg-[#FCFBF9] rounded-full pl-4 pr-2 py-2 border border-[#1C1917]/10 shadow-[0_8px_24px_rgba(25,29,26,0.08)] flex items-center gap-2 focus-within:ring-2 focus-within:ring-[#e06d53]/20 focus-within:border-[#e06d53]/40 focus-within:shadow-[0_8px_28px_rgba(25,29,26,0.12)] transition-all">
+            <Sparkles className="w-4 h-4 text-[#8C857B] shrink-0" />
+            <textarea
+              ref={inputRef}
+              rows={1}
+              value={input}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask Orbit about training, diet, or focus..."
+              className="w-full flex-1 bg-transparent border-0 outline-none focus:outline-none focus:ring-0 ring-0 shadow-none text-xs sm:text-sm resize-none leading-relaxed scrollbar-none min-h-[22px] max-h-[120px] text-[#1C1917] placeholder-[#8C857B] font-medium py-0.5"
+              aria-label="Ask Orbit"
+            />
+
+            {/* Circular Terracotta Send Button (#E05A47) */}
             <button
               type="button"
-              onClick={handleResetChat}
-              aria-label="Reset chat"
-              className="bg-[#EFECE4] hover:bg-[#191D1A] hover:text-white text-[#1C1917] rounded-full px-3 py-1.5 text-xs font-semibold inline-flex items-center gap-1.5 transition-all shrink-0 cursor-pointer shadow-2xs active:scale-95"
+              onClick={() => handleSend()}
+              disabled={!input.trim() || loading}
+              aria-label="Send message"
+              className="w-9 h-9 rounded-full bg-[#E05A47] hover:bg-[#C94A38] disabled:opacity-40 text-white flex items-center justify-center shrink-0 transition-all shadow-[0_4px_12px_rgba(224,90,71,0.35)] active:scale-95"
             >
-              <RotateCcw className="w-3 h-3" />
-              <span>New Chat</span>
+              <ArrowUp className="w-4 h-4 stroke-[2.5]" />
             </button>
           </div>
-
-          {/* Active Context Filter Bar (Horizontal Pill Row — No scrollbar & tightened padding) */}
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] py-0.5">
-            {FOCUS_MODES.map((m) => {
-              const isSelected = focusMode === m.id;
-              const Icon = m.icon;
-              return (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => setFocusMode(m.id)}
-                  className={cn(
-                    "shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold inline-flex items-center gap-1.5 transition-all select-none cursor-pointer whitespace-nowrap",
-                    isSelected
-                      ? "bg-[#191D1A] text-white shadow-2xs"
-                      : "bg-[#EFECE4] text-[#57534E] hover:text-[#1C1917] hover:bg-[#E5E1D8] font-medium"
-                  )}
-                >
-                  {isSelected ? (
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7]" />
-                  ) : (
-                    <Icon className="w-3.5 h-3.5 text-[#57534E]" />
-                  )}
-                  <span>{m.label}</span>
-                </button>
-              );
-            })}
-          </div>
         </div>
-      </header>
+      </div>
 
-      {/* ── 2. MAIN VIEWPORT (STITCH 1:1 DASHBOARD OVERVIEW vs CHAT STREAM) ── */}
-      <div className="flex-1 min-h-0 min-w-0 w-full overflow-y-auto overflow-x-hidden px-4 sm:px-6 pt-3 pb-2 space-y-3 scrollbar-none bg-[#F6F3EC] flex flex-col overscroll-contain touch-pan-y">
-        {/* ── 2A. STITCH 1:1 TELEMETRY OVERVIEW (Initial state when no messages) ── */}
-        {messages.length === 0 && (
-          <div className="w-full max-w-xl mx-auto space-y-3.5 animate-fade-in pb-2">
+      {/* ── DESKTOP & TABLET VIEW (lg: 1024px+) — 12-Column Responsive Studio Architecture (image_49d750.jpg) ── */}
+      {!isOverlay && (
+        <div className="orbit-desktop-grid hidden lg:grid grid-cols-12 gap-6 items-start h-full w-full max-w-none px-6 py-4 overflow-hidden">
+          {/* ── LEFT 5 COLUMNS: Persistent 3D Orbit Core & Biological Telemetry ── */}
+          <div className="col-span-5 h-[calc(100vh-6rem)] overflow-y-auto no-scrollbar space-y-4 pr-1">
             {/* 1. DARK BOTANICAL ESPRESSO HERO STAGE (#191D1A) */}
-            <div className="w-full bg-[#191D1A] rounded-[28px] p-4 text-[#FCFBF9] shadow-xl border border-white/[0.08] relative overflow-hidden">
+            <div className="w-full bg-[#191D1A] rounded-[28px] p-5 text-[#FCFBF9] shadow-xl border border-white/[0.08] relative overflow-hidden">
               {/* Top Status Pills Row */}
-              <div className="grid grid-cols-2 gap-2 mb-2">
+              <div className="grid grid-cols-2 gap-2 mb-3">
                 {/* Left Status Pill */}
                 <div className="bg-[#2D6A4F]/35 border border-[#6EE7B7]/25 rounded-2xl px-3 py-1.5 flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-[#6EE7B7] animate-pulse shrink-0" />
@@ -600,34 +1315,38 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                 </div>
               </div>
 
-              {/* Dead-Centered 132×132 Radar + 3D Planet Stage */}
-              <div className="w-[132px] h-[132px] mx-auto my-1 flex items-center justify-center">
-                <Orbit3DCore size={132} state={orbitState} />
+              {/* Dead-Centered 148×148 Radar + 3D Planet Stage */}
+              <div className="w-[148px] h-[148px] mx-auto my-2 flex items-center justify-center">
+                <Orbit3DCore size={148} state={orbitState} />
               </div>
 
               {/* Editorial Headline & Subtitle */}
-              <div className="text-center mt-1.5">
-                <h2 className="font-serif text-xl sm:text-[24px] text-white leading-tight font-normal">
-                  How can Orbit help today?
+              <div className="text-center mt-2">
+                <h2 className="font-serif text-2xl text-white leading-tight font-normal">
+                  Meals, movement and plans.
                 </h2>
-                <p className="text-[11px] sm:text-xs text-stone-400 mt-1 max-w-[280px] mx-auto leading-relaxed">
+                <p className="text-xs text-stone-400 mt-1 max-w-[320px] mx-auto leading-relaxed">
                   Ask about your recorded workouts, meals or tasks.
                 </p>
               </div>
 
               {/* 3 Stacked Live Context Pills */}
-              <div className="flex flex-col items-center gap-1.5 mt-3">
+              <div className="flex flex-col items-center gap-1.5 mt-3.5">
                 <div className="bg-white/[0.07] text-stone-200 rounded-full px-3.5 py-1 text-[11px] font-semibold flex items-center gap-1.5 shadow-2xs">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#2D6A4F]" />
                   <span>Train: {workoutSummaryText}</span>
                 </div>
                 <div className="bg-[#E05A47]/20 border border-[#E05A47]/30 text-[#FCA5A5] rounded-full px-3.5 py-1 text-[11px] font-semibold flex items-center gap-1.5 shadow-2xs">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#E05A47]" />
-                  <span>Fuel: {proteinTarget}g Target · {proteinDeltaText}</span>
+                  <span>
+                    Fuel: {proteinTarget}g Target · {proteinDeltaText}
+                  </span>
                 </div>
                 <div className="bg-white/[0.07] text-stone-200 rounded-full px-3.5 py-1 text-[11px] font-semibold flex items-center gap-1.5 shadow-2xs">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#2D6A4F]" />
-                  <span>Plan: {pendingTasksCount} High-Load Slot{pendingTasksCount === 1 ? "" : "s"}</span>
+                  <span>
+                    Plan: {pendingTasksCount} High-Load Slot{pendingTasksCount === 1 ? "" : "s"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -668,7 +1387,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                       "Run an automated audit across all 4 synced domains: training load, fuel deficit, circadian readiness, and focus blocks."
                     )
                   }
-                  className="text-xs font-semibold text-[#57534E] hover:text-[#191D1A] flex items-center gap-1 transition-colors"
+                  className="text-xs font-semibold text-[#57534E] hover:text-[#191D1A] flex items-center gap-1 transition-colors cursor-pointer"
                 >
                   <span>Auto-Audit</span>
                   <ChevronRight className="w-3.5 h-3.5" />
@@ -688,14 +1407,14 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                     <div className="w-full h-7 my-1 flex items-center">
                       <svg className="w-full h-full overflow-visible" viewBox="0 0 100 24" fill="none">
                         <defs>
-                          <linearGradient id="sparkline-grad" x1="0" y1="0" x2="0" y2="1">
+                          <linearGradient id="desktop-sparkline-grad" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="0%" stopColor="#2D6A4F" stopOpacity="0.3" />
                             <stop offset="100%" stopColor="#2D6A4F" stopOpacity="0.0" />
                           </linearGradient>
                         </defs>
                         <path
                           d="M0 20 C20 18, 35 14, 55 11 C75 8, 85 5, 100 2 L100 24 L0 24 Z"
-                          fill="url(#sparkline-grad)"
+                          fill="url(#desktop-sparkline-grad)"
                         />
                         <path
                           d="M0 20 C20 18, 35 14, 55 11 C75 8, 85 5, 100 2"
@@ -718,7 +1437,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                         "Analyze my workout from last week and rate my structure and volume."
                       )
                     }
-                    className="w-full bg-[#E05A47] hover:bg-[#D04936] text-white rounded-full py-1.5 text-xs font-semibold mt-3 text-center transition-all shadow-2xs active:scale-[0.98]"
+                    className="w-full bg-[#E05A47] hover:bg-[#D04936] text-white rounded-full py-1.5 text-xs font-semibold mt-3 text-center transition-all shadow-2xs active:scale-[0.98] cursor-pointer"
                   >
                     Run Audit &rarr;
                   </button>
@@ -773,7 +1492,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                         "Review my protein intake today and calculate remaining protein gap."
                       )
                     }
-                    className="w-full bg-[#2D6A4F] hover:bg-[#245740] text-white rounded-full py-1.5 text-xs font-semibold mt-3 text-center transition-all shadow-2xs active:scale-[0.98]"
+                    className="w-full bg-[#2D6A4F] hover:bg-[#245740] text-white rounded-full py-1.5 text-xs font-semibold mt-3 text-center transition-all shadow-2xs active:scale-[0.98] cursor-pointer"
                   >
                     Curate Meal &rarr;
                   </button>
@@ -821,7 +1540,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                         "Recommend tomorrow's workout split based on muscle groups trained this week."
                       )
                     }
-                    className="w-full bg-[#EFECE4] hover:bg-[#E5E1D8] text-[#191D1A] rounded-full py-1.5 text-xs font-semibold mt-3 text-center transition-all active:scale-[0.98]"
+                    className="w-full bg-[#EFECE4] hover:bg-[#E5E1D8] text-[#191D1A] rounded-full py-1.5 text-xs font-semibold mt-3 text-center transition-all active:scale-[0.98] cursor-pointer"
                   >
                     Preview Split &rarr;
                   </button>
@@ -857,7 +1576,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
                         "Prioritize my pending tasks and recommend deep work focus blocks."
                       )
                     }
-                    className="w-full bg-[#EFECE4] hover:bg-[#E5E1D8] text-[#191D1A] rounded-full py-1.5 text-xs font-semibold mt-3 text-center transition-all active:scale-[0.98]"
+                    className="w-full bg-[#EFECE4] hover:bg-[#E5E1D8] text-[#191D1A] rounded-full py-1.5 text-xs font-semibold mt-3 text-center transition-all active:scale-[0.98] cursor-pointer"
                   >
                     Rank Slot &rarr;
                   </button>
@@ -866,7 +1585,7 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
             </div>
 
             {/* 4. "CIRCADIAN RHYTHM ALIGNMENT" CARD */}
-            <div className="bg-[#FCFBF9] rounded-[24px] p-4 border border-[#1C1917]/[0.06] mb-4 shadow-2xs">
+            <div className="bg-[#FCFBF9] rounded-[24px] p-4 border border-[#1C1917]/[0.06] shadow-2xs">
               <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-[#191D1A]/[0.06]">
                 <div className="flex items-center gap-2 text-xs font-bold text-[#191D1A]">
                   <span className="w-2 h-2 rounded-full bg-[#2D6A4F]" />
@@ -904,843 +1623,326 @@ export function OrbitView({ isOverlay = false, onClose, className }: OrbitViewPr
               </div>
             </div>
           </div>
-        )}
 
-        {/* ── 2B. CONVERSATIONAL STREAM (When messages exist) ── */}
-        {messages.length > 0 && (
-          <div className="space-y-3 animate-fade-in max-w-2xl mx-auto w-full mt-auto">
-            {messages.map((m, idx) => {
-              const isLastAssistant = m.role === "assistant" && idx === messages.length - 1;
-              const isLastUser = m.role === "user" && (idx === messages.length - 1 || idx === messages.length - 2);
-
-              return (
-              <div
-                key={m.id}
-                ref={isLastAssistant ? lastAssistantMessageRef : isLastUser ? lastUserMessageRef : undefined}
-                className={cn(
-                  "flex flex-col w-full min-w-0",
-                  m.role === "user" ? "items-end" : "items-start"
-                )}
-              >
-                {m.role === "user" ? (
-                  /* User Bubble: Right-aligned Pure Cream Alabaster (#FCFBF9) */
-                  <div className="flex flex-col items-end gap-1 max-w-[85%]">
-                    <div className="w-full bg-[#FCFBF9] text-[#1C1917] rounded-[20px] rounded-br-sm p-3.5 border border-[#1C1917]/[0.06] shadow-2xs text-sm leading-relaxed font-normal">
-                      <p className="whitespace-pre-wrap break-words">{m.content}</p>
-                    </div>
-                    <span className="text-[10px] text-[#8C857B] font-medium pr-1">
-                      {new Date(m.timestamp || Date.now()).toLocaleTimeString([], {
-                        hour: "numeric",
-                        minute: "2-digit",
-                      })}{" "}
-                      · Sent
-                    </span>
-                  </div>
-                ) : (
-                  /* Orbit AI Response Card: Left-aligned Deep Botanical Espresso (#191D1A) */
-                  <div className="flex flex-col items-start gap-1 w-full min-w-0">
-                    <div className="w-full max-w-[94%] min-w-0 bg-[#191D1A] text-[#FCFBF9] rounded-[24px] rounded-tl-sm p-4 shadow-xl border border-white/[0.06] overflow-hidden">
-                      {/* Top Header Row inside Card */}
-                      <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-white/[0.08]">
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#2D6A4F]/40 border border-[#6EE7B7]/25 text-[#6EE7B7] text-[9px] font-bold tracking-wider uppercase select-none">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7] animate-pulse" />
-                          ORBIT
-                        </div>
-                        <span className="text-[10px] text-white/50 font-medium">
-                          {new Date(m.timestamp || Date.now()).toLocaleTimeString([], {
-                            hour: "numeric",
-                            minute: "2-digit",
-                          })}
-                        </span>
-                      </div>
-
-                      {/* Markdown & Table Rendering */}
-                      <div
-                        className="orbit-card-content text-white/90 text-sm leading-relaxed"
-                        style={
-                          {
-                            "--text-primary": "#FCFBF9",
-                            "--text-secondary": "rgba(252, 251, 249, 0.8)",
-                            "--text-muted": "rgba(252, 251, 249, 0.5)",
-                            "--border": "rgba(255, 255, 255, 0.08)",
-                            "--border-subtle": "rgba(255, 255, 255, 0.05)",
-                            "--surface": "rgba(255, 255, 255, 0.04)",
-                            "--satat-brand": "#6EE7B7",
-                          } as React.CSSProperties
-                        }
-                      >
-                        <MarkdownText text={m.content} />
-                      </div>
-
-                      {/* Recommendation Card Attachment */}
-                      {m.recommendation && (
-                        <div className="mt-3 pt-2.5 border-t border-white/[0.08]">
-                          <OrbitRecommendationCard
-                            recommendation={m.recommendation}
-                            onExecuteAction={(act) => {
-                              if (act.href) window.location.href = act.href;
-                            }}
-                          />
-                        </div>
-                      )}
-
-                      {/* Insight Card Attachment */}
-                      {m.insight && (
-                        <div className="mt-2.5">
-                          <OrbitInsightCard insight={m.insight} />
-                        </div>
-                      )}
-                    </div>
-
-                    <span className="text-[10px] text-[#8C857B] font-medium pl-1">
-                      Delivered by Orbit · AI response · Check important details
-                    </span>
-                  </div>
-                )}
-              </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* THINKING STATE */}
-        {loading && (
-          <div
-            ref={loadingCardRef}
-            className="flex flex-col items-start w-full max-w-2xl mx-auto animate-fade-in"
-          >
-            <div className="w-full max-w-[94%] bg-[#191D1A] text-[#FCFBF9] rounded-[24px] rounded-tl-sm p-4 shadow-xl border border-white/[0.06]">
-              <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-white/[0.08]">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#2D6A4F]/40 border border-[#6EE7B7]/25 text-[#6EE7B7] text-[9px] font-bold tracking-wider uppercase select-none">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7] animate-pulse" />
-                  ORBIT
-                </div>
-                <span className="text-[10px] text-white/50 font-medium">Just now</span>
-              </div>
-              <div className="flex items-center gap-3 pt-1">
-                <div className="w-5 h-5 flex items-center justify-center shrink-0 text-[#6EE7B7]">
-                  <OrbitIcon
-                    size={18}
-                    state={orbitState === "responding" ? "responding" : "thinking"}
-                  />
-                </div>
-                <span className="text-xs text-white/80 font-medium">
-                  {orbitState === "responding"
-                    ? "Formulating recommendation..."
-                    : pendingIntent === "SIMPLE_CONVERSATION"
-                    ? "Thinking..."
-                    : pendingIntent === "HISTORICAL_ANALYSIS"
-                    ? "Analyzing rolling 7-day records..."
-                    : "Analyzing context..."}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ERROR STATE & RETRY MECHANISM */}
-        {error && (
-          <div className="p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-xs bg-[#E05A47]/10 border-[#E05A47]/25 text-[#E05A47] shadow-sm animate-shake max-w-2xl mx-auto w-full">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-lg bg-[#E05A47]/20 flex items-center justify-center shrink-0 text-[#E05A47]">
-                <AlertCircle className="w-3.5 h-3.5" />
-              </div>
-              <span className="font-medium text-[#191D1A]">{error}</span>
-            </div>
-            <button
-              type="button"
-              onClick={handleRetry}
-              className="px-3 py-1 rounded-full font-semibold text-xs border border-[#E05A47]/40 bg-[#FCFBF9] text-[#E05A47] hover:bg-[#E05A47] hover:text-white transition-all flex items-center gap-1 shadow-2xs"
-            >
-              <RefreshCw className="w-3 h-3" />
-              <span>Retry</span>
-            </button>
-          </div>
-        )}
-
-        {/* Spacer to guarantee the final line sits tightly above composer */}
-        <div className="h-1 shrink-0" aria-hidden="true" />
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* ── 3. COMPOSER DOCK (Docked Above Bottom Navigation) ── */}
-      <div
-        className={cn(
-          "px-4 sm:px-6 pt-1 shrink-0 z-30 transition-all duration-150 bg-gradient-to-t from-[#F6F3EC] via-[#F6F3EC]/95 to-transparent",
-          !isOverlay
-            ? "pb-[calc(56px+max(16px,env(safe-area-inset-bottom,0px))+16px)] lg:pb-6"
-            : "pb-4"
-        )}
-        style={{
-          transform: keyboardOffset > 0 ? `translateY(-${keyboardOffset}px)` : undefined,
-        }}
-      >
-        {/* Suggested Quick-Prompt Chips (Only displayed when messages exist to keep empty state clean) */}
-        {messages.length > 0 && (
-          <div className="w-full overflow-x-auto no-scrollbar py-0.5 mb-1.5 scroll-px-4 px-0.5 animate-fade-in">
-            <div className="flex items-center gap-1.5 w-max">
-              {QUICK_CHIPS.map((chip, idx) => {
-                const Icon = chip.icon;
-                return (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => handleSend(chip.query)}
-                    className="shrink-0 px-3 py-1.5 rounded-full bg-[#FCFBF9] hover:bg-[#EFECE4] text-[#191D1A] border border-[#191D1A]/10 text-xs font-semibold tracking-tight shadow-[0_1px_4px_rgba(0,0,0,0.03)] flex items-center gap-1.5 transition-all active:scale-95 select-none"
-                  >
-                    <Icon className={cn("w-3.5 h-3.5", chip.iconColor)} />
-                    <span>{chip.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Floating Input Dock (Cream Alabaster #FCFBF9, rounded-full) */}
-        <div className="relative w-full bg-[#FCFBF9] rounded-full pl-4 pr-2 py-2 border border-[#1C1917]/10 shadow-[0_8px_24px_rgba(25,29,26,0.08)] flex items-center gap-2 focus-within:border-[#191D1A]/30 focus-within:shadow-[0_8px_28px_rgba(25,29,26,0.12)] transition-all">
-          <Sparkles className="w-4 h-4 text-[#8C857B] shrink-0" />
-          <textarea
-            ref={inputRef}
-            rows={1}
-            value={input}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask Orbit about training, diet, or focus..."
-            className="flex-1 bg-transparent text-xs sm:text-sm resize-none outline-none leading-relaxed scrollbar-none min-h-[22px] max-h-[120px] text-[#1C1917] placeholder-[#8C857B] font-medium py-0.5"
-            aria-label="Ask Orbit"
-          />
-
-          {/* Circular Terracotta Send Button (#E05A47) */}
-          <button
-            type="button"
-            onClick={() => handleSend()}
-            disabled={!input.trim() || loading}
-            aria-label="Send message"
-            className="w-9 h-9 rounded-full bg-[#E05A47] hover:bg-[#C94A38] disabled:opacity-40 text-white flex items-center justify-center shrink-0 transition-all shadow-[0_4px_12px_rgba(224,90,71,0.35)] active:scale-95"
-          >
-            <ArrowUp className="w-4 h-4 stroke-[2.5]" />
-          </button>
-        </div>
-      </div>
-      </div>
-
-      {/* ── DESKTOP & TABLET VIEW (lg: 1024px+) — 12-Column Responsive Studio Architecture (image_49d750.jpg) ── */}
-      {!isOverlay && (
-        <div className="orbit-desktop-grid hidden lg:grid grid-cols-12 gap-6 items-start h-full w-full max-w-none px-6 py-4 overflow-hidden">
-        {/* ── LEFT 5 COLUMNS: Persistent 3D Orbit Core & Biological Telemetry ── */}
-        <div className="col-span-5 h-[calc(100vh-6rem)] overflow-y-auto no-scrollbar space-y-4 pr-1">
-          {/* 1. DARK BOTANICAL ESPRESSO HERO STAGE (#191D1A) */}
-          <div className="w-full bg-[#191D1A] rounded-[28px] p-5 text-[#FCFBF9] shadow-xl border border-white/[0.08] relative overflow-hidden">
-            {/* Top Status Pills Row */}
-            <div className="grid grid-cols-2 gap-2 mb-3">
-              {/* Left Status Pill */}
-              <div className="bg-[#2D6A4F]/35 border border-[#6EE7B7]/25 rounded-2xl px-3 py-1.5 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#6EE7B7] animate-pulse shrink-0" />
-                <span className="text-[10px] font-bold tracking-wider uppercase text-[#EAE6DF]">
-                  READY TO CHAT
-                </span>
+          {/* ── RIGHT 7 COLUMNS: Conversational Feed & Studio Input Dock ── */}
+          <div className="col-span-7 flex flex-col h-[calc(100vh-6rem)] bg-[#FCFBF9] rounded-[28px] border border-[#1C1917]/[0.06] shadow-sm overflow-hidden">
+            {/* Studio Top Header */}
+            <div className="px-5 py-3.5 border-b border-[#1C1917]/[0.06] bg-[#FCFBF9] flex items-center justify-between shrink-0">
+              <div>
+                <h3 className="font-serif text-lg text-[#191D1A] tracking-tight">
+                  Orbit Intelligence Stream
+                </h3>
+                <p className="text-[11px] text-[#57534E] font-medium">Ask a question about your day</p>
               </div>
 
-              {/* Right Sync Pill */}
-              <div className="bg-white/[0.06] border border-white/[0.08] rounded-2xl px-3 py-1.5 text-[11px] font-semibold text-stone-200 flex items-center justify-center sm:justify-start gap-1.5">
-                <span>Training · Meals · Tasks</span>
-              </div>
-            </div>
-
-            {/* Dead-Centered 148×148 Radar + 3D Planet Stage */}
-            <div className="w-[148px] h-[148px] mx-auto my-2 flex items-center justify-center">
-              <Orbit3DCore size={148} state={orbitState} />
-            </div>
-
-            {/* Editorial Headline & Subtitle */}
-            <div className="text-center mt-2">
-              <h2 className="font-serif text-2xl text-white leading-tight font-normal">
-                Meals, movement and plans.
-              </h2>
-              <p className="text-xs text-stone-400 mt-1 max-w-[320px] mx-auto leading-relaxed">
-                Ask about your recorded workouts, meals or tasks.
-              </p>
-            </div>
-
-            {/* 3 Stacked Live Context Pills */}
-            <div className="flex flex-col items-center gap-1.5 mt-3.5">
-              <div className="bg-white/[0.07] text-stone-200 rounded-full px-3.5 py-1 text-[11px] font-semibold flex items-center gap-1.5 shadow-2xs">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#2D6A4F]" />
-                <span>Train: {workoutSummaryText}</span>
-              </div>
-              <div className="bg-[#E05A47]/20 border border-[#E05A47]/30 text-[#FCA5A5] rounded-full px-3.5 py-1 text-[11px] font-semibold flex items-center gap-1.5 shadow-2xs">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#E05A47]" />
-                <span>Fuel: {proteinTarget}g Target · {proteinDeltaText}</span>
-              </div>
-              <div className="bg-white/[0.07] text-stone-200 rounded-full px-3.5 py-1 text-[11px] font-semibold flex items-center gap-1.5 shadow-2xs">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#2D6A4F]" />
-                <span>Plan: {pendingTasksCount} High-Load Slot{pendingTasksCount === 1 ? "" : "s"}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* 2. "CADENCE SHIFT" MINT INSIGHT BANNER */}
-          <div className="bg-[#D8F3DC]/75 border border-[#2D6A4F]/15 rounded-[22px] p-3.5 flex items-start gap-3 shadow-2xs">
-            <div className="w-8 h-8 rounded-full bg-[#2D6A4F] text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
-              <Zap className="w-4 h-4 fill-white text-white" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[9px] font-bold tracking-wider uppercase text-[#1B4332]">
-                  YOUR NEXT STEP
-                </span>
-                <span className="text-[10px] font-semibold text-[#2D6A4F] bg-[#2D6A4F]/10 px-2 py-0.5 rounded-full">
-                  Suggestion only
-                </span>
-              </div>
-              <p className="text-xs text-[#1B4332] leading-relaxed mt-0.5 font-medium">
-                Ask Orbit to review your recent activity. Suggestions never change your tasks, workouts or nutrition goals automatically.
-              </p>
-            </div>
-          </div>
-
-          {/* 3. "CADENCE ACTIONS" 2×2 INTERACTIVE TELEMETRY BENTO GRID */}
-          <div className="w-full">
-            <div className="flex items-center justify-between mb-2.5 px-0.5">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-[#191D1A]">Things to explore</span>
-                <span className="text-[10px] font-semibold text-[#2D6A4F] bg-[#D8F3DC] px-2 py-0.5 rounded-full">
-                  4 options
-                </span>
+                {/* Context Filter Bar */}
+                <div className="flex items-center gap-1 bg-[#EFECE4] p-0.5 rounded-full border border-[#191D1A]/[0.08]">
+                  {FOCUS_MODES.map((m) => {
+                    const isSelected = focusMode === m.id;
+                    const Icon = m.icon;
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => setFocusMode(m.id)}
+                        className={cn(
+                          "rounded-full px-2.5 py-1 text-[11px] font-semibold inline-flex items-center gap-1 transition-all select-none cursor-pointer",
+                          isSelected
+                            ? "bg-[#191D1A] text-white shadow-2xs"
+                            : "text-[#57534E] hover:text-[#191D1A] font-medium"
+                        )}
+                      >
+                        {isSelected ? (
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7]" />
+                        ) : (
+                          <Icon className="w-3 h-3 text-[#57534E]" />
+                        )}
+                        <span>{m.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Reset / New Chat Button */}
+                {messages.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleResetChat}
+                    aria-label="Reset chat"
+                    className="bg-[#EFECE4] hover:bg-[#191D1A] hover:text-white text-[#1C1917] rounded-full px-3 py-1.5 text-xs font-semibold inline-flex items-center gap-1.5 transition-all shrink-0 cursor-pointer shadow-2xs active:scale-95"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>New Chat</span>
+                  </button>
+                )}
               </div>
-              <button
-                type="button"
-                onClick={() =>
-                  handleSend(
-                    "Run an automated audit across all 4 synced domains: training load, fuel deficit, circadian readiness, and focus blocks."
-                  )
-                }
-                className="text-xs font-semibold text-[#57534E] hover:text-[#191D1A] flex items-center gap-1 transition-colors cursor-pointer"
-              >
-                <span>Auto-Audit</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              {/* Card 1: Weekly Training Audit */}
-              <div className="bg-[#FCFBF9] rounded-[22px] p-3.5 border border-[#1C1917]/[0.06] flex flex-col justify-between shadow-2xs hover:shadow-sm transition-all text-left">
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[9px] font-bold tracking-wider uppercase text-[#57534E]">
-                      YOUR TRAINING
-                    </span>
+            {/* Center Conversational Stream */}
+            <div
+              ref={desktopScrollContainerRef}
+              className="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-3.5 scrollbar-thin flex flex-col overscroll-contain"
+            >
+              {messages.length === 0 ? (
+                <div className="my-auto text-center py-12 px-6 max-w-md mx-auto">
+                  <div className="w-12 h-12 rounded-2xl bg-[#191D1A] text-white flex items-center justify-center mx-auto mb-3.5 shadow-md">
+                    <OrbitIcon size={24} state="idle" />
                   </div>
-                  {/* SVG Ascending Curve Sparkline */}
-                  <div className="w-full h-7 my-1 flex items-center">
-                    <svg className="w-full h-full overflow-visible" viewBox="0 0 100 24" fill="none">
-                      <defs>
-                        <linearGradient id="desktop-sparkline-grad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#2D6A4F" stopOpacity="0.3" />
-                          <stop offset="100%" stopColor="#2D6A4F" stopOpacity="0.0" />
-                        </linearGradient>
-                      </defs>
-                      <path
-                        d="M0 20 C20 18, 35 14, 55 11 C75 8, 85 5, 100 2 L100 24 L0 24 Z"
-                        fill="url(#desktop-sparkline-grad)"
-                      />
-                      <path
-                        d="M0 20 C20 18, 35 14, 55 11 C75 8, 85 5, 100 2"
-                        stroke="#2D6A4F"
-                        strokeWidth="2.2"
-                        strokeLinecap="round"
-                      />
-                      <circle cx="100" cy="2" r="2.5" fill="#2D6A4F" />
-                    </svg>
-                  </div>
-                  <h3 className="text-xs font-bold text-[#191D1A] mt-1">Weekly Training Audit</h3>
-                  <p className="text-[10px] text-[#57534E] mt-0.5 line-clamp-2 leading-snug">
-                    Rate 5-day split balance &amp; recovery
+                  <h4 className="font-serif text-2xl text-[#191D1A]">How can I help?</h4>
+                  <p className="text-xs text-[#57534E] mt-1.5 leading-relaxed">
+                    Choose a question on the left, or ask about your workouts, meals and plans below.
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleSend(
-                      "Analyze my workout from last week and rate my structure and volume."
-                    )
-                  }
-                  className="w-full bg-[#E05A47] hover:bg-[#D04936] text-white rounded-full py-1.5 text-xs font-semibold mt-3 text-center transition-all shadow-2xs active:scale-[0.98] cursor-pointer"
-                >
-                  Run Audit &rarr;
-                </button>
-              </div>
+              ) : (
+                <div className="space-y-3.5 w-full mt-auto">
+                  {messages.map((m, idx) => {
+                    const isLastAssistant = m.role === "assistant" && idx === messages.length - 1;
+                    const isLastUser =
+                      m.role === "user" && (idx === messages.length - 1 || idx === messages.length - 2);
 
-              {/* Card 2: Protein Gap & Fuel */}
-              <div className="bg-[#FCFBF9] rounded-[22px] p-3.5 border border-[#1C1917]/[0.06] flex flex-col justify-between shadow-2xs hover:shadow-sm transition-all text-left">
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[9px] font-bold tracking-wider uppercase text-[#E05A47]">
-                      YOUR NUTRITION
-                    </span>
-                  </div>
-                  {/* Mini Circular SVG Progress Gauge */}
-                  <div className="flex items-center gap-2 my-1">
-                    <svg className="w-7 h-7 -rotate-90 shrink-0" viewBox="0 0 36 36">
-                      <circle
-                        cx="18"
-                        cy="18"
-                        r="14"
-                        fill="none"
-                        stroke="#EFECE4"
-                        strokeWidth="3.2"
-                      />
-                      <circle
-                        cx="18"
-                        cy="18"
-                        r="14"
-                        fill="none"
-                        stroke="#E05A47"
-                        strokeWidth="3.2"
-                        strokeDasharray="88"
-                        strokeDashoffset={
-                          88 - (88 * Math.min(proteinTarget, loggedProtein)) / Math.max(1, proteinTarget)
+                    return (
+                      <div
+                        key={m.id}
+                        ref={
+                          isLastAssistant
+                            ? lastAssistantMessageRef
+                            : isLastUser
+                            ? lastUserMessageRef
+                            : undefined
                         }
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                    <span className="text-xs font-mono font-bold text-[#191D1A]">
-                      {loggedProtein}g / {proteinTarget}g
-                    </span>
-                  </div>
-                  <h3 className="text-xs font-bold text-[#191D1A] mt-1">Protein Gap &amp; Fuel</h3>
-                  <p className="text-[10px] text-[#57534E] mt-0.5 line-clamp-2 leading-snug">
-                    Calculate exact dinner macros to reach your target
-                  </p>
+                        className={cn(
+                          "flex flex-col w-full min-w-0",
+                          m.role === "user" ? "items-end" : "items-start"
+                        )}
+                      >
+                        {m.role === "user" ? (
+                          /* User Bubble */
+                          <div className="flex flex-col items-end gap-1 max-w-[85%]">
+                            <div className="w-full bg-[#FCFBF9] text-[#1C1917] rounded-[20px] rounded-br-sm p-4 border border-[#1C1917]/[0.08] shadow-2xs text-sm leading-relaxed font-normal">
+                              <p className="whitespace-pre-wrap break-words">{m.content}</p>
+                            </div>
+                            <span className="text-[10px] text-[#8C857B] font-medium pr-1">
+                              {new Date(m.timestamp || Date.now()).toLocaleTimeString([], {
+                                hour: "numeric",
+                                minute: "2-digit",
+                              })}{" "}
+                              · Sent
+                            </span>
+                          </div>
+                        ) : (
+                          /* Orbit AI Response Card */
+                          <div className="flex flex-col items-start gap-1 w-full min-w-0">
+                            <div className="w-full max-w-[95%] min-w-0 bg-[#191D1A] text-[#FCFBF9] rounded-[24px] rounded-tl-sm p-5 shadow-xl border border-white/[0.06] overflow-hidden">
+                              <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-white/[0.08]">
+                                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#2D6A4F]/40 border border-[#6EE7B7]/25 text-[#6EE7B7] text-[9px] font-bold tracking-wider uppercase select-none">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7] animate-pulse" />
+                                  ORBIT
+                                </div>
+                                <span className="text-[10px] text-white/50 font-medium">
+                                  {new Date(m.timestamp || Date.now()).toLocaleTimeString([], {
+                                    hour: "numeric",
+                                    minute: "2-digit",
+                                  })}
+                                </span>
+                              </div>
+
+                              <div
+                                className="orbit-card-content text-white/90 text-sm leading-relaxed"
+                                style={
+                                  {
+                                    "--text-primary": "#FCFBF9",
+                                    "--text-secondary": "rgba(252, 251, 249, 0.8)",
+                                    "--text-muted": "rgba(252, 251, 249, 0.5)",
+                                    "--border": "rgba(255, 255, 255, 0.08)",
+                                    "--border-subtle": "rgba(255, 255, 255, 0.05)",
+                                    "--surface": "rgba(255, 255, 255, 0.04)",
+                                    "--satat-brand": "#6EE7B7",
+                                  } as React.CSSProperties
+                                }
+                              >
+                                <MarkdownText text={m.content} />
+                              </div>
+
+                              {m.recommendation && (
+                                <div className="mt-3 pt-2.5 border-t border-white/[0.08]">
+                                  <OrbitRecommendationCard
+                                    recommendation={m.recommendation}
+                                    onExecuteAction={(act) => {
+                                      if (act.href) window.location.href = act.href;
+                                    }}
+                                  />
+                                </div>
+                              )}
+
+                              {m.insight && (
+                                <div className="mt-2.5">
+                                  <OrbitInsightCard insight={m.insight} />
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Contextual Suggestion Chips */}
+                            {m.suggested_actions &&
+                              m.suggested_actions.length > 0 &&
+                              isLastAssistant && (
+                                <div className="flex flex-wrap items-center gap-1.5 mt-1.5 max-w-[94%]">
+                                  {m.suggested_actions.map((act, actIdx) => (
+                                    <button
+                                      key={actIdx}
+                                      type="button"
+                                      onClick={() => handleSend(act.prompt)}
+                                      className="px-3 py-1.5 rounded-full bg-[#FCFBF9] hover:bg-[#EFECE4] text-[#191D1A] border border-[#191D1A]/10 text-xs font-semibold tracking-tight shadow-2xs flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                                    >
+                                      <Sparkles className="w-3.5 h-3.5 text-[#E05A47]" />
+                                      <span>{act.label}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+
+                            <span className="text-[10px] text-[#8C857B] font-medium pl-1">
+                              Delivered by Orbit · AI response · Check important details
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleSend(
-                      "Review my protein intake today and calculate remaining protein gap."
-                    )
-                  }
-                  className="w-full bg-[#2D6A4F] hover:bg-[#245740] text-white rounded-full py-1.5 text-xs font-semibold mt-3 text-center transition-all shadow-2xs active:scale-[0.98] cursor-pointer"
-                >
-                  Curate Meal &rarr;
-                </button>
-              </div>
-
-              {/* Card 3: Tomorrow's Split */}
-              <div className="bg-[#FCFBF9] rounded-[22px] p-3.5 border border-[#1C1917]/[0.06] flex flex-col justify-between shadow-2xs hover:shadow-sm transition-all text-left">
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[9px] font-bold tracking-wider uppercase text-[#2D6A4F]">
-                      CIRCADIAN
-                    </span>
-                  </div>
-                  {/* Semi-circle Readiness Arc */}
-                  <div className="flex items-center gap-2 my-1">
-                    <svg className="w-8 h-5 shrink-0 overflow-visible" viewBox="0 0 32 18">
-                      <path
-                        d="M2 16 A14 14 0 0 1 30 16"
-                        fill="none"
-                        stroke="#EFECE4"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                      />
-                      <path
-                        d="M2 16 A14 14 0 0 1 26 6"
-                        fill="none"
-                        stroke="#2D6A4F"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                    <span className="text-[10px] font-semibold text-[#2D6A4F] leading-tight">
-                      Recovery not measured
-                    </span>
-                  </div>
-                  <h3 className="text-xs font-bold text-[#191D1A] mt-1">Tomorrow&apos;s Split</h3>
-                  <p className="text-[10px] text-[#57534E] mt-0.5 line-clamp-2 leading-snug">
-                    Generate next session based on recovery
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleSend(
-                      "Recommend tomorrow's workout split based on muscle groups trained this week."
-                    )
-                  }
-                  className="w-full bg-[#EFECE4] hover:bg-[#E5E1D8] text-[#191D1A] rounded-full py-1.5 text-xs font-semibold mt-3 text-center transition-all active:scale-[0.98] cursor-pointer"
-                >
-                  Preview Split &rarr;
-                </button>
-              </div>
-
-              {/* Card 4: Deep Work Focus */}
-              <div className="bg-[#FCFBF9] rounded-[22px] p-3.5 border border-[#1C1917]/[0.06] flex flex-col justify-between shadow-2xs hover:shadow-sm transition-all text-left">
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[9px] font-bold tracking-wider uppercase text-[#57534E]">
-                      YOUR PLAN
-                    </span>
-                  </div>
-                  {/* Vertical Equalizer Bars */}
-                  <div className="flex items-center gap-2 my-1">
-                    <div className="flex items-end gap-1 h-5">
-                      <span className="w-1 bg-[#191D1A] rounded-full h-2.5" />
-                      <span className="w-1 bg-[#2D6A4F] rounded-full h-4.5" />
-                      <span className="w-1 bg-[#191D1A] rounded-full h-3" />
-                      <span className="w-1 bg-[#E05A47] rounded-full h-5" />
-                    </div>
-                    <span className="text-xs font-mono font-bold text-[#191D1A]">90m</span>
-                  </div>
-                  <h3 className="text-xs font-bold text-[#191D1A] mt-1">Deep Work Focus</h3>
-                  <p className="text-[10px] text-[#57534E] mt-0.5 line-clamp-2 leading-snug">
-                    Rank pending backlog into high-focus blocks
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleSend(
-                      "Prioritize my pending tasks and recommend deep work focus blocks."
-                    )
-                  }
-                  className="w-full bg-[#EFECE4] hover:bg-[#E5E1D8] text-[#191D1A] rounded-full py-1.5 text-xs font-semibold mt-3 text-center transition-all active:scale-[0.98] cursor-pointer"
-                >
-                  Rank Slot &rarr;
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* 4. "CIRCADIAN RHYTHM ALIGNMENT" CARD */}
-          <div className="bg-[#FCFBF9] rounded-[24px] p-4 border border-[#1C1917]/[0.06] shadow-2xs">
-            <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-[#191D1A]/[0.06]">
-              <div className="flex items-center gap-2 text-xs font-bold text-[#191D1A]">
-                <span className="w-2 h-2 rounded-full bg-[#2D6A4F]" />
-                <span>Your evening routine</span>
-              </div>
-              <span className="text-[10px] font-bold tracking-wide uppercase text-[#2D6A4F] bg-[#D8F3DC] px-2.5 py-0.5 rounded-full">
-                Suggested routine
-              </span>
-            </div>
-
-            <div className="space-y-2.5">
-              <div className="flex items-start justify-between gap-3 text-xs">
-                <div>
-                  <div className="font-bold text-[#191D1A]">Dusk Transition</div>
-                  <p className="text-[11px] text-[#57534E] mt-0.5">
-                    Plan a quieter evening that suits you
-                  </p>
-                </div>
-                <span className="font-mono text-xs font-semibold text-[#191D1A] bg-[#EFECE4] px-2.5 py-1 rounded-full shrink-0">
-                  Your preferred evening window
-                </span>
-              </div>
-
-              <div className="flex items-start justify-between gap-3 text-xs pt-2 border-t border-[#191D1A]/[0.04]">
-                <div>
-                  <div className="font-bold text-[#191D1A]">Deep Sleep Window</div>
-                  <p className="text-[11px] text-[#57534E] mt-0.5">
-                    Choose a sleep routine in your setup
-                  </p>
-                </div>
-                <span className="font-mono text-xs font-semibold text-[#191D1A] bg-[#EFECE4] px-2.5 py-1 rounded-full shrink-0">
-                  Set your own bedtime
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── RIGHT 7 COLUMNS: Conversational Feed & Studio Input Dock ── */}
-        <div className="col-span-7 flex flex-col h-[calc(100vh-6rem)] bg-[#FCFBF9] rounded-[28px] border border-[#1C1917]/[0.06] shadow-sm overflow-hidden">
-          {/* Studio Top Header */}
-          <div className="px-5 py-3.5 border-b border-[#1C1917]/[0.06] bg-[#FCFBF9] flex items-center justify-between shrink-0">
-            <div>
-              <h3 className="font-serif text-lg text-[#191D1A] tracking-tight">Orbit Intelligence Stream</h3>
-              <p className="text-[11px] text-[#57534E] font-medium">Ask a question about your day</p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {/* Context Filter Bar */}
-              <div className="flex items-center gap-1 bg-[#EFECE4] p-0.5 rounded-full border border-[#191D1A]/[0.08]">
-                {FOCUS_MODES.map((m) => {
-                  const isSelected = focusMode === m.id;
-                  const Icon = m.icon;
-                  return (
-                    <button
-                      key={m.id}
-                      type="button"
-                      onClick={() => setFocusMode(m.id)}
-                      className={cn(
-                        "rounded-full px-2.5 py-1 text-[11px] font-semibold inline-flex items-center gap-1 transition-all select-none cursor-pointer",
-                        isSelected
-                          ? "bg-[#191D1A] text-white shadow-2xs"
-                          : "text-[#57534E] hover:text-[#191D1A] font-medium"
-                      )}
-                    >
-                      {isSelected ? (
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7]" />
-                      ) : (
-                        <Icon className="w-3 h-3 text-[#57534E]" />
-                      )}
-                      <span>{m.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Reset / New Chat Button */}
-              {messages.length > 0 && (
-                <button
-                  type="button"
-                  onClick={handleResetChat}
-                  aria-label="Reset chat"
-                  className="bg-[#EFECE4] hover:bg-[#191D1A] hover:text-white text-[#1C1917] rounded-full px-3 py-1.5 text-xs font-semibold inline-flex items-center gap-1.5 transition-all shrink-0 cursor-pointer shadow-2xs active:scale-95"
-                >
-                  <RotateCcw className="w-3 h-3" />
-                  <span>New Chat</span>
-                </button>
               )}
-            </div>
-          </div>
 
-          {/* Center Conversational Stream */}
-          <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-3.5 scrollbar-thin flex flex-col overscroll-contain">
-            {messages.length === 0 ? (
-              <div className="my-auto text-center py-12 px-6 max-w-md mx-auto">
-                <div className="w-12 h-12 rounded-2xl bg-[#191D1A] text-white flex items-center justify-center mx-auto mb-3.5 shadow-md">
-                  <OrbitIcon size={24} state="idle" />
-                </div>
-                <h4 className="font-serif text-2xl text-[#191D1A]">How can I help?</h4>
-                <p className="text-xs text-[#57534E] mt-1.5 leading-relaxed">
-                  Choose a question on the left, or ask about your workouts, meals and plans below.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3.5 w-full mt-auto">
-                {messages.map((m, idx) => {
-                  const isLastAssistant = m.role === "assistant" && idx === messages.length - 1;
-                  const isLastUser = m.role === "user" && (idx === messages.length - 1 || idx === messages.length - 2);
-
-                  return (
-                    <div
-                      key={m.id}
-                      ref={isLastAssistant ? lastAssistantMessageRef : isLastUser ? lastUserMessageRef : undefined}
-                      className={cn(
-                        "flex flex-col w-full min-w-0",
-                        m.role === "user" ? "items-end" : "items-start"
-                      )}
-                    >
-                      {m.role === "user" ? (
-                        /* User Bubble */
-                        <div className="flex flex-col items-end gap-1 max-w-[85%]">
-                          <div className="w-full bg-[#FCFBF9] text-[#1C1917] rounded-[20px] rounded-br-sm p-4 border border-[#1C1917]/[0.08] shadow-2xs text-sm leading-relaxed font-normal">
-                            <p className="whitespace-pre-wrap break-words">{m.content}</p>
-                          </div>
-                          <span className="text-[10px] text-[#8C857B] font-medium pr-1">
-                            {new Date(m.timestamp || Date.now()).toLocaleTimeString([], {
-                              hour: "numeric",
-                              minute: "2-digit",
-                            })}{" "}
-                            · Sent
-                          </span>
-                        </div>
-                      ) : (
-                        /* Orbit AI Response Card */
-                        <div className="flex flex-col items-start gap-1 w-full min-w-0">
-                          <div className="w-full max-w-[95%] min-w-0 bg-[#191D1A] text-[#FCFBF9] rounded-[24px] rounded-tl-sm p-5 shadow-xl border border-white/[0.06] overflow-hidden">
-                            <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-white/[0.08]">
-                              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#2D6A4F]/40 border border-[#6EE7B7]/25 text-[#6EE7B7] text-[9px] font-bold tracking-wider uppercase select-none">
-                                <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7] animate-pulse" />
-                                ORBIT
-                              </div>
-                              <span className="text-[10px] text-white/50 font-medium">
-                                {new Date(m.timestamp || Date.now()).toLocaleTimeString([], {
-                                  hour: "numeric",
-                                  minute: "2-digit",
-                                })}
-                              </span>
-                            </div>
-
-                            <div
-                              className="orbit-card-content text-white/90 text-sm leading-relaxed"
-                              style={
-                                {
-                                  "--text-primary": "#FCFBF9",
-                                  "--text-secondary": "rgba(252, 251, 249, 0.8)",
-                                  "--text-muted": "rgba(252, 251, 249, 0.5)",
-                                  "--border": "rgba(255, 255, 255, 0.08)",
-                                  "--border-subtle": "rgba(255, 255, 255, 0.05)",
-                                  "--surface": "rgba(255, 255, 255, 0.04)",
-                                  "--satat-brand": "#6EE7B7",
-                                } as React.CSSProperties
-                              }
-                            >
-                              <MarkdownText text={m.content} />
-                            </div>
-
-                            {m.recommendation && (
-                              <div className="mt-3 pt-2.5 border-t border-white/[0.08]">
-                                <OrbitRecommendationCard
-                                  recommendation={m.recommendation}
-                                  onExecuteAction={(act) => {
-                                    if (act.href) window.location.href = act.href;
-                                  }}
-                                />
-                              </div>
-                            )}
-
-                            {m.insight && (
-                              <div className="mt-2.5">
-                                <OrbitInsightCard insight={m.insight} />
-                              </div>
-                            )}
-                          </div>
-
-                          <span className="text-[10px] text-[#8C857B] font-medium pl-1">
-                            Delivered by Orbit · AI response · Check important details
-                          </span>
-                        </div>
-                      )}
+              {/* Desktop Thinking State */}
+              {loading && (
+                <div className="flex flex-col items-start w-full animate-fade-in">
+                  <div className="w-full max-w-[95%] bg-[#191D1A] text-[#FCFBF9] rounded-[24px] rounded-tl-sm p-4 shadow-xl border border-white/[0.06]">
+                    <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-white/[0.08]">
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#2D6A4F]/40 border border-[#6EE7B7]/25 text-[#6EE7B7] text-[9px] font-bold tracking-wider uppercase select-none">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7] animate-pulse" />
+                        ORBIT
+                      </div>
+                      <span className="text-[10px] text-white/50 font-medium">Just now</span>
                     </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Desktop Thinking State */}
-            {loading && (
-              <div className="flex flex-col items-start w-full animate-fade-in">
-                <div className="w-full max-w-[95%] bg-[#191D1A] text-[#FCFBF9] rounded-[24px] rounded-tl-sm p-4 shadow-xl border border-white/[0.06]">
-                  <div className="flex items-center justify-between pb-2.5 mb-3 border-b border-white/[0.08]">
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#2D6A4F]/40 border border-[#6EE7B7]/25 text-[#6EE7B7] text-[9px] font-bold tracking-wider uppercase select-none">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7] animate-pulse" />
-                      ORBIT
+                    <div className="flex items-center gap-3 pt-1">
+                      <div className="w-5 h-5 flex items-center justify-center shrink-0 text-[#6EE7B7]">
+                        <OrbitIcon
+                          size={18}
+                          state={orbitState === "responding" ? "responding" : "thinking"}
+                        />
+                      </div>
+                      <span className="text-xs text-white/80 font-medium">
+                        {orbitState === "responding"
+                          ? "Formulating recommendation..."
+                          : pendingIntent === "SIMPLE_CONVERSATION"
+                          ? "Thinking..."
+                          : pendingIntent === "HISTORICAL_ANALYSIS"
+                          ? "Analyzing rolling 7-day records..."
+                          : "Analyzing context..."}
+                      </span>
                     </div>
-                    <span className="text-[10px] text-white/50 font-medium">Just now</span>
-                  </div>
-                  <div className="flex items-center gap-3 pt-1">
-                    <div className="w-5 h-5 flex items-center justify-center shrink-0 text-[#6EE7B7]">
-                      <OrbitIcon
-                        size={18}
-                        state={orbitState === "responding" ? "responding" : "thinking"}
-                      />
-                    </div>
-                    <span className="text-xs text-white/80 font-medium">
-                      {orbitState === "responding"
-                        ? "Formulating recommendation..."
-                        : pendingIntent === "SIMPLE_CONVERSATION"
-                        ? "Thinking..."
-                        : pendingIntent === "HISTORICAL_ANALYSIS"
-                        ? "Analyzing rolling 7-day records..."
-                        : "Analyzing context..."}
-                    </span>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Desktop Error State */}
-            {error && (
-              <div className="p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-xs bg-[#E05A47]/10 border-[#E05A47]/25 text-[#E05A47] shadow-sm animate-shake w-full">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-lg bg-[#E05A47]/20 flex items-center justify-center shrink-0 text-[#E05A47]">
-                    <AlertCircle className="w-3.5 h-3.5" />
+              {/* Desktop Error State */}
+              {error && (
+                <div className="p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-xs bg-[#E05A47]/10 border-[#E05A47]/25 text-[#E05A47] shadow-sm animate-shake w-full">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-lg bg-[#E05A47]/20 flex items-center justify-center shrink-0 text-[#E05A47]">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="font-medium text-[#191D1A]">{error}</span>
                   </div>
-                  <span className="font-medium text-[#191D1A]">{error}</span>
+                  <button
+                    type="button"
+                    onClick={handleRetry}
+                    className="px-3 py-1 rounded-full font-semibold text-xs border border-[#E05A47]/40 bg-[#FCFBF9] text-[#E05A47] hover:bg-[#E05A47] hover:text-white transition-all flex items-center gap-1 shadow-2xs cursor-pointer"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    <span>Retry</span>
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleRetry}
-                  className="px-3 py-1 rounded-full font-semibold text-xs border border-[#E05A47]/40 bg-[#FCFBF9] text-[#E05A47] hover:bg-[#E05A47] hover:text-white transition-all flex items-center gap-1 shadow-2xs cursor-pointer"
-                >
-                  <RefreshCw className="w-3 h-3" />
-                  <span>Retry</span>
-                </button>
-              </div>
-            )}
+              )}
 
-            <div className="h-1 shrink-0" aria-hidden="true" />
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Desktop Composer Dock */}
-          <div className="p-4 bg-[#FCFBF9] border-t border-[#1C1917]/[0.06] space-y-2.5 shrink-0">
-            {/* Quick Prompt Chips */}
-            <div className="w-full overflow-x-auto no-scrollbar py-0.5 scroll-px-4">
-              <div className="flex items-center gap-1.5 w-max">
-                {QUICK_CHIPS.map((chip, idx) => {
-                  const Icon = chip.icon;
-                  return (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => handleSend(chip.query)}
-                      className="shrink-0 whitespace-nowrap px-3 py-1.5 rounded-full bg-[#F6F3EC] hover:bg-[#EFECE4] text-[#191D1A] border border-[#191D1A]/10 text-xs font-semibold tracking-tight shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex items-center gap-1.5 transition-all active:scale-95 select-none cursor-pointer"
-                    >
-                      <Icon className={cn("w-3.5 h-3.5 shrink-0", chip.iconColor)} />
-                      <span className="whitespace-nowrap">{chip.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
+              <div className="h-1 shrink-0" aria-hidden="true" />
+              <div ref={desktopMessagesEndRef} />
             </div>
 
-            {/* Studio Input Bar with Camera, Mic, Paperclip */}
-            <div className="relative w-full bg-[#F6F3EC] rounded-2xl px-3 py-2 border border-[#1C1917]/10 flex items-center gap-2 focus-within:border-[#191D1A]/30 focus-within:shadow-sm transition-all">
-              <div className="flex items-center gap-1.5 shrink-0 text-[#8C857B]">
-                <button
-                  type="button"
-                  title="Camera Scan"
-                  onClick={() => router.push("/dashboard/diet?action=scan")}
-                  className="p-1 rounded-lg hover:text-[#191D1A] hover:bg-black/5 transition-all cursor-pointer"
-                >
-                  <Camera className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  title="Voice Input"
-                  onClick={() => router.push("/dashboard/diet?action=voice")}
-                  className="p-1 rounded-lg hover:text-[#191D1A] hover:bg-black/5 transition-all cursor-pointer"
-                >
-                  <Mic className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  title="Attach File — use Scan Meal for food photos"
-                  disabled
-                  aria-label="File attachments are not available; use Camera Scan for meal photos"
-                  className="p-1 rounded-lg hover:text-[#191D1A] hover:bg-black/5 transition-all cursor-pointer"
-                >
-                  <Paperclip className="w-4 h-4" />
-                </button>
+            {/* Desktop Composer Dock */}
+            <div className="p-4 bg-[#FCFBF9] border-t border-[#1C1917]/[0.06] space-y-2.5 shrink-0">
+              {/* Quick Prompt Chips */}
+              <div className="w-full overflow-x-auto no-scrollbar py-0.5 scroll-px-4">
+                <div className="flex items-center gap-1.5 w-max">
+                  {QUICK_CHIPS.map((chip, idx) => {
+                    const Icon = chip.icon;
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => handleSend(chip.query)}
+                        className="shrink-0 whitespace-nowrap px-3 py-1.5 rounded-full bg-[#F6F3EC] hover:bg-[#EFECE4] text-[#191D1A] border border-[#191D1A]/10 text-xs font-semibold tracking-tight shadow-[0_1px_3px_rgba(0,0,0,0.03)] flex items-center gap-1.5 transition-all active:scale-95 select-none cursor-pointer"
+                      >
+                        <Icon className={cn("w-3.5 h-3.5 shrink-0", chip.iconColor)} />
+                        <span className="whitespace-nowrap">{chip.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
-              <textarea
-                rows={1}
-                value={input}
-                onChange={handleInputChange}
-                onKeyDown={handleKeyDown}
-                placeholder="Ask Orbit about training, diet, or focus..."
-                className="flex-1 bg-transparent text-xs sm:text-sm resize-none outline-none leading-relaxed scrollbar-none min-h-[22px] max-h-[120px] text-[#1C1917] placeholder-[#8C857B] font-medium py-0.5"
-                aria-label="Ask Orbit desktop"
-              />
+              {/* Studio Input Bar with Camera, Mic, Paperclip */}
+              <div className="relative w-full bg-[#F6F3EC] rounded-2xl px-3 py-2 border border-[#1C1917]/10 flex items-center gap-2 focus-within:ring-2 focus-within:ring-[#e06d53]/20 focus-within:border-[#e06d53]/40 focus-within:shadow-sm transition-all">
+                <div className="flex items-center gap-1.5 shrink-0 text-[#8C857B]">
+                  <button
+                    type="button"
+                    title="Camera Scan"
+                    onClick={() => router.push("/dashboard/diet?action=scan")}
+                    className="p-1 rounded-lg hover:text-[#191D1A] hover:bg-black/5 transition-all cursor-pointer"
+                  >
+                    <Camera className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    title="Voice Input"
+                    onClick={() => router.push("/dashboard/diet?action=voice")}
+                    className="p-1 rounded-lg hover:text-[#191D1A] hover:bg-black/5 transition-all cursor-pointer"
+                  >
+                    <Mic className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    title="Attach File — use Scan Meal for food photos"
+                    disabled
+                    aria-label="File attachments are not available; use Camera Scan for meal photos"
+                    className="p-1 rounded-lg hover:text-[#191D1A] hover:bg-black/5 transition-all cursor-pointer"
+                  >
+                    <Paperclip className="w-4 h-4" />
+                  </button>
+                </div>
 
-              <button
-                type="button"
-                onClick={() => handleSend()}
-                disabled={!input.trim() || loading}
-                aria-label="Send message"
-                className="w-9 h-9 rounded-full bg-[#E05A47] hover:bg-[#C94A38] disabled:opacity-40 text-white flex items-center justify-center shrink-0 transition-all shadow-[0_4px_12px_rgba(224,90,71,0.35)] active:scale-95 cursor-pointer"
-              >
-                <ArrowUp className="w-4 h-4 stroke-[2.5]" />
-              </button>
+                <textarea
+                  rows={1}
+                  value={input}
+                  onChange={handleInputChange}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Ask Orbit about training, diet, or focus..."
+                  className="w-full flex-1 bg-transparent border-0 outline-none focus:outline-none focus:ring-0 ring-0 shadow-none text-xs sm:text-sm resize-none leading-relaxed scrollbar-none min-h-[22px] max-h-[120px] text-[#1C1917] placeholder-[#8C857B] font-medium py-0.5"
+                  aria-label="Ask Orbit desktop"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => handleSend()}
+                  disabled={!input.trim() || loading}
+                  aria-label="Send message"
+                  className="w-9 h-9 rounded-full bg-[#E05A47] hover:bg-[#C94A38] disabled:opacity-40 text-white flex items-center justify-center shrink-0 transition-all shadow-[0_4px_12px_rgba(224,90,71,0.35)] active:scale-95 cursor-pointer"
+                >
+                  <ArrowUp className="w-4 h-4 stroke-[2.5]" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
       )}
     </div>
   );

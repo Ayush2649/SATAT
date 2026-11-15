@@ -304,6 +304,26 @@ export default function TaskBoard() {
     };
   }, [userId, firebaseUser, isReady]);
 
+  // Listen for real-time Orbit / studio mutations across windows or copilot
+  useEffect(() => {
+    if (!userId || typeof window === "undefined") return;
+    const handleDataRefresh = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const domain = customEvent.detail?.domain;
+      if (!domain || domain === "tasks") {
+        getAllTasks(userId)
+          .then((loadedTasks) => {
+            setAllTasks(loadedTasks);
+            setTaskContext(computeTaskContext(loadedTasks, projects, todayString()));
+          })
+          .catch((err) => console.error("Error refreshing tasks:", err));
+      }
+    };
+
+    window.addEventListener("satat:data-refresh", handleDataRefresh);
+    return () => window.removeEventListener("satat:data-refresh", handleDataRefresh);
+  }, [userId, projects]);
+
   // ── Computed ──
   const weekDates = getWeekDates(weekAnchor);
   const activeProject = activeProjectId
@@ -416,66 +436,98 @@ export default function TaskBoard() {
     };
     if (desc.trim()) newTask.description = desc.trim();
     if (priority !== "none") newTask.priority = priority;
-    const created = await createTask(newTask);
-    setAllTasks((prev) => [created, ...prev]);
-    setShowAddTask(false);
-    toast("Task added!", "success");
-    getAllTasks(userId)
-      .then((all) => {
-        setAllTasks(all);
-        setTaskContext(computeTaskContext(all, projects, todayString()));
-      })
-      .catch(console.error);
+
+    try {
+      const created = await createTask(newTask);
+      setAllTasks((prev) => [created, ...prev]);
+      setShowAddTask(false);
+      toast("Task added!", "success");
+      getAllTasks(userId)
+        .then((all) => {
+          setAllTasks(all);
+          setTaskContext(computeTaskContext(all, projects, todayString()));
+        })
+        .catch(console.error);
+    } catch (err) {
+      console.error("Failed to add task:", err);
+      toast("Failed to add task", "error");
+    }
   };
 
   const handleToggleTask = async (task: Task) => {
+    const prevTasks = allTasks;
     const newStatus = task.status === "pending" ? "completed" : "pending";
     const updates: Partial<Task> = { status: newStatus };
     if (newStatus === "completed") updates.completedAt = Date.now();
-    await updateTask(task.id, updates);
     setAllTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, ...updates } : t)));
-    if (newStatus === "completed") toast("Task completed! 🎉", "success");
-    getAllTasks(userId)
-      .then((all) => {
-        setAllTasks(all);
-        setTaskContext(computeTaskContext(all, projects, todayString()));
-      })
-      .catch(console.error);
+    try {
+      await updateTask(task.id, updates);
+      if (newStatus === "completed") toast("Task completed! 🎉", "success");
+      getAllTasks(userId)
+        .then((all) => {
+          setAllTasks(all);
+          setTaskContext(computeTaskContext(all, projects, todayString()));
+        })
+        .catch(console.error);
+    } catch (err) {
+      console.error("Failed to toggle task:", err);
+      setAllTasks(prevTasks); // ROLLBACK
+      toast("Failed to update task", "error");
+    }
   };
 
   const handleDeleteTask = async (taskId: string) => {
-    await deleteTask(taskId);
+    const prevTasks = allTasks;
     setAllTasks((prev) => prev.filter((t) => t.id !== taskId));
-    toast("Task deleted", "info");
-    getAllTasks(userId)
-      .then((all) => {
-        setAllTasks(all);
-        setTaskContext(computeTaskContext(all, projects, todayString()));
-      })
-      .catch(console.error);
+    try {
+      await deleteTask(taskId);
+      toast("Task deleted", "info");
+      getAllTasks(userId)
+        .then((all) => {
+          setAllTasks(all);
+          setTaskContext(computeTaskContext(all, projects, todayString()));
+        })
+        .catch(console.error);
+    } catch (err) {
+      console.error("Failed to delete task:", err);
+      setAllTasks(prevTasks); // ROLLBACK
+      toast("Failed to delete task", "error");
+    }
   };
 
   const handleUpdateTask = async (taskId: string, updates: Partial<Task>) => {
+    const prevTasks = allTasks;
     const clean = Object.fromEntries(
       Object.entries(updates).filter(([, v]) => v !== undefined)
     ) as Partial<Task>;
-    await updateTask(taskId, clean);
     setAllTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, ...clean } : t)));
     setEditingTask(null);
-    toast("Task updated", "success");
-    getAllTasks(userId)
-      .then((all) => {
-        setAllTasks(all);
-        setTaskContext(computeTaskContext(all, projects, todayString()));
-      })
-      .catch(console.error);
+    try {
+      await updateTask(taskId, clean);
+      toast("Task updated", "success");
+      getAllTasks(userId)
+        .then((all) => {
+          setAllTasks(all);
+          setTaskContext(computeTaskContext(all, projects, todayString()));
+        })
+        .catch(console.error);
+    } catch (err) {
+      console.error("Failed to update task:", err);
+      setAllTasks(prevTasks); // ROLLBACK
+      toast("Failed to update task", "error");
+    }
   };
 
   const handleAddProject = async (name: string, color: string) => {
-    const p = await createProject(userId, name.trim(), color);
-    setProjects((prev) => [...prev, p]);
-    setShowAddProject(false);
-    toast(`Workspace "${p.name}" created`, "success");
+    try {
+      const p = await createProject(userId, name.trim(), color);
+      setProjects((prev) => [...prev, p]);
+      setShowAddProject(false);
+      toast(`Workspace "${p.name}" created`, "success");
+    } catch (err) {
+      console.error("Failed to create workspace:", err);
+      toast("Failed to create workspace", "error");
+    }
   };
 
   const handleDeleteProject = async (projectId: string, projectName: string) => {

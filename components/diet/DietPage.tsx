@@ -49,6 +49,7 @@ import {
   deleteMealTemplate,
 } from "@/lib/firestore";
 import { setDietContext } from "@/lib/orbitContext";
+// import { useToast } from "@/components/ui/Toast";
 import type { MealEntry, MealMacros, MacroGoals, MealTemplate } from "@/types";
 import EmptyState from "@/components/ui/EmptyState";
 import { FuelPageSkeleton } from "@/components/ui/PageSkeletons";
@@ -63,6 +64,7 @@ export default function DietPage() {
   const { data: session } = useSession();
   const { firebaseUser, isReady } = useFirebaseAuth();
   const userId = firebaseUser?.uid ?? (session?.user as any)?.id ?? session?.user?.email ?? "";
+  // const { toast } = useToast();
 
   const [date, setDate] = useState(todayString());
   const [meals, setMeals] = useState<MealEntry[]>([]);
@@ -141,6 +143,27 @@ export default function DietPage() {
       cancelled = true;
     };
   }, [userId, date, firebaseUser, isReady]);
+
+  // Listen for real-time Orbit / studio mutations across windows or copilot
+  useEffect(() => {
+    if (!userId || typeof window === "undefined") return;
+    const handleDataRefresh = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const domain = customEvent.detail?.domain;
+      if (!domain || domain === "meals" || domain === "diet") {
+        (getMeals as any)(userId, date)
+          .then((loadedMeals: any[]) => {
+            if (Array.isArray(loadedMeals)) {
+              setMeals(loadedMeals);
+            }
+          })
+          .catch((err: any) => console.error("Error refreshing meals:", err));
+      }
+    };
+
+    window.addEventListener("satat:data-refresh", handleDataRefresh);
+    return () => window.removeEventListener("satat:data-refresh", handleDataRefresh);
+  }, [userId, date]);
 
   const totals = meals.reduce<MealMacros>(
     (acc, meal) => ({
@@ -232,14 +255,20 @@ export default function DietPage() {
   };
 
   const handleDeleteMeal = async (mealId: string) => {
+    const prevMeals = meals;
+    const prevExpanded = expandedMealId;
+    setMeals((prev) => prev.filter((meal) => meal.id !== mealId));
+    if (expandedMealId === mealId) {
+      setExpandedMealId(null);
+    }
     try {
       await (deleteMeal as any)(mealId, userId);
-      setMeals((prev) => prev.filter((meal) => meal.id !== mealId));
-      if (expandedMealId === mealId) {
-        setExpandedMealId(null);
-      }
+      toast("Meal entry deleted", "info");
     } catch (error) {
       console.error("Failed to delete meal:", error);
+      setMeals(prevMeals); // ROLLBACK
+      setExpandedMealId(prevExpanded);
+      toast("Failed to delete meal", "error");
     }
   };
 
@@ -248,6 +277,7 @@ export default function DietPage() {
       await (saveMacroGoals as any)(userId, nextGoals);
       setGoals(nextGoals);
       setShowGoals(false);
+      toast("Macro goals updated! 🎯", "success");
     } catch (error) {
       console.error("Failed to save macro goals:", error);
       toast("Could not save goals. Please try again.", "error");
@@ -262,6 +292,7 @@ export default function DietPage() {
         return [...prev, next];
       });
       setSavingTemplate(null);
+      toast(`Saved "${template.name}" to meal library!`, "success");
     } catch (error) {
       console.error("Failed to save meal template:", error);
       toast("Could not save template. Please try again.", "error");
@@ -567,7 +598,7 @@ export default function DietPage() {
             {meals.map((meal) => {
               const isExpanded = expandedMealId === meal.id;
               const photoUrl = resolveDishThumbnail(meal.name, meal.photoUrl);
-              const { timeLabel, categoryLabel } = formatMealTimeAndCategory(meal.createdAt);
+              const { timeLabel, categoryLabel } = formatMealTimeAndCategory(meal.createdAt, (meal as any).mealType, meal.name);
 
               return (
                 <div
@@ -597,7 +628,7 @@ export default function DietPage() {
                             {timeLabel} · {categoryLabel}
                           </span>
                           <h3 className="line-clamp-1 text-[15px] font-bold text-[#1C1917] leading-snug">
-                            {meal.name}
+                            {meal.name.replace(/^(breakfast|lunch|dinner|snack):\s*/i, "")}
                           </h3>
                         </div>
 
@@ -894,7 +925,7 @@ export default function DietPage() {
               <div className="space-y-3">
                 {meals.map((meal) => {
                   const photoUrl = resolveDishThumbnail(meal.name, meal.photoUrl);
-                  const { timeLabel, categoryLabel } = formatMealTimeAndCategory(meal.createdAt);
+                  const { timeLabel, categoryLabel } = formatMealTimeAndCategory(meal.createdAt, (meal as any).mealType, meal.name);
 
                   return (
                     <div
@@ -919,7 +950,7 @@ export default function DietPage() {
                             {timeLabel} · {categoryLabel}
                           </span>
                           <h4 className="font-bold text-base text-[#1C1917] truncate mt-0.5">
-                            {meal.name}
+                            {meal.name.replace(/^(breakfast|lunch|dinner|snack):\s*/i, "")}
                           </h4>
                           <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                             <span className="bg-[#E0F2E9] text-[#2D6A4F] text-[10px] font-bold px-2 py-0.5 rounded-md">

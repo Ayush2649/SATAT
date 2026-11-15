@@ -84,7 +84,14 @@ describe("/api/aria Route Authentication & Integration", () => {
       expect(res.status).toBe(200);
 
       const body = await res.json();
-      expect(body).toEqual({ reply: "Orbit AI coach response" });
+      expect(body).toEqual(
+        expect.objectContaining({
+          reply: "Orbit AI coach response",
+          message: "Orbit AI coach response",
+          action_executed: null,
+          suggested_actions: expect.any(Array),
+        })
+      );
       expect(mockBuildOrbitContext).toHaveBeenCalledTimes(1);
       expect(mockCallTextWithFallback).toHaveBeenCalledTimes(1);
     });
