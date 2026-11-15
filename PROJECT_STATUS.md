@@ -7,6 +7,15 @@
 
 ---
 
+## 15 November 2026 — Meal scan accuracy research checkpoint
+
+- User reported a real mixed-meal failure: rice estimated at 200 g instead of their approximately 400 g, paneer bhurji mistaken for egg, raw banana sabzi mistaken for another side, dal missed and a 393 kcal result. This shows the prior five-case smoke test did not establish meal accuracy. Earlier wording about preserving all visible pieces is a targeted change, not a guarantee across meals.
+- Research/source review confirmed compounded image reduction (client 1024 px, server 768 px, configured DeepSeek low detail), generic recipe aliases, canonical-match-before-confidence routing, no guaranteed reconciliation of visible labels against calculated components, whole-plate correction limitations, egg-text auto-selecting a Boiled Egg modifier, fixed uncertainty spread and unsupported homestyle fat discounts. Current nutrient schema lacks micronutrients and per-record provenance.
+- DeepSeek currently supports image input; the latest local scan trace succeeded. There is no evidence that replacing the API key fixes the error. Model choice, detail level, food inventory, portion evidence, preparation-aware database matching and correction UX must be evaluated separately.
+- Researched official DeepSeek/MyFitnessPal documentation, Nutrition5k, DietAI24, NIN IFCT and USDA data guidance. MyFitnessPal documents user selection/serving corrections and missed-food additions; its superiority on this meal is not established. Vitamin/mineral estimates require nutrient records and quantities, not visual measurement.
+- No application-code changes or external uploads of the user's screenshot in this research phase. Proposed next work: editable component rows, deterministic user corrections, explicit partial totals, original-image quality/model comparison, weighed held-out meals and source-backed recipes/micronutrients. Do not tune this photo to an assumed 1,000 kcal target.
+- Full tests rerun: **67 files passed; 740 passed; 26 skipped**. Production build rerun **passed, exit 0**, all 34 routes generated; existing non-fatal image/hook lint warnings remain. Changes limited to this status entry and `docs/MEAL_SCAN_RESEARCH_2026-11-15.md`; no push.
+
 ## 15 November 2026 — Authenticated audit fixes and meal scanning (review checkpoint)
 
 - Scope is being closed at the user's requested review checkpoint. Work stays on `feat/complete-ui-change-e2e`; no push or merge is authorized.
