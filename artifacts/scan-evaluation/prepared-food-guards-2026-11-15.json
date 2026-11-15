@@ -1,0 +1,481 @@
+{
+  "generatedAt": "2026-11-15T08:49:21.856Z",
+  "limitation": "Calorie accuracy is reported only for supplied measured references with provenance. Default photos are recognition/guardrail smoke tests, not measured nutrition accuracy.",
+  "skippedProfiles": [],
+  "results": [
+    {
+      "file": "04_masala_dosa_sambar.jpg",
+      "profile": {
+        "provider": "deepseek",
+        "detail": "high"
+      },
+      "expectedVisualCategories": "(?=.*dosa)(?=.*(?:sambar|chutney))",
+      "recognitionMatch": true,
+      "status": 200,
+      "latencyMs": 8462,
+      "name": "Plain Dosa",
+      "calories": 521,
+      "calorieRange": {
+        "low": 443,
+        "high": 599
+      },
+      "proteinG": 14,
+      "carbsG": 64,
+      "fatG": 24,
+      "fiberG": 10,
+      "confidence": "high",
+      "notes": "Large crisp dosa with five side katoris; the pale rice-like bowl and yellow-green bowl are likely curd rice and pongal, but identity is uncertain. Portions are estimates without a scale.",
+      "candidates": [
+        {
+          "name": "Plain Dosa",
+          "confidence": "high"
+        },
+        {
+          "name": "Masala Dosa",
+          "confidence": "low"
+        },
+        {
+          "name": "Rava Dosa",
+          "confidence": "low"
+        }
+      ],
+      "visibleItems": [
+        "Plain dosa ~150g",
+        "Sambar ~80g",
+        "Coconut chutney ~50g",
+        "Green chutney ~50g",
+        "Tomato chutney ~50g",
+        "Pongal ~70g",
+        "Curd rice ~70g"
+      ],
+      "ambiguity": "medium",
+      "foods": [
+        {
+          "componentId": "scan-0",
+          "name": "Plain Dosa",
+          "matchedFoodId": "dosa_plain",
+          "matchedCanonicalName": "Plain Dosa",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 1,
+          "unit": "piece",
+          "grams": 100,
+          "calories": 170,
+          "proteinG": 4,
+          "carbsG": 29,
+          "fatG": 4,
+          "fiberG": 2,
+          "confidence": 0.9,
+          "verified": true
+        },
+        {
+          "componentId": "scan-1",
+          "name": "Sambar",
+          "matchedFoodId": "sambar",
+          "matchedCanonicalName": "Sambar",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 80,
+          "unit": "g",
+          "grams": 80,
+          "calories": 46,
+          "proteinG": 2,
+          "carbsG": 7,
+          "fatG": 1,
+          "fiberG": 2,
+          "confidence": 0.85,
+          "verified": true
+        },
+        {
+          "componentId": "scan-2",
+          "name": "Coconut Chutney",
+          "matchedFoodId": "chutney_coconut",
+          "matchedCanonicalName": "Coconut Chutney",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 50,
+          "unit": "g",
+          "grams": 50,
+          "calories": 90,
+          "proteinG": 1,
+          "carbsG": 4,
+          "fatG": 8,
+          "fiberG": 2,
+          "confidence": 0.8,
+          "verified": true
+        },
+        {
+          "componentId": "scan-3",
+          "name": "Green Chutney",
+          "matchedFoodId": null,
+          "matchedCanonicalName": "Green Chutney",
+          "nutritionStatus": "estimated",
+          "source": "ai_estimate",
+          "quantity": 50,
+          "unit": "g",
+          "grams": 50,
+          "calories": 55,
+          "proteinG": 2,
+          "carbsG": 4,
+          "fatG": 4,
+          "fiberG": 2,
+          "confidence": 0.7,
+          "verified": false,
+          "calorieRange": {
+            "low": 40,
+            "high": 75
+          }
+        },
+        {
+          "componentId": "scan-4",
+          "name": "Tomato Chutney",
+          "matchedFoodId": null,
+          "matchedCanonicalName": "Tomato Chutney",
+          "nutritionStatus": "estimated",
+          "source": "ai_estimate",
+          "quantity": 50,
+          "unit": "g",
+          "grams": 50,
+          "calories": 48,
+          "proteinG": 1,
+          "carbsG": 5,
+          "fatG": 3,
+          "fiberG": 1,
+          "confidence": 0.65,
+          "verified": false,
+          "calorieRange": {
+            "low": 35,
+            "high": 65
+          }
+        },
+        {
+          "componentId": "scan-5",
+          "name": "Pongal",
+          "matchedFoodId": null,
+          "matchedCanonicalName": "Pongal",
+          "nutritionStatus": "estimated",
+          "source": "ai_estimate",
+          "quantity": 70,
+          "unit": "g",
+          "grams": 70,
+          "calories": 112,
+          "proteinG": 4,
+          "carbsG": 15,
+          "fatG": 4,
+          "fiberG": 1,
+          "confidence": 0.6,
+          "verified": false,
+          "calorieRange": {
+            "low": 91,
+            "high": 140
+          },
+          "reviewNote": "Check this dish and its amount; the photo was unclear."
+        },
+        {
+          "componentId": "scan-6",
+          "name": "Curd Rice",
+          "matchedFoodId": null,
+          "matchedCanonicalName": null,
+          "nutritionStatus": "unresolved",
+          "source": "unresolved",
+          "quantity": 70,
+          "unit": "g",
+          "grams": 70,
+          "calories": null,
+          "proteinG": null,
+          "carbsG": null,
+          "fatG": null,
+          "fiberG": null,
+          "confidence": 0.4,
+          "verified": false,
+          "reviewNote": "Check this dish and its amount; the photo was unclear."
+        }
+      ],
+      "reviewSuggestions": [],
+      "unknownFoods": [
+        "Curd Rice"
+      ],
+      "allFoodsVerified": false,
+      "requiresManualReview": true,
+      "hasUnresolvedItems": true,
+      "unresolvedCount": 1,
+      "estimatedCount": 3,
+      "verifiedCount": 3,
+      "hasIncompleteNutrition": true,
+      "hasInventoryAmbiguity": true,
+      "totalLabel": "Known-food subtotal",
+      "recognitionVerified": false,
+      "portionBasis": "photo_estimate",
+      "uncertainty": "Not calibrated; ingredients, oil and portion mass need confirmation",
+      "inventoryReconciled": true,
+      "timings": {
+        "imagePrepMs": 3.5,
+        "visionProviderMs": 5413.7,
+        "dbLookupMs": 66.1,
+        "nutritionEstimationMs": 2963.2,
+        "nutritionCalcMs": 3.5,
+        "totalServerMs": 8450.7,
+        "retryBackoffMs": 0
+      },
+      "calls": [
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "analyzeMeal",
+          "attempt": 1,
+          "durationMs": 5410.8,
+          "outcome": "success",
+          "promptTokens": 2303,
+          "completionTokens": 394,
+          "cachedTokens": 0,
+          "totalTokens": 2697,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000433,
+          "costInr": 0.0364,
+          "requestId": "f3d6e267-41f7-4957-9405-3854691159a6"
+        },
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "estimateNutrition",
+          "attempt": 1,
+          "durationMs": 2960.4,
+          "outcome": "success",
+          "promptTokens": 582,
+          "completionTokens": 314,
+          "cachedTokens": 0,
+          "totalTokens": 896,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000169,
+          "costInr": 0.0142,
+          "requestId": "2ec61d43-0da2-4346-b3f4-a2319adb86ab"
+        }
+      ],
+      "metrics": null
+    },
+    {
+      "file": "08_oats_berries_chia_bowl.jpg",
+      "profile": {
+        "provider": "deepseek",
+        "detail": "high"
+      },
+      "expectedVisualCategories": "(?=.*(?:oat|porridge|yogurt|yoghurt|smoothie))(?=.*(?:berr|fruit))",
+      "recognitionMatch": true,
+      "status": 200,
+      "latencyMs": 43126,
+      "name": "Oatmeal Bowl",
+      "calories": 523,
+      "calorieRange": {
+        "low": 445,
+        "high": 601
+      },
+      "proteinG": 14,
+      "carbsG": 111,
+      "fatG": 8,
+      "fiberG": 25,
+      "confidence": "high",
+      "notes": "Two oatmeal bowls topped with berries, plus side bowls of mixed berries and blackberries and kiwi slices. Photo shows multiple servings; portions are visual estimates.",
+      "candidates": [
+        {
+          "name": "Oatmeal Bowl",
+          "confidence": "high"
+        },
+        {
+          "name": "Berry Bowl",
+          "confidence": "medium"
+        },
+        {
+          "name": "Fruit Platter",
+          "confidence": "low"
+        }
+      ],
+      "visibleItems": [
+        "oatmeal bowl ~250g",
+        "oatmeal bowl ~250g",
+        "mixed berry bowl ~200g",
+        "blackberry bowl ~120g",
+        "kiwi slices ~80g",
+        "strawberries ~60g"
+      ],
+      "ambiguity": "low",
+      "foods": [
+        {
+          "componentId": "scan-1",
+          "name": "Mixed Berries (blueberries, raspberries, blackberries)",
+          "matchedFoodId": "mixed_berries",
+          "matchedCanonicalName": "Mixed Fresh Berries",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 1,
+          "unit": "bowl",
+          "grams": 150,
+          "calories": 90,
+          "proteinG": 1,
+          "carbsG": 21,
+          "fatG": 0,
+          "fiberG": 4,
+          "confidence": 0.9,
+          "verified": true
+        },
+        {
+          "componentId": "scan-4",
+          "name": "Strawberries",
+          "matchedFoodId": "mixed_berries",
+          "matchedCanonicalName": "Mixed Fresh Berries",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 3,
+          "unit": "piece",
+          "grams": 240,
+          "calories": 144,
+          "proteinG": 2,
+          "carbsG": 34,
+          "fatG": 1,
+          "fiberG": 6,
+          "confidence": 0.85,
+          "verified": true
+        },
+        {
+          "componentId": "scan-0",
+          "name": "Oatmeal Bowl",
+          "matchedFoodId": null,
+          "matchedCanonicalName": "Oatmeal Bowl",
+          "nutritionStatus": "estimated",
+          "source": "ai_estimate",
+          "quantity": 250,
+          "unit": "g",
+          "grams": 250,
+          "calories": 178,
+          "proteinG": 8,
+          "carbsG": 30,
+          "fatG": 5,
+          "fiberG": 5,
+          "confidence": 0.95,
+          "verified": false,
+          "calorieRange": {
+            "low": 150,
+            "high": 225
+          }
+        },
+        {
+          "componentId": "scan-2",
+          "name": "Blackberries",
+          "matchedFoodId": null,
+          "matchedCanonicalName": "Blackberries",
+          "nutritionStatus": "estimated",
+          "source": "ai_estimate",
+          "quantity": 1,
+          "unit": "bowl",
+          "grams": null,
+          "calories": 62,
+          "proteinG": 2,
+          "carbsG": 14,
+          "fatG": 1,
+          "fiberG": 8,
+          "confidence": 0.9,
+          "verified": false,
+          "calorieRange": {
+            "low": 50,
+            "high": 80
+          }
+        },
+        {
+          "componentId": "scan-3",
+          "name": "Kiwi slices",
+          "matchedFoodId": null,
+          "matchedCanonicalName": "Kiwi slices",
+          "nutritionStatus": "estimated",
+          "source": "ai_estimate",
+          "quantity": 80,
+          "unit": "g",
+          "grams": 80,
+          "calories": 49,
+          "proteinG": 1,
+          "carbsG": 12,
+          "fatG": 1,
+          "fiberG": 2,
+          "confidence": 0.85,
+          "verified": false,
+          "calorieRange": {
+            "low": 44,
+            "high": 56
+          }
+        }
+      ],
+      "reviewSuggestions": [
+        {
+          "id": "label-2",
+          "name": "mixed berry",
+          "quantity": 200,
+          "unit": "g",
+          "label": "mixed berry bowl ~200g"
+        },
+        {
+          "id": "label-3",
+          "name": "blackberry",
+          "quantity": 120,
+          "unit": "g",
+          "label": "blackberry bowl ~120g"
+        }
+      ],
+      "unknownFoods": [],
+      "allFoodsVerified": false,
+      "requiresManualReview": true,
+      "hasUnresolvedItems": false,
+      "unresolvedCount": 0,
+      "estimatedCount": 3,
+      "verifiedCount": 2,
+      "hasIncompleteNutrition": true,
+      "hasInventoryAmbiguity": true,
+      "totalLabel": "Known-food subtotal",
+      "recognitionVerified": false,
+      "portionBasis": "photo_estimate",
+      "uncertainty": "Not calibrated; ingredients, oil and portion mass need confirmation",
+      "inventoryReconciled": true,
+      "timings": {
+        "imagePrepMs": 2,
+        "visionProviderMs": 41174.4,
+        "dbLookupMs": 18,
+        "nutritionEstimationMs": 1924.4,
+        "nutritionCalcMs": 2.7,
+        "totalServerMs": 43121.8,
+        "retryBackoffMs": 0
+      },
+      "calls": [
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "analyzeMeal",
+          "attempt": 1,
+          "durationMs": 41173.3,
+          "outcome": "success",
+          "promptTokens": 2303,
+          "completionTokens": 319,
+          "cachedTokens": 0,
+          "totalTokens": 2622,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000412,
+          "costInr": 0.0346,
+          "requestId": "abc54524-d27b-41a5-8a8f-137ee7472fd9"
+        },
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "estimateNutrition",
+          "attempt": 1,
+          "durationMs": 1923.5,
+          "outcome": "success",
+          "promptTokens": 570,
+          "completionTokens": 476,
+          "cachedTokens": 0,
+          "totalTokens": 1046,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000213,
+          "costInr": 0.0179,
+          "requestId": "9e08ddc7-84a2-4c02-8692-e300490f2c56"
+        }
+      ],
+      "metrics": null
+    }
+  ]
+}

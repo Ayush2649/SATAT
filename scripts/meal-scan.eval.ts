@@ -7,10 +7,23 @@ import { NextRequest } from "next/server";
 vi.mock("next-auth", () => ({ getServerSession: vi.fn(async () => ({ user: { id: "scan-evaluation" } })) }));
 import { POST } from "../app/api/analyze-meal/route";
 
+// Visual category checks only. Several legacy filenames mislabel the actual food:
+// 05 has idli/chutney, 06 pav bhaji, 12 mushroom pasta, 13 berry drinks.
+// No species, hidden supplements, recipe or calorie truth is inferred from filenames.
 const fixtures: [string, string][] = [
-  ["04_masala_dosa_sambar.jpg", "dosa"],
+  ["01_north_indian_thali.jpg", "(?=.*rice)(?=.*(?:curry|paneer|masala))"],
+  ["02_paneer_tikka_masala.jpg", "(?=.*(?:naan|flatbread|roti))(?=.*(?:curry|masala|paneer|butter chicken))"],
+  ["03_chicken_biryani.jpg", "biryani"],
+  ["04_masala_dosa_sambar.jpg", "(?=.*dosa)(?=.*(?:sambar|chutney))"],
+  ["05_idli_vada_sambar.jpg", "(?=.*idli)(?=.*chutney)"],
+  ["06_chole_bhature.jpg", "(?=.*(?:pav|bread|roll))(?=.*(?:bhaji|vegetable|curry))"],
   ["07_samosa_chutney.jpg", "samosa"],
-  ["10_eggs_avocado_toast.jpg", "toast|avocado|egg"],
+  ["08_oats_berries_chia_bowl.jpg", "(?=.*(?:oat|porridge|yogurt|yoghurt|smoothie))(?=.*(?:berr|fruit))"],
+  ["09_grilled_chicken_quinoa_bowl.jpg", "(?=.*(?:salad|bowl|vegetable))(?=.*(?:egg|edamame|tofu))"],
+  ["10_eggs_avocado_toast.jpg", "(?=.*egg)(?=.*(?:toast|bread))"],
+  ["11_salmon_rice_broccoli.jpg", "(?=.*(?:fish|salmon))(?=.*(?:vegetable|green|broccoli|asparagus))"],
+  ["12_pasta_arrabbiata.jpg", "pasta|linguine|fettuccine|tagliatelle"],
+  ["13_protein_shake_banana.jpg", "smoothie|berry|berries|fruit.*(?:drink|shake)"],
   ["14_edge_black_coffee_only.jpg", "coffee"],
   ["15_edge_non_food_laptop_desk.jpg", "no food"],
 ];
@@ -36,9 +49,9 @@ for (const profile of profiles) for (const [file, expected] of cases) {
       body: JSON.stringify({ imageBase64, mimeType: "image/jpeg" }),
     }));
     const data = await response.json();
-    const recognitionMatch = new RegExp(expected, "i").test(data.name || "");
+    const recognitionMatch = new RegExp(expected, "i").test([data.name || "", ...(data.foods || []).map((food: { name: string }) => food.name)].join(" "));
     const reference = references.find(item => item.file === file);
-    results.push({ file, profile, recognitionMatch, status: response.status, latencyMs: Date.now() - started, ...data, metrics: reference ? evaluateMeal(reference, data) : null });
+    results.push({ file, profile, expectedVisualCategories: expected, recognitionMatch, status: response.status, latencyMs: Date.now() - started, ...data, metrics: reference ? evaluateMeal(reference, data) : null });
     expect(response.status).toBe(200);
     expect(recognitionMatch).toBe(true);
     expect(Number.isFinite(data.calories)).toBe(true);

@@ -373,15 +373,13 @@ export async function estimateNutritionBatch(
       let scaledFib: number | undefined;
       let scaledRange: { low: number; high: number } | undefined;
 
-      if (matched.nutritionPerUnit && qty !== 1) {
-        scaledCals = Math.round(matched.nutritionPerUnit.calories * qty);
-        scaledProt = Math.round(matched.nutritionPerUnit.proteinG * qty);
-        scaledCarbs = Math.round(matched.nutritionPerUnit.carbsG * qty);
-        scaledFat = Math.round(matched.nutritionPerUnit.fatG * qty);
-        scaledFib =
-          matched.nutritionPerUnit.fiberG !== undefined
-            ? Math.round(matched.nutritionPerUnit.fiberG * qty)
-            : undefined;
+      if ((matched.nutritionPerUnit || matched.basis === "per_unit") && qty !== 1) {
+        const perUnit = matched.nutritionPerUnit || matched;
+        scaledCals = Math.round(perUnit.calories * qty);
+        scaledProt = Math.round(perUnit.proteinG * qty);
+        scaledCarbs = Math.round(perUnit.carbsG * qty);
+        scaledFat = Math.round(perUnit.fatG * qty);
+        scaledFib = perUnit.fiberG !== undefined ? Math.round(perUnit.fiberG * qty) : undefined;
         scaledRange = matched.calorieRange
           ? {
               low: Math.round(matched.calorieRange.low * qty),

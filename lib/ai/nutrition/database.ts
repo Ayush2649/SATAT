@@ -815,7 +815,7 @@ export const INDIAN_FOOD_DATABASE: FoodCompositionItem[] = [
   {
     id: "oats_rolled",
     name: "Rolled Oats (Dry)",
-    aliases: ["oats", "rolled oats", "quaker oats", "raw oats", "dry oats", "oatmeal"],
+    aliases: ["oats", "rolled oats", "quaker oats", "raw oats", "dry oats"],
     category: "rice_grain",
     defaultUnit: "gram",
     gramsPerDefaultUnit: 40,

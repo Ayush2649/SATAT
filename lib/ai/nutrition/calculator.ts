@@ -205,6 +205,9 @@ export function resolveFoodItem(rawName: string): FoodCompositionItem | null {
     return null;
   }
 
+  // The dry-oats alias "oatmeal" must not price a hydrated breakfast bowl as dry grain.
+  if (/\b(oatmeal|porridge)\b|\boats?\b.*\bbowl\b/i.test(rawName) && !/\b(dry|raw|uncooked)\b/i.test(rawName)) return null;
+
   // Pass 1: Exact match on canonical name or aliases with standard clean
   for (const item of INDIAN_FOOD_DATABASE) {
     if (item.name.toLowerCase() === rawClean) return item;
@@ -215,6 +218,9 @@ export function resolveFoodItem(rawName: string): FoodCompositionItem | null {
   if (/\/|\bor\b/i.test(rawName)) return null;
   // A preparation is a recipe, not a synonym for a generic ingredient.
   if (/\b(egg|fish)\b/i.test(rawName) && /\b(scrambled|bhurji|masala|fried|fry|curry)\b/i.test(rawName)) return null;
+
+  // Prepared rice recipes without an exact reference must not collapse to plain rice.
+  if (/\b(curd|yogurt|yoghurt|coconut|lemon|tamarind|fried)\s+rice\b/i.test(rawName)) return null;
 
   // Pass 2: Normalized descriptive name
   const normalized = normalizeDescriptiveFoodName(rawName);
@@ -230,6 +236,9 @@ export function resolveFoodItem(rawName: string): FoodCompositionItem | null {
   const targetStrings = [rawClean, normalized].filter(Boolean);
 
   for (const item of INDIAN_FOOD_DATABASE) {
+    // A recipe containing butter/ghee is not a serving of the pure fat.
+    // Exact names and normalized ingredient descriptions already matched above.
+    if (["butter", "ghee"].includes(item.id)) continue;
     for (const alias of item.aliases) {
       const aliasLower = alias.toLowerCase();
       // Skip very short aliases (< 3 chars) to avoid false positives

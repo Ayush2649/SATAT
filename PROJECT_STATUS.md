@@ -7,6 +7,16 @@
 
 ---
 
+## 15 November 2026 — Deployed-style scan details and broader checks (implemented; visual review pending)
+
+- Implemented the deployed scan-detail hierarchy: one botanical dark result card, compact component pills, horizontal donut/macros, and log action within the card. Preserve individual edits and ambiguity gates; do not restore duplicate display-label counting or unverified alternative-dish replacements.
+- Expanding the live production-route smoke check from five to fifteen available photos. Manual visual review found misleading legacy filenames (pav bhaji labelled chole bhature; mushroom pasta labelled arrabbiata; berry drinks labelled protein shake). Expected visual categories now reflect what can actually be seen; filenames and assumed calories are not ground truth.
+- Fixed additional calculation bugs exposed by broader checks: Butter Chicken no longer maps to pure butter; explicit per-unit AI values scale all requested pieces; prepared oats no longer use dry-oat nutrition; unsupported prepared-rice recipes do not collapse to plain rice. Added regression coverage and removed the dry-oat “oatmeal” alias to keep editor lookup consistent.
+- Live checks: first run 14/15 coarse categories; one curry-family regex omitted Butter Chicken. Corrected that lexical expectation, with protein identity still unverified. Second run 15/15, mean observed latency ~8 s; subsequent prepared-oats/rice checks 2/2. These are developmental category/guardrail checks, not component or calorie accuracy. All three JSON runs are retained under `artifacts/scan-evaluation/`.
+- Numerical calorie/protein accuracy across normal dishes remains unmeasured without weighed portions/recipes. Remaining concerns include unsuitable piece/container reference masses, ambiguous ingredients, composite-food overlap and redundant missing-food questions. Pasta was unresolved in one run and estimated in another. No universal accuracy claim.
+- Browser control repeatedly timed out; new UI revision has no fresh browser screenshot/interaction verification. Final full suite: **70 files passed; 779 tests passed, 26 skipped, zero failures**. Production build **passed, exit 0**, all 34 routes generated; existing non-fatal lint warnings remain. Current branch only; no push. Detailed report: `docs/SCAN_DETAIL_AND_NORMAL_DISH_CHECKS_2026-11-15.md`.
+- Modified files: scanner modal/component editor; nutrition calculator/AI estimator/database; two regression files; expanded live evaluation runner; three result JSON files; this status file and the new detail/normal-dish report. No persisted meals modified; pre-existing photo fixtures and edge-case script remain untracked and untouched.
+
 ## 15 November 2026 — Fuel layout and counted-inventory repair (complete)
 
 - Restored the horizontal donut/macros layout on phone widths, using a smaller ring and labels below 360 px. Removed verbose logged-meal provenance/component paragraphs and missing-nutrient placeholders; only finite supplied micronutrients are displayed.

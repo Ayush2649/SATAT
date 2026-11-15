@@ -28,6 +28,21 @@ describe("Component corrections and explicit uncertainty", () => {
     expect(resolveFoodItem("Fried fish curry")).toBeNull();
     expect(exactScanFood("boiled egg")?.id).toBe("egg_whole");
   });
+  it("never treats a butter-based recipe as pure butter while preserving exact ingredient and recipe matches", () => {
+    expect(resolveFoodItem("Butter Chicken")).toBeNull();
+    expect(resolveFoodItem("Butter Chicken Curry")?.id).not.toBe("butter");
+    expect(resolveFoodItem("Butter Naan")?.id).toBe("naan_butter");
+    expect(resolveFoodItem("Paneer Butter Masala")?.id).toBe("paneer_butter_masala");
+    expect(resolveFoodItem("Salted Butter")?.id).toBe("butter");
+  });
+  it("keeps hydrated oats and unsupported prepared rice recipes separate from dry oats and plain rice", () => {
+    expect(resolveFoodItem("Oatmeal Bowl")).toBeNull();
+    expect(exactScanFood("Oatmeal")).toBeUndefined();
+    expect(resolveFoodItem("Oats porridge")).toBeNull();
+    expect(resolveFoodItem("Rolled Oats (Dry)")?.id).toBe("oats_rolled");
+    expect(resolveFoodItem("Curd Rice")).toBeNull();
+    expect(resolveFoodItem("Steamed Rice")?.id).toBe("rice_steamed");
+  });
   it("replacement discards old nutrients and clears confirmation", () => {
     const row = replaceComponent({ ...scan()[0], confirmed: true }, "Unrecognized banana preparation");
     expect(row.per100g).toBeNull(); expect(row.confirmed).toBe(false); expect(row.portionSource).toBe("user");

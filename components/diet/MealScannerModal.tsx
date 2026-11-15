@@ -16,6 +16,8 @@ import {
   Plus,
   Minus,
   Check,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import MacroDonutBreakdown from "@/components/diet/MacroDonutBreakdown";
@@ -269,6 +271,7 @@ export default function MealScannerModal({
 
   // Plate Photo AI state (starts strictly empty - zero fake preloaded photos!)
   const [preview, setPreview] = useState<string>("");
+  const [showFullPhoto, setShowFullPhoto] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [scanStage, setScanStage] = useState("Compressing photo...");
   const [result, setResult] = useState<any>(null);
@@ -358,6 +361,7 @@ export default function MealScannerModal({
       if (!file.type.startsWith("image/") || file.size > 15 * 1024 * 1024) throw new Error("Choose an image under 15 MB.");
       const { base64, mimeType } = await resizeImageClient(file);
       setPreview(`data:${mimeType};base64,${base64}`);
+      setShowFullPhoto(false);
 
       setScanStage("Identifying the visible foods...");
       stageTimer = setTimeout(() => {
@@ -419,6 +423,8 @@ export default function MealScannerModal({
   const componentSummary = summarizeComponents(components);
   const { calories: currentCalories, proteinG: currentProtein, carbsG: currentCarbs, fatG: currentFat } = componentSummary.totals;
   const needsInventoryReview = suggestions.length > 0 || components.some(row => !!row.reviewNote);
+  const componentNames = Array.from(new Set(components.map(row => row.name.trim()).filter(Boolean)));
+  const scanTitle = components.some(row => row.portionSource === "user") || !result?.name || result.name === "Saved meal review" ? "Your meal" : componentNames.length === 1 ? componentNames[0] : result.name;
   const detectedDishName = components.map(row => row.name.trim()).filter(Boolean).join(" + ") || "Meal estimate";
   const handleLogPlateMeal = async () => {
     if (saving) return;
@@ -460,7 +466,7 @@ export default function MealScannerModal({
 
           <div className="text-center flex-1 min-w-0">
             <span className="text-[9px] font-bold tracking-[0.16em] uppercase text-[#2D6A4F] block leading-none">
-              MEAL PHOTO
+              RITUAL SCAN
             </span>
             <span className="font-sans font-bold text-base text-[#1C1917] leading-tight mt-0.5 block truncate">
               Fuel Scanner
@@ -475,12 +481,12 @@ export default function MealScannerModal({
         {/* Independently Scrollable Modal Body */}
         <div className="flex-1 overflow-y-auto overscroll-contain px-4 sm:px-6 py-4 space-y-4 no-scrollbar">
           {/* Editorial Serif Title */}
-          {!result && <div className="text-center sm:text-left">
+          {(!result || !isNoFoodDetected) && <div className="text-center">
             <h2 className="font-serif text-2xl sm:text-3xl text-[#1C1917] tracking-tight leading-snug">
-              Scan your meal
+              {result ? "Check your meal" : "Scan your meal"}
             </h2>
             <p className="text-xs text-[#57534E] mt-0.5">
-              {result ? "Check the dishes, adjust anything, and log." : "Take a clear photo of your whole meal."}
+              {result ? "Review the dishes and portions before logging." : "Take a clear photo of your whole meal."}
             </p>
           </div>}
 
@@ -532,7 +538,9 @@ export default function MealScannerModal({
               {/* STATE 2 & 3: PHOTO SELECTED */}
               {preview && (
                 <div className="rounded-[26px] overflow-hidden relative aspect-[4/3] bg-[var(--satat-bg)] border border-[var(--satat-border)] group">
-                  <NextImage src={preview} alt="User plate scan" fill unoptimized className="object-contain" />
+                  <NextImage src={preview} alt="User plate scan" fill unoptimized className={showFullPhoto ? "object-contain" : "object-cover"} />
+                  {!scanning && <button type="button" aria-label={showFullPhoto ? "Fill meal photo frame" : "Show full meal photo"} onClick={() => setShowFullPhoto(value => !value)} className="absolute right-3 top-3 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--satat-anchor-dark)]/[0.85] text-white shadow-sm">{showFullPhoto ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}</button>}
+                  {result && !scanning && !isNoFoodDetected && <div className="absolute bottom-3 left-3 rounded-full bg-[var(--satat-anchor-dark)]/90 px-3 py-1.5 text-[10px] font-medium text-white">Portions estimated · review below</div>}
 
                   <div className="absolute top-3.5 left-3.5 w-6 h-6 border-t-2 border-l-2 border-[#E05A47] rounded-tl-lg pointer-events-none" />
                   <div className="absolute top-3.5 right-3.5 w-6 h-6 border-t-2 border-r-2 border-[#E05A47] rounded-tr-lg pointer-events-none" />
@@ -660,13 +668,21 @@ export default function MealScannerModal({
 
               {result && !scanning && !isNoFoodDetected && (
                 <div className="space-y-4">
-                  <ScanComponentEditor suggestions={suggestions} onSuggestionsChange={setSuggestions} rows={components} onChange={rows => { setComponents(rows); setError(""); }} onEditingChange={setEditingFood} />
-                  <div role="status" className="rounded-2xl border border-[var(--satat-border)] bg-[var(--satat-bg)] p-3">
-                    {(!componentSummary.complete || needsInventoryReview) && <p className="mb-2 text-xs text-[var(--satat-brand)]">Check marked dishes and possible missing foods before logging.</p>}
-                    <MacroDonutBreakdown variant="light" calories={currentCalories} carbs={currentCarbs} fat={currentFat} protein={currentProtein} />
-                    <p className="mt-2 text-center text-[11px] text-[var(--satat-text-muted)]">{componentSummary.complete && !suggestions.length ? "Estimated nutrition · portions and cooking oil may vary." : "Partial total · some nutrition is missing."}</p>
-                  </div>
-                  <button type="button" onClick={handleLogPlateMeal} disabled={saving || !componentSummary.complete || needsInventoryReview || editingFood || currentCalories <= 0} className="w-full rounded-full bg-[var(--satat-brand)] text-white py-3.5 text-sm font-semibold disabled:opacity-50">{saving ? "Saving meal…" : "Looks right · Log meal"}</button>
+                  <section aria-label="Meal scan details" className="rounded-[28px] bg-[var(--satat-anchor-dark)] p-4 text-white shadow-lg space-y-4">
+                    <header className="border-b border-white/10 pb-3">
+                      <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-white/70">Detected meal</p>
+                      <h3 className="mt-1 font-serif text-xl leading-snug break-words">{scanTitle}</h3>
+                    </header>
+                    <div role="status">
+                      <MacroDonutBreakdown variant="dark" calories={currentCalories} carbs={currentCarbs} fat={currentFat} protein={currentProtein} />
+                      {(!componentSummary.complete || needsInventoryReview) && <p className="mt-2 text-xs text-white/80">Check marked dishes and possible missing foods before logging.</p>}
+                    </div>
+                    <div className="border-t border-white/10 pt-3">
+                      <ScanComponentEditor variant="dark" suggestions={suggestions} onSuggestionsChange={setSuggestions} rows={components} onChange={rows => { setComponents(rows); setError(""); }} onEditingChange={setEditingFood} />
+                    </div>
+                    <p className="text-[10px] text-white/60">{componentSummary.complete && !suggestions.length ? "Estimated nutrition · portions and cooking oil may vary." : "Partial total · some nutrition is missing."}</p>
+                    <button type="button" onClick={handleLogPlateMeal} disabled={saving || !componentSummary.complete || needsInventoryReview || editingFood || currentCalories <= 0} className="w-full rounded-full bg-[var(--satat-brand)] text-white py-3.5 text-sm font-semibold disabled:opacity-50">{saving ? "Saving meal…" : "Log to Today’s Fuel"}</button>
+                  </section>
                   <div className="flex justify-center gap-5 text-xs text-[var(--satat-text-secondary)]">
                     <button type="button" onClick={resetPlateState}>Scan again</button>
                     <button type="button" onClick={() => { handleClose(); onSwitchToManual?.({ name: detectedDishName, macros: { calories: currentCalories, proteinG: currentProtein, carbsG: currentCarbs, fatG: currentFat }, incomplete: !componentSummary.complete || needsInventoryReview }); }}>Enter manually</button>

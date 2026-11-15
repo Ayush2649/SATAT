@@ -305,6 +305,11 @@ describe("Phase 2B: Real AI Nutrition Estimation Pipeline", () => {
       const merged = mergeRoutedNutrition({ canonical: [], components: [], unresolved: [], aiEligible: foods }, estimates);
       expect(merged.map(food => food.estimatedNutrition?.calories)).toEqual([100, 200]);
     });
+    it("scales an explicit per-unit response for two pieces even without a nutritionPerUnit object", async () => {
+      const provider = vi.fn().mockResolvedValue({ rawContent: JSON.stringify({ items: [{ foodName: "Pav", basis: "per_unit", calories: 120, proteinG: 4, carbsG: 20, fatG: 3, calorieRange: { low: 100, high: 150 } }] }) });
+      const estimates = await estimateNutritionBatch([{ name: "Pav", quantity: 2, unit: "piece", confidence: .9 }], { providerFn: provider });
+      expect(estimates.get("Pav")).toMatchObject({ calories: 240, proteinG: 8, carbsG: 40, fatG: 6, calorieRange: { low: 200, high: 300 } });
+    });
     it("makes zero provider calls when food list is empty", async () => {
       const mockProvider = vi.fn();
       const result = await estimateNutritionBatch([], { providerFn: mockProvider });

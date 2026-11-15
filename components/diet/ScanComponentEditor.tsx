@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
 import { Pencil, Plus, X } from "lucide-react";
 import { INDIAN_FOOD_DATABASE } from "@/lib/ai/nutrition/database";
 import { componentGrams, RECIPE_NAMES, recipeNutrition, replaceComponent, summarizeComponents, UNKNOWN_MICROS, type ScanComponent, type Nutrition, type NutrientKey, type ScanSuggestion } from "@/lib/nutrition/scan-review";
@@ -11,13 +12,15 @@ const inputClass = "mt-1 w-full min-w-0 rounded-xl border border-[var(--satat-bo
 
 type EditingFood = { row: ScanComponent; index: number | null; suggestionId?: string };
 
-export default function ScanComponentEditor({ rows, onChange, onEditingChange, suggestions = [], onSuggestionsChange }: {
+export default function ScanComponentEditor({ rows, onChange, onEditingChange, suggestions = [], onSuggestionsChange, variant = "light" }: {
+  variant?: "dark" | "light";
   rows: ScanComponent[];
   suggestions?: ScanSuggestion[];
   onSuggestionsChange?: (suggestions: ScanSuggestion[]) => void;
   onChange: (rows: ScanComponent[]) => void;
   onEditingChange?: (editing: boolean) => void;
 }) {
+  const dark = variant === "dark";
   const [editing, setEditing] = useState<EditingFood | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const openerRef = useRef<HTMLButtonElement | null>(null);
@@ -53,10 +56,10 @@ export default function ScanComponentEditor({ rows, onChange, onEditingChange, s
   };
 
   return (
-    <section aria-label="Review meal components" className="space-y-3 text-[var(--satat-text-primary)]">
+    <section aria-label="Review meal components" className={cn("space-y-3", dark ? "text-white" : "text-[var(--satat-text-primary)]")}>
       <div className="flex items-center justify-between gap-3">
-        <h3 className="font-serif text-xl">Your meal</h3>
-        <span className="text-[11px] text-[var(--satat-text-muted)]">Tap a dish to edit</span>
+        <h4 className={dark ? "text-[9px] font-bold uppercase tracking-[0.12em] text-white/60" : "font-serif text-xl"}>{dark ? "Plate components detected" : "Your meal"}</h4>
+        <span className={cn("text-[10px]", dark ? "text-white/60" : "text-[var(--satat-text-muted)]")}>Tap to edit</span>
       </div>
       <div className="flex flex-wrap gap-2">
         {rows.map((row, index) => {
@@ -64,27 +67,27 @@ export default function ScanComponentEditor({ rows, onChange, onEditingChange, s
           return (
             <button key={row.id} type="button" disabled={isEditing} aria-label={`Edit ${row.name || "food"}`} aria-expanded={editing?.row.id === row.id} aria-controls="scan-food-editor"
               onClick={event => open(event.currentTarget, row, index)}
-              className="inline-flex max-w-full min-h-11 items-center gap-2 rounded-2xl border border-[var(--satat-border-strong)] bg-[var(--satat-bg)] px-3 py-2 text-left text-sm hover:border-[var(--satat-sage)]">
-              <span className="min-w-0 break-words"><span className="font-semibold">{row.name || "Unnamed food"}</span><span className="ml-1.5 text-xs text-[var(--satat-text-secondary)]">{row.amount} {row.unit}</span>{needsInfo && <span className="ml-1.5 text-xs text-[var(--satat-brand)]">Check</span>}</span>
-              <Pencil aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-[var(--satat-text-muted)]" />
+              className={cn("inline-flex max-w-full items-center gap-1.5 border px-3 py-2 text-left", dark ? "min-h-9 rounded-full border-white/[0.15] bg-white/[0.08] text-[11px] hover:border-white/40" : "min-h-11 rounded-2xl border-[var(--satat-border-strong)] bg-[var(--satat-bg)] text-sm hover:border-[var(--satat-sage)]")}>
+              <span className="min-w-0 break-words"><span className="font-semibold">{row.name || "Unnamed food"}</span><span className={cn("ml-1", dark ? "text-[10px] text-white/70" : "text-xs text-[var(--satat-text-secondary)]")}>{row.amount} {row.unit}</span>{needsInfo && <span className="ml-1.5 text-xs text-[var(--satat-brand)]">Check</span>}</span>
+              <Pencil aria-hidden="true" className={cn("h-3 w-3 shrink-0", dark ? "text-white/60" : "text-[var(--satat-text-muted)]")} />
             </button>
           );
         })}
         <button type="button" disabled={isEditing} onClick={event => open(event.currentTarget, { id: crypto.randomUUID(), name: "", amount: "", unit: "g", per100g: null, micros: { ...UNKNOWN_MICROS }, source: "Choose a food reference or enter nutrition", confirmed: false, portionSource: "user" }, null)}
-          className="inline-flex min-h-11 items-center gap-1.5 rounded-2xl border border-dashed border-[var(--satat-sage)] px-3 py-2 text-sm font-semibold text-[var(--satat-sage)]">
+          className={cn("inline-flex items-center gap-1.5 border border-dashed px-3 py-2 font-semibold", dark ? "min-h-9 rounded-full border-white/30 text-[11px] text-white/80" : "min-h-11 rounded-2xl border-[var(--satat-sage)] text-sm text-[var(--satat-sage)]")}>
           <Plus aria-hidden="true" className="h-4 w-4" /> Add food
         </button>
       </div>
       {suggestions.length > 0 && <div className="space-y-2 text-xs" aria-label="Possible missing dishes">
-        <p className="text-[var(--satat-text-secondary)]">Anything missing? These aren’t counted yet.</p>
+        <p className={dark ? "text-white/75" : "text-[var(--satat-text-secondary)]"}>Anything missing? These aren’t counted yet.</p>
         {suggestions.map(item => <div key={item.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-[var(--satat-border)] px-3 py-2">
           <span className="min-w-0 flex-1 break-words">{item.label}</span>
           <button type="button" disabled={isEditing} aria-label={`Already included: ${item.name}`} onClick={() => onSuggestionsChange?.(suggestions.filter(other => other.id !== item.id))} className="min-h-11 underline">Already included</button>
-          <button type="button" disabled={isEditing} aria-label={`Add missing ${item.name}`} onClick={event => open(event.currentTarget, replaceComponent({ id: crypto.randomUUID(), name: item.name, amount: String(item.quantity), unit: item.unit, per100g: null, micros: { ...UNKNOWN_MICROS }, source: "", confirmed: false, portionSource: "user" }, item.name), null, item.id)} className="min-h-11 font-semibold text-[var(--satat-sage)]">Add dish</button>
+          <button type="button" disabled={isEditing} aria-label={`Add missing ${item.name}`} onClick={event => open(event.currentTarget, replaceComponent({ id: crypto.randomUUID(), name: item.name, amount: String(item.quantity), unit: item.unit, per100g: null, micros: { ...UNKNOWN_MICROS }, source: "", confirmed: false, portionSource: "user" }, item.name), null, item.id)} className={cn("min-h-11 font-semibold", dark ? "text-white" : "text-[var(--satat-sage)]")}>Add dish</button>
         </div>)}
       </div>}
       {editing && (
-        <div id="scan-food-editor" ref={panelRef} role="region" aria-label={editing.index === null ? "Add food" : "Edit dish"} onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); close(); } }} className="rounded-2xl border border-[var(--satat-border-strong)] bg-[var(--satat-bg)] p-4 space-y-4">
+        <div id="scan-food-editor" ref={panelRef} role="region" aria-label={editing.index === null ? "Add food" : "Edit dish"} onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); close(); } }} className="rounded-2xl border border-[var(--satat-border-strong)] bg-[var(--satat-bg)] p-4 space-y-4 text-[var(--satat-text-primary)]">
           <div className="flex items-center justify-between gap-3">
             <h4 className="font-semibold text-sm">{editing.index === null ? "Add a food" : "Edit dish"}</h4>
             <button type="button" aria-label="Close food editor" onClick={close} className="inline-flex h-9 w-9 items-center justify-center rounded-full hover:bg-[var(--satat-surface-inset)]"><X className="h-4 w-4" /></button>
