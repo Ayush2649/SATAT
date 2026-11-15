@@ -733,17 +733,22 @@ export default function WorkoutPage() {
 
   const handleLogBodyWeight = async () => {
     if (!newBodyWeight) return;
-    const entry = await logBodyWeight({
-      userId,
-      date: todayString(),
-      weightKg: parseFloat(newBodyWeight),
-      createdAt: Date.now(),
-    });
-    setBodyWeightEntries((prev) => [entry, ...prev]);
-    setBodyWeight(newBodyWeight);
-    setNewBodyWeight("");
-    setShowBodyWeightModal(false);
-    toast(`Body weight logged: ${entry.weightKg} kg`, "success");
+    try {
+      const entry = await logBodyWeight({
+        userId,
+        date: todayString(),
+        weightKg: parseFloat(newBodyWeight),
+        createdAt: Date.now(),
+      });
+      setBodyWeightEntries((prev) => [entry, ...prev]);
+      setBodyWeight(newBodyWeight);
+      setNewBodyWeight("");
+      setShowBodyWeightModal(false);
+      toast(`Body weight logged: ${entry.weightKg} kg`, "success");
+    } catch (err) {
+      console.error("Failed to log body weight:", err);
+      toast("Failed to log body weight", "error");
+    }
   };
 
   // History filtered sessions

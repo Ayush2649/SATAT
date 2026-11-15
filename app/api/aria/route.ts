@@ -512,11 +512,18 @@ Active Meal Slot: ${currentActiveContext.activeMealSlot || "None"}
 Active Exercise: ${currentActiveContext.activeExerciseName || "None"}
 Maintain continuity across turns. If the user refers to "dinner", "lunch", "it", "also add", or modifies sets, resolve the target entity from this state.`;
 
-  if (executedActions.length > 0 && successfulActions.length > 0) {
-    system += `\n\n=== ACTIONS JUST COMPLETED IN DATABASE ===
-${executedActions.map((act, i) => `Action ${i + 1}: ${act.type} (${act.domain}) -> ${JSON.stringify(act.details)}`).join("\n")}
+  if (successfulActions.length > 0) {
+    system += `\n\n=== ACTIONS SUCCESSFULLY COMPLETED IN DATABASE ===
+${successfulActions.map((act, i) => `Action ${i + 1}: ${act.type} (${act.domain}) -> ${JSON.stringify(act.details)}`).join("\n")}
 Notes: ${executedNote}
 CRITICAL INSTRUCTION: You MUST strictly echo and acknowledge ONLY the actions and movements listed above (${executedNote}). NEVER mention, claim, or hallucinate an unrequested exercise (such as Bench Press) that was not executed in this turn!`;
+  }
+
+  if (failedActions.length > 0) {
+    system += `\n\n=== ACTIONS THAT FAILED TO SAVE (DATABASE ERROR) ===
+${failedActions.map((act, i) => `Failed ${i + 1}: ${act.type} (${act.domain}) -> ${act.details?.error || "Execution failed"}`).join("\n")}
+Failure Notes: ${failedNotes.join(" | ")}
+CRITICAL INSTRUCTION: You MUST inform the user that saving failed for the above actions with the exact failure reason. NEVER claim or imply they were successfully saved!`;
   }
 
   if (classifiedIntent.intent === "HISTORICAL_ANALYSIS") {

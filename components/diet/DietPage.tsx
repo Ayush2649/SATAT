@@ -44,6 +44,7 @@ import {
   deleteMealTemplate,
 } from "@/lib/firestore";
 import { setDietContext } from "@/lib/orbitContext";
+import { useToast } from "@/components/ui/Toast";
 import type { MealEntry, MealMacros, MacroGoals, MealTemplate } from "@/types";
 import EmptyState from "@/components/ui/EmptyState";
 
@@ -54,6 +55,7 @@ export default function DietPage() {
   const { data: session } = useSession();
   const { firebaseUser, isReady } = useFirebaseAuth();
   const userId = firebaseUser?.uid ?? (session?.user as any)?.id ?? session?.user?.email ?? "";
+  const { toast } = useToast();
 
   const [date, setDate] = useState(todayString());
   const [meals, setMeals] = useState<MealEntry[]>([]);
@@ -207,8 +209,10 @@ export default function DietPage() {
       }
       setShowAddMeal(false);
       setShowScanner(false);
+      toast("Meal logged successfully! 🥗", "success");
     } catch (error) {
       console.error("Failed to add meal:", error);
+      toast("Failed to log meal. Please try again.", "error");
     }
   };
 
@@ -223,14 +227,20 @@ export default function DietPage() {
   };
 
   const handleDeleteMeal = async (mealId: string) => {
+    const prevMeals = meals;
+    const prevExpanded = expandedMealId;
+    setMeals((prev) => prev.filter((meal) => meal.id !== mealId));
+    if (expandedMealId === mealId) {
+      setExpandedMealId(null);
+    }
     try {
       await (deleteMeal as any)(mealId, userId);
-      setMeals((prev) => prev.filter((meal) => meal.id !== mealId));
-      if (expandedMealId === mealId) {
-        setExpandedMealId(null);
-      }
+      toast("Meal entry deleted", "info");
     } catch (error) {
       console.error("Failed to delete meal:", error);
+      setMeals(prevMeals); // ROLLBACK
+      setExpandedMealId(prevExpanded);
+      toast("Failed to delete meal", "error");
     }
   };
 
@@ -239,8 +249,10 @@ export default function DietPage() {
       await (saveMacroGoals as any)(userId, nextGoals);
       setGoals(nextGoals);
       setShowGoals(false);
+      toast("Macro goals updated! 🎯", "success");
     } catch (error) {
       console.error("Failed to save macro goals:", error);
+      toast("Failed to save macro goals", "error");
     }
   };
 
@@ -252,8 +264,10 @@ export default function DietPage() {
         return [...prev, next];
       });
       setSavingTemplate(null);
+      toast(`Saved "${template.name}" to meal library!`, "success");
     } catch (error) {
       console.error("Failed to save meal template:", error);
+      toast("Failed to save meal template", "error");
     }
   };
 

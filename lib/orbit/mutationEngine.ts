@@ -207,6 +207,26 @@ export function parseTimeString(timeStr: string): string {
   return `${hh}:${mm}`;
 }
 
+export function safeMacro(val: any): number {
+  const n = Number(val);
+  return Number.isFinite(n) && n >= 0 ? Math.round(n) : 0;
+}
+
+export function safeReps(val: any, defaultReps: number = 10): number {
+  const n = Number(val);
+  return Number.isFinite(n) && n > 0 ? Math.round(n) : defaultReps;
+}
+
+export function safeWeight(val: any): number {
+  const n = Number(val);
+  return Number.isFinite(n) && n >= 0 ? Math.round(n * 10) / 10 : 0;
+}
+
+export function safeDuration(val: any, defaultDuration: number = 25): number {
+  const n = Number(val);
+  return Number.isFinite(n) && n > 0 ? Math.round(n) : defaultDuration;
+}
+
 // ── Macro Estimation Heuristics for Indian Food & Common Items ─────────────────
 
 export function estimateMacrosForDish(rawName: string, portion?: string): MealMacros {
@@ -431,11 +451,11 @@ export async function upsert_diet_entry(params: UpsertDietParams): Promise<{
   if (existingMeal) {
     const updatedName = `${existingMeal.name}, ${itemNames.join(", ")}`;
     const updatedMacros: MealMacros = {
-      calories: Math.round((existingMeal.macros?.calories || 0) + addedCalories),
-      proteinG: Math.round((existingMeal.macros?.proteinG || 0) + addedProtein),
-      carbsG: Math.round((existingMeal.macros?.carbsG || 0) + addedCarbs),
-      fatG: Math.round((existingMeal.macros?.fatG || 0) + addedFat),
-      fiberG: Math.round((existingMeal.macros?.fiberG || 0) + addedFiber),
+      calories: safeMacro((existingMeal.macros?.calories || 0) + addedCalories),
+      proteinG: safeMacro((existingMeal.macros?.proteinG || 0) + addedProtein),
+      carbsG: safeMacro((existingMeal.macros?.carbsG || 0) + addedCarbs),
+      fatG: safeMacro((existingMeal.macros?.fatG || 0) + addedFat),
+      fiberG: safeMacro((existingMeal.macros?.fiberG || 0) + addedFiber),
     };
 
     await adminDb.collection("meals").doc(existingMeal.id).update({
@@ -462,11 +482,11 @@ export async function upsert_diet_entry(params: UpsertDietParams): Promise<{
   } else {
     const newName = `${slotTitle}: ${itemNames.join(", ")}`;
     const newMacros: MealMacros = {
-      calories: Math.round(addedCalories),
-      proteinG: Math.round(addedProtein),
-      carbsG: Math.round(addedCarbs),
-      fatG: Math.round(addedFat),
-      fiberG: Math.round(addedFiber),
+      calories: safeMacro(addedCalories),
+      proteinG: safeMacro(addedProtein),
+      carbsG: safeMacro(addedCarbs),
+      fatG: safeMacro(addedFat),
+      fiberG: safeMacro(addedFiber),
     };
 
     const docData: any = {
@@ -479,6 +499,9 @@ export async function upsert_diet_entry(params: UpsertDietParams): Promise<{
     };
 
     const docRef = await adminDb.collection("meals").add(docData);
+    if (!docRef?.id) {
+      throw new Error("Firestore write failed: no meal document ID returned");
+    }
     const createdMeal: MealEntry = { id: docRef.id, ...docData };
 
     return {
@@ -536,7 +559,13 @@ export async function modify_diet_entry(params: ModifyDietParams): Promise<{
   if (updates.macros) {
     patch.macros = {
       ...(existingData?.macros || {}),
-      ...updates.macros,
+      calories: safeMacro(updates.macros.calories ?? existingData?.macros?.calories),
+      proteinG: safeMacro(updates.macros.proteinG ?? existingData?.macros?.proteinG),
+      carbsG: safeMacro(updates.macros.carbsG ?? existingData?.macros?.carbsG),
+      fatG: safeMacro(updates.macros.fatG ?? existingData?.macros?.fatG),
+      ...(updates.macros.fiberG !== undefined || existingData?.macros?.fiberG !== undefined
+        ? { fiberG: safeMacro(updates.macros.fiberG ?? existingData?.macros?.fiberG) }
+        : {}),
     };
   }
 
@@ -570,7 +599,12 @@ export async function delete_diet_entry(params: DeleteDietParams): Promise<{
     throw new Error("Meal entry not found to delete");
   }
 
-  await adminDb.collection("meals").doc(targetId).delete?.();
+  const ref = adminDb.collection("meals").doc(targetId);
+  if (typeof ref.delete === "function") {
+    await ref.delete();
+  } else {
+    throw new Error("Firestore delete operation not available on meal document");
+  }
   return { mealId: targetId, status: "success" };
 }
 
@@ -627,6 +661,9 @@ export async function start_workout_session(params: StartWorkoutParams): Promise
       updatedAt: new Date().toISOString(),
     };
     const ref = await adminDb.collection("workouts").add(newSession);
+    if (!ref?.id) {
+      throw new Error("Firestore write failed: no workout session ID returned");
+    }
     sessionId = ref.id;
   }
 
@@ -676,11 +713,11 @@ export async function update_workout_session(params: UpdateWorkoutParams): Promi
 
   const formattedSets = sets.map((s, idx) => ({
     id: `set-${Date.now()}-${idx}`,
-    reps: s.reps,
-    weight: s.weight ?? 0,
+    reps: safeReps(s.reps),
+    weight: safeWeight(s.weight),
     unit: s.unit ?? (isIsometric ? ("bodyweight" as const) : ("kg" as const)),
     completed: s.completed ?? true,
-    ...(s.durationSeconds ? { durationSeconds: s.durationSeconds } : {}),
+    ...(s.durationSeconds ? { durationSeconds: safeDuration(s.durationSeconds, 45) } : {}),
   }));
 
   const movement = isIsometric
@@ -708,8 +745,8 @@ export async function update_workout_session(params: UpdateWorkoutParams): Promi
         type: "strength",
         sets: sets.map((s, idx) => ({
           setNumber: idx + 1,
-          reps: s.reps,
-          weight: s.weight ?? 0,
+          reps: safeReps(s.reps),
+          weight: safeWeight(s.weight),
           unit: s.unit || "kg",
           completed: s.completed ?? true,
         })),
@@ -748,6 +785,9 @@ export async function update_workout_session(params: UpdateWorkoutParams): Promi
       updatedAt: new Date().toISOString(),
     };
     const docRef = await adminDb.collection("workouts").add(newSession);
+    if (!docRef?.id) {
+      throw new Error("Firestore write failed: no workout session ID returned");
+    }
     return {
       sessionId: docRef.id,
       exerciseName: normalizedExName,
@@ -1132,6 +1172,9 @@ export async function add_exercise_to_workout(params: AddExerciseParams): Promis
       updatedAt: new Date().toISOString(),
     };
     const ref = await adminDb.collection("workouts").add(newSession);
+    if (!ref?.id) {
+      throw new Error("Firestore write failed: no workout session ID returned");
+    }
     return {
       sessionId: ref.id,
       exerciseName: normalizedExName,
@@ -1165,6 +1208,9 @@ export async function add_exercise_to_workout(params: AddExerciseParams): Promis
     updatedAt: new Date().toISOString(),
   };
 
+  if (!session?.id) {
+    throw new Error("Firestore update failed: workout session has no ID");
+  }
   const docRef = adminDb.collection("workouts").doc(session.id);
   if (typeof docRef.set === "function") {
     await docRef.set(updatedSessionData, { merge: true });
@@ -1244,7 +1290,7 @@ export async function complete_workout_session(params: CompleteWorkoutParams): P
   await adminDb.collection("workouts").doc(targetId).update({
     completed: true,
     completedAt: Date.now(),
-    durationMinutes: params.durationMinutes || 45,
+    durationMinutes: safeDuration(params.durationMinutes, 45),
   });
 
   return { sessionId: targetId, status: "success" };
@@ -1263,12 +1309,20 @@ export async function create_task_entry(params: CreateTaskParams): Promise<{
   const { userId, title, durationMinutes = 25, scheduledTime = "17:00", priority = "medium" } = params;
   if (!userId) throw new Error("Missing required userId for create_task_entry");
 
+  const cleanTitle = (title || "").trim();
+  if (!cleanTitle || /^(?:a\s+)?task$/i.test(cleanTitle)) {
+    throw new Error("Task title cannot be empty or generic");
+  }
+
   const todayStr = params.dueDate || new Date().toLocaleDateString("en-CA");
+  const safeDur = safeDuration(durationMinutes, 25);
+  const validTime = /^\d{2}:\d{2}$/.test(scheduledTime) ? scheduledTime : parseTimeString(scheduledTime);
+
   const docData = {
     userId,
-    title,
-    durationMinutes,
-    scheduledTime,
+    title: cleanTitle,
+    durationMinutes: safeDur,
+    scheduledTime: validTime,
     dueDate: todayStr,
     status: "pending",
     priority,
@@ -1278,16 +1332,19 @@ export async function create_task_entry(params: CreateTaskParams): Promise<{
   };
 
   const ref = await adminDb.collection("tasks").add(docData);
+  if (!ref?.id) {
+    throw new Error("Firestore write failed: no task ID returned");
+  }
 
   return {
     taskId: ref.id,
-    title,
-    durationMinutes,
-    scheduledTime,
+    title: cleanTitle,
+    durationMinutes: safeDur,
+    scheduledTime: validTime,
     status: "success",
     activeContext: {
       activeTaskId: ref.id,
-      activeTaskTitle: title,
+      activeTaskTitle: cleanTitle,
     },
   };
 }
@@ -1330,15 +1387,16 @@ export async function reschedule_task_entry(params: RescheduleTaskParams): Promi
     throw new Error("No task found to reschedule");
   }
 
+  const validTime = /^\d{2}:\d{2}$/.test(scheduledTime) ? scheduledTime : parseTimeString(scheduledTime);
   await adminDb.collection("tasks").doc(resolvedId).update({
-    scheduledTime,
+    scheduledTime: validTime,
     updatedAt: Date.now(),
   });
 
   return {
     taskId: resolvedId,
     title: targetTitle,
-    scheduledTime,
+    scheduledTime: validTime,
     status: "success",
     activeContext: {
       activeTaskId: resolvedId,
@@ -1413,7 +1471,12 @@ export async function delete_task_entry(params: DeleteTaskParams): Promise<{
 
   if (!resolvedId) throw new Error("No task found to delete");
 
-  await adminDb.collection("tasks").doc(resolvedId).delete?.();
+  const ref = adminDb.collection("tasks").doc(resolvedId);
+  if (typeof ref.delete === "function") {
+    await ref.delete();
+  } else {
+    throw new Error("Firestore delete operation not available on task document");
+  }
   return { taskId: resolvedId, title: targetTitle, status: "success" };
 }
 
@@ -1440,6 +1503,9 @@ export async function modify_plan_schedule(params: ModifyPlanParams): Promise<{
       frequency: "daily",
     };
     const ref = await adminDb.collection("tasks").add(docData);
+    if (!ref?.id) {
+      throw new Error("Firestore write failed: no task ID returned");
+    }
     return { taskId: ref.id, status: "success" };
   }
 }
@@ -2091,6 +2157,96 @@ export function parseSingleMutationIntent(
     }
   }
 
+  // C. Awaiting Title for Task
+  if (activeContext?.awaitingParam === "title" && activeContext?.activeTaskTime) {
+    const isTaskTitleAnswer =
+      !FOOD_KEYWORD_REGEX.test(lower) &&
+      !/\b(reps?|sets?|kg|lbs|km)\b/i.test(lower) &&
+      text.length > 1;
+
+    if (isTaskTitleAnswer) {
+      const scheduledTime = activeContext.activeTaskTime;
+      let title = text.replace(/^(?:schedule|add|task\s*:?|plan)\s+/i, "").trim();
+      let duration = 25;
+      const durMatch = text.match(/(\d+)\s*(?:min|minute)/i);
+      if (durMatch) duration = parseInt(durMatch[1], 10);
+
+      title = title.replace(/\b\d+\s*min(?:ute)?s?\s*/i, "").trim();
+      title = title ? title.charAt(0).toUpperCase() + title.slice(1) : "Scheduled Task";
+
+      return {
+        type: "CREATE_TASK",
+        domain: "tasks",
+        params: {
+          title,
+          durationMinutes: duration,
+          scheduledTime,
+          dueDate: referenceDate || new Date().toLocaleDateString("en-CA"),
+        },
+      };
+    }
+  }
+
+  // D. Awaiting Food Items for Meal
+  if (activeContext?.awaitingParam === "title" && activeContext?.activeMealSlot) {
+    const mealType = activeContext.activeMealSlot;
+    const rawItems = text
+      .split(/,|\band\b|\bwith\b/i)
+      .map((s) => s.replace(/^[\s:,-]+|[\s:,-]+$/g, "").trim())
+      .filter((s) => s.length > 1 && !/^(my|a|an|the|also|to|in|for|meal|meals|food)$/i.test(s));
+
+    if (rawItems.length > 0) {
+      const items: DietItemInput[] = rawItems.map((name) => ({ name }));
+      return {
+        type: "UPSERT_MEAL",
+        domain: "meals",
+        params: {
+          mealType,
+          items,
+        },
+      };
+    }
+  }
+
+  // E. Awaiting Exercise Name for Workout
+  if (activeContext?.awaitingParam === "exerciseName") {
+    let exName = text.replace(/^(?:add|workout|exercise|log)\s+/i, "").trim();
+    if (exName) {
+      let setsCount = 3;
+      let reps = 10;
+      let weight = 0;
+      const setCountMatch = text.match(/(\d+)\s*sets?/i);
+      const repMatch = text.match(/(\d+)\s*reps?/i);
+      const weightMatch = text.match(/(?:at|with|@)\s*(\d+(?:\.\d+)?)\s*(?:kg|lbs)?/i);
+      if (setCountMatch) setsCount = parseInt(setCountMatch[1], 10);
+      if (repMatch) reps = parseInt(repMatch[1], 10);
+      if (weightMatch) weight = parseFloat(weightMatch[1]);
+
+      exName = exName
+        .replace(/\b\d+\s*sets?\b/i, "")
+        .replace(/\b(?:of\s+)?\d+\s*reps?\b/i, "")
+        .replace(/(?:at|with|@)\s*\d+(?:\.\d+)?\s*(?:kg|lbs)?/i, "")
+        .trim();
+      exName = exName.charAt(0).toUpperCase() + exName.slice(1);
+
+      const sets: WorkoutSetInput[] = Array.from({ length: setsCount }, () => ({
+        reps,
+        weight,
+        unit: "kg",
+        completed: true,
+      }));
+
+      return {
+        type: "ADD_EXERCISE",
+        domain: "workouts",
+        params: {
+          exerciseName: exName || "Exercise",
+          sets,
+        },
+      };
+    }
+  }
+
   // ── 1. DAILY RITUALS & BENTO HABITS (Hydration, Steps, Journal) ──────────────
   const isHydrationAndSteps =
     /\b(\d+[\d,]*)\s*(?:ml|l|liters?)\b/i.test(lower) &&
@@ -2318,7 +2474,35 @@ export function parseSingleMutationIntent(
     } else if (title) {
       title = title.charAt(0).toUpperCase() + title.slice(1);
     }
-    if (!title) title = "Coding sprint";
+
+    if (
+      !title ||
+      /^(?:a\s+)?task$/i.test(title.trim()) ||
+      /^(?:at|for|by\s+)?\d{1,2}(?::\d{2})?\s*(?:am|pm)?$/i.test(title.trim()) ||
+      /^\d{1,2}:\d{2}$/.test(title.trim())
+    ) {
+      title = "";
+    }
+
+    if (!title || /^(?:a\s+)?task$/i.test(title.trim())) {
+      const timeStr = timeMatch ? ` for ${timeMatch[1]}` : "";
+      return {
+        type: "CLARIFICATION_NEEDED",
+        domain: "tasks",
+        missingParam: "title",
+        clarificationMessage: `What task would you like to schedule${timeStr}?`,
+        suggestedActions: [
+          { label: "Deep Work block", prompt: `Deep Work${timeMatch ? ` at ${timeMatch[1]}` : " at 5:00 PM"}` },
+          { label: "Review Pull Request", prompt: `Review PR${timeMatch ? ` at ${timeMatch[1]}` : " at 5:00 PM"}` },
+          { label: "Study DSA Algorithms", prompt: `Study DSA${timeMatch ? ` at ${timeMatch[1]}` : " at 5:00 PM"}` },
+        ],
+        updatedContext: {
+          ...(activeContext || {}),
+          activeTaskTime: timeMatch ? parseTimeString(timeMatch[1]) : "17:00",
+          awaitingParam: "title",
+        },
+      };
+    }
 
     if (!timeMatch && !isTodayPlan) {
       const cleanTitle = (title || "placement sprint").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -2675,6 +2859,24 @@ export function parseSingleMutationIntent(
     }
 
     if (!repsMatch && !weightMatch && !isAppendSet && exerciseIndex === undefined) {
+      if (!exerciseName || exerciseName === "Workout Exercise") {
+        return {
+          type: "CLARIFICATION_NEEDED",
+          domain: "workouts",
+          missingParam: "exerciseName",
+          clarificationMessage: "Which exercise would you like to add, and how many sets and reps?",
+          suggestedActions: [
+            { label: "Bench Press 3x10", prompt: "Add Bench Press 3 sets of 10 reps @ 60kg" },
+            { label: "Barbell Squats 3x10", prompt: "Add Barbell Squats 3 sets of 10 reps @ 80kg" },
+            { label: "Pull Ups 3x10", prompt: "Add Pull Ups 3 sets of 10 reps" },
+          ],
+          updatedContext: {
+            ...(activeContext || {}),
+            awaitingParam: "exerciseName",
+          },
+        };
+      }
+
       return {
         type: "CLARIFICATION_NEEDED",
         domain: "workouts",
@@ -2765,7 +2967,7 @@ export function parseSingleMutationIntent(
     let cleaned = text
       .replace(/^(?:actually,?\s*)?(?:also\s+)?(?:i\s+)?(?:add|log|track|append|record|save|ate|eat|had|have)\s+/i, "")
       .replace(/^(?:today's\s+meals?|my\s+meals?|meals?|food|diet)\s*(?:[:,]\s*)?/i, "")
-      .replace(/^(?:(?:in|for|to)\s+)?(?:my\s+)?(?:breakfast|lunch|dinner|snack)\s*(?:[:,-]\s*|\s+(?=[^,]))/i, "")
+      .replace(/^(?:(?:in|for|to)\s+)?(?:my\s+)?(?:breakfast|lunch|dinner|snack)\b\s*(?:[:,-]\s*)?/i, "")
       .replace(/^(?:today's\s+meals?|my\s+meals?)\s*(?:[:,-]\s*)?/i, "")
       .replace(/\s+(?:for|to|in)\s+(?:my\s+)?(?:lunch|dinner|breakfast|snack)(?:\s+log)?$/i, "")
       .replace(/\s+(?:at|around)\s+\d{1,2}(?::\d{2})?\s*(?:am|pm)$/i, "")
@@ -2779,9 +2981,28 @@ export function parseSingleMutationIntent(
           .replace(/^[\s:,-]+|[\s:,-]+$/g, "")
           .trim()
       )
-      .filter((s) => s.length > 1 && !/^(my|a|an|the|also|to|in|for|meal|meals|food)$/i.test(s));
+      .filter((s) => s.length > 1 && !/^(my|a|an|the|also|to|in|for|meal|meals|food|breakfast|lunch|dinner|snack|my\s+(?:breakfast|lunch|dinner|snack|meal|food))$/i.test(s));
 
     if (rawItems.length === 0) {
+      if (hasExplicitMealSlotRef || /\b(breakfast|lunch|dinner|snack|meal)\b/i.test(lower)) {
+        const slotCapitalized = mealType.charAt(0).toUpperCase() + mealType.slice(1);
+        return {
+          type: "CLARIFICATION_NEEDED",
+          domain: "meals",
+          missingParam: "title",
+          clarificationMessage: `What did you have for ${slotCapitalized}? (e.g. 2 rotis with dal and salad)`,
+          suggestedActions: [
+            { label: "2 rotis and dal", prompt: `2 rotis and dal for ${mealType}` },
+            { label: "Rice and paneer", prompt: `Rice and paneer for ${mealType}` },
+            { label: "Oatmeal with milk", prompt: `Oatmeal with milk for ${mealType}` },
+          ],
+          updatedContext: {
+            ...(activeContext || {}),
+            activeMealSlot: mealType,
+            awaitingParam: "title",
+          },
+        };
+      }
       return null;
     }
 

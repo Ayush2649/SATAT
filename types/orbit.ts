@@ -56,6 +56,7 @@ export interface OrbitEntityContext {
   // Tasks & Schedules
   activeTaskId?: string;
   activeTaskTitle?: string;
+  activeTaskTime?: string;
   activePlanId?: string;
 
   // Habits & Rituals

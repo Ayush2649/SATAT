@@ -1505,4 +1505,194 @@ describe("Orbit Context Continuity, State Mutation & Suggestion Engine", () => {
       expect(meals[0].mealType).toBe("breakfast");
     });
   });
+
+  // ── 7. Comprehensive Logging Pipeline Audit: Nutrition, Training, Planning ───
+  describe("Comprehensive Logging Pipeline Audit: Nutrition, Training, Planning", () => {
+    it("Nutrition Happy Path: persists meal with verified doc ID and clean finite macros", async () => {
+      const req = new NextRequest("http://localhost/api/aria", {
+        method: "POST",
+        body: JSON.stringify({
+          messages: [{ role: "user", content: "Add 2 rotis and yellow dal for lunch" }],
+          mode: "diet",
+          clientDate: "2026-11-15",
+        }),
+      });
+
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+      const body = await res.json();
+
+      expect(body.action_executed).toMatchObject({
+        type: "UPSERT_MEAL",
+        status: "success",
+        domain: "meals",
+      });
+      expect(body.action_executed.details.mealId).toBeDefined();
+
+      const doc = mockMealStore.get(body.action_executed.details.mealId);
+      expect(doc).toBeDefined();
+      expect(doc.userId).toBe(mockUserId);
+      expect(doc.mealType).toBe("lunch");
+      expect(Number.isFinite(doc.macros.calories)).toBe(true);
+      expect(doc.macros.calories).toBeGreaterThan(0);
+      expect(Number.isNaN(doc.macros.calories)).toBe(false);
+    });
+
+    it("Training Happy Path: persists workout movement with verified session ID and dual schema", async () => {
+      const req = new NextRequest("http://localhost/api/aria", {
+        method: "POST",
+        body: JSON.stringify({
+          messages: [{ role: "user", content: "Add Incline DB Press 3 sets of 10 reps @ 24kg" }],
+          mode: "workout",
+          clientDate: "2026-11-15",
+        }),
+      });
+
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+      const body = await res.json();
+
+      expect(body.action_executed).toMatchObject({
+        type: "ADD_EXERCISE",
+        status: "success",
+        domain: "workouts",
+      });
+      const sessionId = body.action_executed.details.sessionId;
+      expect(sessionId).toBeDefined();
+
+      const session = mockWorkoutStore.get(sessionId);
+      expect(session).toBeDefined();
+      expect(session.userId).toBe(mockUserId);
+      expect(session.exercises.length).toBeGreaterThanOrEqual(1);
+      expect(session.movements.length).toBeGreaterThanOrEqual(1);
+      expect(session.exercises[0].name.toLowerCase()).toContain("incline db press");
+      expect(session.exercises[0].sets[0].reps).toBe(10);
+      expect(session.exercises[0].sets[0].weight).toBe(24);
+    });
+
+    it("Planning Happy Path: persists task with verified task ID and valid scheduled time", async () => {
+      const req = new NextRequest("http://localhost/api/aria", {
+        method: "POST",
+        body: JSON.stringify({
+          messages: [{ role: "user", content: "Schedule Prepare client presentation at 3:00 PM with high priority" }],
+          mode: "tasks",
+          clientDate: "2026-11-15",
+        }),
+      });
+
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+      const body = await res.json();
+
+      expect(body.action_executed).toMatchObject({
+        type: "CREATE_TASK",
+        status: "success",
+        domain: "tasks",
+      });
+      const taskId = body.action_executed.details.taskId;
+      expect(taskId).toBeDefined();
+
+      const task = mockTaskStore.get(taskId);
+      expect(task).toBeDefined();
+      expect(task.userId).toBe(mockUserId);
+      expect(task.title).toContain("Prepare client presentation");
+      expect(task.scheduledTime).toBe("15:00");
+      expect(task.priority).toBe("high");
+      expect(task.dueDate).toBe("2026-11-15");
+    });
+
+    it("Nutrition Incomplete Intent: triggers clarification without creating corrupt meal docs", async () => {
+      const req = new NextRequest("http://localhost/api/aria", {
+        method: "POST",
+        body: JSON.stringify({
+          messages: [{ role: "user", content: "Log my lunch" }],
+          mode: "diet",
+        }),
+      });
+
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+      const body = await res.json();
+
+      expect(body.action_executed).toBeNull();
+      expect(body.message.toLowerCase()).toContain("lunch");
+      expect(body.suggested_actions.length).toBeGreaterThan(0);
+      expect(body.activeContext.awaitingParam).toBe("title");
+      expect(body.activeContext.activeMealSlot).toBe("lunch");
+      // Zero corrupt documents in store
+      expect(mockMealStore.size).toBe(0);
+    });
+
+    it("Planning Incomplete Intent: triggers clarification when title is missing at scheduled time", async () => {
+      const req = new NextRequest("http://localhost/api/aria", {
+        method: "POST",
+        body: JSON.stringify({
+          messages: [{ role: "user", content: "Schedule a task for 5:00 PM" }],
+          mode: "tasks",
+        }),
+      });
+
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+      const body = await res.json();
+
+      expect(body.action_executed).toBeNull();
+      expect(body.message.toLowerCase()).toContain("task");
+      expect(body.suggested_actions.length).toBeGreaterThan(0);
+      expect(body.activeContext.awaitingParam).toBe("title");
+      expect(body.activeContext.activeTaskTime).toBe("17:00");
+      // Zero corrupt documents in store
+      expect(mockTaskStore.size).toBe(0);
+    });
+
+    it("Training Incomplete Intent: triggers clarification when exercise name is missing", async () => {
+      const req = new NextRequest("http://localhost/api/aria", {
+        method: "POST",
+        body: JSON.stringify({
+          messages: [{ role: "user", content: "Add an exercise to workout" }],
+          mode: "workout",
+        }),
+      });
+
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+      const body = await res.json();
+
+      expect(body.action_executed).toBeNull();
+      expect(body.message.toLowerCase()).toContain("exercise");
+      expect(body.suggested_actions.length).toBeGreaterThan(0);
+      expect(body.activeContext.awaitingParam).toBe("exerciseName");
+      // Zero corrupt documents in store
+      expect(mockWorkoutStore.size).toBe(0);
+    });
+
+    it("Zero-Falsification Contract: returns status 'failed' and error explanation on write failure", async () => {
+      const originalAdd = mockTasksCol.add;
+      mockTasksCol.add = vi.fn().mockRejectedValue(new Error("Network connection lost"));
+
+      try {
+        const req = new NextRequest("http://localhost/api/aria", {
+          method: "POST",
+          body: JSON.stringify({
+            messages: [{ role: "user", content: "Schedule urgent sync at 4:00 PM" }],
+            mode: "tasks",
+          }),
+        });
+
+        const res = await POST(req);
+        expect(res.status).toBe(200);
+        const body = await res.json();
+
+        expect(body.action_executed).toMatchObject({
+          type: "CREATE_TASK",
+          status: "failed",
+          domain: "tasks",
+        });
+        expect(body.action_executed.details.error).toContain("Network connection lost");
+        expect(body.message.toLowerCase()).toContain("unable to save");
+      } finally {
+        mockTasksCol.add = originalAdd;
+      }
+    });
+  });
 });

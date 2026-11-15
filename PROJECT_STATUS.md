@@ -1079,12 +1079,48 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - Vitest suite: **56 passed (56 files), 688 passed | 26 skipped in `tests/security/firestore-rules.test.ts` without Firestore emulator (714 total), 0 failing**.
   - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
 
+### ✅ Sprint 6.15: End-to-End Diagnostic Audit & Fault Remediation across Nutrition, Training, and Planning Logging Pipelines
+- **Exhaustive Diagnostic Audit Across All 3 Core Logging Pipelines**:
+  - Traced end-to-end execution path across **Nutrition (Diet / Fuel Studio)**, **Training (Exercise / Training Studio)**, and **Planning (Tasks & Schedules / Execution Studio)** from user intent parsing to Firestore persistence and client UI synchronization.
+- **Nutrition (Diet / Fuel Studio) Fault Remediation (`lib/orbit/mutationEngine.ts`, `components/diet/DietPage.tsx`)**:
+  - **Slot-Filling & Incomplete Intent Clarification**: Remediated the bug where bare meal slot queries (e.g. `"Log my lunch"`, `"Track breakfast"`) stripped the slot and returned `null`. The parser now detects slot intents with missing dish items and emits `CLARIFICATION_NEEDED` (`missingParam: "title"`, `domain: "meals"`, `clarificationMessage: "What did you have for ${slot}? (e.g. 2 rotis with dal and salad)"`) with suggested dishes and sets `activeMealSlot: slot` and `awaitingParam: "title"`.
+  - **Two-Turn Slot Continuity**: Wired `activeContext.awaitingParam === "title"` + `activeMealSlot` at the top of the parser so that when the user responds with dishes in Turn 2, items are immediately upserted to the active slot without dropping entity reference.
+  - **Macro Number Hygiene & NaN Guards**: Implemented `safeMacro(val)` sanitizing all calculated calories and macros (`safeMacro((existingMeal.macros?.calories || 0) + addedCalories)`), guaranteeing zero `NaN`, null, or negative macro values hit Firestore.
+  - **Zero-Falsification Contract**: Verified `docRef.id` existence before returning `status: "success"`, replaced optional chaining `delete?.()` with verified method execution, and throw explicit exceptions on missing IDs.
+  - **Client UI Error Resilience & Notification**: Integrated `useToast` in `components/diet/DietPage.tsx`, adding optimistic rollback (`setMeals(prevMeals)`) and error toasts on write rejections in `handleAddMeal`, `handleDeleteMeal`, `handleSaveGoals`, and `handleSaveTemplate`.
+- **Training (Exercise / Training Studio) Fault Remediation (`lib/orbit/mutationEngine.ts`, `components/workout/WorkoutPage.tsx`)**:
+  - **Missing Exercise Name Clarification**: Remediated fallback where queries without exercise name defaulted to `"Workout Exercise"` and asked for sets/reps. The parser now emits `CLARIFICATION_NEEDED` with `missingParam: "exerciseName"`, prompting: `"Which exercise would you like to add, and how many sets and reps?"` with popular lift chips (`Bench Press 3x10`, `Squats 3x10`, `Pull Ups`).
+  - **Sets & Reps Number Hygiene**: Implemented `safeReps(val, 10)`, `safeWeight(val)`, and `safeDuration(val, 45)` preventing non-finite or `NaN` numbers in `update_workout_session` and `add_exercise_to_workout`.
+  - **Zero-Falsification Contract**: Verified session IDs (`ref.id`, `session.id`) before confirming `status: "success"` across `start_workout_session`, `update_workout_session`, `add_exercise_to_workout`, and `complete_workout_session`.
+  - **Client Error Toast**: Wrapped `handleLogBodyWeight` in `WorkoutPage.tsx` with try/catch and error toast feedback.
+- **Planning (Tasks & Schedules / Execution Studio) Fault Remediation (`lib/orbit/mutationEngine.ts`, `components/tasks/TaskBoard.tsx`, `types/orbit.ts`)**:
+  - **Missing Task Title Clarification**: Remediated the bug where scheduling a task at a specific time (e.g., `"Schedule a task for 5:00 PM"`) silently defaulted the title to `"Coding sprint"`. The parser now detects bare time strings and triggers `CLARIFICATION_NEEDED` (`missingParam: "title"`, `domain: "tasks"`, `clarificationMessage: "What task would you like to schedule for 5:00 PM?"`, storing `activeTaskTime: "17:00"`). Added `activeTaskTime` to `OrbitEntityContext` in `types/orbit.ts` and wired Turn 2 follow-up resolution.
+  - **Validation & Number Hygiene**: Sanitized `durationMinutes` (`safeDuration(durationMinutes, 25)`) and validated `scheduledTime` (`HH:mm`), throwing errors if task title is empty or generic.
+  - **Zero-Falsification Contract**: Verified `ref.id` on `create_task_entry` and `modify_plan_schedule`, and replaced optional chaining `delete?.()` in `delete_task_entry`.
+  - **Client Optimistic UI Rollback & Error Toasts**: Implemented rollback (`setAllTasks(prevTasks)`) and error toasts in `handleAddTask`, `handleToggleTask`, `handleDeleteTask`, `handleUpdateTask`, and `handleAddProject` in `TaskBoard.tsx`.
+- **API Routing Layer System Prompt Segregation (`app/api/aria/route.ts`)**:
+  - Enforced zero-falsification in multi-action system prompts by strictly segregating `successfulActions` under `=== ACTIONS SUCCESSFULLY COMPLETED IN DATABASE ===` and `failedActions` under `=== ACTIONS THAT FAILED TO SAVE (DATABASE ERROR) ===`, explicitly instructing the LLM to inform the user of failures and never claim failed writes succeeded.
+- **Automated Vitest Integration Suite (`tests/orbit/continuity-mutations.test.ts`)**:
+  - Added new integration suite `Comprehensive Logging Pipeline Audit: Nutrition, Training, Planning`:
+    1. Nutrition Happy Path: asserts verified doc ID in store, finite positive macros, and 0 `NaN`.
+    2. Training Happy Path: asserts verified session ID in store, dual schema (`exercises` + `movements`), and set telemetry.
+    3. Planning Happy Path: asserts verified task ID in store, sanitized title, `15:00` scheduled time, and priority.
+    4. Nutrition Incomplete Intent: asserts clarification triggered for `"Log my lunch"` and 0 documents created.
+    5. Planning Incomplete Intent: asserts clarification triggered for `"Schedule a task for 5:00 PM"` and 0 documents created.
+    6. Training Incomplete Intent: asserts clarification triggered for `"Add an exercise to workout"` and 0 documents created.
+    7. Zero-Falsification Contract: simulates Firestore rejection on task write, asserting `status: "failed"`, `details.error` populated, and affirmative response suppressed.
+- **Zero Regression Standard Verified**:
+  - `npm run typecheck` (`tsc --noEmit`): **0 errors**.
+  - Vitest suite: **56 passed (56 files), 695 passed | 26 skipped in `tests/security/firestore-rules.test.ts` (721 total), 0 failing**.
+  - `tests/orbit/continuity-mutations.test.ts`: **43/43 passed**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 33 routes compiled).
+
 ---
 
 ## 4. Current Quality & Build Metrics
 - **TypeScript & Next.js Build**: `npm run build` exits with code `0` (all 33 static/dynamic routes compiled).
 - **ESLint & Typecheck**: `npm run typecheck` and `npm run lint` exit with code `0`.
-- **Vitest Suite**: `688 passed | 26 skipped` (Firestore security rules suite skipped without emulator on `127.0.0.1:8088`) across `56` test suites (`0` failing), including `36/36 passed` in `tests/orbit/continuity-mutations.test.ts` and `7/7 passed` in `tests/orbit/orbit-retry.test.ts`.
+- **Vitest Suite**: `695 passed | 26 skipped` (Firestore security rules suite skipped without emulator on `127.0.0.1:8088`) across `56` test suites (`0` failing), including `43/43 passed` in `tests/orbit/continuity-mutations.test.ts` and `7/7 passed` in `tests/orbit/orbit-retry.test.ts`.
 - **Markdown & UI Tests**: `13/13 passed` in `tests/ui/markdown-text.test.tsx`.
 - **Navigation & Launcher Tests**: `5/5 passed` in `tests/navigation/navigation-orbit-launcher.test.ts`.
 - **Diet Tests**: `213/213 passed` across all 15 test suites in `tests/diet/*`.
