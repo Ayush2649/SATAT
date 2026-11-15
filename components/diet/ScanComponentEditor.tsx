@@ -3,16 +3,18 @@
 import { useEffect, useRef, useState } from "react";
 import { Pencil, Plus, X } from "lucide-react";
 import { INDIAN_FOOD_DATABASE } from "@/lib/ai/nutrition/database";
-import { componentGrams, RECIPE_NAMES, recipeNutrition, replaceComponent, summarizeComponents, UNKNOWN_MICROS, type ScanComponent, type Nutrition, type NutrientKey } from "@/lib/nutrition/scan-review";
+import { componentGrams, RECIPE_NAMES, recipeNutrition, replaceComponent, summarizeComponents, UNKNOWN_MICROS, type ScanComponent, type Nutrition, type NutrientKey, type ScanSuggestion } from "@/lib/nutrition/scan-review";
 
 const nutrientLabels: Record<NutrientKey, string> = { vitaminAMcg: "Vitamin A (µg)", vitaminCMg: "Vitamin C (mg)", calciumMg: "Calcium (mg)", ironMg: "Iron (mg)", potassiumMg: "Potassium (mg)" };
 const fields: { key: keyof Nutrition; label: string }[] = [{ key: "calories", label: "Calories" }, { key: "proteinG", label: "Protein (g)" }, { key: "carbsG", label: "Carbs (g)" }, { key: "fatG", label: "Fat (g)" }];
 const inputClass = "mt-1 w-full min-w-0 rounded-xl border border-[var(--satat-border-strong)] bg-[var(--satat-surface)] px-3 py-2.5 text-sm text-[var(--satat-text-primary)]";
 
-type EditingFood = { row: ScanComponent; index: number | null };
+type EditingFood = { row: ScanComponent; index: number | null; suggestionId?: string };
 
-export default function ScanComponentEditor({ rows, onChange, onEditingChange }: {
+export default function ScanComponentEditor({ rows, onChange, onEditingChange, suggestions = [], onSuggestionsChange }: {
   rows: ScanComponent[];
+  suggestions?: ScanSuggestion[];
+  onSuggestionsChange?: (suggestions: ScanSuggestion[]) => void;
   onChange: (rows: ScanComponent[]) => void;
   onEditingChange?: (editing: boolean) => void;
 }) {
@@ -37,15 +39,16 @@ export default function ScanComponentEditor({ rows, onChange, onEditingChange }:
     setEditing(null);
     requestAnimationFrame(() => openerRef.current?.focus());
   };
-  const open = (button: HTMLButtonElement, row: ScanComponent, index: number | null) => {
+  const open = (button: HTMLButtonElement, row: ScanComponent, index: number | null, suggestionId?: string) => {
     onEditingChange?.(true);
     openerRef.current = button;
-    setEditing({ row, index });
+    setEditing({ row, index, suggestionId });
   };
   const save = () => {
     if (!editing || !summarizeComponents([editing.row]).complete) return;
-    const next = { ...editing.row, confirmed: true };
+    const next = { ...editing.row, reviewNote: undefined, confirmed: true };
     onChange(editing.index === null ? [...rows, next] : rows.map(row => row.id === next.id ? next : row));
+    if (editing.suggestionId) onSuggestionsChange?.(suggestions.filter(item => item.id !== editing.suggestionId));
     close();
   };
 
@@ -57,7 +60,7 @@ export default function ScanComponentEditor({ rows, onChange, onEditingChange }:
       </div>
       <div className="flex flex-wrap gap-2">
         {rows.map((row, index) => {
-          const needsInfo = !summarizeComponents([row]).complete;
+          const needsInfo = !!row.reviewNote || !summarizeComponents([row]).complete;
           return (
             <button key={row.id} type="button" disabled={isEditing} aria-label={`Edit ${row.name || "food"}`} aria-expanded={editing?.row.id === row.id} aria-controls="scan-food-editor"
               onClick={event => open(event.currentTarget, row, index)}
@@ -72,12 +75,21 @@ export default function ScanComponentEditor({ rows, onChange, onEditingChange }:
           <Plus aria-hidden="true" className="h-4 w-4" /> Add food
         </button>
       </div>
+      {suggestions.length > 0 && <div className="space-y-2 text-xs" aria-label="Possible missing dishes">
+        <p className="text-[var(--satat-text-secondary)]">Anything missing? These aren’t counted yet.</p>
+        {suggestions.map(item => <div key={item.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-[var(--satat-border)] px-3 py-2">
+          <span className="min-w-0 flex-1 break-words">{item.label}</span>
+          <button type="button" disabled={isEditing} aria-label={`Already included: ${item.name}`} onClick={() => onSuggestionsChange?.(suggestions.filter(other => other.id !== item.id))} className="min-h-11 underline">Already included</button>
+          <button type="button" disabled={isEditing} aria-label={`Add missing ${item.name}`} onClick={event => open(event.currentTarget, replaceComponent({ id: crypto.randomUUID(), name: item.name, amount: String(item.quantity), unit: item.unit, per100g: null, micros: { ...UNKNOWN_MICROS }, source: "", confirmed: false, portionSource: "user" }, item.name), null, item.id)} className="min-h-11 font-semibold text-[var(--satat-sage)]">Add dish</button>
+        </div>)}
+      </div>}
       {editing && (
         <div id="scan-food-editor" ref={panelRef} role="region" aria-label={editing.index === null ? "Add food" : "Edit dish"} onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); close(); } }} className="rounded-2xl border border-[var(--satat-border-strong)] bg-[var(--satat-bg)] p-4 space-y-4">
           <div className="flex items-center justify-between gap-3">
             <h4 className="font-semibold text-sm">{editing.index === null ? "Add a food" : "Edit dish"}</h4>
             <button type="button" aria-label="Close food editor" onClick={close} className="inline-flex h-9 w-9 items-center justify-center rounded-full hover:bg-[var(--satat-surface-inset)]"><X className="h-4 w-4" /></button>
           </div>
+          {editing.row.reviewNote && <p role="status" className="text-xs text-[var(--satat-brand)]">{editing.row.reviewNote}</p>}
           <FoodForm row={editing.row} index={editing.index ?? rows.length} onChange={row => setEditing({ ...editing, row })} />
           <div className="flex items-center justify-between gap-3">
             {editing.index !== null ? <button type="button" className="text-xs text-[var(--satat-brand)] underline" onClick={() => { onChange(rows.filter(row => row.id !== editing.row.id)); close(); }}>Remove dish</button> : <span />}

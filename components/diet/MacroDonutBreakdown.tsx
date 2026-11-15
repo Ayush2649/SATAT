@@ -99,9 +99,9 @@ export default function MacroDonutBreakdown({
   });
 
   return (
-    <div className={cn("flex flex-col min-[480px]:flex-row items-center justify-between gap-3 sm:gap-4 w-full min-w-0", className)}>
+    <div className={cn("flex items-center gap-2 min-[360px]:gap-3 sm:gap-4 w-full min-w-0", className)}>
       {/* ── Left: SVG Donut Ring ── */}
-      <div className="w-24 h-24 sm:w-28 sm:h-28 shrink-0 relative flex items-center justify-center">
+      <div className="w-20 h-20 min-[360px]:w-24 min-[360px]:h-24 sm:w-28 sm:h-28 shrink-0 relative flex items-center justify-center">
         <svg
           viewBox="0 0 104 104"
           className="w-full h-full -rotate-90"
@@ -141,7 +141,7 @@ export default function MacroDonutBreakdown({
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
           <span
             className={cn(
-              "text-lg sm:text-xl font-bold leading-none tracking-tight",
+              "text-base min-[360px]:text-lg sm:text-xl font-bold leading-none tracking-tight",
               variant === "dark" ? "text-white" : "text-[#1C1917]"
             )}
           >
@@ -156,7 +156,7 @@ export default function MacroDonutBreakdown({
       {/* ── Right: 3-Column Macro Readout Inset Box ── */}
       <div
         className={cn(
-          "w-full min-w-0 flex-1 rounded-2xl py-3 px-2 sm:p-4 border",
+          "min-w-0 flex-1 rounded-2xl py-3 px-1 min-[360px]:px-2 sm:p-4 border",
           variant === "dark"
             ? "bg-white/[0.04] border-white/[0.07] text-white"
             : "bg-[#EFECE4]/60 border-[#1C1917]/[0.05] text-[#1C1917]"
@@ -169,7 +169,7 @@ export default function MacroDonutBreakdown({
           )}
         >
           {/* Column 1: Carbs */}
-          <div className="px-1 min-w-0 flex flex-col items-center justify-center">
+          <div className="px-1 min-w-0 flex flex-col items-center justify-start">
             <span
               className="text-xs font-bold whitespace-nowrap block leading-none"
               style={{ color: segments[0].textColor }}
@@ -178,7 +178,7 @@ export default function MacroDonutBreakdown({
             </span>
             <span
               className={cn(
-                "text-base sm:text-lg lg:text-xl font-bold whitespace-nowrap mt-1 leading-tight",
+                "text-sm min-[360px]:text-base sm:text-lg lg:text-xl font-bold whitespace-nowrap mt-1 leading-tight",
                 variant === "dark" ? "text-white" : "text-[#1C1917]"
               )}
             >
@@ -186,7 +186,7 @@ export default function MacroDonutBreakdown({
             </span>
             <span
               className={cn(
-                "text-[11px] font-normal block break-words mt-1 leading-snug",
+                "text-[10px] min-[360px]:text-[11px] font-normal block break-words mt-1 leading-snug",
                 variant === "dark" ? "text-stone-400" : "text-[#8C857B]"
               )}
             >
@@ -195,7 +195,7 @@ export default function MacroDonutBreakdown({
           </div>
 
           {/* Column 2: Fat */}
-          <div className="px-1 min-w-0 flex flex-col items-center justify-center">
+          <div className="px-1 min-w-0 flex flex-col items-center justify-start">
             <span
               className="text-xs font-bold whitespace-nowrap block leading-none"
               style={{ color: segments[1].textColor }}
@@ -204,7 +204,7 @@ export default function MacroDonutBreakdown({
             </span>
             <span
               className={cn(
-                "text-base sm:text-lg lg:text-xl font-bold whitespace-nowrap mt-1 leading-tight",
+                "text-sm min-[360px]:text-base sm:text-lg lg:text-xl font-bold whitespace-nowrap mt-1 leading-tight",
                 variant === "dark" ? "text-white" : "text-[#1C1917]"
               )}
             >
@@ -212,7 +212,7 @@ export default function MacroDonutBreakdown({
             </span>
             <span
               className={cn(
-                "text-[11px] font-normal block break-words mt-1 leading-snug",
+                "text-[10px] min-[360px]:text-[11px] font-normal block break-words mt-1 leading-snug",
                 variant === "dark" ? "text-stone-400" : "text-[#8C857B]"
               )}
             >
@@ -221,7 +221,7 @@ export default function MacroDonutBreakdown({
           </div>
 
           {/* Column 3: Protein */}
-          <div className="px-1 min-w-0 flex flex-col items-center justify-center">
+          <div className="px-1 min-w-0 flex flex-col items-center justify-start">
             <span
               className="text-xs font-bold whitespace-nowrap block leading-none"
               style={{ color: segments[2].textColor }}
@@ -230,7 +230,7 @@ export default function MacroDonutBreakdown({
             </span>
             <span
               className={cn(
-                "text-base sm:text-lg lg:text-xl font-bold whitespace-nowrap mt-1 leading-tight",
+                "text-sm min-[360px]:text-base sm:text-lg lg:text-xl font-bold whitespace-nowrap mt-1 leading-tight",
                 variant === "dark" ? "text-white" : "text-[#1C1917]"
               )}
             >
@@ -238,7 +238,7 @@ export default function MacroDonutBreakdown({
             </span>
             <span
               className={cn(
-                "text-[11px] font-normal block break-words mt-1 leading-snug",
+                "text-[10px] min-[360px]:text-[11px] font-normal block break-words mt-1 leading-snug",
                 variant === "dark" ? "text-stone-400" : "text-[#8C857B]"
               )}
             >

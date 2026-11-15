@@ -32,7 +32,8 @@ CRITICAL RULES:
 - When unsure or when dishes look visually similar, explain your uncertainty in notes and lower your confidence score.
 - Notes must be concise (1-2 sentences maximum, under 40 words). Do not include conversational filler or lengthy essays.
 - For each visible food item, specify the name, approximate numeric quantity, and unit (prefer grams 'g' or 'ml' if known/estimated, e.g. 120 g, 160 g, 190 ml, or piece, katori, bowl, plate, cup, tbsp, serving).
-- In 'foods', specify the exact numeric quantity and unit corresponding to the detected physical portion.
+- In 'foods', use one entry per physical serving or bowl, with its estimated numeric quantity and unit. Never list synonyms or alternative identities as additional foods. Put identity uncertainty in notes.
+- visibleItems only annotates the same inventory; it must not describe extra servings or alternative portions as additional food.
 - Candidates must be DISTINCT dishes with different calorie impacts. Return a numeric confidence from 0.0 to 1.0 for each candidate.
 - Return up to 3 candidate dishes sorted by confidence descending.
 

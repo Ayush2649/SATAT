@@ -311,7 +311,7 @@ export async function estimateNutritionBatch(
           }
         : undefined;
 
-      resultMap.set(requested.name, {
+      resultMap.set(requested.componentId || requested.name, {
         calories: scaledCals,
         proteinG: scaledProt,
         carbsG: scaledCarbs,
@@ -352,7 +352,7 @@ export async function estimateNutritionBatch(
           }
         : undefined;
 
-      resultMap.set(requested.name, {
+      resultMap.set(requested.componentId || requested.name, {
         calories: scaledCals,
         proteinG: scaledProt,
         carbsG: scaledCarbs,
@@ -402,7 +402,7 @@ export async function estimateNutritionBatch(
           : undefined;
       }
 
-      resultMap.set(requested.name, {
+      resultMap.set(requested.componentId || requested.name, {
         calories: scaledCals,
         proteinG: scaledProt,
         carbsG: scaledCarbs,
@@ -439,7 +439,7 @@ export function mergeRoutedNutrition(
 
   // 3. AI-Eligible items: attach estimatedNutrition if present in estimatedMap
   for (const item of routed.aiEligible) {
-    const est = estimatedMap.get(item.name);
+    const est = estimatedMap.get(item.componentId || item.name);
     if (est) {
       merged.push({
         ...item,

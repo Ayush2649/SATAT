@@ -7,7 +7,17 @@
 
 ---
 
-## 15 November 2026 — P1 duplicate meal inventory diagnosis (open)
+## 15 November 2026 — Fuel layout and counted-inventory repair (complete)
+
+- Restored the horizontal donut/macros layout on phone widths, using a smaller ring and labels below 360 px. Removed verbose logged-meal provenance/component paragraphs and missing-nutrient placeholders; only finite supplied micronutrients are displayed.
+- Replaced automatic label-to-food additions with one counted structured inventory. Alternate labels annotate existing foods; possible missing foods remain uncounted suggestions until explicitly added. Conflicting portions and low-confidence identities require editing/review before logging. Separate bowls and user additions remain separate; serving IDs survive calculation and AI-estimate merging.
+- Old photo-derived drafts are retained and marked for review rather than silently discarded or auto-logged. Explicit user corrections are preserved. Existing saved meal totals are not rewritten.
+- Exact four-to-seven regression now calculates four items / 629 fixture kcal rather than 1,083. This fixes duplicate arithmetic, not measured calorie accuracy; the portions remain unweighed estimates. Final full suite: **70 files passed; 776 tests passed, 26 skipped, zero failures**. Production build **passed, exit 0**, all 34 routes generated; existing non-fatal lint warnings remain.
+- Live supplied-photo scan returned four foods / 629 estimated kcal, without duplicates. Browser verified at actual 320/391/1440 px: horizontal donut/macros, no horizontal overflow, Cancel preserves 70 g/629 kcal and Save of only roti to 90 g gives 688 kcal; logging disabled while editing. No test meal saved. Today's pre-existing draft retained; temporary prior-day scan cleared. Browser account showed an empty log, so logged-meal nutrient visibility is covered by render regressions rather than an opened persisted record. Dark-theme and physical-device checks remain acceptance work.
+- Screenshots: `fuel-scan-repaired-{mobile,320,desktop}.jpg` and `fuel-summary-repaired-{mobile,320}.jpg` in the existing local visualization folder. Detailed reproduction and limitations: `docs/MEAL_SCAN_COMPONENT_REVIEW_2026-11-15.md`. Repair stays below the user's 10% file limit; current branch only, no push.
+- Modified files so far: `DietPage.tsx`, `MacroDonutBreakdown.tsx`, `MealScannerModal.tsx`, `ScanComponentEditor.tsx`, `scan-review.ts`, nutrition calculator/AI estimator, shared vision prompt, analyze-meal route, `AvailableMicronutrients.tsx`, four regression test files, the updated component-review report, and this status file. Current branch only; no push.
+
+## 15 November 2026 — P1 duplicate meal inventory diagnosis (resolved above)
 
 - User supplied Google AI Mode output, SATAT output and an original rice/roti/dal/okra meal photo. Confirmed a deterministic regression in the inventory reconciliation added earlier: alternate `visibleItems` descriptions are appended as new foods when exact aliases/token overlap do not match structured `foods`.
 - Reproduced locally without an API call: structured Rice 180 g, Dal Fry 150 g, Plain Roti 70 g and Bhindi Masala 70 g calculate **629 kcal / 21 g protein / 122 g carbs / 8 g fat**. Reconciling the labels `yellow dal with tomato 150g`, `two whole wheat roti 90g` and `bhindi okra sabzi 70g` adds three duplicates, producing **1,083 kcal / 39 g protein / 204 g carbs / 15 g fat**, exactly matching the user's screenshot. These are fixture calculations from guessed portions, not measured meal nutrition.

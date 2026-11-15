@@ -1,5 +1,5 @@
 import { includesIngredient } from "@/lib/nutrition/hints";
-import { reconcileScanInventory } from "@/lib/nutrition/scan-review";
+import { buildScanInventory } from "@/lib/nutrition/scan-review";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getServerSession } from "next-auth";
@@ -313,24 +313,7 @@ export async function POST(req: NextRequest) {
     const nutritionFoods: InputFoodItem[] =
       visionData.foods && visionData.foods.length > 0
         ? [...visionData.foods]
-        : visionData.visibleItems.map((item) => {
-            const portion = parsePortionFromText(item);
-            const name =
-              cleanDishName(
-                item
-                  .replace(
-                    /(?:~|approx\.?|about)?\s*\d+(?:\.\d+)?\s*(?:(?:-|to)\s*\d+(?:\.\d+)?\s*)?(?:g|grams?|ml|milliliters?|katori|bowl|plate|cup|glass|piece|pieces|slice|slices|tbsp|tsp|serving|servings)\b/gi,
-                    ""
-                  )
-                  .replace(/[()]/g, "")
-                  .trim()
-              ) || cleanDishName(item);
-            return {
-              name,
-              quantity: portion?.quantity ?? 1,
-              unit: portion?.unit ?? "serving",
-            };
-          });
+        : [];
 
     // Incorporate user hint add-ons cleanly into nutritionFoods if not already detected
     const userHintLower = (hint || "").trim().toLowerCase();
@@ -375,8 +358,8 @@ export async function POST(req: NextRequest) {
     }
 
     const tDb0 = performance.now();
-    const inventory = reconcileScanInventory(nutritionFoods, finalVisibleItems, parsePortionFromText);
-    const routed = routeFoodItems(inventory);
+    const inventory = buildScanInventory(nutritionFoods, finalVisibleItems, parsePortionFromText);
+    const routed = routeFoodItems(inventory.foods);
     const dbLookupMs = performance.now() - tDb0;
 
     const tEst0 = performance.now();
@@ -443,7 +426,8 @@ export async function POST(req: NextRequest) {
       candidates: distinctCandidates,
       visibleItems: finalVisibleItems,
       ambiguity,
-      foods: nutritionResult.items,
+      foods: nutritionResult.items.map(food => ({ ...food, ...(food.componentId && inventory.reviewNotes[food.componentId] ? { reviewNote: inventory.reviewNotes[food.componentId] } : {}) })),
+      reviewSuggestions: inventory.suggestions,
       unknownFoods: nutritionResult.unknownFoods,
       allFoodsVerified: nutritionResult.allFoodsVerified,
       requiresManualReview: true,
@@ -451,8 +435,9 @@ export async function POST(req: NextRequest) {
       unresolvedCount: nutritionResult.unresolvedCount,
       estimatedCount: nutritionResult.estimatedCount,
       verifiedCount: nutritionResult.verifiedCount,
-      hasIncompleteNutrition: nutritionResult.hasIncompleteNutrition,
-      totalLabel: nutritionResult.hasIncompleteNutrition ? "Known-food subtotal" : "Estimated total — review every component",
+      hasIncompleteNutrition: nutritionResult.hasIncompleteNutrition || inventory.suggestions.length > 0,
+      hasInventoryAmbiguity: inventory.suggestions.length > 0 || Object.keys(inventory.reviewNotes).length > 0,
+      totalLabel: (nutritionResult.hasIncompleteNutrition || inventory.suggestions.length > 0) ? "Known-food subtotal" : "Estimated total — review every component",
       recognitionVerified: false,
       portionBasis: "photo_estimate",
       uncertainty: "Not calibrated; ingredients, oil and portion mass need confirmation",

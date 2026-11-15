@@ -4,18 +4,48 @@
 
 ## Delivered behavior
 
-The result is now a list of foods to review, not one dish name and a plate multiplier. Each row has editable identity, amount and unit, source/basis text, optional recipe editing and a check box. Changing rice from 200 g to 400 g changes only that row. A mistaken egg or fish identity can be replaced locally with paneer or a banana recipe; missed dal can be added. Re-analysis cannot silently overwrite user corrections.
+The scan result shows editable dish/amount pills, Add food, then a compact horizontal calorie donut and carbs/fat/protein readout. Name and amount edits open only for the selected dish. Recipe/source/nutrient inputs are behind a disclosure. Save applies an edit; Cancel preserves the previous amount and total. One **Looks right · Log meal** action confirms the final inventory.
 
-Logging requires usable amounts/nutrition, a check for each component and a whole-meal completeness check. An unresolved row produces **Incomplete — known-food subtotal**, disables logging and preserves the known values. Missing nutrients remain unknown, not zero. Invalid numeric amounts are blocked. These are review safeguards; a check box does not make a visual guess accurate.
+Logging requires usable amounts/nutrition and resolution of marked dishes or possible missing foods. Conflicting portion descriptions and low-confidence identities show a short note inside the relevant editor. The user can correct the name/amount or save it after review. Logging stays disabled while editing. Missing foods remain uncounted until explicitly added; Already included dismisses an alternate description. An incomplete estimate is a partial subtotal.
 
-Drafts are scoped to authenticated account and date, expire after 24 hours and restore after closing/reopening. Discard explicitly clears a review. Images are not stored with the local draft. Successful logging clears the draft; failures retain it. Reviewed component/source/recipe details and optional micronutrients are saved in an optional `scanReview` field, leaving older meal documents and existing ownership rules valid. Logged meals expose their reviewed-food/nutrient details. Photos saved with a meal are bounded thumbnails to avoid oversized Firestore documents.
+Drafts are account/date scoped and expire after 24 hours. Version 2 preserves pending suggestions and edits. Version 1 photo rows are retained and marked for review because they may contain the old duplicates; user-entered corrections are preserved. Images are not stored in the draft. Logging clears it after a successful save; failures retain it. Existing Firestore meal records and their totals are not silently rewritten.
+
+Opening a logged meal now shows the compact donut/macros, without the long provenance/component paragraphs. Only available, finite, non-negative vitamins/minerals appear; unknown values render nothing. Explicit sourced zero remains a valid value. Source and recipe data remain in the optional saved review field.
+
+## 15 November repair: duplicate inventory and layout
+
+The regression had two independently counted lists: structured `foods` and unmatched descriptive `visibleItems`. Three alternate names were appended as new dishes. The repair uses one counted structured list, with per-serving IDs carried through routing, calculation and AI-estimate merging. Labels can annotate a serving or create an uncounted review suggestion. Separate bowls remain separate even when their canonical food names match. Same-name AI estimates are now stored by serving ID so different quantities do not overwrite each other.
+
+| Check | Result |
+| --- | --- |
+| Exact screenshot fixture: rice 180 g, dal 150 g, roti 70 g, bhindi 70 g | Four counted foods; 629 kcal / 21 g protein / 122 g carbs / 8 g fat |
+| Alternate dal/roti/bhindi descriptions | No automatic additions; conflicting 90 g roti label flags review |
+| Previous buggy calculation | Seven entries, 1,083 kcal; prevented 454 fixture kcal of duplicate counting |
+| Display-only food / omitted dal | Uncounted suggestion and incomplete subtotal until user review |
+| Two bowls / explicitly added food | Independent quantities and IDs retained |
+| Logged micronutrients | Unknown/invalid hidden; known values including explicit zero rendered |
+| Full Vitest | 70 files passed; **776 passed, 26 skipped, zero failures** |
+| Production build | **Exit 0**; all 34 routes generated; existing non-fatal lint warnings remain |
+
+Live authenticated browser check with the original supplied rice/roti/dal/okra photo returned four pills (rice 180 g, dal 150 g, roti 70 g, bhindi 70 g) and 629 kcal, without duplicate dishes. This is a successful recognition/counting check, **not weighed calorie validation**. Saving roti at 90 g produced 688 kcal and left the other foods unchanged; Cancel retained 70 g/629 kcal. Logging was disabled while editing. No test meal was saved.
+
+Verified actual CSS widths 320, 391 and 1440 px: donut left/macros right, scan donut after the dish pills, no page-wide horizontal overflow. Macro percentages/values align at the top even when target labels wrap. Restored the browser viewport afterward; discarded only the temporary previous-day test scan, preserving today's existing draft. The audit browser account displayed an empty meal log, so logged-meal nutrient visibility was checked by render regressions; no existing saved meal was opened or altered in that account. Physical-device testing and dark-theme visual comparison remain separate acceptance checks.
+
+Local screenshots:
+
+- [391 px scan](C:/Users/ayush/.codex/visualizations/2026/11/14/01a1d936-5dff-7f90-965e-a8b893bc3c8f/fuel-scan-repaired-mobile.jpg)
+- [320 px scan](C:/Users/ayush/.codex/visualizations/2026/11/14/01a1d936-5dff-7f90-965e-a8b893bc3c8f/fuel-scan-repaired-320.jpg)
+- [Desktop scan](C:/Users/ayush/.codex/visualizations/2026/11/14/01a1d936-5dff-7f90-965e-a8b893bc3c8f/fuel-scan-repaired-desktop.jpg)
+- [Mobile daily summary](C:/Users/ayush/.codex/visualizations/2026/11/14/01a1d936-5dff-7f90-965e-a8b893bc3c8f/fuel-summary-repaired-mobile.jpg)
+
+To reproduce: scan the supplied photo, check one pill per physical dish, edit only roti, Cancel and confirm unchanged total; repeat and Save a different gram amount. Use the deterministic regression fixture to verify conflicting 70/90 g descriptions, since live model output varies. Old already-logged duplicated meals require explicit correction/re-logging; this repair applies to new scans and draft review. The 629 kcal result must not be treated as measured truth or tuned to Google's unweighed estimate.
 
 ## Image, identity and calculation changes
 
 - Scan-specific preprocessing now retains a bounded 1536 px longest edge; the browser uses higher JPEG quality. The existing 768 px helper default remains compatible with other callers. EXIF orientation is applied even for small JPEGs.
 - DeepSeek defaults to high detail. The local ignored `.env` non-secret detail setting was changed from low to high. No credentials are committed.
 - Shared vision prompts remove calorie/typical-serving anchors and the automatic moderate-oil assumption, call out paneer/egg and banana/fish ambiguity, and explicitly check dal over rice and side dishes. Gemini and DeepSeek now share that prompt.
-- Visible labels are reconciled with structured food inventory instead of being ignored whenever `foods` is nonempty. Counted roti/samosa labels do not duplicate the same food.
+- Visible labels annotate the single structured inventory. They never automatically add foods; possible omissions are explicit review suggestions. If structured foods are absent, labels remain uncounted until the user adds them.
 - Descriptive egg/fish recipes do not collapse through a generic ingredient alias to boiled egg or plain fish. Existing exact aliases remain compatible.
 - A canonical match remains available in legacy API fields for compatibility, but new metadata and UI explicitly distinguish database coverage from verified recognition. All photo results require review; no photo identity is labelled verified.
 - Automatic home-cooked fat/calorie subtraction and automatic recognition-based selection of add-on chips are removed. Oil can be entered explicitly through a recipe or another food row. The nutrition-estimation stage is bounded by the remaining route budget.

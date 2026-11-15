@@ -293,6 +293,18 @@ describe("Phase 2B: Real AI Nutrition Estimation Pipeline", () => {
   // ── 4. Batch AI Estimation Tests ────────────────────────────────────────────
 
   describe("Batch AI Nutrition Estimator (estimateNutritionBatch)", () => {
+    it("keeps different portions of the same estimated dish independent by serving ID", async () => {
+      const foods: InputFoodItem[] = [
+        { componentId: "bowl-1", name: "Custom vegetable stew", quantity: 100, unit: "g", confidence: .9 },
+        { componentId: "bowl-2", name: "Custom vegetable stew", quantity: 200, unit: "g", confidence: .9 },
+      ];
+      const provider = vi.fn().mockResolvedValue({ rawContent: JSON.stringify({ items: [{ foodName: "Custom vegetable stew", basis: "per_100g", calories: 100, proteinG: 5, carbsG: 11, fatG: 4 }] }) });
+      const estimates = await estimateNutritionBatch(foods, { providerFn: provider });
+      expect(estimates.get("bowl-1")?.calories).toBe(100);
+      expect(estimates.get("bowl-2")?.calories).toBe(200);
+      const merged = mergeRoutedNutrition({ canonical: [], components: [], unresolved: [], aiEligible: foods }, estimates);
+      expect(merged.map(food => food.estimatedNutrition?.calories)).toEqual([100, 200]);
+    });
     it("makes zero provider calls when food list is empty", async () => {
       const mockProvider = vi.fn();
       const result = await estimateNutritionBatch([], { providerFn: mockProvider });

@@ -21,6 +21,7 @@ export type NutritionStatus = "verified" | "estimated" | "unresolved";
 export type NutritionSource = "canonical" | "ai_estimate" | "unresolved" | "user_manual";
 
 export interface InputFoodItem {
+  componentId?: string;
   name: string;
   quantity?: number;
   unit?: string;
@@ -49,6 +50,7 @@ export interface InputFoodItem {
 }
 
 export interface CalculatedFoodItem {
+  componentId?: string;
   name: string;
   matchedFoodId: string | null;
   matchedCanonicalName: string | null;
@@ -361,6 +363,7 @@ export function calculateMealNutrition(
       const unit = f.unit || "serving";
 
       calculatedItems.push({
+        ...(f.componentId ? { componentId: f.componentId } : {}),
         name: rawName,
         matchedFoodId: null,
         matchedCanonicalName: `${rawName} (in ${f.isComponentOf})`,
@@ -395,6 +398,7 @@ export function calculateMealNutrition(
       const fib = Math.round((matched.per100g.fiberG * grams) / 100);
 
       calculatedItems.push({
+        ...(f.componentId ? { componentId: f.componentId } : {}),
         name: rawName,
         matchedFoodId: matched.id,
         matchedCanonicalName: matched.name,
@@ -468,6 +472,7 @@ export function calculateMealNutrition(
       }
 
       calculatedItems.push({
+        ...(f.componentId ? { componentId: f.componentId } : {}),
         name: rawName,
         matchedFoodId: null,
         matchedCanonicalName: rawName,
@@ -496,6 +501,7 @@ export function calculateMealNutrition(
       // Unresolved food: DO NOT invent fake numbers. Use null, never 0!
       unknownFoods.push(rawName);
       calculatedItems.push({
+        ...(f.componentId ? { componentId: f.componentId } : {}),
         name: rawName,
         matchedFoodId: null,
         matchedCanonicalName: null,

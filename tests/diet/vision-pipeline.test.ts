@@ -155,6 +155,50 @@ describe("Vision Pipeline & Circuit Breaker Architecture", () => {
   });
 
   describe("API Route: /api/analyze-meal", () => {
+    it("counts the user's four-dish fixture once and exposes conflicting portions for review", async () => {
+      vi.mocked(analyzeMealWithGemini).mockResolvedValueOnce({
+        foods: [
+          { name: "Steamed Rice", quantity: 180, unit: "g", confidence: .9 },
+          { name: "Dal Fry", quantity: 150, unit: "g", confidence: .9 },
+          { name: "Plain Roti", quantity: 70, unit: "g", confidence: .9 },
+          { name: "Bhindi Masala", quantity: 70, unit: "g", confidence: .9 },
+        ],
+        candidates: [{ name: "Rice, dal, roti and bhindi", confidence: "medium", rawConfidence: .8 }],
+        visibleItems: ["Steamed rice ~180g", "yellow dal with tomato ~150g", "two whole wheat roti ~90g", "bhindi okra sabzi ~70g"],
+        ambiguity: "medium", notes: "Unweighed portions", model: "gemini-test", provider: "gemini",
+        usage: { promptTokens: 1, completionTokens: 1, thinkingTokens: 0, cachedTokens: 0, totalTokens: 2, latencyMs: 1 },
+      });
+      const res = await analyzeMealPOST(new NextRequest("http://localhost/api/analyze-meal", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageBase64: "/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=", mimeType: "image/jpeg" }),
+      }));
+      const body = await res.json();
+      expect(res.status).toBe(200);
+      expect(body.foods).toHaveLength(4);
+      expect(body.calories).toBe(629);
+      expect(body.reviewSuggestions).toEqual([]);
+      expect(body.foods.find((food: any) => food.name === "Plain Roti").reviewNote).toContain("90g");
+      expect(body.requiresManualReview).toBe(true);
+    });
+    it("returns an incomplete subtotal for display-only possible foods rather than automatically counting them", async () => {
+      vi.mocked(analyzeMealWithGemini).mockResolvedValueOnce({
+        foods: [], candidates: [{ name: "Possible dal", confidence: "low", rawConfidence: .4 }],
+        visibleItems: ["Dal ~150g"], ambiguity: "high", notes: "Unclear food", model: "gemini-test", provider: "gemini",
+        usage: { promptTokens: 1, completionTokens: 1, thinkingTokens: 0, cachedTokens: 0, totalTokens: 2, latencyMs: 1 },
+      });
+      const res = await analyzeMealPOST(new NextRequest("http://localhost/api/analyze-meal", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageBase64: "/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=", mimeType: "image/jpeg" }),
+      }));
+      const body = await res.json();
+      expect(res.status).toBe(200);
+      expect(body.calories).toBe(0);
+      expect(body.foods).toEqual([]);
+      expect(body.reviewSuggestions).toEqual([expect.objectContaining({ name: "dal", quantity: 150, unit: "g" })]);
+      expect(body.hasIncompleteNutrition).toBe(true);
+      expect(body.hasInventoryAmbiguity).toBe(true);
+      expect(body.totalLabel).toBe("Known-food subtotal");
+    });
     it("successfully integrates vision model output with deterministic standard reference nutrition calculation", async () => {
       // Mock Gemini output returning structured foods and candidates
       vi.mocked(analyzeMealWithGemini).mockResolvedValueOnce({

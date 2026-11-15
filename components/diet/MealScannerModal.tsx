@@ -1,7 +1,7 @@
 "use client";
 
 import ScanComponentEditor from "@/components/diet/ScanComponentEditor";
-import { componentsFromScan, summarizeComponents, type ScanComponent } from "@/lib/nutrition/scan-review";
+import { componentsFromScan, restoreScanDraft, summarizeComponents, type ScanComponent, type ScanSuggestion } from "@/lib/nutrition/scan-review";
 import { includesIngredient } from "@/lib/nutrition/hints";
 import { useDialogFocus } from "@/lib/useDialogFocus";
 import { createPortal } from "react-dom";
@@ -273,24 +273,27 @@ export default function MealScannerModal({
   const [scanStage, setScanStage] = useState("Compressing photo...");
   const [result, setResult] = useState<any>(null);
   const [components, setComponents] = useState<ScanComponent[]>([]);
+  const [suggestions, setSuggestions] = useState<ScanSuggestion[]>([]);
   const [saving, setSaving] = useState(false);
   const [draftReady, setDraftReady] = useState("");
   const draftKey = `satat_scan_review_${encodeURIComponent(userId)}_${date}`;
   useEffect(() => {
     setDraftReady("");
-    setComponents([]); setResult(null);
+    setComponents([]); setSuggestions([]); setResult(null);
     try {
       const draft = JSON.parse(localStorage.getItem(draftKey) || "null");
-      if (draft?.version === 1 && Array.isArray(draft.rows) && draft.rows.length && Date.now() - draft.savedAt < 86400000 && draft.rows.every((row: any) => typeof row.id === "string" && typeof row.name === "string" && typeof row.amount === "string" && typeof row.unit === "string" && row.micros)) {
-        setComponents(draft.rows); setResult({ name: "Saved meal review", foods: [], confidence: "low", ambiguity: "high" });
+      if ([1, 2].includes(draft?.version) && Array.isArray(draft.rows) && (draft.rows.length || draft.suggestions?.length) && Date.now() - draft.savedAt < 86400000 && draft.rows.every((row: any) => typeof row.id === "string" && typeof row.name === "string" && typeof row.amount === "string" && typeof row.unit === "string" && row.micros)) {
+        setComponents(restoreScanDraft(draft.rows, draft.version));
+        setSuggestions(Array.isArray(draft.suggestions) ? draft.suggestions.filter((item: any) => typeof item.id === "string" && typeof item.name === "string" && typeof item.label === "string" && typeof item.quantity === "number" && Number.isFinite(item.quantity) && item.quantity > 0 && typeof item.unit === "string") : []); setResult({ name: "Saved meal review", foods: [], confidence: "low", ambiguity: "high" });
       }
     } catch { /* Invalid or unavailable local drafts are ignored. */ }
     setDraftReady(draftKey);
   }, [draftKey]);
   useEffect(() => {
-    if (draftReady !== draftKey || !components.length) return;
-    try { localStorage.setItem(draftKey, JSON.stringify({ version: 1, savedAt: Date.now(), rows: components })); } catch { /* Review still works without local storage. */ }
-  }, [components, draftKey, draftReady]);
+    if (draftReady !== draftKey) return;
+    if (!components.length && !suggestions.length) { try { localStorage.removeItem(draftKey); } catch {} return; }
+    try { localStorage.setItem(draftKey, JSON.stringify({ version: 2, savedAt: Date.now(), rows: components, suggestions })); } catch { /* Review still works without local storage. */ }
+  }, [components, suggestions, draftKey, draftReady]);
   const [hint, setHint] = useState("");
   const [error, setError] = useState("");
   const [isPhotoUnavailable, setIsPhotoUnavailable] = useState(false);
@@ -324,7 +327,7 @@ export default function MealScannerModal({
   const resetPlateState = () => {
     setPreview("");
     setResult(null);
-    setComponents([]);
+    setComponents([]); setSuggestions([]);
     try { localStorage.removeItem(draftKey); } catch { /* Storage restricted. */ }
     setError("");
     setIsPhotoUnavailable(false);
@@ -389,6 +392,7 @@ export default function MealScannerModal({
       } else {
         setResult(data);
         setComponents(componentsFromScan(data.foods || []));
+        setSuggestions(data.reviewSuggestions || []);
 
         // Add-ons are explicit user edits, never inferred selections.
           }
@@ -414,10 +418,11 @@ export default function MealScannerModal({
 
   const componentSummary = summarizeComponents(components);
   const { calories: currentCalories, proteinG: currentProtein, carbsG: currentCarbs, fatG: currentFat } = componentSummary.totals;
+  const needsInventoryReview = suggestions.length > 0 || components.some(row => !!row.reviewNote);
   const detectedDishName = components.map(row => row.name.trim()).filter(Boolean).join(" + ") || "Meal estimate";
   const handleLogPlateMeal = async () => {
     if (saving) return;
-    if (!componentSummary.complete || editingFood || currentCalories <= 0) {
+    if (!componentSummary.complete || needsInventoryReview || editingFood || currentCalories <= 0) {
       setError("Finish editing your meal before logging."); return;
     }
     setSaving(true);
@@ -655,16 +660,16 @@ export default function MealScannerModal({
 
               {result && !scanning && !isNoFoodDetected && (
                 <div className="space-y-4">
-                  <ScanComponentEditor rows={components} onChange={rows => { setComponents(rows); setError(""); }} onEditingChange={setEditingFood} />
+                  <ScanComponentEditor suggestions={suggestions} onSuggestionsChange={setSuggestions} rows={components} onChange={rows => { setComponents(rows); setError(""); }} onEditingChange={setEditingFood} />
                   <div role="status" className="rounded-2xl border border-[var(--satat-border)] bg-[var(--satat-bg)] p-3">
-                    {!componentSummary.complete && <p className="mb-2 text-xs text-[var(--satat-brand)]">Check the marked dishes to complete this estimate.</p>}
+                    {(!componentSummary.complete || needsInventoryReview) && <p className="mb-2 text-xs text-[var(--satat-brand)]">Check marked dishes and possible missing foods before logging.</p>}
                     <MacroDonutBreakdown variant="light" calories={currentCalories} carbs={currentCarbs} fat={currentFat} protein={currentProtein} />
-                    <p className="mt-2 text-center text-[11px] text-[var(--satat-text-muted)]">{componentSummary.complete ? "Estimated nutrition · portions and cooking oil may vary." : "Partial total · some nutrition is missing."}</p>
+                    <p className="mt-2 text-center text-[11px] text-[var(--satat-text-muted)]">{componentSummary.complete && !suggestions.length ? "Estimated nutrition · portions and cooking oil may vary." : "Partial total · some nutrition is missing."}</p>
                   </div>
-                  <button type="button" onClick={handleLogPlateMeal} disabled={saving || !componentSummary.complete || editingFood || currentCalories <= 0} className="w-full rounded-full bg-[var(--satat-brand)] text-white py-3.5 text-sm font-semibold disabled:opacity-50">{saving ? "Saving meal…" : "Looks right · Log meal"}</button>
+                  <button type="button" onClick={handleLogPlateMeal} disabled={saving || !componentSummary.complete || needsInventoryReview || editingFood || currentCalories <= 0} className="w-full rounded-full bg-[var(--satat-brand)] text-white py-3.5 text-sm font-semibold disabled:opacity-50">{saving ? "Saving meal…" : "Looks right · Log meal"}</button>
                   <div className="flex justify-center gap-5 text-xs text-[var(--satat-text-secondary)]">
                     <button type="button" onClick={resetPlateState}>Scan again</button>
-                    <button type="button" onClick={() => { handleClose(); onSwitchToManual?.({ name: detectedDishName, macros: { calories: currentCalories, proteinG: currentProtein, carbsG: currentCarbs, fatG: currentFat }, incomplete: !componentSummary.complete }); }}>Enter manually</button>
+                    <button type="button" onClick={() => { handleClose(); onSwitchToManual?.({ name: detectedDishName, macros: { calories: currentCalories, proteinG: currentProtein, carbsG: currentCarbs, fatG: currentFat }, incomplete: !componentSummary.complete || needsInventoryReview }); }}>Enter manually</button>
                   </div>
                   <details className="text-xs text-[var(--satat-text-muted)]"><summary className="cursor-pointer text-center">Add a note for the scan</summary>
               <div className="bg-[#FCFBF9] dark:bg-[#1C221E] rounded-[24px] p-4 border border-[#1C1917]/[0.06] dark:border-white/10 shadow-2xs">
