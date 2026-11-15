@@ -1,5 +1,9 @@
 "use client";
 
+import ScanComponentEditor from "@/components/diet/ScanComponentEditor";
+import { componentsFromScan, restoreScanDraft, summarizeComponents, type ScanComponent, type ScanSuggestion } from "@/lib/nutrition/scan-review";
+import { includesIngredient } from "@/lib/nutrition/hints";
+import { useDialogFocus } from "@/lib/useDialogFocus";
 import { createPortal } from "react-dom";
 import React, { useState, useRef, useEffect } from "react";
 import NextImage from "next/image";
@@ -12,6 +16,8 @@ import {
   Plus,
   Minus,
   Check,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import MacroDonutBreakdown from "@/components/diet/MacroDonutBreakdown";
@@ -22,17 +28,182 @@ export type MealScannerModalProps = {
   userId: string;
   date: string;
   initialMode?: "plate" | "barcode";
-  onSave: (m: Omit<MealEntry, "id">) => void;
+  onSave: (m: Omit<MealEntry, "id">) => unknown | Promise<unknown>;
   onClose: () => void;
-  onSwitchToManual?: () => void;
+  onSwitchToManual?: (draft?: { name: string; macros: MealEntry["macros"]; incomplete?: boolean }) => void;
   onSwitchToVoice?: () => void;
 };
 
-// Client-side image resize helper (max 1024px, JPEG 0.82)
+export interface QuickModifierPreset {
+  label: string;
+  componentChip: string;
+  calories?: number;
+  proteinG?: number;
+  carbsG?: number;
+  fatG?: number;
+  isHomeCookedModifier?: boolean;
+}
+
+export const QUICK_MODIFIERS: QuickModifierPreset[] = [
+  {
+    label: "+ 1 Scoop Whey",
+    componentChip: "Whey protein ~30 g",
+    calories: 120,
+    proteinG: 24,
+    carbsG: 3,
+    fatG: 1.5,
+  },
+  {
+    label: "+ 1 tsp Ghee",
+    componentChip: "Ghee ~5 g",
+    calories: 45,
+    proteinG: 0,
+    carbsG: 0,
+    fatG: 5,
+  },
+  {
+    label: "+ Boiled Egg",
+    componentChip: "Boiled egg ~50 g",
+    calories: 78,
+    proteinG: 6,
+    carbsG: 1,
+    fatG: 5,
+  },
+  {
+    label: "Home Cooked",
+    componentChip: "Home-cooked (low oil)",
+    isHomeCookedModifier: true,
+  },
+];
+
+export interface LiveScanMacroOptions {
+  baseCalories: number;
+  baseProtein: number;
+  baseCarbs: number;
+  baseFat: number;
+  portionMultiplier?: number;
+  activeModifiers: string[];
+  serverVisibleItems?: string[];
+  hintText?: string;
+}
+
+export interface LiveScanMacroResult {
+  currentCalories: number;
+  currentProtein: number;
+  currentCarbs: number;
+  currentFat: number;
+  addonCalories: number;
+  addonProtein: number;
+  addonCarbs: number;
+  addonFat: number;
+  fatReduction: number;
+}
+
+export function calculateLiveScanMacros({
+  baseCalories,
+  baseProtein,
+  baseCarbs,
+  baseFat,
+  portionMultiplier = 1.0,
+  activeModifiers = [],
+  serverVisibleItems = [],
+  hintText = "",
+}: LiveScanMacroOptions): LiveScanMacroResult {
+  let scaledCalories = Math.round(baseCalories * portionMultiplier);
+  let scaledCarbs = Math.round(baseCarbs * portionMultiplier);
+  let scaledFat = Math.round(baseFat * portionMultiplier);
+  let scaledProtein = Math.round(baseProtein * portionMultiplier);
+
+  // Preparation labels do not establish an oil quantity.
+  const fatReduction = 0;
+
+  let addonCalories = 0;
+  let addonProtein = 0;
+  let addonCarbs = 0;
+  let addonFat = 0;
+
+  for (const mod of QUICK_MODIFIERS) {
+    if (mod.isHomeCookedModifier) continue;
+    const isActive = activeModifiers.includes(mod.label);
+    let serverHasMod = false;
+
+    if (mod.label === "+ 1 Scoop Whey") {
+      serverHasMod = serverVisibleItems.some((v) => /whey|protein powder/i.test(v));
+    } else if (mod.label === "+ 1 tsp Ghee") {
+      serverHasMod = serverVisibleItems.some((v) => /\bghee\b/i.test(v));
+    } else if (mod.label === "+ Boiled Egg") {
+      serverHasMod = serverVisibleItems.some((v) => /\b(boiled\s+egg|egg)\b/i.test(v));
+    }
+
+    if (isActive && !serverHasMod) {
+      addonCalories += mod.calories || 0;
+      addonProtein += mod.proteinG || 0;
+      addonCarbs += mod.carbsG || 0;
+      addonFat += mod.fatG || 0;
+    }
+  }
+
+  const lowerHint = hintText.toLowerCase();
+  if (
+    lowerHint &&
+    !activeModifiers.includes("+ 1 Scoop Whey") &&
+    !serverVisibleItems.some((v) => /whey/i.test(v)) &&
+    includesIngredient(lowerHint, "whey")
+  ) {
+    addonCalories += 120;
+    addonProtein += 24;
+    addonCarbs += 3;
+    addonFat += 1.5;
+  }
+  if (
+    lowerHint &&
+    !activeModifiers.includes("+ 1 tsp Ghee") &&
+    !serverVisibleItems.some((v) => /\bghee\b/i.test(v)) &&
+    includesIngredient(lowerHint, "ghee")
+  ) {
+    addonCalories += 45;
+    addonFat += 5;
+  }
+  if (
+    lowerHint &&
+    !activeModifiers.includes("+ Boiled Egg") &&
+    !serverVisibleItems.some((v) => /\begg\b/i.test(v)) &&
+    includesIngredient(lowerHint, "(?:boiled\\s+)?egg")
+  ) {
+    addonCalories += 78;
+    addonProtein += 6;
+    addonCarbs += 1;
+    addonFat += 5;
+  }
+  if (
+    lowerHint &&
+    !serverVisibleItems.some((v) => /curd|dahi/i.test(v)) &&
+    includesIngredient(lowerHint, "curd|dahi")
+  ) {
+    addonCalories += 60;
+    addonProtein += 3.5;
+    addonCarbs += 4.7;
+    addonFat += 3.3;
+  }
+
+  return {
+    currentCalories: Math.max(0, Math.round(scaledCalories + addonCalories)),
+    currentProtein: Math.max(0, Math.round(scaledProtein + addonProtein)),
+    currentCarbs: Math.max(0, Math.round(scaledCarbs + addonCarbs)),
+    currentFat: Math.max(0, Math.round(scaledFat + addonFat)),
+    addonCalories,
+    addonProtein,
+    addonCarbs,
+    addonFat,
+    fatReduction,
+  };
+}
+
+// Preserve scan detail; a separate small thumbnail is produced when logging.
 async function resizeImageClient(
   file: File,
-  maxDim = 1024,
-  quality = 0.82
+  maxDim = 1536,
+  quality = 0.92
 ): Promise<{ base64: string; mimeType: string }> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -100,13 +271,35 @@ export default function MealScannerModal({
 
   // Plate Photo AI state (starts strictly empty - zero fake preloaded photos!)
   const [preview, setPreview] = useState<string>("");
+  const [showFullPhoto, setShowFullPhoto] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [scanStage, setScanStage] = useState("Compressing photo...");
   const [result, setResult] = useState<any>(null);
+  const [components, setComponents] = useState<ScanComponent[]>([]);
+  const [suggestions, setSuggestions] = useState<ScanSuggestion[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [draftReady, setDraftReady] = useState("");
+  const draftKey = `satat_scan_review_${encodeURIComponent(userId)}_${date}`;
+  useEffect(() => {
+    setDraftReady("");
+    setComponents([]); setSuggestions([]); setResult(null);
+    try {
+      const draft = JSON.parse(localStorage.getItem(draftKey) || "null");
+      if ([1, 2].includes(draft?.version) && Array.isArray(draft.rows) && (draft.rows.length || draft.suggestions?.length) && Date.now() - draft.savedAt < 86400000 && draft.rows.every((row: any) => typeof row.id === "string" && typeof row.name === "string" && typeof row.amount === "string" && typeof row.unit === "string" && row.micros)) {
+        setComponents(restoreScanDraft(draft.rows, draft.version));
+        setSuggestions(Array.isArray(draft.suggestions) ? draft.suggestions.filter((item: any) => typeof item.id === "string" && typeof item.name === "string" && typeof item.label === "string" && typeof item.quantity === "number" && Number.isFinite(item.quantity) && item.quantity > 0 && typeof item.unit === "string") : []); setResult({ name: "Saved meal review", foods: [], confidence: "low", ambiguity: "high" });
+      }
+    } catch { /* Invalid or unavailable local drafts are ignored. */ }
+    setDraftReady(draftKey);
+  }, [draftKey]);
+  useEffect(() => {
+    if (draftReady !== draftKey) return;
+    if (!components.length && !suggestions.length) { try { localStorage.removeItem(draftKey); } catch {} return; }
+    try { localStorage.setItem(draftKey, JSON.stringify({ version: 2, savedAt: Date.now(), rows: components, suggestions })); } catch { /* Review still works without local storage. */ }
+  }, [components, suggestions, draftKey, draftReady]);
   const [hint, setHint] = useState("");
   const [error, setError] = useState("");
   const [isPhotoUnavailable, setIsPhotoUnavailable] = useState(false);
-  const [portionMultiplier, setPortionMultiplier] = useState(1.0);
   const [mounted, setMounted] = useState(false);
   const lastUploadedFileRef = useRef<File | null>(null);
 
@@ -137,12 +330,16 @@ export default function MealScannerModal({
   const resetPlateState = () => {
     setPreview("");
     setResult(null);
+    setComponents([]); setSuggestions([]);
+    try { localStorage.removeItem(draftKey); } catch { /* Storage restricted. */ }
     setError("");
     setIsPhotoUnavailable(false);
-    setPortionMultiplier(1.0);
   };
 
-  const handleFile = async (file: File) => {
+  const handleFile = async (file: File, hintOverride?: string) => {
+    if (file === lastUploadedFileRef.current && components.some(row => row.portionSource === "user")) {
+      setError("Your component corrections are kept. Choose another photo to start a new scan."); return;
+    }
     lastUploadedFileRef.current = file;
     if (scanning) return;
     setError("");
@@ -154,15 +351,20 @@ export default function MealScannerModal({
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
+    setResult(null);
     setScanning(true);
     setScanStage("Compressing photo...");
 
+    const timeout = setTimeout(() => controller.abort(), 45000);
+    let stageTimer: ReturnType<typeof setTimeout> | undefined;
     try {
+      if (!file.type.startsWith("image/") || file.size > 15 * 1024 * 1024) throw new Error("Choose an image under 15 MB.");
       const { base64, mimeType } = await resizeImageClient(file);
       setPreview(`data:${mimeType};base64,${base64}`);
+      setShowFullPhoto(false);
 
-      setScanStage("Analyzing plate components with Orbit Vision...");
-      const stageTimer = setTimeout(() => {
+      setScanStage("Identifying the visible foods...");
+      stageTimer = setTimeout(() => {
         if (!controller.signal.aborted) {
           setScanStage("Calculating nutritional macros...");
         }
@@ -175,7 +377,7 @@ export default function MealScannerModal({
         body: JSON.stringify({
           imageBase64: base64,
           mimeType,
-          hint: hint.trim() || undefined,
+          hint: (hintOverride ?? hint).trim() || undefined,
         }),
       });
 
@@ -193,12 +395,17 @@ export default function MealScannerModal({
         }
       } else {
         setResult(data);
-        setPortionMultiplier(1.0);
-      }
+        setComponents(componentsFromScan(data.foods || []));
+        setSuggestions(data.reviewSuggestions || []);
+
+        // Add-ons are explicit user edits, never inferred selections.
+          }
     } catch (err: any) {
-      if (err?.name === "AbortError") return;
-      setError("Failed to analyze image. Please try again.");
+      if (err?.name === "AbortError") { setError("The scan took too long. Try again, or enter your meal manually."); return; }
+      setError(err?.message === "Choose an image under 15 MB." ? err.message : "Failed to analyze image. Please try again.");
     } finally {
+      clearTimeout(timeout);
+      clearTimeout(stageTimer);
       setScanning(false);
     }
   };
@@ -209,53 +416,28 @@ export default function MealScannerModal({
     }
   };
 
-  const isNoFoodDetected = Boolean(
-    result &&
-      (!result.calories ||
-        result.calories === 0 ||
-        !result.name ||
-        result.name.toLowerCase().includes("unknown") ||
-        result.noFoodDetected)
-  );
+  const isNoFoodDetected = Boolean(result?.noFoodDetected);
+  const [editingFood, setEditingFood] = useState(false);
+  useDialogFocus(handleClose, mounted);
 
-  const handleAppendHint = (modifier: string) => {
-    setHint((prev) => (prev.trim() ? `${prev.trim()}, ${modifier}` : modifier));
-  };
-
-  // Real macros extracted strictly from real AI estimation
-  const rawCalories = Number(result?.calories) || 0;
-  const rawCarbs = Number(result?.carbsG) || 0;
-  const rawFat = Number(result?.fatG) || 0;
-  const rawProtein = Number(result?.proteinG) || 0;
-  const detectedDishName = result?.name || "Detected Meal";
-
-  const currentCalories = Math.round(rawCalories * portionMultiplier);
-  const currentCarbs = Math.round(rawCarbs * portionMultiplier);
-  const currentFat = Math.round(rawFat * portionMultiplier);
-  const currentProtein = Math.round(rawProtein * portionMultiplier);
-
-  const handleLogPlateMeal = () => {
-    if (currentCalories <= 0) {
-      setError("Cannot log a meal with 0 calories.");
-      return;
+  const componentSummary = summarizeComponents(components);
+  const { calories: currentCalories, proteinG: currentProtein, carbsG: currentCarbs, fatG: currentFat } = componentSummary.totals;
+  const needsInventoryReview = suggestions.length > 0 || components.some(row => !!row.reviewNote);
+  const componentNames = Array.from(new Set(components.map(row => row.name.trim()).filter(Boolean)));
+  const scanTitle = components.some(row => row.portionSource === "user") || !result?.name || result.name === "Saved meal review" ? "Your meal" : componentNames.length === 1 ? componentNames[0] : result.name;
+  const detectedDishName = components.map(row => row.name.trim()).filter(Boolean).join(" + ") || "Meal estimate";
+  const handleLogPlateMeal = async () => {
+    if (saving) return;
+    if (!componentSummary.complete || needsInventoryReview || editingFood || currentCalories <= 0) {
+      setError("Finish editing your meal before logging."); return;
     }
-
-    onSave({
-      userId,
-      date,
-      name:
-        portionMultiplier !== 1.0
-          ? `${detectedDishName} (${portionMultiplier.toFixed(1)}×)`
-          : detectedDishName,
-      macros: {
-        calories: currentCalories,
-        proteinG: currentProtein,
-        carbsG: currentCarbs,
-        fatG: currentFat,
-      },
-      photoUrl: preview || undefined,
-      createdAt: Date.now(),
-    });
+    setSaving(true);
+    try {
+      const thumbnail = lastUploadedFileRef.current ? await resizeImageClient(lastUploadedFileRef.current, 500, 0.78) : null;
+      const saved = await onSave({ userId, date, name: detectedDishName, macros: { calories: currentCalories, proteinG: currentProtein, carbsG: currentCarbs, fatG: currentFat }, ...(thumbnail && thumbnail.base64.length < 150000 ? { photoUrl: `data:${thumbnail.mimeType};base64,${thumbnail.base64}` } : {}), createdAt: Date.now(), nutritionStatus: "estimated", hasIncompleteNutrition: false, scanReview: JSON.parse(JSON.stringify({ version: 1, components: components.map(row => ({ ...row, confirmed: true })), micronutrients: componentSummary.micronutrients })) });
+      if (saved !== false) { try { localStorage.removeItem(draftKey); } catch { /* Storage restricted. */ } }
+    } catch { setError("Could not save. Your reviewed components are kept; try again."); }
+    finally { setSaving(false); }
   };
 
   if (!mounted || typeof document === "undefined") {
@@ -299,19 +481,20 @@ export default function MealScannerModal({
         {/* Independently Scrollable Modal Body */}
         <div className="flex-1 overflow-y-auto overscroll-contain px-4 sm:px-6 py-4 space-y-4 no-scrollbar">
           {/* Editorial Serif Title */}
-          <div className="text-center sm:text-left">
+          {(!result || !isNoFoodDetected) && <div className="text-center">
             <h2 className="font-serif text-2xl sm:text-3xl text-[#1C1917] tracking-tight leading-snug">
-              Instant Food Intelligence
+              {result ? "Check your meal" : "Scan your meal"}
             </h2>
             <p className="text-xs text-[#57534E] mt-0.5">
-              Hold plate in clear daylight for component-by-component macro estimation.
+              {result ? "Review the dishes and portions before logging." : "Take a clear photo of your whole meal."}
             </p>
-          </div>
+          </div>}
 
           <div className="space-y-4 animate-fade-in">
             <input
                 ref={fileRef}
                 type="file"
+                aria-label="Meal photo"
                 accept="image/*"
                 capture="environment"
                 className="hidden"
@@ -323,7 +506,11 @@ export default function MealScannerModal({
               {!preview && !result && (
                 <div
                   onClick={() => fileRef.current?.click()}
-                  className="rounded-[26px] border-2 border-dashed border-[#1C1917]/15 bg-[#F6F3EC] p-7 text-center relative overflow-hidden aspect-[4/3] flex flex-col items-center justify-center cursor-pointer hover:border-[#E05A47] transition-all group shadow-2xs"
+                  role="button"
+                tabIndex={0}
+                aria-label="Choose a meal photo"
+                onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); fileRef.current?.click(); } }}
+                className="rounded-[26px] border-2 border-dashed border-[#1C1917]/15 bg-[#F6F3EC] p-7 text-center relative overflow-hidden aspect-[4/3] flex flex-col items-center justify-center cursor-pointer hover:border-[#E05A47] transition-all group shadow-2xs"
                 >
                   <div className="absolute top-3.5 left-3.5 w-6 h-6 border-t-2 border-l-2 border-[#2D6A4F]/50 rounded-tl-lg pointer-events-none group-hover:border-[#E05A47]" />
                   <div className="absolute top-3.5 right-3.5 w-6 h-6 border-t-2 border-r-2 border-[#2D6A4F]/50 rounded-tr-lg pointer-events-none group-hover:border-[#E05A47]" />
@@ -350,67 +537,22 @@ export default function MealScannerModal({
 
               {/* STATE 2 & 3: PHOTO SELECTED */}
               {preview && (
-                <div className="rounded-[26px] overflow-hidden relative aspect-[4/3] bg-[#191D1A] shadow-md border border-white/10 group">
-                  <NextImage src={preview} alt="User plate scan" fill unoptimized className="object-cover" />
+                <div className="rounded-[26px] overflow-hidden relative aspect-[4/3] bg-[var(--satat-bg)] border border-[var(--satat-border)] group">
+                  <NextImage src={preview} alt="User plate scan" fill unoptimized className={showFullPhoto ? "object-contain" : "object-cover"} />
+                  {!scanning && <button type="button" aria-label={showFullPhoto ? "Fill meal photo frame" : "Show full meal photo"} onClick={() => setShowFullPhoto(value => !value)} className="absolute right-3 top-3 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full bg-[var(--satat-anchor-dark)]/[0.85] text-white shadow-sm">{showFullPhoto ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}</button>}
+                  {result && !scanning && !isNoFoodDetected && <div className="absolute bottom-3 left-3 rounded-full bg-[var(--satat-anchor-dark)]/90 px-3 py-1.5 text-[10px] font-medium text-white">Portions estimated · review below</div>}
 
                   <div className="absolute top-3.5 left-3.5 w-6 h-6 border-t-2 border-l-2 border-[#E05A47] rounded-tl-lg pointer-events-none" />
                   <div className="absolute top-3.5 right-3.5 w-6 h-6 border-t-2 border-r-2 border-[#E05A47] rounded-tr-lg pointer-events-none" />
                   <div className="absolute bottom-3.5 left-3.5 w-6 h-6 border-b-2 border-l-2 border-[#E05A47] rounded-bl-lg pointer-events-none" />
                   <div className="absolute bottom-3.5 right-3.5 w-6 h-6 border-b-2 border-r-2 border-[#E05A47] rounded-br-lg pointer-events-none" />
 
-                  {/* Real AI tags (only when food detected) */}
-                  {result && !scanning && !isNoFoodDetected && (
-                    <div className="absolute top-4 inset-x-4 flex flex-wrap gap-1.5 pointer-events-none">
-                      <span className="bg-[#191D1A]/85 backdrop-blur-md text-white rounded-full px-3 py-1 text-[11px] font-semibold shadow-md inline-flex items-center gap-1 border border-white/15">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#E05A47]" />
-                        {detectedDishName}
-                      </span>
-                      {result?.visibleItems?.slice(0, 3).map((item: string) => (
-                        <span
-                          key={item}
-                          className="bg-[#191D1A]/75 backdrop-blur-md text-stone-200 rounded-full px-2.5 py-1 text-[10px] font-medium shadow-md border border-white/10"
-                        >
-                          {item}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Bottom confidence badge */}
-                  {result && !scanning && !isNoFoodDetected && (
-                    <div className="absolute bottom-3.5 left-3.5">
-                      {(() => {
-                        const conf = (result.confidence || "high").toLowerCase();
-                        if (conf === "high") {
-                          return (
-                            <span className="bg-[#D1FAE5] text-[#065F46] rounded-full px-2.5 py-1 text-[10px] font-bold shadow-md inline-flex items-center gap-1 border border-[#065F46]/10">
-                              <Check className="w-3 h-3 text-[#065F46]" />
-                              <span>High Confidence · Depth Calibrated</span>
-                            </span>
-                          );
-                        }
-                        if (conf === "medium") {
-                          return (
-                            <span className="bg-[#FEF3C7] text-[#92400E] rounded-full px-2.5 py-1 text-[10px] font-bold shadow-md inline-flex items-center gap-1 border border-[#92400E]/10">
-                              <span>Medium Confidence · Portion Estimated</span>
-                            </span>
-                          );
-                        }
-                        return (
-                          <span className="bg-[#FEE2E2] text-[#991B1B] rounded-full px-2.5 py-1 text-[10px] font-bold shadow-md inline-flex items-center gap-1 border border-[#991B1B]/10">
-                            <span>Low Confidence · Add a Context Hint below</span>
-                          </span>
-                        );
-                      })()}
-                    </div>
-                  )}
-
                   {/* STATE 2: SCANNING OVERLAY */}
                   {scanning && (
                     <div className="absolute inset-0 bg-[#191D1A]/75 backdrop-blur-sm flex flex-col items-center justify-center text-white p-4">
                       <Loader2 className="w-8 h-8 animate-spin text-[#E05A47] mb-2" />
                       <p className="text-sm font-bold tracking-tight">{scanStage}</p>
-                      <p className="text-xs text-stone-300 mt-0.5">Biomechanical vision model active</p>
+                      <p className="text-xs text-stone-300 mt-0.5">Checking visible foods and approximate portions</p>
                     </div>
                   )}
                 </div>
@@ -451,33 +593,43 @@ export default function MealScannerModal({
                 </div>
               ) : null}
 
-              {/* Context Hint Card */}
-              <div className="bg-[#FCFBF9] rounded-[24px] p-4 border border-[#1C1917]/[0.06] shadow-2xs">
+              {!result && (
+              <div className="bg-[#FCFBF9] dark:bg-[#1C221E] rounded-[24px] p-4 border border-[#1C1917]/[0.06] dark:border-white/10 shadow-2xs">
                 <label className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#8C857B] block mb-1.5">
                   CONTEXT HINT (OPTIONAL — OIL, GHEE, PREPARATION)
                 </label>
-                <input
-                  type="text"
-                  placeholder="e.g. 2 aloo parathas, extra ghee, whey scoop"
-                  value={hint}
-                  onChange={(e) => setHint(e.target.value)}
-                  className="w-full bg-[#F6F3EC] rounded-xl px-3.5 py-2.5 text-xs text-[#1C1917] outline-none border border-[#1C1917]/[0.06]"
-                />
-
-                {/* Quick-tap modifier pills */}
-                <div className="flex flex-wrap gap-1.5 mt-2.5">
-                  {["+ 1 tsp Ghee", "+ 1 Scoop Whey", "+ Boiled Egg", "Home Cooked"].map((mod) => (
+                <div className="relative flex items-center">
+                  <input
+                    type="text"
+                    placeholder="e.g. 2 aloo parathas, extra ghee, whey scoop"
+                    value={hint}
+                    onChange={(e) => setHint(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && result && !scanning && hint.trim()) {
+                        e.preventDefault();
+                        handleReanalyzeWithHint();
+                      }
+                    }}
+                    className={cn(
+                      "w-full bg-[#F6F3EC] dark:bg-[#191D1A]/60 rounded-xl px-3.5 py-2.5 text-xs text-[#1C1917] dark:text-[#FCFBF9] outline-none border border-[#1C1917]/[0.06] dark:border-white/10 transition-all",
+                      result && !scanning && hint.trim() ? "pr-28" : ""
+                    )}
+                  />
+                  {result && !scanning && hint.trim() && (
                     <button
-                      key={mod}
                       type="button"
-                      onClick={() => handleAppendHint(mod)}
-                      className="bg-[#EFECE4] hover:bg-[#E2DDD2] text-[#57534E] hover:text-[#1C1917] rounded-full px-2.5 py-1 text-[10px] font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0"
+                      onClick={handleReanalyzeWithHint}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-lg px-2.5 py-1 text-[10px] font-bold shadow-xs flex items-center gap-1 transition-all cursor-pointer active:scale-95"
+                      aria-label="Apply Hint and re-analyze"
                     >
-                      {mod}
+                      <span>Apply Hint</span>
+                      <span className="text-xs">↻</span>
                     </button>
-                  ))}
+                  )}
                 </div>
+
               </div>
+              )}
 
               {/* STATE 3A: NON-FOOD OR 0-CALORIE AMBER GUIDANCE CARD */}
               {result && !scanning && isNoFoodDetected && (
@@ -514,115 +666,64 @@ export default function MealScannerModal({
                 </div>
               )}
 
-              {/* STATE 3B: REAL FOOD ESTIMATION RETURNED (Stacked Full-Width Title — Never Truncated) */}
               {result && !scanning && !isNoFoodDetected && (
-                <div className="bg-[#191D1A] text-[#FCFBF9] rounded-[26px] p-4 sm:p-5 shadow-xl animate-slide-up space-y-3">
-                  <div>
-                    <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#6EE7B7] block leading-none mb-1">
-                      DETECTED DISH
-                    </span>
-                    <h3 className="font-serif text-xl sm:text-2xl text-white leading-snug break-words">
-                      {detectedDishName}
-                    </h3>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-1 border-t border-white/10">
-                    <span className="text-xs text-stone-300 font-medium">Portion calibration</span>
-                    <div className="bg-white/10 border border-white/10 rounded-full px-2 py-1 flex items-center gap-1.5 text-xs text-white shrink-0">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setPortionMultiplier((prev) =>
-                            Math.max(0.5, Math.round((prev - 0.25) * 100) / 100)
-                          )
-                        }
-                        className="w-6 h-6 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center font-bold transition-all cursor-pointer"
-                      >
-                        -
-                      </button>
-                      <span className="font-semibold text-xs whitespace-nowrap px-1">
-                        {portionMultiplier.toFixed(1)}× Bowl
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setPortionMultiplier((prev) =>
-                            Math.min(3.0, Math.round((prev + 0.25) * 100) / 100)
-                          )
-                        }
-                        className="w-6 h-6 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center font-bold transition-all cursor-pointer"
-                      >
-                        +
-                      </button>
+                <div className="space-y-4">
+                  <section aria-label="Meal scan details" className="rounded-[28px] bg-[var(--satat-anchor-dark)] p-4 text-white shadow-lg space-y-4">
+                    <header className="border-b border-white/10 pb-3">
+                      <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-white/70">Detected meal</p>
+                      <h3 className="mt-1 font-serif text-xl leading-snug break-words">{scanTitle}</h3>
+                    </header>
+                    <div role="status">
+                      <MacroDonutBreakdown variant="dark" calories={currentCalories} carbs={currentCarbs} fat={currentFat} protein={currentProtein} />
+                      {(!componentSummary.complete || needsInventoryReview) && <p className="mt-2 text-xs text-white/80">Check marked dishes and possible missing foods before logging.</p>}
                     </div>
+                    <div className="border-t border-white/10 pt-3">
+                      <ScanComponentEditor variant="dark" suggestions={suggestions} onSuggestionsChange={setSuggestions} rows={components} onChange={rows => { setComponents(rows); setError(""); }} onEditingChange={setEditingFood} />
+                    </div>
+                    <p className="text-[10px] text-white/60">{componentSummary.complete && !suggestions.length ? "Estimated nutrition · portions and cooking oil may vary." : "Partial total · some nutrition is missing."}</p>
+                    <button type="button" onClick={handleLogPlateMeal} disabled={saving || !componentSummary.complete || needsInventoryReview || editingFood || currentCalories <= 0} className="w-full rounded-full bg-[var(--satat-brand)] text-white py-3.5 text-sm font-semibold disabled:opacity-50">{saving ? "Saving meal…" : "Log to Today’s Fuel"}</button>
+                  </section>
+                  <div className="flex justify-center gap-5 text-xs text-[var(--satat-text-secondary)]">
+                    <button type="button" onClick={resetPlateState}>Scan again</button>
+                    <button type="button" onClick={() => { handleClose(); onSwitchToManual?.({ name: detectedDishName, macros: { calories: currentCalories, proteinG: currentProtein, carbsG: currentCarbs, fatG: currentFat }, incomplete: !componentSummary.complete || needsInventoryReview }); }}>Enter manually</button>
                   </div>
-
-                  {/* 3-Segment Macro Donut Breakdown */}
-                  <MacroDonutBreakdown
-                    variant="dark"
-                    calories={currentCalories}
-                    carbs={currentCarbs}
-                    fat={currentFat}
-                    protein={currentProtein}
+                  <details className="text-xs text-[var(--satat-text-muted)]"><summary className="cursor-pointer text-center">Add a note for the scan</summary>
+              <div className="bg-[#FCFBF9] dark:bg-[#1C221E] rounded-[24px] p-4 border border-[#1C1917]/[0.06] dark:border-white/10 shadow-2xs">
+                <label className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#8C857B] block mb-1.5">
+                  CONTEXT HINT (OPTIONAL — OIL, GHEE, PREPARATION)
+                </label>
+                <div className="relative flex items-center">
+                  <input
+                    type="text"
+                    placeholder="e.g. 2 aloo parathas, extra ghee, whey scoop"
+                    value={hint}
+                    onChange={(e) => setHint(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && result && !scanning && hint.trim()) {
+                        e.preventDefault();
+                        handleReanalyzeWithHint();
+                      }
+                    }}
+                    className={cn(
+                      "w-full bg-[#F6F3EC] dark:bg-[#191D1A]/60 rounded-xl px-3.5 py-2.5 text-xs text-[#1C1917] dark:text-[#FCFBF9] outline-none border border-[#1C1917]/[0.06] dark:border-white/10 transition-all",
+                      result && !scanning && hint.trim() ? "pr-28" : ""
+                    )}
                   />
-
-                  {/* Detected Components Breakdown */}
-                  {result?.visibleItems && result.visibleItems.length > 0 && (
-                    <div className="pt-2 border-t border-white/10">
-                      <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-stone-400 block mb-1.5">
-                        PLATE COMPONENTS DETECTED
-                      </span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {result.visibleItems.map((item: string, idx: number) => (
-                          <span
-                            key={idx}
-                            className="bg-white/10 text-stone-200 border border-white/10 rounded-full px-2.5 py-1 text-[11px] font-medium"
-                          >
-                            {item}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Candidate alternatives if multiple */}
-                  {result?.candidates && result.candidates.length > 1 && (
-                    <div className="pt-1">
-                      <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-stone-400 block mb-1.5">
-                        OR SELECT MATCHING DISH
-                      </span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {result.candidates.map((cand: any) => (
-                          <button
-                            key={cand.name}
-                            type="button"
-                            onClick={() => setResult({ ...result, name: cand.name })}
-                            className={cn(
-                              "text-xs px-3 py-1 rounded-full transition-all cursor-pointer font-medium",
-                              cand.name === detectedDishName
-                                ? "bg-[#E05A47] text-white"
-                                : "bg-white/10 text-stone-200 hover:bg-white/20"
-                            )}
-                          >
-                            {cand.name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Log to Today's Fuel button */}
-                  <div className="pt-2">
+                  {result && !scanning && hint.trim() && (
                     <button
                       type="button"
-                      onClick={handleLogPlateMeal}
-                      disabled={currentCalories <= 0}
-                      className="w-full bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full py-3.5 px-6 text-sm font-semibold shadow-lg flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98] disabled:opacity-50"
+                      onClick={handleReanalyzeWithHint}
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-lg px-2.5 py-1 text-[10px] font-bold shadow-xs flex items-center gap-1 transition-all cursor-pointer active:scale-95"
+                      aria-label="Apply Hint and re-analyze"
                     >
-                      <Check className="w-4 h-4" />
-                      <span>Log to Today&apos;s Fuel</span>
+                      <span>Apply Hint</span>
+                      <span className="text-xs">↻</span>
                     </button>
-                  </div>
+                  )}
+                </div>
+
+              </div>
+                  </details>
                 </div>
               )}
             </div>

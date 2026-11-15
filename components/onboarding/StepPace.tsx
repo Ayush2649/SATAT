@@ -116,7 +116,7 @@ export function StepPace({
   const weightDelta = useMemo(() => {
     const current = formValues.weightKg;
     const target = formValues.targetWeightKg;
-    if (!current || !target) return { diff: 5, weeks: 20, isLoss: true };
+    if (!current || !target) return { diff: 0, weeks: 0, isLoss: false };
     const diff = Math.round(Math.abs(current - target) * 10) / 10;
     const weeks = Math.max(4, Math.round(diff / activeTier.weeklyKg));
     return { diff, weeks, isLoss: target < current };
@@ -193,7 +193,7 @@ export function StepPace({
 
             <div className="text-left sm:text-right pl-12 sm:pl-0">
               <span className="bg-[#B7F0D0] text-[#1B4332] px-3 py-1 rounded-full text-[11px] font-semibold inline-block">
-                {weightDelta.isLoss ? "↘" : "↗"} {weightDelta.diff} kg over {weightDelta.weeks} wks
+                {weightDelta.weeks ? `${weightDelta.isLoss ? "↘" : "↗"} ${weightDelta.diff} kg over ~${weightDelta.weeks} wks` : "Set a target to see an estimate"}
               </span>
               <span className="text-[10px] text-[#8C857B] block mt-1">
                 Gentle metabolic arc
@@ -300,7 +300,7 @@ export function StepPace({
             ESTIMATED HORIZON
           </span>
           <span className="text-xs font-bold text-[#1C1917]">
-            {weightDelta.weeks - 2} – {weightDelta.weeks + 2} Weeks to Goal
+            {weightDelta.weeks ? `${Math.max(1, weightDelta.weeks - 2)} – ${weightDelta.weeks + 2} weeks (estimate)` : "Target not set"}
           </span>
         </div>
 

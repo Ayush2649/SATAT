@@ -3,6 +3,19 @@ import sharp from "sharp";
 import { preprocessMealImage, MAX_IMAGE_DIMENSION } from "@/lib/ai/image-preprocessing";
 
 describe("Server-Side Image Preprocessing", () => {
+  it("preserves detail in the meal-scan profile without changing legacy callers", async () => {
+    const image = await sharp({ create: { width: 1600, height: 1200, channels: 3, background: "#cccccc" } }).jpeg().toBuffer();
+    const high = await preprocessMealImage(image.toString("base64"), "image/jpeg", { maxDimension: 1536 });
+    const legacy = await preprocessMealImage(image.toString("base64"), "image/jpeg");
+    expect([high.width, high.height]).toEqual([1536, 1152]);
+    expect([legacy.width, legacy.height]).toEqual([768, 576]);
+  });
+  it("applies EXIF orientation even to a small JPEG", async () => {
+    const image = await sharp({ create: { width: 100, height: 200, channels: 3, background: "#cccccc" } }).jpeg().withMetadata({ orientation: 6 }).toBuffer();
+    const result = await preprocessMealImage(image.toString("base64"), "image/jpeg", { maxDimension: 1536 });
+    expect([result.width, result.height]).toEqual([200, 100]);
+    expect(result.skipped).toBe(false);
+  });
   it("safely handles a large landscape JPEG image and downscales to <= 768px", async () => {
     // Generate a 1600x1200 synthetic JPEG
     const largeJpegBuf = await sharp({

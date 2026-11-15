@@ -11,16 +11,29 @@ import { CircuitBreakerState } from "./types";
 
 // ── Shared Vision Prompt & Vocabulary ─────────────────────────────────────────
 
-export const VISION_SYSTEM_PROMPT = `You are an expert visual food classifier specializing in Indian cuisine.
+export const VISION_SYSTEM_PROMPT = `You are an expert visual food classifier.
 Identify dishes and items in the photo. Do NOT calculate macros or calories.
 
 CRITICAL RULES:
-- The plate can be ANY Indian dish (cheela, dosa, uttapam, poha, upma, khichdi, halwa, rice dishes, thalis, street food, snacks, etc.). Do not assume it is a flatbread unless clearly visible.
+- Non-Food Guardrail: If the photo is of a non-food environment, workplace, desk, office, laptop, computer, keyboard, paperwork, books, electronics, pets, furniture, or scenery (even if an incidental coffee cup, beverage mug, or water glass is sitting on the desk alongside electronics), the primary subject is NOT a meal. Return:
+  "candidates": [{"name": "No Food Detected", "confidence": 1.0}],
+  "foods": [],
+  "visibleItems": [],
+  "ambiguity": "low",
+  "notes": "Office desk workspace with electronics; no meal detected."
+- Low-Calorie Beverage Guardrail: Plain black coffee, espresso, americano, black tea, or green tea without milk or sugar has virtually zero calories (~2-10 kcal). Classify plain black coffee/espresso as 'Black Coffee' (e.g. 'Black coffee ~200ml'), NOT as a latte, mocha, or sugary beverage unless milk/cream/syrup is distinctly visible.
+- The plate can be ANY Indian dish (cheela, dosa, uttapam, poha, upma, khichdi, halwa, rice dishes, thalis, street food, snacks, samosas, etc.) or global fitness/cafe meal (oatmeal bowls, quinoa/buddha bowls, avocado toast, grilled salmon/fish with veggies, pasta arrabbiata, protein smoothies/shakes). Do not assume it is a flatbread unless clearly visible.
 - Chapati vs Paratha: Chapati is thin, soft, puffed with dry tawa spots; Paratha is thicker, layered, crisp or golden-brown with ghee/oil.
+- Preparation: Do not assume home cooking means low oil. Oil, fillings and preparation can be hidden; state uncertainty and ask for a correction.
+- Portions: Estimate each visible component independently. Never force a usual serving or calorie target. A single photo has no reliable gram scale: state uncertainty in notes. Large rice mounds can exceed a typical serving. Distinguish paneer from egg bhurji and cooking banana from fish/potato; when unclear, describe the appearance instead of inventing identity. Inspect dal poured over rice as well as separate bowls.
+- Portion accounting: Describe ALL edible food visible in the photo. Count every piece, bowl and glass; never silently replace a sharing platter with one standard serving. State when the photo may show multiple servings, so the user can adjust their share.
+- Inspect every side bowl separately. Potato masala, semolina halwa, rice, chutneys and sambar are different foods; do not omit a side merely because the main dish is recognized. Do not include tableware, garnishes too small to affect nutrition, or the background as food components.
+- Do not infer protein powder, hidden fillings, oil amount, precise depth or weighed quantities from appearance. Offer alternatives or request a hint when identity is ambiguous. Reference portions are examples, not mandatory caps or targets.
 - When unsure or when dishes look visually similar, explain your uncertainty in notes and lower your confidence score.
 - Notes must be concise (1-2 sentences maximum, under 40 words). Do not include conversational filler or lengthy essays.
 - For each visible food item, specify the name, approximate numeric quantity, and unit (prefer grams 'g' or 'ml' if known/estimated, e.g. 120 g, 160 g, 190 ml, or piece, katori, bowl, plate, cup, tbsp, serving).
-- In 'foods', specify the exact numeric quantity and unit corresponding to the detected physical portion.
+- In 'foods', use one entry per physical serving or bowl, with its estimated numeric quantity and unit. Never list synonyms or alternative identities as additional foods. Put identity uncertainty in notes.
+- visibleItems only annotates the same inventory; it must not describe extra servings or alternative portions as additional food.
 - Candidates must be DISTINCT dishes with different calorie impacts. Return a numeric confidence from 0.0 to 1.0 for each candidate.
 - Return up to 3 candidate dishes sorted by confidence descending.
 
@@ -132,7 +145,7 @@ export function parsePortionFromText(
     const q = parseFloat(leadingCountMatch[1]);
     const nextWord = leadingCountMatch[2].toLowerCase();
     if (
-      /^(chapati|chapatis|roti|rotis|paratha|parathas|puri|puris|bhatura|bhature|idli|idlis|vada|vadas|samosa|samosas|dosa|dosas|egg|eggs)$/.test(
+      /^(chapati|chapatis|roti|rotis|paratha|parathas|puri|puris|bhatura|bhature|idli|idlis|vada|vadas|samosa|samosas|dosa|dosas|egg|eggs|toast|toasts|fillet|fillets)$/.test(
         nextWord
       )
     ) {
@@ -179,7 +192,7 @@ export function reconcileFoodPortions(
 
     // 2. If the food has a generic unit ('serving', 'portion'), look in visibleItems
     const u = (food.unit || "").toLowerCase().trim();
-    if (u === "serving" || u === "portion" || u === "") {
+    if (["serving", "portion", "", "bowl", "katori", "cup"].includes(u)) {
       const foodNameLower = food.name.toLowerCase();
       const matchedVisible = visibleItems.find((v) => {
         const vLower = v.toLowerCase();
@@ -191,7 +204,7 @@ export function reconcileFoodPortions(
 
       if (matchedVisible) {
         const portion = parsePortionFromText(matchedVisible);
-        if (portion) {
+        if (portion && ["g", "ml"].includes(portion.unit)) {
           return {
             ...food,
             quantity: portion.quantity,
@@ -215,6 +228,17 @@ export function parseVisionJsonWithDefaults(rawJsonStr: string): VisionAnalysis 
 
   const validated = VisionAnalysisSchema.parse(parsed);
 
+  const isNonFood = validated.candidates.some((c) =>
+    /no food|not food|non-food|no edible/i.test(c.name)
+  );
+
+  if (isNonFood) {
+    validated.foods = [];
+    validated.visibleItems = [];
+    validated.ambiguity = "low";
+    return validated;
+  }
+
   if (validated.foods.length === 0) {
     if (validated.visibleItems.length > 0) {
       validated.foods = validated.visibleItems.map((item) => {
@@ -237,12 +261,14 @@ export function parseVisionJsonWithDefaults(rawJsonStr: string): VisionAnalysis 
         };
       });
     } else {
-      validated.foods = validated.candidates.map((c) => ({
-        name: cleanDishName(c.name),
-        quantity: 1,
-        unit: "serving",
-        confidence: c.confidence,
-      }));
+      validated.foods = validated.candidates
+        .filter((c) => !/no food|not food|non-food|no edible/i.test(c.name))
+        .map((c) => ({
+          name: cleanDishName(c.name),
+          quantity: 1,
+          unit: "serving",
+          confidence: c.confidence,
+        }));
     }
   }
 

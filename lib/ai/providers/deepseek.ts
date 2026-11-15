@@ -9,7 +9,7 @@
  * - Base URL: https://api.deepseek.com (configurable via DEEPSEEK_BASE_URL)
  * - Uses existing preprocessed JPEG image buffer (no separate image pipeline)
  * - Low-latency non-thinking mode by default (configurable via DEEPSEEK_THINKING_MODE)
- * - Configurable image detail (default: "low" for speed and cost efficiency)
+ * - Configurable image detail (default: "high" to retain food detail)
  * - Strict Zod schema validation matching Gemini
  * - Per-user circuit breaker isolation (completely separated from Gemini)
  * - Resilient error handling: 1 bounded retry on 500/503/timeouts within 15s budget
@@ -126,7 +126,7 @@ export async function analyzeMealWithDeepSeek(
 
   const baseURL = process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com";
   const modelName = process.env.DEEPSEEK_VISION_MODEL || "deepseek-flash";
-  const imageDetail = (process.env.DEEPSEEK_IMAGE_DETAIL as "low" | "high" | "auto") || "low";
+  const imageDetail = (process.env.DEEPSEEK_IMAGE_DETAIL as "low" | "high" | "auto") || "high";
   const isThinkingEnabled =
     process.env.DEEPSEEK_THINKING_MODE === "true" || process.env.DEEPSEEK_THINKING_MODE === "1";
 
@@ -176,12 +176,9 @@ export async function analyzeMealWithDeepSeek(
       max_tokens: maxTokens,
     };
 
-    // If thinking mode is specifically configured or requested
-    if (isThinkingEnabled) {
-      requestOptions.extra_body = {
-        thinking: { type: "enabled" },
-      };
-    }
+    // DeepSeek extensions are top-level JSON fields in the JS SDK. Omitting
+    // thinking enables reasoning by default and can exhaust the JSON budget.
+    requestOptions.thinking = { type: isThinkingEnabled ? "enabled" : "disabled" };
 
     const completion = await client.chat.completions.create(requestOptions, {
       timeout: timeoutMs,
@@ -443,6 +440,7 @@ export async function estimateNutritionWithDeepSeek(
           response_format: { type: "json_object" },
           temperature: 0,
           max_tokens: maxTokens,
+          ...({ thinking: { type: "disabled" } } as Record<string, unknown>),
         },
         { timeout: timeoutInteger }
       );

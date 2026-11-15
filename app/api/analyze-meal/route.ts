@@ -1,3 +1,5 @@
+import { includesIngredient } from "@/lib/nutrition/hints";
+import { buildScanInventory } from "@/lib/nutrition/scan-review";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getServerSession } from "next-auth";
@@ -133,7 +135,7 @@ export async function POST(req: NextRequest) {
   let scaledMime = mimeType;
   const tPrep0 = performance.now();
   try {
-    const preprocessed = await preprocessMealImage(imageBase64, mimeType);
+    const preprocessed = await preprocessMealImage(imageBase64, mimeType, { maxDimension: Number(process.env.MEAL_SCAN_MAX_DIMENSION) || 1536 });
     scaledBase64 = preprocessed.base64;
     scaledMime = preprocessed.mimeType;
   } catch (prepErr: any) {
@@ -227,6 +229,51 @@ export async function POST(req: NextRequest) {
     }
     const visionProviderMs = performance.now() - tVision0;
 
+    // Non-Food guardrail check
+    const isNonFood =
+      visionData.candidates.some((c) => /no food|not food|non-food|no edible/i.test(c.name)) ||
+      (visionData.foods.length === 0 && visionData.visibleItems.length === 0);
+
+    if (isNonFood) {
+      const stageTimings = {
+        imagePrepMs: Math.round(imagePrepMs * 10) / 10,
+        visionProviderMs: Math.round(visionProviderMs * 10) / 10,
+        dbLookupMs: 0,
+        nutritionEstimationMs: 0,
+        nutritionCalcMs: 0,
+        totalServerMs: Math.round((performance.now() - tServer0) * 10) / 10,
+        retryBackoffMs: Math.round((visionResultRaw?.retryBackoffMs ?? 0) * 10) / 10,
+      };
+      const apiCalls = [...(visionResultRaw?.calls || [])];
+
+      return NextResponse.json({
+        name: "No Food Detected",
+        calories: 0,
+        calorieRange: { low: 0, high: 0 },
+        proteinG: 0,
+        carbsG: 0,
+        fatG: 0,
+        fiberG: 0,
+        confidence: "high",
+        notes: visionData.notes || "No edible food or drink detected in image.",
+        candidates: [{ name: "No Food Detected", confidence: "high" }],
+        visibleItems: [],
+        ambiguity: "low",
+        foods: [],
+        unknownFoods: [],
+        allFoodsVerified: true,
+        requiresManualReview: false,
+        hasUnresolvedItems: false,
+        unresolvedCount: 0,
+        estimatedCount: 0,
+        verifiedCount: 0,
+        hasIncompleteNutrition: false,
+        noFoodDetected: true,
+        timings: stageTimings,
+        calls: apiCalls,
+      });
+    }
+
     // Flatbread rule: check visible items and candidates for flatbread presence
     const hasFlatbread =
       visionData.visibleItems.some((i) => FLATBREAD_REGEX.test(i)) ||
@@ -265,33 +312,59 @@ export async function POST(req: NextRequest) {
     // Stage 2: Nutrition Routing & AI Estimation Fallback
     const nutritionFoods: InputFoodItem[] =
       visionData.foods && visionData.foods.length > 0
-        ? visionData.foods
-        : visionData.visibleItems.map((item) => {
-            const portion = parsePortionFromText(item);
-            const name =
-              cleanDishName(
-                item
-                  .replace(
-                    /(?:~|approx\.?|about)?\s*\d+(?:\.\d+)?\s*(?:(?:-|to)\s*\d+(?:\.\d+)?\s*)?(?:g|grams?|ml|milliliters?|katori|bowl|plate|cup|glass|piece|pieces|slice|slices|tbsp|tsp|serving|servings)\b/gi,
-                    ""
-                  )
-                  .replace(/[()]/g, "")
-                  .trim()
-              ) || cleanDishName(item);
-            return {
-              name,
-              quantity: portion?.quantity ?? 1,
-              unit: portion?.unit ?? "serving",
-            };
-          });
+        ? [...visionData.foods]
+        : [];
+
+    // Incorporate user hint add-ons cleanly into nutritionFoods if not already detected
+    const userHintLower = (hint || "").trim().toLowerCase();
+    const finalVisibleItems = [...visionData.visibleItems];
+
+    if (userHintLower) {
+      if (includesIngredient(userHintLower, "whey|protein\\s+scoop|protein\\s+powder")) {
+        const hasWhey = nutritionFoods.some((f) => /whey|protein\s+powder/i.test(f.name));
+        if (!hasWhey) {
+          nutritionFoods.push({ name: "Whey Protein Isolate", quantity: 30, unit: "g" });
+          if (!finalVisibleItems.some((v) => /whey/i.test(v))) {
+            finalVisibleItems.push("Whey protein ~30 g");
+          }
+        }
+      }
+
+      if (includesIngredient(userHintLower, "ghee|desi\\s+ghee")) {
+        const hasGhee = nutritionFoods.some((f) => /\bghee\b/i.test(f.name));
+        if (!hasGhee) {
+          nutritionFoods.push({ name: "Desi Ghee", quantity: 5, unit: "g" });
+          if (!finalVisibleItems.some((v) => /\bghee\b/i.test(v))) {
+            finalVisibleItems.push("Ghee ~5 g");
+          }
+        }
+      }
+
+      if (includesIngredient(userHintLower, "(?:boiled\\s+|whole\\s+)?egg")) {
+        const hasEgg = nutritionFoods.some((f) => /\b(egg|boiled\s+egg)\b/i.test(f.name));
+        if (!hasEgg) {
+          nutritionFoods.push({ name: "Whole Egg (Boiled)", quantity: 1, unit: "piece" });
+          if (!finalVisibleItems.some((v) => /\begg\b/i.test(v))) {
+            finalVisibleItems.push("Boiled egg ~50 g");
+          }
+        }
+      }
+
+      if (/\b(home[- ]cooked|low\s+oil|homemade)\b/i.test(userHintLower)) {
+        if (!finalVisibleItems.some((v) => /home[- ]cooked/i.test(v))) {
+          finalVisibleItems.push("Home-cooked (low oil)");
+        }
+      }
+    }
 
     const tDb0 = performance.now();
-    const routed = routeFoodItems(nutritionFoods);
+    const inventory = buildScanInventory(nutritionFoods, finalVisibleItems, parsePortionFromText);
+    const routed = routeFoodItems(inventory.foods);
     const dbLookupMs = performance.now() - tDb0;
 
     const tEst0 = performance.now();
     const estimatedMap = routed.aiEligible.length > 0
-      ? await estimateNutritionBatch(routed.aiEligible, { userKey: userId })
+      ? await estimateNutritionBatch(routed.aiEligible, { userKey: userId, timeoutMs: Math.max(500, Math.min(10000, 28000 - (performance.now() - tServer0))) })
       : new Map();
     const nutritionEstimationMs = performance.now() - tEst0;
 
@@ -300,6 +373,11 @@ export async function POST(req: NextRequest) {
     const tCalc0 = performance.now();
     const nutritionResult = calculateMealNutrition(finalFoods, primaryCandidate.name);
     const nutritionCalcMs = performance.now() - tCalc0;
+
+    // Apply home-cooked modifier fat reduction if specified in hint
+    let finalCalories = nutritionResult.calories;
+    let finalFatG = nutritionResult.fatG;
+    // "Home cooked" is context, not evidence for subtracting oil or calories.
 
     const totalServerMs = performance.now() - tServer0;
 
@@ -337,26 +415,33 @@ export async function POST(req: NextRequest) {
     // Response preserves all fields required by DietPage.tsx frontend, enriched with candidate & range details
     return NextResponse.json({
       name: primaryCandidate.name,
-      calories: nutritionResult.calories,
+      calories: finalCalories,
       calorieRange: nutritionResult.calorieRange,
       proteinG: nutritionResult.proteinG,
       carbsG: nutritionResult.carbsG,
-      fatG: nutritionResult.fatG,
+      fatG: finalFatG,
       fiberG: nutritionResult.fiberG,
       confidence: primaryCandidate.confidence,
       notes: visionData.notes,
       candidates: distinctCandidates,
-      visibleItems: visionData.visibleItems,
+      visibleItems: finalVisibleItems,
       ambiguity,
-      foods: nutritionResult.items,
+      foods: nutritionResult.items.map(food => ({ ...food, ...(food.componentId && inventory.reviewNotes[food.componentId] ? { reviewNote: inventory.reviewNotes[food.componentId] } : {}) })),
+      reviewSuggestions: inventory.suggestions,
       unknownFoods: nutritionResult.unknownFoods,
       allFoodsVerified: nutritionResult.allFoodsVerified,
-      requiresManualReview: nutritionResult.requiresManualReview,
+      requiresManualReview: true,
       hasUnresolvedItems: nutritionResult.hasUnresolvedItems,
       unresolvedCount: nutritionResult.unresolvedCount,
       estimatedCount: nutritionResult.estimatedCount,
       verifiedCount: nutritionResult.verifiedCount,
-      hasIncompleteNutrition: nutritionResult.hasIncompleteNutrition,
+      hasIncompleteNutrition: nutritionResult.hasIncompleteNutrition || inventory.suggestions.length > 0,
+      hasInventoryAmbiguity: inventory.suggestions.length > 0 || Object.keys(inventory.reviewNotes).length > 0,
+      totalLabel: (nutritionResult.hasIncompleteNutrition || inventory.suggestions.length > 0) ? "Known-food subtotal" : "Estimated total — review every component",
+      recognitionVerified: false,
+      portionBasis: "photo_estimate",
+      uncertainty: "Not calibrated; ingredients, oil and portion mass need confirmation",
+      inventoryReconciled: true,
       timings: stageTimings,
       calls: apiCalls,
       ...(needsClarification ? { needsClarification } : {}),

@@ -22,7 +22,7 @@ import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 import { z } from "zod";
 import dishVocab from "../data/dish-vocab.json";
 import { MealVisionProvider } from "./types";
-import { parsePortionFromText, reconcileFoodPortions } from "./common";
+import { VISION_SYSTEM_PROMPT as SHARED_VISION_SYSTEM_PROMPT, parsePortionFromText, reconcileFoodPortions } from "./common";
 
 // ── Circuit Breaker State (Per-User Scoped) ──────────────────────────────────
 
@@ -134,28 +134,7 @@ export class PhotoUnavailableError extends Error {
 
 // ── Shared Vision Prompt & Vocabulary ─────────────────────────────────────────
 
-export const VISION_SYSTEM_PROMPT = `You are an expert visual food classifier specializing in Indian cuisine.
-Identify dishes and items in the photo. Do NOT calculate macros or calories.
-
-CRITICAL RULES:
-- The plate can be ANY Indian dish (cheela, dosa, uttapam, poha, upma, khichdi, halwa, rice dishes, thalis, street food, snacks, etc.). Do not assume it is a flatbread unless clearly visible.
-- Chapati vs Paratha: Chapati is thin, soft, puffed with dry tawa spots; Paratha is thicker, layered, crisp or golden-brown with ghee/oil.
-- When unsure or when dishes look visually similar, explain your uncertainty in notes and lower your confidence score.
-- For each visible food item, specify the name, approximate numeric quantity, and unit (prefer grams 'g' or 'ml' if known/estimated, e.g. 120 g, 160 g, 190 ml, or piece, katori, bowl, plate, cup, tbsp, serving).
-- In 'foods', specify the exact numeric quantity and unit corresponding to the detected physical portion.
-- Candidates must be DISTINCT dishes with different calorie impacts. Return a numeric confidence from 0.0 to 1.0 for each candidate.
-- Return up to 3 candidate dishes sorted by confidence descending.
-
-Return ONLY raw JSON matching this schema:
-{
-  "foods": [
-    {"name": "<dish or item name>", "quantity": <number>, "unit": "<g|ml|piece|katori|plate|bowl|cup|serving>", "confidence": <float 0.0-1.0>}
-  ],
-  "candidates": [{"name": "<dish name>", "confidence": <float 0.0-1.0>}],
-  "visibleItems": ["<item with approximate gram weight>"],
-  "ambiguity": "low"|"medium"|"high",
-  "notes": "<visual deduction explanation>"
-}`;
+export const VISION_SYSTEM_PROMPT = SHARED_VISION_SYSTEM_PROMPT;
 
 const DISH_NAMES_LIST = (dishVocab as { name: string }[]).map((d) => d.name).join(", ");
 
@@ -200,6 +179,17 @@ function parseVisionJsonWithDefaults(rawJsonStr: string): VisionAnalysis {
 
   const validated = VisionAnalysisSchema.parse(parsed);
 
+  const isNonFood = validated.candidates.some((c) =>
+    /no food|not food|non-food|no edible/i.test(c.name)
+  );
+
+  if (isNonFood) {
+    validated.foods = [];
+    validated.visibleItems = [];
+    validated.ambiguity = "low";
+    return validated;
+  }
+
   if (validated.foods.length === 0) {
     if (validated.visibleItems.length > 0) {
       validated.foods = validated.visibleItems.map((item) => {
@@ -222,12 +212,14 @@ function parseVisionJsonWithDefaults(rawJsonStr: string): VisionAnalysis {
         };
       });
     } else {
-      validated.foods = validated.candidates.map((c) => ({
-        name: cleanDishName(c.name),
-        quantity: 1,
-        unit: "serving",
-        confidence: c.confidence,
-      }));
+      validated.foods = validated.candidates
+        .filter((c) => !/no food|not food|non-food|no edible/i.test(c.name))
+        .map((c) => ({
+          name: cleanDishName(c.name),
+          quantity: 1,
+          unit: "serving",
+          confidence: c.confidence,
+        }));
     }
   }
 
@@ -402,7 +394,7 @@ export interface GeminiVisionResult {
 
 // ── Provider Core ─────────────────────────────────────────────────────────────
 
-const BUDGET_MS = 15_000; // 15s strict total budget
+const BUDGET_MS = 25_000; // 25s total budget within Next.js 30s limit
 
 export async function analyzeMealWithGemini(
   opts: GeminiVisionOptions
@@ -455,9 +447,7 @@ export async function analyzeMealWithGemini(
       config: {
         systemInstruction: VISION_SYSTEM_PROMPT,
         responseMimeType: "application/json",
-        thinkingConfig: {
-          thinkingLevel: ThinkingLevel.LOW,
-        },
+        thinkingConfig: modelId.startsWith("gemini-2.5") ? { thinkingBudget: 0 } : { thinkingLevel: ThinkingLevel.LOW },
         abortSignal: AbortSignal.timeout(timeoutMs),
       },
     });
@@ -487,8 +477,8 @@ export async function analyzeMealWithGemini(
       break; // Not enough budget remaining
     }
 
-    // Call timeout: min(10s, remaining budget)
-    const callTimeout = Math.min(10_000, remainingBudget);
+    // Call timeout: min(18s, remaining budget)
+    const callTimeout = Math.min(18_000, remainingBudget);
 
     try {
       primarySuccess = await callModel(primaryModel, callTimeout);
@@ -546,7 +536,7 @@ export async function analyzeMealWithGemini(
   const remainingForFallback = BUDGET_MS - (Date.now() - t0);
   if (remainingForFallback >= 2500) {
     console.warn(`[ai/gemini] Primary model ${primaryModel} failed. Attempting fallback to ${fallbackModel}...`);
-    const fbTimeout = Math.min(8_000, remainingForFallback);
+    const fbTimeout = Math.min(15_000, remainingForFallback);
 
     try {
       const fallbackSuccess = await callModel(fallbackModel, fbTimeout);

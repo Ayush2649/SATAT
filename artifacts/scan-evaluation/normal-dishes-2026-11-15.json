@@ -1,0 +1,2597 @@
+{
+  "generatedAt": "2026-11-15T08:22:30.220Z",
+  "limitation": "Calorie accuracy is reported only for supplied measured references with provenance. Default photos are recognition/guardrail smoke tests, not measured nutrition accuracy.",
+  "skippedProfiles": [],
+  "results": [
+    {
+      "file": "01_north_indian_thali.jpg",
+      "profile": {
+        "provider": "deepseek",
+        "detail": "high"
+      },
+      "expectedVisualCategories": "(?=.*rice)(?=.*(?:curry|paneer|masala))",
+      "recognitionMatch": true,
+      "status": 200,
+      "latencyMs": 11320,
+      "name": "Paneer Butter Masala",
+      "calories": 1623,
+      "calorieRange": {
+        "low": 1380,
+        "high": 1866
+      },
+      "proteinG": 75,
+      "carbsG": 131,
+      "fatG": 91,
+      "fiberG": 5,
+      "confidence": "medium",
+      "notes": "Two similar paneer curries with peas and cream swirls; exact type (butter masala vs matar paneer) is uncertain. Rice and beverage portions are estimates; photo may show multiple servings.",
+      "candidates": [
+        {
+          "name": "Paneer Butter Masala",
+          "confidence": "medium"
+        },
+        {
+          "name": "Matar Paneer",
+          "confidence": "medium"
+        },
+        {
+          "name": "Kadai Paneer",
+          "confidence": "low"
+        }
+      ],
+      "visibleItems": [
+        "two bowls of creamy tomato-based paneer curry with peas, ~250 g each",
+        "two bowls of steamed white rice, ~180 g each",
+        "two glasses of clear golden liquid, ~150 ml each"
+      ],
+      "ambiguity": "high",
+      "foods": [
+        {
+          "componentId": "scan-0",
+          "name": "Paneer Butter Masala",
+          "matchedFoodId": "paneer_butter_masala",
+          "matchedCanonicalName": "Paneer Butter Masala",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 250,
+          "unit": "g",
+          "grams": 250,
+          "calories": 485,
+          "proteinG": 20,
+          "carbsG": 17,
+          "fatG": 39,
+          "fiberG": 3,
+          "confidence": 0.55,
+          "verified": true,
+          "reviewNote": "Check this dish and its amount; the photo was unclear."
+        },
+        {
+          "componentId": "scan-1",
+          "name": "Matar Paneer",
+          "matchedFoodId": "paneer_fresh",
+          "matchedCanonicalName": "Fresh Paneer (Raw)",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 250,
+          "unit": "g",
+          "grams": 250,
+          "calories": 670,
+          "proteinG": 45,
+          "carbsG": 10,
+          "fatG": 50,
+          "fiberG": 0,
+          "confidence": 0.5,
+          "verified": true,
+          "reviewNote": "Check this dish and its amount; the photo was unclear."
+        },
+        {
+          "componentId": "scan-2",
+          "name": "Steamed Rice",
+          "matchedFoodId": "rice_steamed",
+          "matchedCanonicalName": "Steamed Rice",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 180,
+          "unit": "g",
+          "grams": 180,
+          "calories": 234,
+          "proteinG": 5,
+          "carbsG": 52,
+          "fatG": 1,
+          "fiberG": 1,
+          "confidence": 0.9,
+          "verified": true,
+          "reviewNote": "Check amount: the photo also described “two bowls of steamed white rice, ~180 g each”."
+        },
+        {
+          "componentId": "scan-3",
+          "name": "Steamed Rice",
+          "matchedFoodId": "rice_steamed",
+          "matchedCanonicalName": "Steamed Rice",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 180,
+          "unit": "g",
+          "grams": 180,
+          "calories": 234,
+          "proteinG": 5,
+          "carbsG": 52,
+          "fatG": 1,
+          "fiberG": 1,
+          "confidence": 0.9,
+          "verified": true,
+          "reviewNote": "Check amount: the photo also described “two bowls of steamed white rice, ~180 g each”."
+        },
+        {
+          "componentId": "scan-4",
+          "name": "clear golden beverage (tea or broth)",
+          "matchedFoodId": null,
+          "matchedCanonicalName": null,
+          "nutritionStatus": "unresolved",
+          "source": "unresolved",
+          "quantity": 150,
+          "unit": "ml",
+          "grams": 150,
+          "calories": null,
+          "proteinG": null,
+          "carbsG": null,
+          "fatG": null,
+          "fiberG": null,
+          "confidence": 0.4,
+          "verified": false,
+          "reviewNote": "Check this dish and its amount; the photo was unclear."
+        },
+        {
+          "componentId": "scan-5",
+          "name": "clear golden beverage (tea or broth)",
+          "matchedFoodId": null,
+          "matchedCanonicalName": null,
+          "nutritionStatus": "unresolved",
+          "source": "unresolved",
+          "quantity": 150,
+          "unit": "ml",
+          "grams": 150,
+          "calories": null,
+          "proteinG": null,
+          "carbsG": null,
+          "fatG": null,
+          "fiberG": null,
+          "confidence": 0.4,
+          "verified": false,
+          "reviewNote": "Check this dish and its amount; the photo was unclear."
+        }
+      ],
+      "reviewSuggestions": [
+        {
+          "id": "label-0",
+          "name": "bowls creamy tomato based paneer curry peas",
+          "quantity": 250,
+          "unit": "g",
+          "label": "two bowls of creamy tomato-based paneer curry with peas, ~250 g each"
+        },
+        {
+          "id": "label-2",
+          "name": "glasses clear golden liquid",
+          "quantity": 150,
+          "unit": "ml",
+          "label": "two glasses of clear golden liquid, ~150 ml each"
+        }
+      ],
+      "unknownFoods": [
+        "clear golden beverage (tea or broth)",
+        "clear golden beverage (tea or broth)"
+      ],
+      "allFoodsVerified": false,
+      "requiresManualReview": true,
+      "hasUnresolvedItems": true,
+      "unresolvedCount": 2,
+      "estimatedCount": 0,
+      "verifiedCount": 4,
+      "hasIncompleteNutrition": true,
+      "hasInventoryAmbiguity": true,
+      "totalLabel": "Known-food subtotal",
+      "recognitionVerified": false,
+      "portionBasis": "photo_estimate",
+      "uncertainty": "Not calibrated; ingredients, oil and portion mass need confirmation",
+      "inventoryReconciled": true,
+      "timings": {
+        "imagePrepMs": 237.7,
+        "visionProviderMs": 11047.6,
+        "dbLookupMs": 23.5,
+        "nutritionEstimationMs": 0,
+        "nutritionCalcMs": 1.8,
+        "totalServerMs": 11311,
+        "retryBackoffMs": 0
+      },
+      "calls": [
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "analyzeMeal",
+          "attempt": 1,
+          "durationMs": 11044.9,
+          "outcome": "success",
+          "promptTokens": 2703,
+          "completionTokens": 353,
+          "cachedTokens": 0,
+          "totalTokens": 3056,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000477,
+          "costInr": 0.0401,
+          "requestId": "80816af9-d99d-40da-8ec2-8a67177f2376"
+        }
+      ],
+      "metrics": null
+    },
+    {
+      "file": "02_paneer_tikka_masala.jpg",
+      "profile": {
+        "provider": "deepseek",
+        "detail": "high"
+      },
+      "expectedVisualCategories": "(?=.*(?:naan|flatbread|roti))(?=.*(?:curry|masala|paneer))",
+      "recognitionMatch": false,
+      "status": 200,
+      "latencyMs": 3654,
+      "name": "Butter Chicken",
+      "calories": 2094,
+      "calorieRange": {
+        "low": 1780,
+        "high": 2408
+      },
+      "proteinG": 18,
+      "carbsG": 96,
+      "fatG": 186,
+      "fiberG": 6,
+      "confidence": "high",
+      "notes": "Creamy tomato-based chicken curry with charred naan; butter chicken vs tikka masala is visually similar. Portions are estimates without a scale.",
+      "candidates": [
+        {
+          "name": "Butter Chicken",
+          "confidence": "high"
+        },
+        {
+          "name": "Chicken Tikka Masala",
+          "confidence": "medium"
+        },
+        {
+          "name": "Butter Naan",
+          "confidence": "medium"
+        }
+      ],
+      "visibleItems": [
+        "creamy orange-red chicken curry ~200g",
+        "two naan breads ~180g total",
+        "coriander garnish"
+      ],
+      "ambiguity": "medium",
+      "foods": [
+        {
+          "componentId": "scan-0",
+          "name": "Butter Chicken",
+          "matchedFoodId": "butter",
+          "matchedCanonicalName": "Butter",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 200,
+          "unit": "g",
+          "grams": 200,
+          "calories": 1434,
+          "proteinG": 2,
+          "carbsG": 0,
+          "fatG": 162,
+          "fiberG": 0,
+          "confidence": 0.75,
+          "verified": true
+        },
+        {
+          "componentId": "scan-1",
+          "name": "Butter Naan",
+          "matchedFoodId": "naan_butter",
+          "matchedCanonicalName": "Butter Naan",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 2,
+          "unit": "piece",
+          "grams": 200,
+          "calories": 660,
+          "proteinG": 16,
+          "carbsG": 96,
+          "fatG": 24,
+          "fiberG": 6,
+          "confidence": 0.7,
+          "verified": true
+        }
+      ],
+      "reviewSuggestions": [
+        {
+          "id": "label-0",
+          "name": "creamy orange red chicken curry",
+          "quantity": 200,
+          "unit": "g",
+          "label": "creamy orange-red chicken curry ~200g"
+        },
+        {
+          "id": "label-1",
+          "name": "naan breads total",
+          "quantity": 180,
+          "unit": "g",
+          "label": "two naan breads ~180g total"
+        }
+      ],
+      "unknownFoods": [],
+      "allFoodsVerified": true,
+      "requiresManualReview": true,
+      "hasUnresolvedItems": false,
+      "unresolvedCount": 0,
+      "estimatedCount": 0,
+      "verifiedCount": 2,
+      "hasIncompleteNutrition": true,
+      "hasInventoryAmbiguity": true,
+      "totalLabel": "Known-food subtotal",
+      "recognitionVerified": false,
+      "portionBasis": "photo_estimate",
+      "uncertainty": "Not calibrated; ingredients, oil and portion mass need confirmation",
+      "inventoryReconciled": true,
+      "timings": {
+        "imagePrepMs": 0.8,
+        "visionProviderMs": 3644.1,
+        "dbLookupMs": 4.7,
+        "nutritionEstimationMs": 0,
+        "nutritionCalcMs": 1.1,
+        "totalServerMs": 3652.2,
+        "retryBackoffMs": 0
+      },
+      "calls": [
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "analyzeMeal",
+          "attempt": 1,
+          "durationMs": 3643,
+          "outcome": "success",
+          "promptTokens": 2228,
+          "completionTokens": 197,
+          "cachedTokens": 0,
+          "totalTokens": 2425,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000367,
+          "costInr": 0.0308,
+          "requestId": "6331bc04-7155-4a0c-80f8-e1f22d283c6b"
+        }
+      ],
+      "needsClarification": {
+        "type": "flatbread",
+        "options": [
+          "Plain roti",
+          "Aloo paratha",
+          "Other stuffed paratha",
+          "Plain paratha",
+          "Puri/Bhatura",
+          "Naan"
+        ]
+      },
+      "metrics": null
+    },
+    {
+      "file": "03_chicken_biryani.jpg",
+      "profile": {
+        "provider": "deepseek",
+        "detail": "high"
+      },
+      "expectedVisualCategories": "biryani",
+      "recognitionMatch": true,
+      "status": 200,
+      "latencyMs": 9018,
+      "name": "Vegetable Biryani",
+      "calories": 560,
+      "calorieRange": {
+        "low": 476,
+        "high": 644
+      },
+      "proteinG": 13,
+      "carbsG": 90,
+      "fatG": 16,
+      "fiberG": 8,
+      "confidence": "medium",
+      "notes": "Two bowls of layered spiced rice with vegetables and herbs; meat is not clearly visible, so vegetable biryani/pulao is most likely. Photo may show two servings.",
+      "candidates": [
+        {
+          "name": "Vegetable Biryani",
+          "confidence": "medium"
+        },
+        {
+          "name": "Vegetable Pulao",
+          "confidence": "low"
+        },
+        {
+          "name": "Chicken Biryani",
+          "confidence": "low"
+        }
+      ],
+      "visibleItems": [
+        "large bowl of mixed vegetable biryani/pulao ~250 g",
+        "smaller bowl of similar rice dish ~150 g"
+      ],
+      "ambiguity": "medium",
+      "foods": [
+        {
+          "componentId": "scan-0",
+          "name": "Vegetable Biryani",
+          "matchedFoodId": "biryani_veg",
+          "matchedCanonicalName": "Vegetable Biryani",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 250,
+          "unit": "g",
+          "grams": 250,
+          "calories": 350,
+          "proteinG": 8,
+          "carbsG": 56,
+          "fatG": 10,
+          "fiberG": 5,
+          "confidence": 0.6,
+          "verified": true,
+          "reviewNote": "Check this dish and its amount; the photo was unclear."
+        },
+        {
+          "componentId": "scan-1",
+          "name": "Vegetable Biryani",
+          "matchedFoodId": "biryani_veg",
+          "matchedCanonicalName": "Vegetable Biryani",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 150,
+          "unit": "g",
+          "grams": 150,
+          "calories": 210,
+          "proteinG": 5,
+          "carbsG": 34,
+          "fatG": 6,
+          "fiberG": 3,
+          "confidence": 0.55,
+          "verified": true,
+          "reviewNote": "Check this dish and its amount; the photo was unclear."
+        }
+      ],
+      "reviewSuggestions": [
+        {
+          "id": "label-0",
+          "name": "large mixed vegetable biryani pulao",
+          "quantity": 250,
+          "unit": "g",
+          "label": "large bowl of mixed vegetable biryani/pulao ~250 g"
+        },
+        {
+          "id": "label-1",
+          "name": "smaller similar rice dish",
+          "quantity": 150,
+          "unit": "g",
+          "label": "smaller bowl of similar rice dish ~150 g"
+        }
+      ],
+      "unknownFoods": [],
+      "allFoodsVerified": true,
+      "requiresManualReview": true,
+      "hasUnresolvedItems": false,
+      "unresolvedCount": 0,
+      "estimatedCount": 0,
+      "verifiedCount": 2,
+      "hasIncompleteNutrition": true,
+      "hasInventoryAmbiguity": true,
+      "totalLabel": "Known-food subtotal",
+      "recognitionVerified": false,
+      "portionBasis": "photo_estimate",
+      "uncertainty": "Not calibrated; ingredients, oil and portion mass need confirmation",
+      "inventoryReconciled": true,
+      "timings": {
+        "imagePrepMs": 167.5,
+        "visionProviderMs": 8844.8,
+        "dbLookupMs": 3.2,
+        "nutritionEstimationMs": 0,
+        "nutritionCalcMs": 0.2,
+        "totalServerMs": 9015.9,
+        "retryBackoffMs": 0
+      },
+      "calls": [
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "analyzeMeal",
+          "attempt": 1,
+          "durationMs": 8844,
+          "outcome": "success",
+          "promptTokens": 2603,
+          "completionTokens": 206,
+          "cachedTokens": 0,
+          "totalTokens": 2809,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000422,
+          "costInr": 0.0354,
+          "requestId": "2b531932-a4ce-4076-9cc7-7a14f8dfd18c"
+        }
+      ],
+      "metrics": null
+    },
+    {
+      "file": "04_masala_dosa_sambar.jpg",
+      "profile": {
+        "provider": "deepseek",
+        "detail": "high"
+      },
+      "expectedVisualCategories": "(?=.*dosa)(?=.*(?:sambar|chutney))",
+      "recognitionMatch": true,
+      "status": 200,
+      "latencyMs": 14569,
+      "name": "Plain Dosa",
+      "calories": 671,
+      "calorieRange": {
+        "low": 570,
+        "high": 772
+      },
+      "proteinG": 17,
+      "carbsG": 89,
+      "fatG": 28,
+      "fiberG": 12,
+      "confidence": "high",
+      "notes": "Long crisp dosa with five side katoris; the pale mash and curd-like bowl are uncertain, and chutney types are inferred from color.",
+      "candidates": [
+        {
+          "name": "Plain Dosa",
+          "confidence": "high"
+        },
+        {
+          "name": "Masala Dosa",
+          "confidence": "low"
+        },
+        {
+          "name": "Ven Pongal",
+          "confidence": "low"
+        }
+      ],
+      "visibleItems": [
+        "Plain dosa ~150g",
+        "Sambar ~80g",
+        "Coconut chutney ~50g",
+        "Green chutney ~50g",
+        "Tomato chutney ~50g",
+        "Pongal-like mash ~70g",
+        "Curd side ~60g"
+      ],
+      "ambiguity": "medium",
+      "foods": [
+        {
+          "componentId": "scan-0",
+          "name": "Plain Dosa",
+          "matchedFoodId": "dosa_plain",
+          "matchedCanonicalName": "Plain Dosa",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 1,
+          "unit": "piece",
+          "grams": 100,
+          "calories": 170,
+          "proteinG": 4,
+          "carbsG": 29,
+          "fatG": 4,
+          "fiberG": 2,
+          "confidence": 0.9,
+          "verified": true
+        },
+        {
+          "componentId": "scan-1",
+          "name": "Sambar",
+          "matchedFoodId": "sambar",
+          "matchedCanonicalName": "Sambar",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 80,
+          "unit": "g",
+          "grams": 80,
+          "calories": 46,
+          "proteinG": 2,
+          "carbsG": 7,
+          "fatG": 1,
+          "fiberG": 2,
+          "confidence": 0.85,
+          "verified": true
+        },
+        {
+          "componentId": "scan-2",
+          "name": "Coconut Chutney",
+          "matchedFoodId": "chutney_coconut",
+          "matchedCanonicalName": "Coconut Chutney",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 50,
+          "unit": "g",
+          "grams": 50,
+          "calories": 90,
+          "proteinG": 1,
+          "carbsG": 4,
+          "fatG": 8,
+          "fiberG": 2,
+          "confidence": 0.8,
+          "verified": true
+        },
+        {
+          "componentId": "scan-3",
+          "name": "Green Chutney",
+          "matchedFoodId": null,
+          "matchedCanonicalName": "Green Chutney",
+          "nutritionStatus": "estimated",
+          "source": "ai_estimate",
+          "quantity": 50,
+          "unit": "g",
+          "grams": 50,
+          "calories": 75,
+          "proteinG": 2,
+          "carbsG": 5,
+          "fatG": 5,
+          "fiberG": 2,
+          "confidence": 0.75,
+          "verified": false,
+          "calorieRange": {
+            "low": 60,
+            "high": 90
+          }
+        },
+        {
+          "componentId": "scan-4",
+          "name": "Tomato Chutney",
+          "matchedFoodId": null,
+          "matchedCanonicalName": "Tomato Chutney",
+          "nutritionStatus": "estimated",
+          "source": "ai_estimate",
+          "quantity": 50,
+          "unit": "g",
+          "grams": 50,
+          "calories": 40,
+          "proteinG": 1,
+          "carbsG": 4,
+          "fatG": 3,
+          "fiberG": 1,
+          "confidence": 0.7,
+          "verified": false,
+          "calorieRange": {
+            "low": 30,
+            "high": 50
+          }
+        },
+        {
+          "componentId": "scan-5",
+          "name": "Pongal (rice-lentil mash)",
+          "matchedFoodId": null,
+          "matchedCanonicalName": "Pongal (rice-lentil mash)",
+          "nutritionStatus": "estimated",
+          "source": "ai_estimate",
+          "quantity": 1,
+          "unit": "katori",
+          "grams": null,
+          "calories": 250,
+          "proteinG": 7,
+          "carbsG": 40,
+          "fatG": 7,
+          "fiberG": 3,
+          "confidence": 0.6,
+          "verified": false,
+          "calorieRange": {
+            "low": 200,
+            "high": 300
+          },
+          "reviewNote": "Check this dish and its amount; the photo was unclear."
+        },
+        {
+          "componentId": "scan-6",
+          "name": "Curd/Buttermilk side",
+          "matchedFoodId": null,
+          "matchedCanonicalName": null,
+          "nutritionStatus": "unresolved",
+          "source": "unresolved",
+          "quantity": 1,
+          "unit": "katori",
+          "grams": null,
+          "calories": null,
+          "proteinG": null,
+          "carbsG": null,
+          "fatG": null,
+          "fiberG": null,
+          "confidence": 0.4,
+          "verified": false,
+          "reviewNote": "Check this dish and its amount; the photo was unclear."
+        }
+      ],
+      "reviewSuggestions": [
+        {
+          "id": "label-5",
+          "name": "pongal like mash",
+          "quantity": 70,
+          "unit": "g",
+          "label": "Pongal-like mash ~70g"
+        },
+        {
+          "id": "label-6",
+          "name": "curd side",
+          "quantity": 60,
+          "unit": "g",
+          "label": "Curd side ~60g"
+        }
+      ],
+      "unknownFoods": [
+        "Curd/Buttermilk side"
+      ],
+      "allFoodsVerified": false,
+      "requiresManualReview": true,
+      "hasUnresolvedItems": true,
+      "unresolvedCount": 1,
+      "estimatedCount": 3,
+      "verifiedCount": 3,
+      "hasIncompleteNutrition": true,
+      "hasInventoryAmbiguity": true,
+      "totalLabel": "Known-food subtotal",
+      "recognitionVerified": false,
+      "portionBasis": "photo_estimate",
+      "uncertainty": "Not calibrated; ingredients, oil and portion mass need confirmation",
+      "inventoryReconciled": true,
+      "timings": {
+        "imagePrepMs": 0.8,
+        "visionProviderMs": 7599.1,
+        "dbLookupMs": 35.7,
+        "nutritionEstimationMs": 6929.4,
+        "nutritionCalcMs": 2,
+        "totalServerMs": 14567.2,
+        "retryBackoffMs": 0
+      },
+      "calls": [
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "analyzeMeal",
+          "attempt": 1,
+          "durationMs": 7598.6,
+          "outcome": "success",
+          "promptTokens": 2303,
+          "completionTokens": 392,
+          "cachedTokens": 0,
+          "totalTokens": 2695,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000432,
+          "costInr": 0.0363,
+          "requestId": "a5afe53a-6882-421c-9df7-9dd3ebde2b92"
+        },
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "estimateNutrition",
+          "attempt": 1,
+          "durationMs": 6927.7,
+          "outcome": "success",
+          "promptTokens": 580,
+          "completionTokens": 465,
+          "cachedTokens": 0,
+          "totalTokens": 1045,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000211,
+          "costInr": 0.0177,
+          "requestId": "ce4ae303-5e6b-4ad2-9b7f-893c6c534d29"
+        }
+      ],
+      "metrics": null
+    },
+    {
+      "file": "05_idli_vada_sambar.jpg",
+      "profile": {
+        "provider": "deepseek",
+        "detail": "high"
+      },
+      "expectedVisualCategories": "(?=.*idli)(?=.*chutney)",
+      "recognitionMatch": true,
+      "status": 200,
+      "latencyMs": 35876,
+      "name": "Plain Idli",
+      "calories": 465,
+      "calorieRange": {
+        "low": 395,
+        "high": 535
+      },
+      "proteinG": 10,
+      "carbsG": 54,
+      "fatG": 25,
+      "fiberG": 8,
+      "confidence": "high",
+      "notes": "Three white steamed idlis on a banana leaf with a bowl of coconut chutney; dried red chillies are garnish. No sambar visible.",
+      "candidates": [
+        {
+          "name": "Plain Idli",
+          "confidence": "high"
+        },
+        {
+          "name": "Idli Sambar",
+          "confidence": "low"
+        },
+        {
+          "name": "Coconut Chutney",
+          "confidence": "high"
+        }
+      ],
+      "visibleItems": [
+        "3 idlis (~50 g each)",
+        "1 bowl coconut chutney (~80 g)",
+        "2 dried red chillies (garnish, not counted)"
+      ],
+      "ambiguity": "low",
+      "foods": [
+        {
+          "componentId": "scan-0",
+          "name": "Plain Idli",
+          "matchedFoodId": "idli_plain",
+          "matchedCanonicalName": "Plain Idli",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 3,
+          "unit": "piece",
+          "grams": 150,
+          "calories": 195,
+          "proteinG": 6,
+          "carbsG": 42,
+          "fatG": 1,
+          "fiberG": 3,
+          "confidence": 0.95,
+          "verified": true
+        },
+        {
+          "componentId": "scan-1",
+          "name": "Coconut Chutney",
+          "matchedFoodId": "chutney_coconut",
+          "matchedCanonicalName": "Coconut Chutney",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 1,
+          "unit": "bowl",
+          "grams": 150,
+          "calories": 270,
+          "proteinG": 4,
+          "carbsG": 12,
+          "fatG": 24,
+          "fiberG": 5,
+          "confidence": 0.85,
+          "verified": true
+        }
+      ],
+      "reviewSuggestions": [],
+      "unknownFoods": [],
+      "allFoodsVerified": true,
+      "requiresManualReview": true,
+      "hasUnresolvedItems": false,
+      "unresolvedCount": 0,
+      "estimatedCount": 0,
+      "verifiedCount": 2,
+      "hasIncompleteNutrition": false,
+      "hasInventoryAmbiguity": false,
+      "totalLabel": "Estimated total — review every component",
+      "recognitionVerified": false,
+      "portionBasis": "photo_estimate",
+      "uncertainty": "Not calibrated; ingredients, oil and portion mass need confirmation",
+      "inventoryReconciled": true,
+      "timings": {
+        "imagePrepMs": 0.7,
+        "visionProviderMs": 35872.9,
+        "dbLookupMs": 1.1,
+        "nutritionEstimationMs": 0,
+        "nutritionCalcMs": 0.1,
+        "totalServerMs": 35874.8,
+        "retryBackoffMs": 0
+      },
+      "calls": [
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "analyzeMeal",
+          "attempt": 1,
+          "durationMs": 35872.6,
+          "outcome": "success",
+          "promptTokens": 2303,
+          "completionTokens": 204,
+          "cachedTokens": 0,
+          "totalTokens": 2507,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.00038,
+          "costInr": 0.0319,
+          "requestId": "54aeb86d-4fb0-4128-88a2-076b15b16f09"
+        }
+      ],
+      "metrics": null
+    },
+    {
+      "file": "06_chole_bhature.jpg",
+      "profile": {
+        "provider": "deepseek",
+        "detail": "high"
+      },
+      "expectedVisualCategories": "(?=.*(?:pav|bread|roll))(?=.*(?:bhaji|vegetable|curry))",
+      "recognitionMatch": true,
+      "status": 200,
+      "latencyMs": 12987,
+      "name": "Pav Bhaji",
+      "calories": 465,
+      "calorieRange": {
+        "low": 395,
+        "high": 535
+      },
+      "proteinG": 13,
+      "carbsG": 60,
+      "fatG": 21,
+      "fiberG": 10,
+      "confidence": "high",
+      "notes": "Thick mashed vegetable curry topped with butter, onion and coriander, served with two buttered pav buns and onion-lime salad. Portion sizes are visual estimates.",
+      "candidates": [
+        {
+          "name": "Pav Bhaji",
+          "confidence": "high"
+        },
+        {
+          "name": "Misal Pav",
+          "confidence": "low"
+        },
+        {
+          "name": "Chole Bhature",
+          "confidence": "low"
+        }
+      ],
+      "visibleItems": [
+        "Pav bhaji curry ~250g",
+        "Pav buns 2 pieces ~120g",
+        "Onion-lime salad ~40g"
+      ],
+      "ambiguity": "low",
+      "foods": [
+        {
+          "componentId": "scan-2",
+          "name": "Kachumber Salad",
+          "matchedFoodId": "salad_kachumber",
+          "matchedCanonicalName": "Kachumber Salad",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 1,
+          "unit": "serving",
+          "grams": 80,
+          "calories": 20,
+          "proteinG": 1,
+          "carbsG": 4,
+          "fatG": 0,
+          "fiberG": 1,
+          "confidence": 0.7,
+          "verified": true
+        },
+        {
+          "componentId": "scan-0",
+          "name": "Pav Bhaji",
+          "matchedFoodId": null,
+          "matchedCanonicalName": "Pav Bhaji",
+          "nutritionStatus": "estimated",
+          "source": "ai_estimate",
+          "quantity": 250,
+          "unit": "g",
+          "grams": 250,
+          "calories": 325,
+          "proteinG": 8,
+          "carbsG": 35,
+          "fatG": 18,
+          "fiberG": 8,
+          "confidence": 0.95,
+          "verified": false,
+          "calorieRange": {
+            "low": 275,
+            "high": 400
+          }
+        },
+        {
+          "componentId": "scan-1",
+          "name": "Pav",
+          "matchedFoodId": null,
+          "matchedCanonicalName": "Pav",
+          "nutritionStatus": "estimated",
+          "source": "ai_estimate",
+          "quantity": 2,
+          "unit": "piece",
+          "grams": null,
+          "calories": 120,
+          "proteinG": 4,
+          "carbsG": 21,
+          "fatG": 3,
+          "fiberG": 1,
+          "confidence": 0.95,
+          "verified": false,
+          "calorieRange": {
+            "low": 100,
+            "high": 140
+          }
+        }
+      ],
+      "reviewSuggestions": [
+        {
+          "id": "label-0",
+          "name": "pav bhaji curry",
+          "quantity": 250,
+          "unit": "g",
+          "label": "Pav bhaji curry ~250g"
+        },
+        {
+          "id": "label-1",
+          "name": "pav buns",
+          "quantity": 120,
+          "unit": "g",
+          "label": "Pav buns 2 pieces ~120g"
+        },
+        {
+          "id": "label-2",
+          "name": "onion lime salad",
+          "quantity": 40,
+          "unit": "g",
+          "label": "Onion-lime salad ~40g"
+        }
+      ],
+      "unknownFoods": [],
+      "allFoodsVerified": false,
+      "requiresManualReview": true,
+      "hasUnresolvedItems": false,
+      "unresolvedCount": 0,
+      "estimatedCount": 2,
+      "verifiedCount": 1,
+      "hasIncompleteNutrition": true,
+      "hasInventoryAmbiguity": true,
+      "totalLabel": "Known-food subtotal",
+      "recognitionVerified": false,
+      "portionBasis": "photo_estimate",
+      "uncertainty": "Not calibrated; ingredients, oil and portion mass need confirmation",
+      "inventoryReconciled": true,
+      "timings": {
+        "imagePrepMs": 0.6,
+        "visionProviderMs": 10938.4,
+        "dbLookupMs": 11.6,
+        "nutritionEstimationMs": 2031,
+        "nutritionCalcMs": 3,
+        "totalServerMs": 12984.7,
+        "retryBackoffMs": 0
+      },
+      "calls": [
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "analyzeMeal",
+          "attempt": 1,
+          "durationMs": 10938,
+          "outcome": "success",
+          "promptTokens": 2353,
+          "completionTokens": 232,
+          "cachedTokens": 0,
+          "totalTokens": 2585,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000394,
+          "costInr": 0.0331,
+          "requestId": "5222f847-4f61-446d-9aef-09d0f41f7fd7"
+        },
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "estimateNutrition",
+          "attempt": 1,
+          "durationMs": 2030.2,
+          "outcome": "success",
+          "promptTokens": 547,
+          "completionTokens": 208,
+          "cachedTokens": 0,
+          "totalTokens": 755,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000135,
+          "costInr": 0.0113,
+          "requestId": "588f913d-6e3c-456e-a75f-970c591df83b"
+        }
+      ],
+      "metrics": null
+    },
+    {
+      "file": "07_samosa_chutney.jpg",
+      "profile": {
+        "provider": "deepseek",
+        "detail": "high"
+      },
+      "expectedVisualCategories": "samosa",
+      "recognitionMatch": true,
+      "status": 200,
+      "latencyMs": 15194,
+      "name": "Samosa",
+      "calories": 875,
+      "calorieRange": {
+        "low": 744,
+        "high": 1006
+      },
+      "proteinG": 15,
+      "carbsG": 104,
+      "fatG": 44,
+      "fiberG": 7,
+      "confidence": "high",
+      "notes": "Four fried triangular pastries with green chutney are clearly samosas; filling type (potato/pea) is not visible. Garnish is negligible.",
+      "candidates": [
+        {
+          "name": "Samosa",
+          "confidence": "high"
+        },
+        {
+          "name": "Kachori",
+          "confidence": "low"
+        },
+        {
+          "name": "Onion Pakora",
+          "confidence": "low"
+        }
+      ],
+      "visibleItems": [
+        "4 fried triangular samosas (~60-70 g each)",
+        "green chutney in a small compartment (~30 g)",
+        "green chili and pomegranate seeds as garnish"
+      ],
+      "ambiguity": "low",
+      "foods": [
+        {
+          "componentId": "scan-0",
+          "name": "Samosa",
+          "matchedFoodId": "samosa",
+          "matchedCanonicalName": "Samosa",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 4,
+          "unit": "piece",
+          "grams": 320,
+          "calories": 842,
+          "proteinG": 14,
+          "carbsG": 102,
+          "fatG": 42,
+          "fiberG": 6,
+          "confidence": 0.95,
+          "verified": true
+        },
+        {
+          "componentId": "scan-1",
+          "name": "Green Chutney",
+          "matchedFoodId": null,
+          "matchedCanonicalName": "Green Chutney",
+          "nutritionStatus": "estimated",
+          "source": "ai_estimate",
+          "quantity": 30,
+          "unit": "g",
+          "grams": 30,
+          "calories": 33,
+          "proteinG": 1,
+          "carbsG": 2,
+          "fatG": 2,
+          "fiberG": 1,
+          "confidence": 0.7,
+          "verified": false,
+          "calorieRange": {
+            "low": 24,
+            "high": 48
+          }
+        }
+      ],
+      "reviewSuggestions": [
+        {
+          "id": "label-0",
+          "name": "fried triangular samosa",
+          "quantity": 65,
+          "unit": "g",
+          "label": "4 fried triangular samosas (~60-70 g each)"
+        },
+        {
+          "id": "label-1",
+          "name": "green chutney compartment",
+          "quantity": 30,
+          "unit": "g",
+          "label": "green chutney in a small compartment (~30 g)"
+        }
+      ],
+      "unknownFoods": [],
+      "allFoodsVerified": false,
+      "requiresManualReview": true,
+      "hasUnresolvedItems": false,
+      "unresolvedCount": 0,
+      "estimatedCount": 1,
+      "verifiedCount": 1,
+      "hasIncompleteNutrition": true,
+      "hasInventoryAmbiguity": true,
+      "totalLabel": "Known-food subtotal",
+      "recognitionVerified": false,
+      "portionBasis": "photo_estimate",
+      "uncertainty": "Not calibrated; ingredients, oil and portion mass need confirmation",
+      "inventoryReconciled": true,
+      "timings": {
+        "imagePrepMs": 1,
+        "visionProviderMs": 13173,
+        "dbLookupMs": 2.7,
+        "nutritionEstimationMs": 2014.1,
+        "nutritionCalcMs": 2.1,
+        "totalServerMs": 15193,
+        "retryBackoffMs": 0
+      },
+      "calls": [
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "analyzeMeal",
+          "attempt": 1,
+          "durationMs": 13172.4,
+          "outcome": "success",
+          "promptTokens": 2303,
+          "completionTokens": 203,
+          "cachedTokens": 0,
+          "totalTokens": 2506,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000379,
+          "costInr": 0.0318,
+          "requestId": "dd0f4893-41bd-49db-8461-d4cf218a90b2"
+        },
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "estimateNutrition",
+          "attempt": 1,
+          "durationMs": 2012.8,
+          "outcome": "success",
+          "promptTokens": 534,
+          "completionTokens": 110,
+          "cachedTokens": 0,
+          "totalTokens": 644,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000106,
+          "costInr": 0.0089,
+          "requestId": "32149dc6-0dd8-4fcf-889a-fb4840d65cf2"
+        }
+      ],
+      "metrics": null
+    },
+    {
+      "file": "08_oats_berries_chia_bowl.jpg",
+      "profile": {
+        "provider": "deepseek",
+        "detail": "high"
+      },
+      "expectedVisualCategories": "(?=.*(?:oat|porridge|yogurt|yoghurt|smoothie))(?=.*(?:berr|fruit))",
+      "recognitionMatch": true,
+      "status": 200,
+      "latencyMs": 21300,
+      "name": "Oatmeal Bowl",
+      "calories": 1283,
+      "calorieRange": {
+        "low": 1091,
+        "high": 1475
+      },
+      "proteinG": 37,
+      "carbsG": 250,
+      "fatG": 19,
+      "fiberG": 45,
+      "confidence": "high",
+      "notes": "Two oatmeal bowls topped with berries, plus side bowls of mixed berries and blackberries and sliced kiwi. Portions are estimated; photo may show multiple servings.",
+      "candidates": [
+        {
+          "name": "Oatmeal Bowl",
+          "confidence": "high"
+        },
+        {
+          "name": "Mixed Berry Bowl",
+          "confidence": "medium"
+        },
+        {
+          "name": "Fruit Platter",
+          "confidence": "low"
+        }
+      ],
+      "visibleItems": [
+        "Oatmeal bowl ~250g",
+        "Oatmeal bowl ~250g",
+        "Mixed berries bowl ~150g",
+        "Sliced kiwi ~80g",
+        "Strawberries ~60g",
+        "Blackberries bowl ~100g"
+      ],
+      "ambiguity": "low",
+      "foods": [
+        {
+          "componentId": "scan-0",
+          "name": "Oatmeal Bowl",
+          "matchedFoodId": "oats_rolled",
+          "matchedCanonicalName": "Rolled Oats (Dry)",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 250,
+          "unit": "g",
+          "grams": 250,
+          "calories": 938,
+          "proteinG": 31,
+          "carbsG": 169,
+          "fatG": 16,
+          "fiberG": 25,
+          "confidence": 0.95,
+          "verified": true
+        },
+        {
+          "componentId": "scan-1",
+          "name": "Mixed Berries (blueberries, raspberries, blackberries)",
+          "matchedFoodId": "mixed_berries",
+          "matchedCanonicalName": "Mixed Fresh Berries",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 1,
+          "unit": "bowl",
+          "grams": 150,
+          "calories": 90,
+          "proteinG": 1,
+          "carbsG": 21,
+          "fatG": 0,
+          "fiberG": 4,
+          "confidence": 0.9,
+          "verified": true
+        },
+        {
+          "componentId": "scan-3",
+          "name": "Fresh Strawberries",
+          "matchedFoodId": "mixed_berries",
+          "matchedCanonicalName": "Mixed Fresh Berries",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 3,
+          "unit": "piece",
+          "grams": 240,
+          "calories": 144,
+          "proteinG": 2,
+          "carbsG": 34,
+          "fatG": 1,
+          "fiberG": 6,
+          "confidence": 0.85,
+          "verified": true
+        },
+        {
+          "componentId": "scan-2",
+          "name": "Sliced Kiwi",
+          "matchedFoodId": null,
+          "matchedCanonicalName": "Sliced Kiwi",
+          "nutritionStatus": "estimated",
+          "source": "ai_estimate",
+          "quantity": 80,
+          "unit": "g",
+          "grams": 80,
+          "calories": 49,
+          "proteinG": 1,
+          "carbsG": 12,
+          "fatG": 1,
+          "fiberG": 2,
+          "confidence": 0.9,
+          "verified": false,
+          "calorieRange": {
+            "low": 44,
+            "high": 56
+          }
+        },
+        {
+          "componentId": "scan-4",
+          "name": "Blackberries",
+          "matchedFoodId": null,
+          "matchedCanonicalName": "Blackberries",
+          "nutritionStatus": "estimated",
+          "source": "ai_estimate",
+          "quantity": 1,
+          "unit": "bowl",
+          "grams": null,
+          "calories": 62,
+          "proteinG": 2,
+          "carbsG": 14,
+          "fatG": 1,
+          "fiberG": 8,
+          "confidence": 0.85,
+          "verified": false,
+          "calorieRange": {
+            "low": 50,
+            "high": 80
+          }
+        }
+      ],
+      "reviewSuggestions": [
+        {
+          "id": "label-2",
+          "name": "mixed berries",
+          "quantity": 150,
+          "unit": "g",
+          "label": "Mixed berries bowl ~150g"
+        },
+        {
+          "id": "label-4",
+          "name": "strawberries",
+          "quantity": 60,
+          "unit": "g",
+          "label": "Strawberries ~60g"
+        }
+      ],
+      "unknownFoods": [],
+      "allFoodsVerified": false,
+      "requiresManualReview": true,
+      "hasUnresolvedItems": false,
+      "unresolvedCount": 0,
+      "estimatedCount": 2,
+      "verifiedCount": 3,
+      "hasIncompleteNutrition": true,
+      "hasInventoryAmbiguity": true,
+      "totalLabel": "Known-food subtotal",
+      "recognitionVerified": false,
+      "portionBasis": "photo_estimate",
+      "uncertainty": "Not calibrated; ingredients, oil and portion mass need confirmation",
+      "inventoryReconciled": true,
+      "timings": {
+        "imagePrepMs": 0.9,
+        "visionProviderMs": 19367.7,
+        "dbLookupMs": 13,
+        "nutritionEstimationMs": 1912.9,
+        "nutritionCalcMs": 2.7,
+        "totalServerMs": 21297.3,
+        "retryBackoffMs": 0
+      },
+      "calls": [
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "analyzeMeal",
+          "attempt": 1,
+          "durationMs": 19367.3,
+          "outcome": "success",
+          "promptTokens": 2303,
+          "completionTokens": 328,
+          "cachedTokens": 0,
+          "totalTokens": 2631,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000414,
+          "costInr": 0.0348,
+          "requestId": "ca09321c-1b8b-4395-bbed-a5ee46f94785"
+        },
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "estimateNutrition",
+          "attempt": 1,
+          "durationMs": 1912.1,
+          "outcome": "success",
+          "promptTokens": 548,
+          "completionTokens": 223,
+          "cachedTokens": 0,
+          "totalTokens": 771,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000139,
+          "costInr": 0.0117,
+          "requestId": "d302c68f-b38b-4e9c-8fc8-ce1c4036631b"
+        }
+      ],
+      "metrics": null
+    },
+    {
+      "file": "09_grilled_chicken_quinoa_bowl.jpg",
+      "profile": {
+        "provider": "deepseek",
+        "detail": "high"
+      },
+      "expectedVisualCategories": "(?=.*(?:salad|bowl|vegetable))(?=.*(?:egg|edamame|tofu))",
+      "recognitionMatch": true,
+      "status": 200,
+      "latencyMs": 24277,
+      "name": "Protein Salad Bowl",
+      "calories": 387,
+      "calorieRange": {
+        "low": 329,
+        "high": 445
+      },
+      "proteinG": 25,
+      "carbsG": 27,
+      "fatG": 22,
+      "fiberG": 7,
+      "confidence": "high",
+      "notes": "A single assembled salad bowl with grilled protein cubes (paneer or tofu), small boiled eggs, and mixed vegetables; exact protein identity and dressing/oil are not visible.",
+      "candidates": [
+        {
+          "name": "Protein Salad Bowl",
+          "confidence": "high"
+        },
+        {
+          "name": "paneer/tofu buddha bowl",
+          "confidence": "medium"
+        },
+        {
+          "name": "egg and veggie salad bowl",
+          "confidence": "low"
+        }
+      ],
+      "visibleItems": [
+        "grilled paneer/tofu cubes ~90g",
+        "boiled quail eggs ~2 pieces",
+        "edamame ~40g",
+        "sweet corn ~50g",
+        "cherry tomatoes ~50g",
+        "cucumber ~50g",
+        "shredded red cabbage ~40g",
+        "lettuce ~20g"
+      ],
+      "ambiguity": "medium",
+      "foods": [
+        {
+          "componentId": "scan-2",
+          "name": "edamame",
+          "matchedFoodId": "edamame_boiled",
+          "matchedCanonicalName": "Boiled Edamame",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 40,
+          "unit": "g",
+          "grams": 40,
+          "calories": 50,
+          "proteinG": 4,
+          "carbsG": 4,
+          "fatG": 2,
+          "fiberG": 2,
+          "confidence": 0.75,
+          "verified": true
+        },
+        {
+          "componentId": "scan-0",
+          "name": "grilled paneer/tofu cubes",
+          "matchedFoodId": null,
+          "matchedCanonicalName": "grilled paneer/tofu cubes",
+          "nutritionStatus": "estimated",
+          "source": "ai_estimate",
+          "quantity": 90,
+          "unit": "g",
+          "grams": 90,
+          "calories": 243,
+          "proteinG": 16,
+          "carbsG": 4,
+          "fatG": 18,
+          "fiberG": 1,
+          "confidence": 0.6,
+          "verified": false,
+          "calorieRange": {
+            "low": 207,
+            "high": 279
+          },
+          "reviewNote": "Check this dish and its amount; the photo was unclear."
+        },
+        {
+          "componentId": "scan-1",
+          "name": "boiled quail eggs",
+          "matchedFoodId": null,
+          "matchedCanonicalName": "boiled quail eggs",
+          "nutritionStatus": "estimated",
+          "source": "ai_estimate",
+          "quantity": 2,
+          "unit": "piece",
+          "grams": null,
+          "calories": 14,
+          "proteinG": 1,
+          "carbsG": 0,
+          "fatG": 1,
+          "fiberG": 0,
+          "confidence": 0.7,
+          "verified": false,
+          "calorieRange": {
+            "low": 12,
+            "high": 16
+          }
+        },
+        {
+          "componentId": "scan-3",
+          "name": "sweet corn",
+          "matchedFoodId": null,
+          "matchedCanonicalName": "sweet corn",
+          "nutritionStatus": "estimated",
+          "source": "ai_estimate",
+          "quantity": 50,
+          "unit": "g",
+          "grams": 50,
+          "calories": 48,
+          "proteinG": 2,
+          "carbsG": 11,
+          "fatG": 1,
+          "fiberG": 1,
+          "confidence": 0.85,
+          "verified": false,
+          "calorieRange": {
+            "low": 43,
+            "high": 55
+          }
+        },
+        {
+          "componentId": "scan-4",
+          "name": "cherry tomatoes",
+          "matchedFoodId": null,
+          "matchedCanonicalName": "cherry tomatoes",
+          "nutritionStatus": "estimated",
+          "source": "ai_estimate",
+          "quantity": 50,
+          "unit": "g",
+          "grams": 50,
+          "calories": 9,
+          "proteinG": 1,
+          "carbsG": 2,
+          "fatG": 0,
+          "fiberG": 1,
+          "confidence": 0.85,
+          "verified": false,
+          "calorieRange": {
+            "low": 8,
+            "high": 11
+          }
+        },
+        {
+          "componentId": "scan-5",
+          "name": "cucumber",
+          "matchedFoodId": null,
+          "matchedCanonicalName": "cucumber",
+          "nutritionStatus": "estimated",
+          "source": "ai_estimate",
+          "quantity": 50,
+          "unit": "g",
+          "grams": 50,
+          "calories": 8,
+          "proteinG": 1,
+          "carbsG": 2,
+          "fatG": 0,
+          "fiberG": 1,
+          "confidence": 0.85,
+          "verified": false,
+          "calorieRange": {
+            "low": 7,
+            "high": 9
+          }
+        },
+        {
+          "componentId": "scan-6",
+          "name": "shredded red cabbage",
+          "matchedFoodId": null,
+          "matchedCanonicalName": "shredded red cabbage",
+          "nutritionStatus": "estimated",
+          "source": "ai_estimate",
+          "quantity": 40,
+          "unit": "g",
+          "grams": 40,
+          "calories": 12,
+          "proteinG": 0,
+          "carbsG": 3,
+          "fatG": 0,
+          "fiberG": 1,
+          "confidence": 0.8,
+          "verified": false,
+          "calorieRange": {
+            "low": 11,
+            "high": 15
+          }
+        },
+        {
+          "componentId": "scan-7",
+          "name": "lettuce",
+          "matchedFoodId": null,
+          "matchedCanonicalName": "lettuce",
+          "nutritionStatus": "estimated",
+          "source": "ai_estimate",
+          "quantity": 20,
+          "unit": "g",
+          "grams": 20,
+          "calories": 3,
+          "proteinG": 0,
+          "carbsG": 1,
+          "fatG": 0,
+          "fiberG": 0,
+          "confidence": 0.7,
+          "verified": false,
+          "calorieRange": {
+            "low": 3,
+            "high": 4
+          }
+        }
+      ],
+      "reviewSuggestions": [],
+      "unknownFoods": [],
+      "allFoodsVerified": false,
+      "requiresManualReview": true,
+      "hasUnresolvedItems": false,
+      "unresolvedCount": 0,
+      "estimatedCount": 7,
+      "verifiedCount": 1,
+      "hasIncompleteNutrition": false,
+      "hasInventoryAmbiguity": true,
+      "totalLabel": "Estimated total — review every component",
+      "recognitionVerified": false,
+      "portionBasis": "photo_estimate",
+      "uncertainty": "Not calibrated; ingredients, oil and portion mass need confirmation",
+      "inventoryReconciled": true,
+      "timings": {
+        "imagePrepMs": 0.9,
+        "visionProviderMs": 19963.6,
+        "dbLookupMs": 26.4,
+        "nutritionEstimationMs": 4279.6,
+        "nutritionCalcMs": 4.4,
+        "totalServerMs": 24275,
+        "retryBackoffMs": 0
+      },
+      "calls": [
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "analyzeMeal",
+          "attempt": 1,
+          "durationMs": 19962.8,
+          "outcome": "success",
+          "promptTokens": 2503,
+          "completionTokens": 432,
+          "cachedTokens": 0,
+          "totalTokens": 2935,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000471,
+          "costInr": 0.0396,
+          "requestId": "cc78862e-b80d-49a7-b954-ba92193aa52a"
+        },
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "estimateNutrition",
+          "attempt": 1,
+          "durationMs": 4278.4,
+          "outcome": "success",
+          "promptTokens": 669,
+          "completionTokens": 744,
+          "cachedTokens": 0,
+          "totalTokens": 1413,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000302,
+          "costInr": 0.0254,
+          "requestId": "a493d494-faba-4120-b24c-fdf22b3bf239"
+        }
+      ],
+      "metrics": null
+    },
+    {
+      "file": "10_eggs_avocado_toast.jpg",
+      "profile": {
+        "provider": "deepseek",
+        "detail": "high"
+      },
+      "expectedVisualCategories": "(?=.*egg)(?=.*(?:toast|bread))",
+      "recognitionMatch": true,
+      "status": 200,
+      "latencyMs": 20878,
+      "name": "Avocado Toast",
+      "calories": 317,
+      "calorieRange": {
+        "low": 269,
+        "high": 365
+      },
+      "proteinG": 11,
+      "carbsG": 22,
+      "fatG": 20,
+      "fiberG": 5,
+      "confidence": "high",
+      "notes": "Single slice of whole-grain toast topped with mashed avocado and one fried egg; portion is one serving. Oil used for frying is not visible.",
+      "candidates": [
+        {
+          "name": "Avocado Toast",
+          "confidence": "high"
+        },
+        {
+          "name": "Egg on Avocado Toast",
+          "confidence": "high"
+        },
+        {
+          "name": "Fried Egg Toast",
+          "confidence": "medium"
+        }
+      ],
+      "visibleItems": [
+        "1 slice whole-grain toast ~40g",
+        "mashed avocado ~50g",
+        "1 fried egg ~50g",
+        "chili flakes and pepper seasoning"
+      ],
+      "ambiguity": "high",
+      "foods": [
+        {
+          "componentId": "scan-0",
+          "name": "Avocado Toast",
+          "matchedFoodId": "avocado_toast",
+          "matchedCanonicalName": "Avocado Toast",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 1,
+          "unit": "piece",
+          "grams": 120,
+          "calories": 227,
+          "proteinG": 5,
+          "carbsG": 22,
+          "fatG": 13,
+          "fiberG": 5,
+          "confidence": 0.95,
+          "verified": true
+        },
+        {
+          "componentId": "scan-1",
+          "name": "Fried Egg",
+          "matchedFoodId": null,
+          "matchedCanonicalName": "Fried Egg",
+          "nutritionStatus": "estimated",
+          "source": "ai_estimate",
+          "quantity": 1,
+          "unit": "piece",
+          "grams": null,
+          "calories": 90,
+          "proteinG": 6,
+          "carbsG": 0,
+          "fatG": 7,
+          "fiberG": 0,
+          "confidence": 0.95,
+          "verified": false,
+          "calorieRange": {
+            "low": 75,
+            "high": 110
+          }
+        }
+      ],
+      "reviewSuggestions": [
+        {
+          "id": "label-0",
+          "name": "slice whole grain toast",
+          "quantity": 40,
+          "unit": "g",
+          "label": "1 slice whole-grain toast ~40g"
+        },
+        {
+          "id": "label-1",
+          "name": "mashed avocado",
+          "quantity": 50,
+          "unit": "g",
+          "label": "mashed avocado ~50g"
+        },
+        {
+          "id": "label-3",
+          "name": "chili flakes pepper seasoning",
+          "quantity": 1,
+          "unit": "serving",
+          "label": "chili flakes and pepper seasoning"
+        }
+      ],
+      "unknownFoods": [],
+      "allFoodsVerified": false,
+      "requiresManualReview": true,
+      "hasUnresolvedItems": false,
+      "unresolvedCount": 0,
+      "estimatedCount": 1,
+      "verifiedCount": 1,
+      "hasIncompleteNutrition": true,
+      "hasInventoryAmbiguity": true,
+      "totalLabel": "Known-food subtotal",
+      "recognitionVerified": false,
+      "portionBasis": "photo_estimate",
+      "uncertainty": "Not calibrated; ingredients, oil and portion mass need confirmation",
+      "inventoryReconciled": true,
+      "timings": {
+        "imagePrepMs": 1.2,
+        "visionProviderMs": 18727.3,
+        "dbLookupMs": 5.1,
+        "nutritionEstimationMs": 2142.2,
+        "nutritionCalcMs": 0.2,
+        "totalServerMs": 20876.1,
+        "retryBackoffMs": 0
+      },
+      "calls": [
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "analyzeMeal",
+          "attempt": 1,
+          "durationMs": 18727,
+          "outcome": "success",
+          "promptTokens": 2503,
+          "completionTokens": 203,
+          "cachedTokens": 0,
+          "totalTokens": 2706,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000407,
+          "costInr": 0.0342,
+          "requestId": "323ff132-6b51-447b-8ddc-c145893de4b5"
+        },
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "estimateNutrition",
+          "attempt": 1,
+          "durationMs": 2141.8,
+          "outcome": "success",
+          "promptTokens": 523,
+          "completionTokens": 106,
+          "cachedTokens": 0,
+          "totalTokens": 629,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000103,
+          "costInr": 0.0087,
+          "requestId": "9b394590-b82b-4219-bf1e-2654dbb373e3"
+        }
+      ],
+      "metrics": null
+    },
+    {
+      "file": "11_salmon_rice_broccoli.jpg",
+      "profile": {
+        "provider": "deepseek",
+        "detail": "high"
+      },
+      "expectedVisualCategories": "(?=.*(?:fish|salmon))(?=.*(?:vegetable|green|broccoli|asparagus))",
+      "recognitionMatch": true,
+      "status": 200,
+      "latencyMs": 36040,
+      "name": "Grilled Salmon with Vegetables",
+      "calories": 446,
+      "calorieRange": {
+        "low": 379,
+        "high": 513
+      },
+      "proteinG": 45,
+      "carbsG": 8,
+      "fatG": 27,
+      "fiberG": 3,
+      "confidence": "high",
+      "notes": "Salmon fillet with cucumber-tomato salsa and wilted spinach in a dark sauce; portion weight is estimated as no scale is visible. Background wine glass is not counted.",
+      "candidates": [
+        {
+          "name": "Grilled Salmon with Vegetables",
+          "confidence": "high"
+        },
+        {
+          "name": "pan-seared salmon with salsa verde",
+          "confidence": "medium"
+        },
+        {
+          "name": "fish fillet with spinach and cucumber salad",
+          "confidence": "low"
+        }
+      ],
+      "visibleItems": [
+        "grilled salmon fillet ~180 g",
+        "cucumber-tomato salsa ~60 g",
+        "sautéed spinach ~50 g",
+        "dark sauce ~40 ml",
+        "red wine in glass (background, not counted)"
+      ],
+      "ambiguity": "medium",
+      "foods": [
+        {
+          "componentId": "scan-0",
+          "name": "Grilled Salmon with Vegetables",
+          "matchedFoodId": "salmon_grilled",
+          "matchedCanonicalName": "Grilled Salmon",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 180,
+          "unit": "g",
+          "grams": 180,
+          "calories": 369,
+          "proteinG": 40,
+          "carbsG": 0,
+          "fatG": 23,
+          "fiberG": 0,
+          "confidence": 0.9,
+          "verified": true
+        },
+        {
+          "componentId": "scan-1",
+          "name": "cucumber-tomato salsa with dill",
+          "matchedFoodId": null,
+          "matchedCanonicalName": "cucumber-tomato salsa with dill",
+          "nutritionStatus": "estimated",
+          "source": "ai_estimate",
+          "quantity": 60,
+          "unit": "g",
+          "grams": 60,
+          "calories": 18,
+          "proteinG": 1,
+          "carbsG": 3,
+          "fatG": 1,
+          "fiberG": 1,
+          "confidence": 0.75,
+          "verified": false,
+          "calorieRange": {
+            "low": 15,
+            "high": 24
+          }
+        },
+        {
+          "componentId": "scan-2",
+          "name": "sautéed spinach",
+          "matchedFoodId": null,
+          "matchedCanonicalName": "sautéed spinach",
+          "nutritionStatus": "estimated",
+          "source": "ai_estimate",
+          "quantity": 50,
+          "unit": "g",
+          "grams": 50,
+          "calories": 35,
+          "proteinG": 2,
+          "carbsG": 2,
+          "fatG": 3,
+          "fiberG": 2,
+          "confidence": 0.7,
+          "verified": false,
+          "calorieRange": {
+            "low": 25,
+            "high": 45
+          }
+        },
+        {
+          "componentId": "scan-3",
+          "name": "dark soy-based sauce",
+          "matchedFoodId": null,
+          "matchedCanonicalName": "dark soy-based sauce",
+          "nutritionStatus": "estimated",
+          "source": "ai_estimate",
+          "quantity": 40,
+          "unit": "ml",
+          "grams": 40,
+          "calories": 24,
+          "proteinG": 2,
+          "carbsG": 3,
+          "fatG": 0,
+          "fiberG": 0,
+          "confidence": 0.6,
+          "verified": false,
+          "calorieRange": {
+            "low": 20,
+            "high": 28
+          },
+          "reviewNote": "Check this dish and its amount; the photo was unclear."
+        }
+      ],
+      "reviewSuggestions": [
+        {
+          "id": "label-0",
+          "name": "grilled salmon fillet",
+          "quantity": 180,
+          "unit": "g",
+          "label": "grilled salmon fillet ~180 g"
+        },
+        {
+          "id": "label-1",
+          "name": "cucumber tomato salsa",
+          "quantity": 60,
+          "unit": "g",
+          "label": "cucumber-tomato salsa ~60 g"
+        },
+        {
+          "id": "label-3",
+          "name": "dark sauce",
+          "quantity": 40,
+          "unit": "ml",
+          "label": "dark sauce ~40 ml"
+        },
+        {
+          "id": "label-4",
+          "name": "red wine glass background not counted",
+          "quantity": 1,
+          "unit": "serving",
+          "label": "red wine in glass (background, not counted)"
+        }
+      ],
+      "unknownFoods": [],
+      "allFoodsVerified": false,
+      "requiresManualReview": true,
+      "hasUnresolvedItems": false,
+      "unresolvedCount": 0,
+      "estimatedCount": 3,
+      "verifiedCount": 1,
+      "hasIncompleteNutrition": true,
+      "hasInventoryAmbiguity": true,
+      "totalLabel": "Known-food subtotal",
+      "recognitionVerified": false,
+      "portionBasis": "photo_estimate",
+      "uncertainty": "Not calibrated; ingredients, oil and portion mass need confirmation",
+      "inventoryReconciled": true,
+      "timings": {
+        "imagePrepMs": 154.8,
+        "visionProviderMs": 33021.1,
+        "dbLookupMs": 14.2,
+        "nutritionEstimationMs": 2839.8,
+        "nutritionCalcMs": 6.3,
+        "totalServerMs": 36036.3,
+        "retryBackoffMs": 0
+      },
+      "calls": [
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "analyzeMeal",
+          "attempt": 1,
+          "durationMs": 33020.8,
+          "outcome": "success",
+          "promptTokens": 2803,
+          "completionTokens": 303,
+          "cachedTokens": 0,
+          "totalTokens": 3106,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000477,
+          "costInr": 0.0401,
+          "requestId": "86ddb928-367a-49b1-a4b2-d6e63281343f"
+        },
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "estimateNutrition",
+          "attempt": 1,
+          "durationMs": 2838.7,
+          "outcome": "success",
+          "promptTokens": 588,
+          "completionTokens": 501,
+          "cachedTokens": 0,
+          "totalTokens": 1089,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000223,
+          "costInr": 0.0187,
+          "requestId": "ee669d3f-fcf2-4564-a422-3b738d07ae66"
+        }
+      ],
+      "metrics": null
+    },
+    {
+      "file": "12_pasta_arrabbiata.jpg",
+      "profile": {
+        "provider": "deepseek",
+        "detail": "high"
+      },
+      "expectedVisualCategories": "pasta|linguine|fettuccine|tagliatelle",
+      "recognitionMatch": true,
+      "status": 200,
+      "latencyMs": 13024,
+      "name": "Fettuccine with meat and vegetables",
+      "calories": 0,
+      "calorieRange": {
+        "low": 0,
+        "high": 30
+      },
+      "proteinG": 0,
+      "carbsG": 0,
+      "fatG": 0,
+      "fiberG": 0,
+      "confidence": "medium",
+      "notes": "Skillet of fettuccine with browned meat chunks, tomatoes, greens and mushrooms; meat type and oil amount are unclear, and the pan may hold multiple servings.",
+      "candidates": [
+        {
+          "name": "Fettuccine with meat and vegetables",
+          "confidence": "medium"
+        },
+        {
+          "name": "Pasta Arrabbiata",
+          "confidence": "low"
+        },
+        {
+          "name": "Meat and vegetable pasta skillet",
+          "confidence": "low"
+        }
+      ],
+      "visibleItems": [
+        "fettuccine pasta ~200 g",
+        "browned meat chunks ~100 g",
+        "cherry tomatoes ~40 g",
+        "leafy greens ~20 g",
+        "mushrooms ~20 g"
+      ],
+      "ambiguity": "medium",
+      "foods": [
+        {
+          "componentId": "scan-0",
+          "name": "Fettuccine with meat and vegetables",
+          "matchedFoodId": null,
+          "matchedCanonicalName": null,
+          "nutritionStatus": "unresolved",
+          "source": "unresolved",
+          "quantity": 350,
+          "unit": "g",
+          "grams": 350,
+          "calories": null,
+          "proteinG": null,
+          "carbsG": null,
+          "fatG": null,
+          "fiberG": null,
+          "confidence": 0.4,
+          "verified": false,
+          "reviewNote": "Check this dish and its amount; the photo was unclear."
+        }
+      ],
+      "reviewSuggestions": [
+        {
+          "id": "label-0",
+          "name": "fettuccine pasta",
+          "quantity": 200,
+          "unit": "g",
+          "label": "fettuccine pasta ~200 g"
+        },
+        {
+          "id": "label-1",
+          "name": "browned meat chunks",
+          "quantity": 100,
+          "unit": "g",
+          "label": "browned meat chunks ~100 g"
+        },
+        {
+          "id": "label-2",
+          "name": "cherry tomatoes",
+          "quantity": 40,
+          "unit": "g",
+          "label": "cherry tomatoes ~40 g"
+        },
+        {
+          "id": "label-3",
+          "name": "leafy greens",
+          "quantity": 20,
+          "unit": "g",
+          "label": "leafy greens ~20 g"
+        },
+        {
+          "id": "label-4",
+          "name": "mushrooms",
+          "quantity": 20,
+          "unit": "g",
+          "label": "mushrooms ~20 g"
+        }
+      ],
+      "unknownFoods": [
+        "Fettuccine with meat and vegetables"
+      ],
+      "allFoodsVerified": false,
+      "requiresManualReview": true,
+      "hasUnresolvedItems": true,
+      "unresolvedCount": 1,
+      "estimatedCount": 0,
+      "verifiedCount": 0,
+      "hasIncompleteNutrition": true,
+      "hasInventoryAmbiguity": true,
+      "totalLabel": "Known-food subtotal",
+      "recognitionVerified": false,
+      "portionBasis": "photo_estimate",
+      "uncertainty": "Not calibrated; ingredients, oil and portion mass need confirmation",
+      "inventoryReconciled": true,
+      "timings": {
+        "imagePrepMs": 0.9,
+        "visionProviderMs": 13016.4,
+        "dbLookupMs": 3.9,
+        "nutritionEstimationMs": 0,
+        "nutritionCalcMs": 0.6,
+        "totalServerMs": 13021.8,
+        "retryBackoffMs": 0
+      },
+      "calls": [
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "analyzeMeal",
+          "attempt": 1,
+          "durationMs": 13016.1,
+          "outcome": "success",
+          "promptTokens": 2278,
+          "completionTokens": 202,
+          "cachedTokens": 0,
+          "totalTokens": 2480,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000375,
+          "costInr": 0.0315,
+          "requestId": "7f816ba7-adf0-4a8b-af96-6dec69f56e34"
+        }
+      ],
+      "metrics": null
+    },
+    {
+      "file": "13_protein_shake_banana.jpg",
+      "profile": {
+        "provider": "deepseek",
+        "detail": "high"
+      },
+      "expectedVisualCategories": "smoothie|berry|berries|fruit.*(?:drink|shake)",
+      "recognitionMatch": true,
+      "status": 200,
+      "latencyMs": 8782,
+      "name": "Protein Smoothie",
+      "calories": 396,
+      "calorieRange": {
+        "low": 337,
+        "high": 455
+      },
+      "proteinG": 16,
+      "carbsG": 70,
+      "fatG": 6,
+      "fiberG": 8,
+      "confidence": "high",
+      "notes": "Two glasses of thick blended berry smoothie topped with strawberries and blueberries; protein powder or added sugar cannot be verified visually.",
+      "candidates": [
+        {
+          "name": "Protein Smoothie",
+          "confidence": "high"
+        },
+        {
+          "name": "Berry Smoothie",
+          "confidence": "medium"
+        }
+      ],
+      "visibleItems": [
+        "berry smoothie ~250 ml",
+        "berry smoothie ~250 ml",
+        "strawberry garnish ~15 g",
+        "blueberries ~20 g"
+      ],
+      "ambiguity": "high",
+      "foods": [
+        {
+          "componentId": "scan-0",
+          "name": "Berry Smoothie",
+          "matchedFoodId": "smoothie_fruit",
+          "matchedCanonicalName": "Fruit / Protein Smoothie",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 250,
+          "unit": "ml",
+          "grams": 250,
+          "calories": 198,
+          "proteinG": 8,
+          "carbsG": 35,
+          "fatG": 3,
+          "fiberG": 4,
+          "confidence": 0.9,
+          "verified": true,
+          "reviewNote": "Check amount: the photo also described “berry smoothie ~250 ml”."
+        },
+        {
+          "componentId": "scan-1",
+          "name": "Berry Smoothie",
+          "matchedFoodId": "smoothie_fruit",
+          "matchedCanonicalName": "Fruit / Protein Smoothie",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 250,
+          "unit": "ml",
+          "grams": 250,
+          "calories": 198,
+          "proteinG": 8,
+          "carbsG": 35,
+          "fatG": 3,
+          "fiberG": 4,
+          "confidence": 0.9,
+          "verified": true,
+          "reviewNote": "Check amount: the photo also described “berry smoothie ~250 ml”."
+        }
+      ],
+      "reviewSuggestions": [
+        {
+          "id": "label-3",
+          "name": "blueberries",
+          "quantity": 20,
+          "unit": "g",
+          "label": "blueberries ~20 g"
+        }
+      ],
+      "unknownFoods": [],
+      "allFoodsVerified": true,
+      "requiresManualReview": true,
+      "hasUnresolvedItems": false,
+      "unresolvedCount": 0,
+      "estimatedCount": 0,
+      "verifiedCount": 2,
+      "hasIncompleteNutrition": true,
+      "hasInventoryAmbiguity": true,
+      "totalLabel": "Known-food subtotal",
+      "recognitionVerified": false,
+      "portionBasis": "photo_estimate",
+      "uncertainty": "Not calibrated; ingredients, oil and portion mass need confirmation",
+      "inventoryReconciled": true,
+      "timings": {
+        "imagePrepMs": 1.1,
+        "visionProviderMs": 8775.3,
+        "dbLookupMs": 3.1,
+        "nutritionEstimationMs": 0,
+        "nutritionCalcMs": 0.1,
+        "totalServerMs": 8779.7,
+        "retryBackoffMs": 0
+      },
+      "calls": [
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "analyzeMeal",
+          "attempt": 1,
+          "durationMs": 8775,
+          "outcome": "success",
+          "promptTokens": 2803,
+          "completionTokens": 178,
+          "cachedTokens": 0,
+          "totalTokens": 2981,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000442,
+          "costInr": 0.0371,
+          "requestId": "4ef7a2df-25a8-4221-b802-ed0c499cdcee"
+        }
+      ],
+      "metrics": null
+    },
+    {
+      "file": "14_edge_black_coffee_only.jpg",
+      "profile": {
+        "provider": "deepseek",
+        "detail": "high"
+      },
+      "expectedVisualCategories": "coffee",
+      "recognitionMatch": true,
+      "status": 200,
+      "latencyMs": 4290,
+      "name": "Black Coffee",
+      "calories": 4,
+      "calorieRange": {
+        "low": 0,
+        "high": 34
+      },
+      "proteinG": 0,
+      "carbsG": 1,
+      "fatG": 0,
+      "fiberG": 0,
+      "confidence": "high",
+      "notes": "Top-down view of dark coffee with crema/foam in a white cup; no milk or sugar distinctly visible, though a light crema could mask a splash of milk.",
+      "candidates": [
+        {
+          "name": "Black Coffee",
+          "confidence": "high"
+        },
+        {
+          "name": "Coffee with milk/creamer",
+          "confidence": "low"
+        }
+      ],
+      "visibleItems": [
+        "Black coffee ~200ml in white cup"
+      ],
+      "ambiguity": "medium",
+      "foods": [
+        {
+          "componentId": "scan-0",
+          "name": "Black Coffee",
+          "matchedFoodId": "coffee_black",
+          "matchedCanonicalName": "Black Coffee",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 200,
+          "unit": "ml",
+          "grams": 200,
+          "calories": 4,
+          "proteinG": 0,
+          "carbsG": 1,
+          "fatG": 0,
+          "fiberG": 0,
+          "confidence": 0.85,
+          "verified": true
+        }
+      ],
+      "reviewSuggestions": [
+        {
+          "id": "label-0",
+          "name": "black coffee white cup",
+          "quantity": 200,
+          "unit": "ml",
+          "label": "Black coffee ~200ml in white cup"
+        }
+      ],
+      "unknownFoods": [],
+      "allFoodsVerified": true,
+      "requiresManualReview": true,
+      "hasUnresolvedItems": false,
+      "unresolvedCount": 0,
+      "estimatedCount": 0,
+      "verifiedCount": 1,
+      "hasIncompleteNutrition": true,
+      "hasInventoryAmbiguity": true,
+      "totalLabel": "Known-food subtotal",
+      "recognitionVerified": false,
+      "portionBasis": "photo_estimate",
+      "uncertainty": "Not calibrated; ingredients, oil and portion mass need confirmation",
+      "inventoryReconciled": true,
+      "timings": {
+        "imagePrepMs": 1.3,
+        "visionProviderMs": 4285,
+        "dbLookupMs": 1.1,
+        "nutritionEstimationMs": 0,
+        "nutritionCalcMs": 0.1,
+        "totalServerMs": 4287.6,
+        "retryBackoffMs": 0
+      },
+      "calls": [
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "analyzeMeal",
+          "attempt": 1,
+          "durationMs": 4284.7,
+          "outcome": "success",
+          "promptTokens": 2255,
+          "completionTokens": 137,
+          "cachedTokens": 0,
+          "totalTokens": 2392,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000354,
+          "costInr": 0.0297,
+          "requestId": "e88cbdf5-382b-4685-96dc-af6095bf23c0"
+        }
+      ],
+      "metrics": null
+    },
+    {
+      "file": "15_edge_non_food_laptop_desk.jpg",
+      "profile": {
+        "provider": "deepseek",
+        "detail": "high"
+      },
+      "expectedVisualCategories": "no food",
+      "recognitionMatch": true,
+      "status": 200,
+      "latencyMs": 4852,
+      "name": "No Food Detected",
+      "calories": 0,
+      "calorieRange": {
+        "low": 0,
+        "high": 0
+      },
+      "proteinG": 0,
+      "carbsG": 0,
+      "fatG": 0,
+      "fiberG": 0,
+      "confidence": "high",
+      "notes": "Office desk workspace with laptop, phone, notebook and a mug of black coffee; no meal detected.",
+      "candidates": [
+        {
+          "name": "No Food Detected",
+          "confidence": "high"
+        }
+      ],
+      "visibleItems": [],
+      "ambiguity": "low",
+      "foods": [],
+      "unknownFoods": [],
+      "allFoodsVerified": true,
+      "requiresManualReview": false,
+      "hasUnresolvedItems": false,
+      "unresolvedCount": 0,
+      "estimatedCount": 0,
+      "verifiedCount": 0,
+      "hasIncompleteNutrition": false,
+      "noFoodDetected": true,
+      "timings": {
+        "imagePrepMs": 1.2,
+        "visionProviderMs": 4849.7,
+        "dbLookupMs": 0,
+        "nutritionEstimationMs": 0,
+        "nutritionCalcMs": 0,
+        "totalServerMs": 4850.8,
+        "retryBackoffMs": 0
+      },
+      "calls": [
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "analyzeMeal",
+          "attempt": 1,
+          "durationMs": 4849.4,
+          "outcome": "success",
+          "promptTokens": 2303,
+          "completionTokens": 65,
+          "cachedTokens": 0,
+          "totalTokens": 2368,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000341,
+          "costInr": 0.0286,
+          "requestId": "2dfe06e7-4744-41c5-baaf-eb688afe4991"
+        }
+      ],
+      "metrics": null
+    }
+  ]
+}

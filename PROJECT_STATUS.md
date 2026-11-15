@@ -7,6 +7,88 @@
 
 ---
 
+## 15 November 2026 — Complete branch delivery checkpoint
+
+- User authorized pushing all project changes to the current `feat/complete-ui-change-e2e` branch. Fetched the remote branch: eight existing local commits ahead, no divergent remote commits. Delivery targets this branch only; no main-branch merge or push.
+- Included the remaining legacy evaluation script, fifteen photo fixtures and its existing benchmark-results cache so the scan checks can be reproduced after checkout. These files are preserved as supplied. The legacy cache's calorie targets are unweighed assumptions, not measured accuracy; use the newer `scripts/meal-scan.eval.ts` and documented category/guardrail evidence for current checks.
+- Validation rerun before delivery: **70 files passed; 779 tests passed, 26 skipped, zero failures**. Production build **passed, exit 0**, all 34 routes generated; existing non-fatal lint warnings remain. No application code changes in this checkpoint. Environment files/credentials remain ignored.
+
+## 15 November 2026 — Fuel header alignment (complete)
+
+- Fixed the mobile Fuel heading/actions layout: the header used a column below 480 px and right-aligned the action row, leaving an orphaned row and blank space beneath the heading. It now uses two columns with a flexible text area and aligned actions.
+- Sized title/actions for 320 px phones, retained the larger desktop title, allowed subtitle wrapping and preserved all three action handlers/accessible labels. Changes limited to `components/diet/DietPage.tsx` and this status file. Verified at actual 320/393/1440 px: title/actions share a row without horizontal overflow; 320 px title fits one line, desktop title remains 36 px. Saved Meals and Macro Goals open/close correctly; no data saved. Screenshot: `fuel-header-fixed-393.jpg` in the existing visualization folder. Full suite **70 files passed; 779 passed, 26 skipped, zero failures**. Production build **passed, exit 0**, all 34 routes generated; existing non-fatal lint warnings remain. Current branch only, no push.
+
+## 15 November 2026 — Deployed-style scan details and broader checks (implemented; visual review pending)
+
+- Implemented the deployed scan-detail hierarchy: one botanical dark result card, compact component pills, horizontal donut/macros, and log action within the card. Preserve individual edits and ambiguity gates; do not restore duplicate display-label counting or unverified alternative-dish replacements.
+- Expanding the live production-route smoke check from five to fifteen available photos. Manual visual review found misleading legacy filenames (pav bhaji labelled chole bhature; mushroom pasta labelled arrabbiata; berry drinks labelled protein shake). Expected visual categories now reflect what can actually be seen; filenames and assumed calories are not ground truth.
+- Fixed additional calculation bugs exposed by broader checks: Butter Chicken no longer maps to pure butter; explicit per-unit AI values scale all requested pieces; prepared oats no longer use dry-oat nutrition; unsupported prepared-rice recipes do not collapse to plain rice. Added regression coverage and removed the dry-oat “oatmeal” alias to keep editor lookup consistent.
+- Live checks: first run 14/15 coarse categories; one curry-family regex omitted Butter Chicken. Corrected that lexical expectation, with protein identity still unverified. Second run 15/15, mean observed latency ~8 s; subsequent prepared-oats/rice checks 2/2. These are developmental category/guardrail checks, not component or calorie accuracy. All three JSON runs are retained under `artifacts/scan-evaluation/`.
+- Numerical calorie/protein accuracy across normal dishes remains unmeasured without weighed portions/recipes. Remaining concerns include unsuitable piece/container reference masses, ambiguous ingredients, composite-food overlap and redundant missing-food questions. Pasta was unresolved in one run and estimated in another. No universal accuracy claim.
+- Browser control repeatedly timed out; new UI revision has no fresh browser screenshot/interaction verification. Final full suite: **70 files passed; 779 tests passed, 26 skipped, zero failures**. Production build **passed, exit 0**, all 34 routes generated; existing non-fatal lint warnings remain. Current branch only; no push. Detailed report: `docs/SCAN_DETAIL_AND_NORMAL_DISH_CHECKS_2026-11-15.md`.
+- Modified files: scanner modal/component editor; nutrition calculator/AI estimator/database; two regression files; expanded live evaluation runner; three result JSON files; this status file and the new detail/normal-dish report. No persisted meals modified; pre-existing photo fixtures and edge-case script remain untracked and untouched.
+
+## 15 November 2026 — Fuel layout and counted-inventory repair (complete)
+
+- Restored the horizontal donut/macros layout on phone widths, using a smaller ring and labels below 360 px. Removed verbose logged-meal provenance/component paragraphs and missing-nutrient placeholders; only finite supplied micronutrients are displayed.
+- Replaced automatic label-to-food additions with one counted structured inventory. Alternate labels annotate existing foods; possible missing foods remain uncounted suggestions until explicitly added. Conflicting portions and low-confidence identities require editing/review before logging. Separate bowls and user additions remain separate; serving IDs survive calculation and AI-estimate merging.
+- Old photo-derived drafts are retained and marked for review rather than silently discarded or auto-logged. Explicit user corrections are preserved. Existing saved meal totals are not rewritten.
+- Exact four-to-seven regression now calculates four items / 629 fixture kcal rather than 1,083. This fixes duplicate arithmetic, not measured calorie accuracy; the portions remain unweighed estimates. Final full suite: **70 files passed; 776 tests passed, 26 skipped, zero failures**. Production build **passed, exit 0**, all 34 routes generated; existing non-fatal lint warnings remain.
+- Live supplied-photo scan returned four foods / 629 estimated kcal, without duplicates. Browser verified at actual 320/391/1440 px: horizontal donut/macros, no horizontal overflow, Cancel preserves 70 g/629 kcal and Save of only roti to 90 g gives 688 kcal; logging disabled while editing. No test meal saved. Today's pre-existing draft retained; temporary prior-day scan cleared. Browser account showed an empty log, so logged-meal nutrient visibility is covered by render regressions rather than an opened persisted record. Dark-theme and physical-device checks remain acceptance work.
+- Screenshots: `fuel-scan-repaired-{mobile,320,desktop}.jpg` and `fuel-summary-repaired-{mobile,320}.jpg` in the existing local visualization folder. Detailed reproduction and limitations: `docs/MEAL_SCAN_COMPONENT_REVIEW_2026-11-15.md`. Repair stays below the user's 10% file limit; current branch only, no push.
+- Modified files so far: `DietPage.tsx`, `MacroDonutBreakdown.tsx`, `MealScannerModal.tsx`, `ScanComponentEditor.tsx`, `scan-review.ts`, nutrition calculator/AI estimator, shared vision prompt, analyze-meal route, `AvailableMicronutrients.tsx`, four regression test files, the updated component-review report, and this status file. Current branch only; no push.
+
+## 15 November 2026 — P1 duplicate meal inventory diagnosis (resolved above)
+
+- User supplied Google AI Mode output, SATAT output and an original rice/roti/dal/okra meal photo. Confirmed a deterministic regression in the inventory reconciliation added earlier: alternate `visibleItems` descriptions are appended as new foods when exact aliases/token overlap do not match structured `foods`.
+- Reproduced locally without an API call: structured Rice 180 g, Dal Fry 150 g, Plain Roti 70 g and Bhindi Masala 70 g calculate **629 kcal / 21 g protein / 122 g carbs / 8 g fat**. Reconciling the labels `yellow dal with tomato 150g`, `two whole wheat roti 90g` and `bhindi okra sabzi 70g` adds three duplicates, producing **1,083 kcal / 39 g protein / 204 g carbs / 15 g fat**, exactly matching the user's screenshot. These are fixture calculations from guessed portions, not measured meal nutrition.
+- Root cause: `lib/nutrition/scan-review.ts:reconcileScanInventory` interprets unmatched display text as an independent edible item; the route passes those additions into nutrition calculation. Existing tests cover counted samosa/roti aliases but not this descriptive synonym case. Passing the existing suite does not validate this scenario.
+- Required next fix: one structured inventory with IDs per physical serving/region; labels reference those components rather than creating foods. Treat unmatched descriptions as possible missing items requiring review; never automatically add calories from alternate descriptions. Flag conflicting portion estimates instead of adding them. Preserve genuinely separate servings and explicit user-added foods. Add this exact 4-to-7 reproduction plus multiple-bowl and legitimate-missing-food regression cases; review old automatic scan drafts too.
+- Current-meal workaround: keep one rice, one dal, one roti-stack entry and one sabzi entry; remove the three alternate-description duplicates. Google’s 650–790 kcal is also an unweighed estimate and is not a target to hard-code. No application code changed during this diagnosis. Existing full suite rerun: **763 passed, 26 skipped, 69 files passed**; production build **passed, exit 0**, all 34 routes generated. This passing baseline lacks the newly reproduced synonym case. Diagnosis remains open; no application code changes and no push.
+
+## 15 November 2026 — Compact meal scan review
+
+- Simplified the scan result to editable dish/amount pills, an Add food action, the calorie/macro donut immediately afterward, and one **Looks right · Log meal** action. Removed repeated dish confirmations and long explanatory forms from the default view.
+- Editing is on demand, one dish at a time. Name, amount/unit and +50 g are the primary controls; recipe, source and micronutrient fields remain behind a details disclosure. Save/Cancel are atomic, removal is available inside Edit, and logging is disabled while editing or when nutrition is incomplete. Logging itself records the user's confirmation.
+- Fixed undefined `--satat-matcha` / `--satat-terracotta` references in the scanner components by using the existing `--satat-sage` / `--satat-brand` tokens, restoring button contrast. Removed repeated photo-overlay tags and kept optional scan notes secondary.
+- Browser verified at actual 320 px, 391 px and 1440 px: no page-wide horizontal overflow, donut follows dishes, add/edit/remove works, +50 g changes only the selected food, Cancel preserves totals, Save updates totals, and no checkboxes remain in the default view. Existing user draft restored after temporary UI test additions; no meal logged.
+- Modified files: `components/diet/ScanComponentEditor.tsx`, `components/diet/MealScannerModal.tsx`, `PROJECT_STATUS.md`. Final verification: **69 test files passed; 763 tests passed; 26 skipped**. **Production build passed, exit 0**, all 34 routes generated; existing non-fatal lint warnings remain. Screenshots: `scan-pills-mobile.jpg` and `scan-pills-desktop.jpg` in the existing local audit artifact folder. Accuracy/data acceptance work from the previous checkpoint remains unchanged. Commit to current branch only; no push.
+
+## 15 November 2026 — Component-level meal scan implementation checkpoint
+
+- Replaced the whole-plate-only result with editable food rows: independent identity/amount/unit, add/remove missing foods or oil, recipe ingredient/oil/cooked-yield edits, explicit per-food confirmation, incomplete subtotal labels, and source-labelled nutrition. User corrections are calculated locally and retained in account/date-scoped drafts for 24 hours; re-analysis cannot silently replace them.
+- Raised scan preprocessing to a bounded 1536 px profile and DeepSeek high detail (including local non-secret config), retaining the legacy 768 px helper default for existing callers. Removed calorie/typical-serving prompt anchors, home-cooked automatic fat subtraction and recognition-inferred add-on chips. Visible labels are reconciled with calculation inventory; egg/fish preparation names no longer collapse to a generic ingredient alias.
+- Added optional backwards-compatible reviewed scan details to meal records. Vitamins/minerals carry source and units, remain null if any component is missing data, and can be supplied from a label/reference. No invented automatic micronutrient values. Raw-banana recipe explicitly uses a USDA plantain proxy; paneer/dal templates remain editable SATAT estimates, not measured recipes.
+- Added component/recipe regression tests and evaluation metrics for component precision/recall, gram errors, calorie/protein errors only with measured provenance, missed foods and catastrophic undercounts. The user confirmed no weighed references yet; held-out numerical accuracy remains unmeasured.
+- Live comparison: DeepSeek low/high returned 10/10 successful recognition/guardrail cases; totals and latency differ, so no accuracy winner is claimed. Gemini requests timed out; the model listing returned older names, but generation rejected those for this account. Retained the original configurable Gemini model defaults after that probe. Failure evidence is retained.
+- Final verification: full suite **69 files passed, 763 passed, 26 skipped**; `npm run build` **passed, exit 0**, all 34 routes generated. Existing non-fatal image/hook lint warnings remain. Browser confirmed the real upload/review flow, independent corrections, invalid/blank-food blocking, confirmation gates, recipe oil edits, draft restoration and no horizontal overflow at actual 320 px / 1440 px widths. No test meal was saved; the synthetic test draft was discarded.
+- New files: `ScanComponentEditor.tsx`, `lib/nutrition/scan-review.ts`, `scan-evaluation.ts`, two regression files and `scripts/meal-scan-reference.example.json`; scanner/route/provider/preprocessing/types/evaluation files modified. Optional logged meal details expose reviewed components/nutrients. Build/test logs stay ignored; provider comparison JSON is included. Existing untracked photo fixtures/edge-case script are preserved separately. No push.
+- Delivery report: `docs/MEAL_SCAN_COMPONENT_REVIEW_2026-11-15.md`. Next acceptance work: weighed held-out meals, full curated recipe/micronutrient provenance/retention data, Gemini generation access, physical-device and disposable-record persistence checks. Higher detail is not a demonstrated accuracy improvement without those references.
+
+## 15 November 2026 — Meal scan accuracy research checkpoint
+
+- User reported a real mixed-meal failure: rice estimated at 200 g instead of their approximately 400 g, paneer bhurji mistaken for egg, raw banana sabzi mistaken for another side, dal missed and a 393 kcal result. This shows the prior five-case smoke test did not establish meal accuracy. Earlier wording about preserving all visible pieces is a targeted change, not a guarantee across meals.
+- Research/source review confirmed compounded image reduction (client 1024 px, server 768 px, configured DeepSeek low detail), generic recipe aliases, canonical-match-before-confidence routing, no guaranteed reconciliation of visible labels against calculated components, whole-plate correction limitations, egg-text auto-selecting a Boiled Egg modifier, fixed uncertainty spread and unsupported homestyle fat discounts. Current nutrient schema lacks micronutrients and per-record provenance.
+- DeepSeek currently supports image input; the latest local scan trace succeeded. There is no evidence that replacing the API key fixes the error. Model choice, detail level, food inventory, portion evidence, preparation-aware database matching and correction UX must be evaluated separately.
+- Researched official DeepSeek/MyFitnessPal documentation, Nutrition5k, DietAI24, NIN IFCT and USDA data guidance. MyFitnessPal documents user selection/serving corrections and missed-food additions; its superiority on this meal is not established. Vitamin/mineral estimates require nutrient records and quantities, not visual measurement.
+- No application-code changes or external uploads of the user's screenshot in this research phase. Proposed next work: editable component rows, deterministic user corrections, explicit partial totals, original-image quality/model comparison, weighed held-out meals and source-backed recipes/micronutrients. Do not tune this photo to an assumed 1,000 kcal target.
+- Full tests rerun: **67 files passed; 740 passed; 26 skipped**. Production build rerun **passed, exit 0**, all 34 routes generated; existing non-fatal image/hook lint warnings remain. Changes limited to this status entry and `docs/MEAL_SCAN_RESEARCH_2026-11-15.md`; no push.
+
+## 15 November 2026 — Authenticated audit fixes and meal scanning (review checkpoint)
+
+- Scope is being closed at the user's requested review checkpoint. Work stays on `feat/complete-ui-change-e2e`; no push or merge is authorized.
+- Fixed the 14 recorded audit findings: unsupported personal measurements/action claims; unknown-food matching; invalid meal values; desktop workout keyboard access/cardio parity; account-scoped chat and ritual drafts; shared nutrition defaults; Orbit search/New Chat/composer actions; focus timer lifecycle; narrow-phone macro alignment; dialog/control accessibility; plain-language copy.
+- Additional fixes: Fuel scan/voice/manual deep links, Plan project deep link, persistent task focus targets, duplicate meal submissions, visible save/estimate failures, stale estimate response protection, balanced onboarding navigation, and missing-target setup copy.
+- Meal scanning now preserves all visible pieces, respects explicit weights, reconciles small condiment bowls with visible gram estimates, requires review for ambiguous/estimated results, retains the whole plate when correcting a candidate, and offers editable nutrition totals. Negated hints no longer add an egg/ghee/whey. Estimated calorie ranges carry an explicit portion basis to prevent double scaling while preserving older callers.
+- DeepSeek requests now explicitly send the supported top-level `thinking` setting. Five live production-route recognition/guardrail cases passed after fixes; mean observed latency changed from 7.50 s to 3.58 s. This small uncontrolled sample has no weighed recipes and establishes neither calorie MAPE nor clinical accuracy.
+- Verification: full Vitest **67 files passed; 740 tests passed; 26 skipped**. Final `npm run build` **passed, exit 0**, generating all 34 routes. Existing image-optimization and hook-dependency warnings remain non-fatal. Browser checks confirmed the repaired 320 px Fuel summary, invalid-meal blocking, Escape dismissal, Orbit handoffs/reset, desktop cardio/save controls and timer continuity across navigation. Simulated viewport checks are not physical-device certification.
+- Modified areas: `app/api/analyze-meal/route.ts`; settings/onboarding pages; Navigation; HomeView; DietPage, MealScannerModal, MacroDonutBreakdown; TaskBoard; WorkoutPage; OrbitView; onboarding/settings components; Firestore validation; nutrition calculator/estimator/provider prompts and DeepSeek options; app-shell CSS; regression tests. New helpers: `lib/nutrition/{goals,hints}.ts`, `lib/tasks/focus.ts`, `lib/use{DialogFocus,FocusTimer,Rituals}.ts`. New evaluation runner: `scripts/meal-scan.eval.ts`, `vitest.scan-eval.config.ts`; JSON evidence under `artifacts/scan-evaluation/`.
+- Existing nutrition/database/vocabulary work was preserved. Local photo fixtures and the separate pre-existing edge-case script remain available in the working tree.
+- Next sprint: weighed-recipe evaluation (including oil, serving mass and hidden fillings), disposable-account persistence/account-switch tests, physical camera/microphone/keyboard and wearable delivery tests. No claim that every possible UX defect has been eliminated.
+- Final preview note: production build passed, but the browser could not reconnect after restart; the final production reload remains unverified. Earlier browser evidence is retained separately from this limitation.
+
+Detailed closure matrix and reproducible checks: `docs/SATAT_AUDIT_FIXES_2026-11-15.md`.
+
 ## 1. Design System & Token Architecture
 
 The design language moves away from robotic, dark-purple SaaS boxes to an earthy, warm sunlit athletic aesthetic.
@@ -1398,6 +1480,29 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
   - Vitest suite: **66/66 test files passed, 711/711 tests passed (100%)**.
   - Production Next.js build: `npm run build` exits with code **0** (all 34 static and dynamic routes compiled).
 
+### ✅ Sprint 9.2: Interactive Quick Modifier Pills & Live Scan Macro Toggling (`MealScannerModal.tsx`, `analyze-meal/route.ts`, `database.ts`, `tests/diet/mealScannerModal.test.tsx`)
+- **Deterministic Modifier Presets & Live 0ms Calculations** (`components/diet/MealScannerModal.tsx`):
+  - Defined 4 deterministic quick-modifier presets:
+    - `+ 1 Scoop Whey`: 120 kcal, 24g protein, 3g carbs, 1.5g fat.
+    - `+ 1 tsp Ghee`: 45 kcal, 0g protein, 0g carbs, 5g fat.
+    - `+ Boiled Egg`: 78 kcal, 6g protein, 1g carbs, 5g fat.
+    - `Home Cooked`: reduces base scan fat by 25% (up to 8g) and subtracts `fatReduction * 9` kcal.
+  - Implemented `calculateLiveScanMacros()` pure calculation engine to update `MacroDonutBreakdown`, total calories, and all macro bars instantly in 0ms upon pill toggle.
+  - Bidirectional sync: clicking a modifier pill updates `activeModifiers` and cleanly appends/removes its label in the `CONTEXT HINT` input string.
+  - Active modifier pills styled in signature emerald (`bg-[#2D6A4F] text-white border border-[#34D399]/40 shadow-xs` with `✓` icon) vs neutral alabaster/stone when inactive.
+  - Active add-on chips (`"Whey protein ~30 g"`, `"Ghee ~5 g"`, `"Boiled egg ~50 g"`, `"Home-cooked (low oil)"`) dynamically injected as highlighted emerald pills into `PLATE COMPONENTS DETECTED`.
+  - Saved meal name formatting: cleanly incorporates active add-ons (e.g., `"Besan Cheela + 1 Scoop Whey"` or `"Home-Cooked Aloo Paratha (1.5×)"`).
+- **Inline Custom Hint Re-Analysis Button** (`components/diet/MealScannerModal.tsx`):
+  - Embedded a compact Coral Ember `Apply Hint ↻` button inside the right edge of the Context Hint input box when a photo has been scanned, and bound `Enter` keydown to trigger instant re-analysis with custom free-form hints.
+- **Server-Side Hint Parsing & Double-Counting Safeguard** (`app/api/analyze-meal/route.ts` & `lib/ai/nutrition/database.ts`):
+  - Added canonical `ghee` item (`id: "ghee"`, 900 kcal/100g, 99.5g fat, 45 kcal / 5g tsp) to `INDIAN_FOOD_DATABASE` with 100% Atwater verification.
+  - Server inspects user hints before nutrition calculation, adding unrepresented add-ons to `nutritionFoods` and returning them in `visibleItems`.
+  - `MealScannerModal.tsx` detects if the server already included an add-on in `result.visibleItems` and adjusts `addonCalories` to 0, preventing double-counting.
+- **Verification Gate**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **66/66 test files passed, 718/718 tests passed (100%)** including 7 new unit tests in `tests/diet/mealScannerModal.test.tsx`.
+  - Production Next.js build: `npm run build` exits with code **0** (all 34 static and dynamic routes compiled).
+
 ---
 
 ## 4. Current Quality & Build Metrics
@@ -1412,6 +1517,64 @@ The design language moves away from robotic, dark-purple SaaS boxes to an earthy
 - **Onboarding Tests**: `78/78 passed` across `tests/onboarding/*`.
 - **Landing Tests**: `26/26 passed` across `tests/landing/*`, `tests/sprint7-8/*`, `tests/sprint7-9/*`, `tests/sprint8-1/*`, and `tests/sprint8-2/*`.
 - **Today Dashboard & Diet Polish Tests**: `12/12 passed` in `tests/sprint8-3/*` and `tests/sprint8-4/*`.
+
+---
+
+### ✅ Sprint 9.0: Meal-Scan Accuracy Upgrade (Phase 1 Baseline & Phase 2 Targeted Implementation)
+- **Deterministic Indian Food Database Expansion** (`lib/ai/nutrition/database.ts`):
+  - Added missing bare-word aliases and regional Indian items: `pulao_veg` (140 kcal), `butter` (717 kcal), `sev` (540 kcal), `pickle` (185 kcal), `tarkari` (95 kcal).
+  - Calibrated portion densities for `cheela_besan` (195 kcal / 100g), `halwa_sooji` (280 kcal / 100g), `poha_indori` (130 kcal / 100g), and `khichdi_dal` (105 kcal / 100g).
+  - Expanded aliases for bare words (`rice`, `raita`, `chutney`, `pickle`, `butter`) and regional variants (`bhat`, `aloo bhaji`, `potato masala`, `suji sheera`).
+  - Audited all 58 items with `scripts/audit-nutrition.ts` — 100% adherence to Atwater energy conservation ($4P + 4C + 9F = \text{kcal} \pm 5\%$).
+- **Multi-Stage Food Resolver & Culinary Concept Normalization** (`lib/ai/nutrition/calculator.ts`):
+  - Added `normalizeDescriptiveFoodName()` with `CULINARY_MAPPINGS` to translate complex vision phrases (e.g. `"cooked flattened rice with onions"`, `"2 besan cheelas ~140g"`, `"Suji halwa mound ~250g"`) into canonical database keys.
+  - Multi-stage matching: Exact $\rightarrow$ Normalized Descriptive $\rightarrow$ Longest Alias Whole-Word $\rightarrow$ Singular fallback.
+  - Implemented `PORTION_SANITY_CEILINGS` in `normalizeQuantityToGrams()` to clamp runaway portion estimates.
+  - Preserved `EXPLICIT_NON_CANONICAL` set (`Cucumber Raita`, `White Butter`, `Chutney`, etc.) ensuring 100% contract compliance with Phase 2B AI estimation tests.
+- **Vision Prompt Realignment with Volumetric Anchors** (`lib/ai/providers/common.ts` & `lib/ai/providers/gemini.ts`):
+  - Added homestyle preparation default rule (no excessive restaurant ghee/butter assumptions).
+  - Injected volumetric reference anchors (`1 roti = 30-35g / ~95 kcal`, `1 besan cheela = 50-60g`, `1 plain/masala dosa = 80-100g`, `1 katori dal/rajma = 120-150g`, `1 katori sooji halwa = 100-120g`, `1 plate poha/khichdi = 180-200g`).
+- **Grounded Nutrition Calculation** (`app/api/analyze-meal/route.ts` & `scripts/photo-eval.ts`):
+  - Grounded vision estimates with component database lookups when $\ge 70\%$ of plate constituents are verified.
+- **Interactive UI Calibration & Candidate Syncing** (`components/diet/MealScannerModal.tsx`):
+  - Added 1-tap quick multiplier chips (`0.5×`, `1×`, `1.5×`, `2×`) alongside the `- / +` portion stepper.
+  - Added dynamic candidate macro syncing (`handleSelectCandidate`) that re-queries the deterministic database when an alternative candidate is selected.
+- **Quantitative Benchmark Results (`Before` vs. `After`)**:
+  - **Dish Recognition Accuracy**: **100.0%** (11/11 preserved)
+  - **Calorie MAPE**: **54.8%** $\rightarrow$ **15.7%** (**71.4% relative error reduction**)
+  - **Calorie MAE**: **132.9 kcal** $\rightarrow$ **50.5 kcal** (**62.0% average error reduction**)
+  - **Protein MAE**: **5.2 g** $\rightarrow$ **1.6 g**
+  - **Carbs MAE**: **18.5 g** $\rightarrow$ **6.8 g**
+  - **Fat MAE**: **8.4 g** $\rightarrow$ **3.4 g**
+  - **Ground-Truth DB Hit Rate**: **72.0%** (18/25) $\rightarrow$ **96.0%** (24/25)
+  - **Vision Extracted Items Hit Rate**: **33.3%** $\rightarrow$ **70.8%**
+- **Zero Regression Standard Verified**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **66/66 test files passed, 711/711 tests passed (100%)**.
+  - Production Next.js build: `npm run build` exits with code **0** (all 34 static and dynamic routes compiled).
+
+### ✅ Sprint 9.2: Interactive Quick Modifier Pills & Live Scan Macro Toggling (`MealScannerModal.tsx`, `analyze-meal/route.ts`, `database.ts`, `tests/diet/mealScannerModal.test.tsx`)
+- **Deterministic Modifier Presets & Live 0ms Calculations** (`components/diet/MealScannerModal.tsx`):
+  - Defined 4 deterministic quick-modifier presets:
+    - `+ 1 Scoop Whey`: 120 kcal, 24g protein, 3g carbs, 1.5g fat.
+    - `+ 1 tsp Ghee`: 45 kcal, 0g protein, 0g carbs, 5g fat.
+    - `+ Boiled Egg`: 78 kcal, 6g protein, 1g carbs, 5g fat.
+    - `Home Cooked`: reduces base scan fat by 25% (up to 8g) and subtracts `fatReduction * 9` kcal.
+  - Implemented `calculateLiveScanMacros()` pure calculation engine to update `MacroDonutBreakdown`, total calories, and all macro bars instantly in 0ms upon pill toggle.
+  - Bidirectional sync: clicking a modifier pill updates `activeModifiers` and cleanly appends/removes its label in the `CONTEXT HINT` input string.
+  - Active modifier pills styled in signature emerald (`bg-[#2D6A4F] text-white border border-[#34D399]/40 shadow-xs` with `✓` icon) vs neutral alabaster/stone when inactive.
+  - Active add-on chips (`"Whey protein ~30 g"`, `"Ghee ~5 g"`, `"Boiled egg ~50 g"`, `"Home-cooked (low oil)"`) dynamically injected as highlighted emerald pills into `PLATE COMPONENTS DETECTED`.
+  - Saved meal name formatting: cleanly incorporates active add-ons (e.g., `"Besan Cheela + 1 Scoop Whey"` or `"Home-Cooked Aloo Paratha (1.5×)"`).
+- **Inline Custom Hint Re-Analysis Button** (`components/diet/MealScannerModal.tsx`):
+  - Embedded a compact Coral Ember `Apply Hint ↻` button inside the right edge of the Context Hint input box when a photo has been scanned, and bound `Enter` keydown to trigger instant re-analysis with custom free-form hints.
+- **Server-Side Hint Parsing & Double-Counting Safeguard** (`app/api/analyze-meal/route.ts` & `lib/ai/nutrition/database.ts`):
+  - Added canonical `ghee` item (`id: "ghee"`, 900 kcal/100g, 99.5g fat, 45 kcal / 5g tsp) to `INDIAN_FOOD_DATABASE` with 100% Atwater verification.
+  - Server inspects user hints before nutrition calculation, adding unrepresented add-ons to `nutritionFoods` and returning them in `visibleItems`.
+  - `MealScannerModal.tsx` detects if the server already included an add-on in `result.visibleItems` and adjusts `addonCalories` to 0, preventing double-counting.
+- **Verification Gate**:
+  - `npx tsc --noEmit`: **0 errors**.
+  - Vitest suite: **66/66 test files passed, 718/718 tests passed (100%)** including 7 new unit tests in `tests/diet/mealScannerModal.test.tsx`.
+  - Production Next.js build: `npm run build` exits with code **0** (all 34 static and dynamic routes compiled).
 
 
 ## SatatSnap scroll-scrub rebuild (mobile-first)

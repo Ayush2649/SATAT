@@ -1,3 +1,4 @@
+import { validMealMacros } from "@/lib/nutrition/goals";
 import {
   collection, doc, addDoc, updateDoc, deleteDoc,
   getDocs, getDoc, query, where, setDoc,
@@ -138,6 +139,7 @@ export async function getMeals(userId: string, date: string): Promise<MealEntry[
 }
 
 export async function addMeal(meal: Omit<MealEntry, "id">): Promise<MealEntry> {
+  if (!validMealMacros(meal.macros)) throw new Error("Meal nutrition must be finite and nonnegative, with positive calories.");
   const ref = await addDoc(collection(db, "meals"), meal);
   return { id: ref.id, ...meal };
 }

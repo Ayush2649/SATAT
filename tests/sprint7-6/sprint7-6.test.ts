@@ -48,11 +48,12 @@ describe("Sprint 7.6: Full Verification Suite", () => {
     "utf8"
   );
 
-  it("1. Focus timer ring stacks FLOW STATE and BLOCK 1/3 on two separate centered lines and has w-44 h-44 diameter", () => {
+  it("1. Focus timer ring stacks FLOW STATE and the current-block label on two separate centered lines and has w-44 h-44 diameter", () => {
     expect(taskBoardSource).toContain("w-44 h-44");
     expect(taskBoardSource).toContain('viewBox="0 0 176 176"');
     expect(taskBoardSource).toContain("FLOW STATE");
-    expect(taskBoardSource).toContain("BLOCK 1/3");
+    expect(taskBoardSource).toContain("CURRENT BLOCK");
+    expect(taskBoardSource).not.toContain("BLOCK 1/3");
     expect(taskBoardSource).toContain("flex flex-col items-center justify-center text-center");
   });
 

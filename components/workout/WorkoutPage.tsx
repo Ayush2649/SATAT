@@ -63,6 +63,7 @@ import {
 } from "@/lib/workouts/workoutMeta";
 import { setWorkoutContext } from "@/lib/orbitContext";
 import { useToast } from "@/components/ui/Toast";
+import { useDialogFocus } from "@/lib/useDialogFocus";
 import VoiceLogModal from "@/components/workout/VoiceLogModal";
 import type {
   WorkoutSession,
@@ -152,6 +153,7 @@ export default function WorkoutPage() {
 
   // Template builder modal
   const [showCreateTemplate, setShowCreateTemplate] = useState(false);
+  useDialogFocus(() => { setShowBodyWeightModal(false); setShowCreateTemplate(false); }, showBodyWeightModal || showCreateTemplate);
   const [templateName, setTemplateName] = useState("");
   const [savingTemplate, setSavingTemplate] = useState(false);
 
@@ -486,7 +488,7 @@ export default function WorkoutPage() {
             })
           );
         }
-        toast("Biomechanical Synthesis Generated ✦", "success");
+        toast("Your session review is ready", "success");
       } else {
         toast("Analysis completed with local telemetry", "info");
       }
@@ -499,6 +501,7 @@ export default function WorkoutPage() {
 
   // ── Save Completed Workout ──
   const handleSave = async () => {
+    if (saving) return;
     if (!hasAnything) {
       toast("Add at least one movement or cardio activity", "error");
       return;
@@ -653,7 +656,7 @@ export default function WorkoutPage() {
               0
             ) / totalSessionsCount
           )
-        : 380;
+        : 0;
 
     const formattedVol =
       totalVol >= 1000 ? `${(totalVol / 1000).toFixed(1)}k kg` : `${totalVol} kg`;
@@ -661,7 +664,7 @@ export default function WorkoutPage() {
     return {
       month: currentMonth,
       totalSessionsCount,
-      formattedTotalVolume: totalVol > 0 ? formattedVol : "14.2k kg",
+      formattedTotalVolume: totalVol > 0 ? formattedVol : "0 kg",
       avgCaloriesBurned: avgCals,
     };
   }, [pastSessions, bwKg]);
@@ -673,10 +676,10 @@ export default function WorkoutPage() {
   return (
     <div className="w-full max-w-md mx-auto lg:max-w-none pb-8 animate-fade-in text-[#1C1917] dark:text-[#F4F1EA]">
       {/* ── SHARED TOP HEADER ROW ── */}
-      <div className="flex items-start justify-between pt-1 pb-3">
+      <div className="flex flex-wrap items-start justify-between gap-3 pt-1 pb-3">
         <div>
           <h1 className="font-serif text-3xl sm:text-4xl text-[#1C1917] tracking-tight leading-none">
-            Training Studio
+            Your training
           </h1>
           <p className="text-xs text-[#57534E] mt-1.5 font-medium">
             Move with steady, progressive form.
@@ -1393,7 +1396,7 @@ export default function WorkoutPage() {
                       ) : (
                         <Sparkles className="w-3.5 h-3.5 text-[#E05A47]" />
                       )}
-                      <span>{summarizing ? "Analyzing..." : "AI Biomechanical Analysis"}</span>
+                      <span>{summarizing ? "Reviewing..." : "Review this session"}</span>
                     </button>
 
                     <button
@@ -1437,7 +1440,7 @@ export default function WorkoutPage() {
                   )}
 
                   <p className="text-[10px] text-[#8C857B] text-center mt-2.5">
-                    Auto-synchronizes fatigue telemetry with Orbit Companion & Fuel ceiling.
+                    Saves your completed movements and cardio to your training history.
                   </p>
                 </div>
               )}
@@ -1447,16 +1450,16 @@ export default function WorkoutPage() {
         {/* ─── DESKTOP VIEW (lg: 1024px+) — 12-Column Responsive Studio Architecture (image_49d467.jpg) ─── */}
         <div className="hidden lg:grid grid-cols-12 gap-6 items-start">
           {/* ── LEFT 5 COLUMNS: Hero Split, Date & Recovery Telemetry ── */}
-          <div className="col-span-5 space-y-4">
+          <div className="col-span-5 min-w-0 space-y-4">
             {/* 1. Dark Espresso Assigned Split Hero Card */}
             <div className="bg-[#191D1A] text-[#FCFBF9] rounded-[28px] p-5 shadow-xl border border-white/[0.08] relative overflow-hidden">
               <div className="flex items-center justify-between gap-2 mb-3">
                 <span className="bg-[#2D6A4F]/30 border border-[#6EE7B7]/20 text-[#6EE7B7] rounded-full px-3 py-1 text-[10px] font-bold tracking-wider uppercase inline-flex items-center gap-1.5 whitespace-nowrap">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#6EE7B7]" />
-                  ASSIGNED SPLIT · {assignedRoutine?.daysPerWeek || 5} DAYS/WK
+                  ASSIGNED SPLIT · {assignedRoutine?.daysPerWeek || 4} DAYS/WK
                 </span>
                 <span className="text-[10px] text-stone-300 font-semibold bg-white/10 px-2 py-0.5 rounded-full">
-                  Target Strain: 14.5
+                  Choose your effort
                 </span>
               </div>
 
@@ -1470,7 +1473,7 @@ export default function WorkoutPage() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent flex items-end p-3.5">
                   <span className="bg-[#E05A47] text-white text-[9px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-md shadow-xs">
-                    UPPER HYPERTROPHY BIAS
+                    YOUR NEXT WORKOUT
                   </span>
                 </div>
               </div>
@@ -1568,46 +1571,24 @@ export default function WorkoutPage() {
             <div className="bg-[#FCFBF9] rounded-[24px] p-5 border border-[#1C1917]/[0.06] shadow-xs space-y-3.5">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#1C1917]">
-                  WEEKLY MUSCLE RECOVERY & VOLUME
+                  PLAN YOUR RECOVERY
                 </span>
                 <span className="text-[10px] font-semibold text-[#2D6A4F] bg-[#E0F2E9] px-2 py-0.5 rounded-full">
-                  Neuromuscular Telemetry
+                  Training history
                 </span>
               </div>
 
-              <div className="space-y-2.5">
-                {[
-                  { muscle: "Chest / Pecs", pct: 85, status: "Ready" },
-                  { muscle: "Upper Back / Lats", pct: 92, status: "Optimal" },
-                  { muscle: "Shoulders / Delts", pct: 78, status: "Primed" },
-                  { muscle: "Posterior Chain", pct: 64, status: "Rebuilding" },
-                ].map((item) => (
-                  <div key={item.muscle}>
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="font-semibold text-[#1C1917]">{item.muscle}</span>
-                      <span className="text-[10px] text-[#2D6A4F] font-bold">
-                        {item.status} ({item.pct}%)
-                      </span>
-                    </div>
-                    <div className="w-full bg-[#EFECE4] rounded-full h-1.5 overflow-hidden">
-                      <div
-                        className="h-full bg-[#2D6A4F] rounded-full transition-all duration-500"
-                        style={{ width: `${item.pct}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <p className="text-sm text-[#57534E]">Recovery is not measured here. Review your recent training and how you feel before choosing your next session.</p>
 
               <div className="pt-2 border-t border-[#1C1917]/[0.06] flex items-center gap-2 text-xs text-[#57534E]">
                 <Sparkles className="w-3.5 h-3.5 text-[#E05A47] shrink-0" />
-                <span>Orbit Readiness: 91% primed for Upper Hypertrophy.</span>
+                <span>Your training log helps you plan your next session.</span>
               </div>
             </div>
           </div>
 
           {/* ── RIGHT 7 COLUMNS: Exercises, Sets Table, and Save Banner ── */}
-          <div className="col-span-7 space-y-4">
+          <div className="col-span-7 min-w-0 space-y-4">
             {/* 1. Strength Movements Header Row */}
             <div className="flex items-center justify-between gap-2 bg-[#FCFBF9] rounded-[24px] p-4 border border-[#1C1917]/[0.06] shadow-xs">
               <div className="flex items-center gap-2">
@@ -1706,7 +1687,7 @@ export default function WorkoutPage() {
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="bg-[#FADCD5] text-[#C94A38] text-[10px] font-bold px-2 py-0.5 rounded-full">
-                        Target PR: 34kg
+                        Record your own best
                       </span>
                       <button
                         type="button"
@@ -1725,7 +1706,7 @@ export default function WorkoutPage() {
                       <thead>
                         <tr className="border-b border-[#1C1917]/[0.06] text-[10px] font-bold tracking-wider uppercase text-[#8C857B]">
                           <th className="py-2 px-2 text-center w-12">SET</th>
-                          <th className="py-2 px-3 text-center">PREVIOUS</th>
+                          <th className="py-2 px-3 text-center">PREVIOUS SET</th>
                           <th className="py-2 px-3 text-center">WEIGHT (KG)</th>
                           <th className="py-2 px-3 text-center">REPS</th>
                           <th className="py-2 px-3 text-center">RPE</th>
@@ -1773,7 +1754,7 @@ export default function WorkoutPage() {
                               </td>
                               <td className="py-2.5 px-3 text-center">
                                 <span className="bg-[#EFECE4] text-[#57534E] text-[11px] font-semibold px-2 py-0.5 rounded-md">
-                                  @ 8.5
+                                  —
                                 </span>
                               </td>
                               <td className="py-2.5 px-2 text-right">
@@ -1811,31 +1792,100 @@ export default function WorkoutPage() {
                       <Plus className="w-3.5 h-3.5" /> Add Set
                     </button>
                     <span className="text-[11px] text-[#8C857B] bg-[#EFECE4] px-2.5 py-0.5 rounded-full">
-                      Rest Timer: 90s
+                      Suggested rest: 90s
                     </span>
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* 3. Full-Width Botanical Matcha Sage Save Banner */}
-            {hasAnything && (
-              <div
-                onClick={handleSave}
-                className="bg-[#2D6A4F] hover:bg-[#1B4332] text-white rounded-2xl p-4 flex items-center justify-between font-semibold shadow-lg transition-all cursor-pointer group"
-              >
-                <div className="flex items-center gap-2">
-                  <Check className="w-5 h-5 text-[#6EE7B7]" />
-                  <span className="text-sm">
-                    {saving ? "Saving Training Session..." : "Complete & Save Training Session →"}
-                  </span>
+              {/* 4. Cardio & Zone 2 Card */}
+              <div className="bg-[#FCFBF9] rounded-[26px] p-4 border border-[#1C1917]/[0.06] shadow-xs flex items-center justify-between gap-3 mb-5">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-full bg-[#E0F2E9] text-[#2D6A4F] flex items-center justify-center shrink-0">
+                    <PersonStanding className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-bold text-[#1C1917]">Cardio & Zone 2</h3>
+                    <p className="text-xs text-[#8C857B] truncate">
+                      {cardioLogs.length > 0
+                        ? `${cardioLogs.length} activity logged · ~${totalCardioCals} kcal`
+                        : "Optional 15m post-lift recovery walk"}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-xs font-mono">
-                  <span>🔥 ~{Math.round((duration || 45) * 7.5)} kcal</span>
-                  <span>· Strain 14.2</span>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAddCardio(true)}
+                  className="bg-[#EFECE4] hover:bg-[#E2DDD2] text-[#1C1917] rounded-full px-3.5 py-2 text-[11px] font-semibold shrink-0 transition-all cursor-pointer whitespace-nowrap"
+                >
+                  + Log Cardio
+                </button>
               </div>
-            )}
+
+              {/* Primary Save CTA Button */}
+              {hasAnything && (
+                <div className="pt-2">
+                  <div className="flex gap-2.5 mb-2">
+                    <button
+                      type="button"
+                      onClick={handleSummarize}
+                      disabled={summarizing}
+                      className="flex-1 bg-[#FCFBF9] hover:bg-[#F6F3EC] border border-[#1C1917]/[0.08] text-[#1C1917] rounded-full py-3 px-4 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      {summarizing ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Sparkles className="w-3.5 h-3.5 text-[#E05A47]" />
+                      )}
+                      <span>{summarizing ? "Reviewing..." : "Review this session"}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowCreateTemplate(true)}
+                      className="bg-[#FCFBF9] hover:bg-[#F6F3EC] border border-[#1C1917]/[0.08] text-[#1C1917] rounded-full py-3 px-4 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                    >
+                      <LayoutTemplate className="w-3.5 h-3.5 text-[#2D6A4F]" />
+                      <span>Save as Template</span>
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="w-full bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full py-4 px-6 text-sm font-semibold shadow-lg flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98] disabled:opacity-50"
+                  >
+                    {saving ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Check className="w-4 h-4" />
+                    )}
+                    <span>
+                      {saving
+                        ? "Saving Session..."
+                        : isEditingSession && todaySession
+                        ? "Save Session Changes ✓"
+                        : "Complete & Analyze Session ✓"}
+                    </span>
+                  </button>
+
+                  {isEditingSession && todaySession && (
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingSession(false)}
+                      className="w-full text-xs font-semibold text-[#57534E] hover:text-[#1C1917] py-2 text-center mt-1 transition-colors cursor-pointer"
+                    >
+                      Cancel & Return to Summary
+                    </button>
+                  )}
+
+                  <p className="text-[10px] text-[#8C857B] text-center mt-2.5">
+                    Saves your completed movements and cardio to your training history.
+                  </p>
+                </div>
+              )}
           </div>
         </div>
 
@@ -2320,7 +2370,7 @@ export default function WorkoutPage() {
 
       {/* ── BODY WEIGHT MODAL ── */}
       {showBodyWeightModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pt-4 pb-24 sm:p-4 animate-fade-in">
+        <div role="dialog" aria-modal="true" aria-label="Log Body Weight" className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pt-4 pb-24 sm:p-4 animate-fade-in">
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setShowBodyWeightModal(false)}
@@ -2331,6 +2381,7 @@ export default function WorkoutPage() {
               <button
                 type="button"
                 onClick={() => setShowBodyWeightModal(false)}
+                aria-label="Close body weight"
                 className="text-[#8C857B] hover:text-[#1C1917] p-1.5 cursor-pointer"
               >
                 <X className="w-4 h-4" />
@@ -2394,7 +2445,7 @@ export default function WorkoutPage() {
 
       {/* ── CREATE SPLIT TEMPLATE MODAL ── */}
       {showCreateTemplate && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pt-4 pb-24 sm:p-4 animate-fade-in">
+        <div role="dialog" aria-modal="true" aria-label="Build New Split Template" className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pt-4 pb-24 sm:p-4 animate-fade-in">
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setShowCreateTemplate(false)}
@@ -2405,6 +2456,7 @@ export default function WorkoutPage() {
               <button
                 type="button"
                 onClick={() => setShowCreateTemplate(false)}
+                aria-label="Close template builder"
                 className="text-[#8C857B] hover:text-[#1C1917] p-1.5 cursor-pointer"
               >
                 <X className="w-4 h-4" />
@@ -2472,6 +2524,7 @@ function AddCardioModal({
   onAdd: (log: Omit<CardioLog, "id">) => void;
   onClose: () => void;
 }) {
+  useDialogFocus(onClose);
   const [activity, setActivity] = useState<CardioActivity>("walking");
   const [duration, setDuration] = useState("20");
   const [distance, setDistance] = useState("");
@@ -2495,7 +2548,7 @@ function AddCardioModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pt-4 pb-24 sm:p-4 animate-fade-in">
+    <div role="dialog" aria-modal="true" aria-label="Add Cardio & Zone 2" className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 pt-4 pb-24 sm:p-4 animate-fade-in">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative rounded-[28px] shadow-2xl w-full max-w-sm p-6 bg-[#FCFBF9] border border-[#1C1917]/[0.08] animate-slide-up text-[#1C1917]">
         <div className="flex items-center justify-between mb-4">

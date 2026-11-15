@@ -399,8 +399,8 @@ export default function Navigation() {
               <Zap className="w-3.5 h-3.5 text-[#2D6A4F] fill-[#2D6A4F]" />
             </div>
             <div className={cn("min-w-0", collapsed ? "hidden" : "hidden lg:block")}>
-              <div className="text-[11px] font-bold text-[#1C1917] truncate">All Systems Synced</div>
-              <div className="text-[10px] text-[#8C857B] truncate">Circadian Flow Online</div>
+              <div className="text-[11px] font-bold text-[#1C1917] truncate">Account connected</div>
+              <div className="text-[10px] text-[#8C857B] truncate">Ready when you are</div>
             </div>
           </div>
 
@@ -474,7 +474,7 @@ export default function Navigation() {
           </div>
           <span className="bg-[#E0F2E9] text-[#2D6A4F] text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-[#2D6A4F]" />
-            <span>Synced</span>
+            <span>Signed in</span>
           </span>
         </div>
 

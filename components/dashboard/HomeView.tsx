@@ -1,5 +1,7 @@
 "use client";
 
+import { DEFAULT_MACRO_GOALS } from "@/lib/nutrition/goals";
+import { useRituals } from "@/lib/useRituals";
 import { useEffect, useState, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useFirebaseAuth } from "@/components/FirebaseAuthProvider";
@@ -110,7 +112,7 @@ export default function HomeView() {
 
   // Sprint 8.3 & 8.4: Reactive date selection across 7-day strip
   const [selectedDate, setSelectedDate] = useState<string>(todayString());
-  const [rituals, setRituals] = useState<Record<string, boolean>>({});
+  const { rituals, toggleRitual } = useRituals(userId ?? "", selectedDate);
   const [timelineFilter, setTimelineFilter] = useState<string>("All Timeline");
 
   // Load production data
@@ -265,12 +267,12 @@ export default function HomeView() {
   }, [displayedMeals]);
 
   // Sprint 8.3: Calorie & Protein calculations — strictly 0 when no meals logged!
-  const calorieGoal = goals?.calories ?? 2200;
+  const calorieGoal = goals?.calories ?? DEFAULT_MACRO_GOALS.calories;
   const loggedCalories = Math.round(totals.cal);
   const remainingCalories = Math.max(0, calorieGoal - loggedCalories);
   const caloriePct = Math.min(100, Math.round((loggedCalories / Math.max(calorieGoal, 1)) * 100));
 
-  const targetProtein = goals?.proteinG ?? 135;
+  const targetProtein = goals?.proteinG ?? DEFAULT_MACRO_GOALS.proteinG;
   const loggedProtein = Math.round(totals.p);
   const proteinRemaining = Math.max(0, targetProtein - loggedProtein);
   const proteinPct = Math.min(100, Math.round((loggedProtein / Math.max(targetProtein, 1)) * 100));
@@ -293,7 +295,7 @@ export default function HomeView() {
       }
       return "Workout Completed";
     }
-    return profile?.workoutPlanAssignment?.planName || "Upper Body Strength";
+    return "Choose a workout";
   }, [isWorkoutCompleted, displayedSession, profile]);
 
   const todayWorkoutSubtitle = useMemo(() => {
@@ -302,12 +304,12 @@ export default function HomeView() {
       const count = displayedSession.exercises?.length || 4;
       return `✓ Session complete · ~${Math.round(minutes * 7.5)} kcal burned · ${count} exercises`;
     }
-    return "Incline Press · Chest Rows · 4 movements";
+    return "Choose a saved routine or build your own in Train.";
   }, [isWorkoutCompleted, displayedSession]);
 
   const workoutMetaText = isWorkoutCompleted && displayedSession
     ? `COMPLETED · ${displayedSession.durationMinutes || 45} MIN`
-    : "TODAY'S SPLIT · 45 MIN";
+    : "YOUR NEXT SESSION";
 
   // Dynamic Mindful Whisper (truthful context without hardcoded assumptions)
   const mindfulWhisper = useMemo(() => {
@@ -387,29 +389,6 @@ export default function HomeView() {
 
   // Weekly consistency & dates
   const { dates: weekDays } = useMemo(() => getCurrentWeekDates(), []);
-
-  // Rituals storage (per date)
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const stored = localStorage.getItem(`satat_rituals_${selectedDate}`);
-      if (stored) {
-        setRituals(JSON.parse(stored));
-      } else {
-        setRituals({});
-      }
-    } catch {}
-  }, [selectedDate]);
-
-  const toggleRitual = (id: string) => {
-    setRituals((prev) => {
-      const updated = { ...prev, [id]: !prev[id] };
-      try {
-        localStorage.setItem(`satat_rituals_${selectedDate}`, JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
-  };
 
   // Toggle task completion inline
   const handleToggleTask = async (taskId: string, currentStatus: string) => {
@@ -831,7 +810,7 @@ export default function HomeView() {
                   <span className="italic text-[#2D6A4F] dark:text-[#6EE7B7]">{firstName}</span>
                 </h1>
                 <p className="text-xs text-[#57534E] dark:text-[#9CA39E] mt-1">
-                  Biological readiness primed · Personal cadence tracking for {selectedDate}
+                  Your meals, movement and plans for {selectedDate}
                 </p>
               </div>
 
@@ -890,7 +869,7 @@ export default function HomeView() {
                       {workoutMetaText}
                     </span>
                   </div>
-                  <span className="text-[11px] text-stone-300 font-medium">5-Day Upper / Lower</span>
+                  <span className="text-[11px] text-stone-300 font-medium">{profile?.workoutPlanAssignment?.planName || "Your routine"}</span>
                 </div>
 
                 <h2 className="font-serif text-2xl text-white mt-4 leading-snug">
@@ -914,14 +893,7 @@ export default function HomeView() {
                   </div>
                 ) : (
                   <div className="flex flex-wrap gap-1.5 mt-3.5">
-                    {["Incline Dumbbell Press", "Chest-Supported Row", "Lateral Raises", "Skull Crushers"].map((m) => (
-                      <span
-                        key={m}
-                        className="bg-white/[0.08] text-stone-300 rounded-full px-2.5 py-0.5 text-[10px] font-medium"
-                      >
-                        {m}
-                      </span>
-                    ))}
+                    <span className="text-xs text-stone-300">Your saved routines are available in Train.</span>
                   </div>
                 )}
               </div>
@@ -1224,10 +1196,10 @@ export default function HomeView() {
           <div className="bg-[#FCFBF9] dark:bg-[#141916] rounded-[28px] p-5 border border-[#1C1917]/[0.06] dark:border-white/[0.07] shadow-xs">
             <div className="flex items-center justify-between mb-3">
               <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#8C857B] dark:text-[#6E7872]">
-                ORBIT ADAPTIVE WHISPER
+                A NOTE FOR TODAY
               </span>
               <span className="bg-[#E0F2E9] dark:bg-[#132B20] text-[#2D6A4F] dark:text-[#34D399] text-[10px] font-bold px-2 py-0.5 rounded-full">
-                ● AI Synced
+                Based on your log
               </span>
             </div>
 
@@ -1236,7 +1208,7 @@ export default function HomeView() {
             </blockquote>
 
             <div className="mt-4 pt-3 border-t border-[#1C1917]/[0.06] dark:border-white/[0.06] flex items-center justify-between">
-              <span className="text-[11px] text-[#8C857B] dark:text-[#6E7872]">Cadence optimization active</span>
+              <span className="text-[11px] text-[#8C857B] dark:text-[#6E7872]">Keep going at your own pace</span>
               <Link
                 href="/dashboard/orbit"
                 className="text-xs font-semibold text-[#2D6A4F] dark:text-[#34D399] hover:underline inline-flex items-center gap-1 transition-colors"
@@ -1251,7 +1223,7 @@ export default function HomeView() {
           <div className="bg-[#FCFBF9] dark:bg-[#141916] rounded-[28px] p-5 border border-[#1C1917]/[0.06] dark:border-white/[0.07] shadow-xs">
             <div className="flex items-center justify-between mb-3.5">
               <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#1C1917] dark:text-[#F4F1EA]">
-                DAILY NON-NEGOTIABLES
+                DAILY RITUALS · ON THIS DEVICE
               </span>
               <span className="text-xs font-semibold text-[#2D6A4F] dark:text-[#34D399]">
                 {Object.values(rituals).filter(Boolean).length} / 4 Done
@@ -1264,6 +1236,11 @@ export default function HomeView() {
                 return (
                   <div
                     key={ritual.id}
+                    role="checkbox"
+                    tabIndex={0}
+                    aria-label={ritual.title}
+                    aria-checked={Boolean(rituals[ritual.id])}
+                    onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleRitual(ritual.id); } }}
                     onClick={() => toggleRitual(ritual.id)}
                     className="bg-[#FCFBF9] hover:bg-[#F6F3EC] dark:bg-[#141916] dark:hover:bg-[#1C221E] p-3.5 rounded-[22px] border border-[#1C1917]/[0.08] dark:border-white/[0.08] shadow-2xs cursor-pointer transition-all flex flex-col justify-between min-h-[118px] group"
                   >
