@@ -16,6 +16,7 @@ export function useFocusTimer(userId: string, onComplete: () => void) {
   completeRef.current = onComplete;
   useEffect(() => {
     setReadyKey("");
+    completedDeadline.current = null;
     let next: FocusTimerState = { minutes: 25, remaining: 1500, deadline: null };
     try {
       const saved = JSON.parse(sessionStorage.getItem(key) || "null");
@@ -51,6 +52,7 @@ export function useFocusTimer(userId: string, onComplete: () => void) {
       ? { ...previous, deadline: Date.now() + (previous.remaining || previous.minutes * 60) * 1000 }
       : { ...previous, remaining: remainingSeconds(previous), deadline: null });
   };
-  return { targetMinutes: state.minutes, secondsRemaining: remainingSeconds(state, now), isTimerRunning: state.deadline !== null,
+  const visible = readyKey === key ? state : { minutes: 25, remaining: 1500, deadline: null };
+  return { targetMinutes: visible.minutes, secondsRemaining: remainingSeconds(visible, now), isTimerRunning: visible.deadline !== null,
     selectDuration, start, toggle, reset: () => selectDuration(state.minutes) };
 }

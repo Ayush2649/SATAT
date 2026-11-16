@@ -1,7 +1,7 @@
 // components/onboarding/StepConsent.tsx
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { ShieldCheck, Lock, Check, ArrowRight } from "lucide-react";
 import { CONSENT_VERSION } from "@/lib/onboarding/constants";
 import type { OnboardingFormValues } from "./types";
@@ -61,7 +61,7 @@ export function StepConsent({
         {/* Eyebrow */}
         <div className="flex items-center gap-2 text-[11px] font-bold tracking-[0.14em] uppercase text-[#2D6A4F]">
           <span className="w-2 h-2 rounded-full bg-[#2D6A4F]" />
-          <span>STEP 00 · SYSTEM PROTOCOL</span>
+          <span>STEP 00 · WELCOME</span>
         </div>
 
         {/* Headline */}
@@ -69,14 +69,14 @@ export function StepConsent({
           Welcome to <span className="italic text-[#E05A47]">Satat.</span>
         </h1>
         <p className="text-xs sm:text-sm text-[#57534E] mt-2 leading-relaxed">
-          Before we calibrate your baseline, please review how Satat supports your daily rhythm.
+          Review how SATAT supports your daily habits before you continue.
         </p>
 
         {/* Operating Scope & Boundary Card */}
         <div className="bg-[#FCFBF9] rounded-[24px] p-5 border border-[#1C1917]/[0.06] shadow-xs mt-5 space-y-2.5">
           <div className="flex items-center gap-2 text-[11px] font-mono uppercase tracking-wider text-[#57534E] font-semibold">
             <Lock className="w-3.5 h-3.5 text-[#2D6A4F]" />
-            <span>Operating Scope &amp; Boundaries</span>
+            <span>How SATAT can help</span>
           </div>
           <p className="text-xs text-[#57534E] leading-relaxed">
             Satat is a continuous lifestyle habit companion designed for adults. Satat provides
@@ -115,7 +115,7 @@ export function StepConsent({
                 I confirm I am 18 years of age or older
               </span>
               <span className="text-xs text-[#57534E] mt-0.5 block leading-relaxed">
-                Satat algorithms and recovery floors are designed exclusively for adult physiology.
+                This experience is intended for adults.
               </span>
             </div>
           </label>
@@ -159,10 +159,10 @@ export function StepConsent({
       <div className="bg-[#FCFBF9] rounded-full p-2.5 pl-5 shadow-[0_14px_34px_rgba(28,25,23,0.08)] border border-[#1C1917]/[0.05] flex items-center justify-between mt-6">
         <div>
           <span className="text-[9px] font-mono font-bold tracking-wider uppercase text-[#8C857B] block">
-            ADULT HEALTH PROTOCOL
+            FOR ADULTS · 18+
           </span>
           <span className="text-xs font-bold text-[#1C1917]">
-            {CONSENT_VERSION} · Active Consent
+            {CONSENT_VERSION} · {formValues.consentGivenAt ? "Consent recorded" : "Consent required"}
           </span>
         </div>
 

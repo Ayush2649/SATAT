@@ -20,7 +20,7 @@ import {
 import fs from "fs";
 import path from "path";
 
-const PROJECT_ID = "dailyos-afbbf";
+const PROJECT_ID = "demo-satat-rules";
 let testEnv: RulesTestEnvironment;
 
 const USER_A = "user_alpha_123";
@@ -35,6 +35,7 @@ describe("Firestore Security Rules Verification", { timeout: 30000 }, () => {
       emulatorAvailable = true;
     } catch {
       emulatorAvailable = false;
+      if (process.env.REQUIRE_FIRESTORE_EMULATOR === "1") throw new Error("Required isolated Firestore emulator is unavailable on 127.0.0.1:8088");
       console.warn(
         "\n⚠️  [firestore-rules] Firestore emulator not running on 127.0.0.1:8088. Skipping rules tests." +
         "\n   To run rules tests against emulator: firebase emulators:exec --only firestore \"vitest run tests/security/firestore-rules.test.ts\"\n"
@@ -53,7 +54,7 @@ describe("Firestore Security Rules Verification", { timeout: 30000 }, () => {
         port: 8088,
       },
     });
-  });
+  }, 60000);
 
   afterAll(async () => {
     if (testEnv) {
@@ -400,6 +401,26 @@ describe("Firestore Security Rules Verification", { timeout: 30000 }, () => {
       // Querying for User B's tasks fails
       const qUserB = query(collection(dbA, "tasks"), where("userId", "==", USER_B));
       await assertFails(getDocs(qUserB));
+    });
+  });
+
+  describe("Isolated persistence round trips", () => {
+    it.each(["projects", "tasks", "workouts", "bodyweight", "meals", "mealTemplates", "workoutTemplates"])("persists, reloads, edits and deletes %s with cross-account denial", async collectionName => {
+      const dbA = testEnv.authenticatedContext(USER_A).firestore();
+      const dbB = testEnv.authenticatedContext(USER_B).firestore();
+      const ref = await assertSucceeds(addDoc(collection(dbA, collectionName), { userId: USER_A, name: "Isolated audit record", createdAt: 2000 }));
+      expect((await getDoc(ref)).data()?.name).toBe("Isolated audit record");
+      const bRef = doc(dbB, collectionName, ref.id);
+      await assertFails(getDoc(bRef));
+      await assertFails(updateDoc(bRef, { name: "Other account edit" }));
+      await assertFails(deleteDoc(bRef));
+      await assertFails(updateDoc(ref, { userId: USER_B }));
+      await assertSucceeds(updateDoc(ref, { name: "Updated audit record" }));
+      const reloaded = await getDocs(query(collection(dbA, collectionName), where("userId", "==", USER_A)));
+      expect(reloaded.docs.find(row => row.id === ref.id)?.data().name).toBe("Updated audit record");
+      await assertSucceeds(deleteDoc(ref));
+      const afterDelete = await getDocs(query(collection(dbA, collectionName), where("userId", "==", USER_A)));
+      expect(afterDelete.docs.some(row => row.id === ref.id)).toBe(false);
     });
   });
 

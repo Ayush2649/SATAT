@@ -1,0 +1,366 @@
+{
+  "generatedAt": "2026-11-16T03:05:52.059Z",
+  "limitation": "Calorie accuracy is reported only for supplied measured references with provenance. Default photos are recognition/guardrail smoke tests, not measured nutrition accuracy.",
+  "skippedProfiles": [],
+  "results": [
+    {
+      "file": "07_samosa_chutney.jpg",
+      "profile": {
+        "provider": "deepseek",
+        "detail": "high"
+      },
+      "expectedVisualCategories": "samosa",
+      "recognitionMatch": true,
+      "status": 200,
+      "latencyMs": 6418,
+      "name": "Samosa",
+      "calories": 878,
+      "calorieRange": {
+        "low": 746,
+        "high": 1010
+      },
+      "proteinG": 15,
+      "carbsG": 105,
+      "fatG": 44,
+      "fiberG": 8,
+      "confidence": "high",
+      "notes": "Four golden fried triangular pastries with a green chutney dip; likely samosas, though filling is not visible. Garnishes are negligible.",
+      "candidates": [
+        {
+          "name": "Samosa",
+          "confidence": "high"
+        },
+        {
+          "name": "Kachori",
+          "confidence": "low"
+        },
+        {
+          "name": "Onion Pakora",
+          "confidence": "low"
+        }
+      ],
+      "visibleItems": [
+        "4 fried triangular pastries (samosa), approx 60-70 g each",
+        "green chutney in a small compartment, approx 30 g",
+        "green chili garnish",
+        "pomegranate seeds garnish"
+      ],
+      "ambiguity": "low",
+      "foods": [
+        {
+          "componentId": "scan-0",
+          "name": "Samosa",
+          "matchedFoodId": "samosa",
+          "matchedCanonicalName": "Samosa",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 4,
+          "unit": "piece",
+          "grams": 320,
+          "calories": 842,
+          "proteinG": 14,
+          "carbsG": 102,
+          "fatG": 42,
+          "fiberG": 6,
+          "confidence": 0.95,
+          "verified": true,
+          "reviewNote": "Check amount: the photo also described “4 fried triangular pastries (samosa), approx 60-70 g each”."
+        },
+        {
+          "componentId": "scan-1",
+          "name": "Green Chutney",
+          "matchedFoodId": null,
+          "matchedCanonicalName": "Green Chutney",
+          "nutritionStatus": "estimated",
+          "source": "ai_estimate",
+          "quantity": 30,
+          "unit": "g",
+          "grams": 30,
+          "calories": 36,
+          "proteinG": 1,
+          "carbsG": 3,
+          "fatG": 2,
+          "fiberG": 2,
+          "confidence": 0.7,
+          "verified": false,
+          "calorieRange": {
+            "low": 27,
+            "high": 48
+          }
+        }
+      ],
+      "reviewSuggestions": [],
+      "unknownFoods": [],
+      "allFoodsVerified": false,
+      "requiresManualReview": true,
+      "hasUnresolvedItems": false,
+      "unresolvedCount": 0,
+      "estimatedCount": 1,
+      "verifiedCount": 1,
+      "hasIncompleteNutrition": false,
+      "hasInventoryAmbiguity": true,
+      "totalLabel": "Estimated total — review every component",
+      "recognitionVerified": false,
+      "portionBasis": "photo_estimate",
+      "uncertainty": "Not calibrated; ingredients, oil and portion mass need confirmation",
+      "inventoryReconciled": true,
+      "timings": {
+        "imagePrepMs": 2.2,
+        "visionProviderMs": 4469.5,
+        "dbLookupMs": 87.1,
+        "nutritionEstimationMs": 1846.2,
+        "nutritionCalcMs": 3.3,
+        "totalServerMs": 6409.1,
+        "retryBackoffMs": 0
+      },
+      "calls": [
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "analyzeMeal",
+          "attempt": 1,
+          "durationMs": 4466.5,
+          "outcome": "success",
+          "promptTokens": 2303,
+          "completionTokens": 208,
+          "cachedTokens": 0,
+          "totalTokens": 2511,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000381,
+          "costInr": 0.032,
+          "requestId": "2c62614c-1e9a-4693-9a4e-2b3c82c63d07"
+        },
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "estimateNutrition",
+          "attempt": 1,
+          "durationMs": 1842.1,
+          "outcome": "success",
+          "promptTokens": 534,
+          "completionTokens": 110,
+          "cachedTokens": 0,
+          "totalTokens": 644,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000106,
+          "costInr": 0.0089,
+          "requestId": "d59fa1a6-b1fc-4ce3-b13d-5e7943ac2ba4"
+        }
+      ],
+      "metrics": null
+    },
+    {
+      "file": "08_oats_berries_chia_bowl.jpg",
+      "profile": {
+        "provider": "deepseek",
+        "detail": "high"
+      },
+      "expectedVisualCategories": "(?=.*(?:oat|porridge|yogurt|yoghurt|smoothie))(?=.*(?:berr|fruit))",
+      "recognitionMatch": true,
+      "status": 200,
+      "latencyMs": 8133,
+      "name": "Oatmeal Bowl",
+      "calories": 367,
+      "calorieRange": {
+        "low": 312,
+        "high": 422
+      },
+      "proteinG": 12,
+      "carbsG": 74,
+      "fatG": 7,
+      "fiberG": 19,
+      "confidence": "high",
+      "notes": "Two oatmeal bowls topped with berries, plus a shared berry bowl, sliced kiwi and a blackberry side bowl; portions are estimated visually.",
+      "candidates": [
+        {
+          "name": "Oatmeal Bowl",
+          "confidence": "high"
+        },
+        {
+          "name": "Berry Bowl",
+          "confidence": "medium"
+        },
+        {
+          "name": "Fruit Platter",
+          "confidence": "low"
+        }
+      ],
+      "visibleItems": [
+        "oatmeal bowl ~250g",
+        "oatmeal bowl ~250g",
+        "mixed berries bowl ~150g",
+        "sliced kiwi ~60g",
+        "strawberries ~50g",
+        "blackberries side bowl ~80g"
+      ],
+      "ambiguity": "low",
+      "foods": [
+        {
+          "componentId": "scan-1",
+          "name": "Mixed Berries (blueberries, raspberries, blackberries)",
+          "matchedFoodId": "mixed_berries",
+          "matchedCanonicalName": "Mixed Fresh Berries",
+          "nutritionStatus": "verified",
+          "source": "canonical",
+          "quantity": 1,
+          "unit": "bowl",
+          "grams": 150,
+          "calories": 90,
+          "proteinG": 1,
+          "carbsG": 21,
+          "fatG": 0,
+          "fiberG": 4,
+          "confidence": 0.9,
+          "verified": true,
+          "reviewNote": "Check amount: the photo also described “strawberries ~50g”."
+        },
+        {
+          "componentId": "scan-0",
+          "name": "Oatmeal Bowl",
+          "matchedFoodId": null,
+          "matchedCanonicalName": "Oatmeal Bowl",
+          "nutritionStatus": "estimated",
+          "source": "ai_estimate",
+          "quantity": 250,
+          "unit": "g",
+          "grams": 250,
+          "calories": 178,
+          "proteinG": 8,
+          "carbsG": 30,
+          "fatG": 5,
+          "fiberG": 5,
+          "confidence": 0.95,
+          "verified": false,
+          "calorieRange": {
+            "low": 150,
+            "high": 225
+          }
+        },
+        {
+          "componentId": "scan-2",
+          "name": "Sliced Kiwi",
+          "matchedFoodId": null,
+          "matchedCanonicalName": "Sliced Kiwi",
+          "nutritionStatus": "estimated",
+          "source": "ai_estimate",
+          "quantity": 60,
+          "unit": "g",
+          "grams": 60,
+          "calories": 37,
+          "proteinG": 1,
+          "carbsG": 9,
+          "fatG": 1,
+          "fiberG": 2,
+          "confidence": 0.9,
+          "verified": false,
+          "calorieRange": {
+            "low": 33,
+            "high": 42
+          }
+        },
+        {
+          "componentId": "scan-4",
+          "name": "Blackberries (side bowl)",
+          "matchedFoodId": null,
+          "matchedCanonicalName": "Blackberries (side bowl)",
+          "nutritionStatus": "estimated",
+          "source": "ai_estimate",
+          "quantity": 1,
+          "unit": "bowl",
+          "grams": null,
+          "calories": 62,
+          "proteinG": 2,
+          "carbsG": 14,
+          "fatG": 1,
+          "fiberG": 8,
+          "confidence": 0.85,
+          "verified": false,
+          "calorieRange": {
+            "low": 50,
+            "high": 80
+          }
+        },
+        {
+          "componentId": "scan-3",
+          "name": "Fresh Strawberries",
+          "matchedFoodId": null,
+          "matchedCanonicalName": null,
+          "nutritionStatus": "unresolved",
+          "source": "unresolved",
+          "quantity": 3,
+          "unit": "piece",
+          "grams": null,
+          "calories": null,
+          "proteinG": null,
+          "carbsG": null,
+          "fatG": null,
+          "fiberG": null,
+          "confidence": 0.4,
+          "verified": false,
+          "reviewNote": "Check amount: the photo also described “strawberries ~50g”."
+        }
+      ],
+      "reviewSuggestions": [],
+      "unknownFoods": [
+        "Fresh Strawberries"
+      ],
+      "allFoodsVerified": false,
+      "requiresManualReview": true,
+      "hasUnresolvedItems": true,
+      "unresolvedCount": 1,
+      "estimatedCount": 3,
+      "verifiedCount": 1,
+      "hasIncompleteNutrition": true,
+      "hasInventoryAmbiguity": true,
+      "totalLabel": "Known-food subtotal",
+      "recognitionVerified": false,
+      "portionBasis": "photo_estimate",
+      "uncertainty": "Not calibrated; ingredients, oil and portion mass need confirmation",
+      "inventoryReconciled": true,
+      "timings": {
+        "imagePrepMs": 1.2,
+        "visionProviderMs": 4155.9,
+        "dbLookupMs": 99.6,
+        "nutritionEstimationMs": 3866.8,
+        "nutritionCalcMs": 6,
+        "totalServerMs": 8129.7,
+        "retryBackoffMs": 0
+      },
+      "calls": [
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "analyzeMeal",
+          "attempt": 1,
+          "durationMs": 4155,
+          "outcome": "success",
+          "promptTokens": 2303,
+          "completionTokens": 325,
+          "cachedTokens": 0,
+          "totalTokens": 2628,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000413,
+          "costInr": 0.0347,
+          "requestId": "ec8711a2-7bb3-4f18-ba03-65d6f37b44d2"
+        },
+        {
+          "provider": "deepseek",
+          "model": "deepseek-flash",
+          "feature": "estimateNutrition",
+          "attempt": 1,
+          "durationMs": 3864.6,
+          "outcome": "success",
+          "promptTokens": 575,
+          "completionTokens": 483,
+          "cachedTokens": 0,
+          "totalTokens": 1058,
+          "costStatus": "ESTIMATED_FROM_USAGE",
+          "costUsd": 0.000216,
+          "costInr": 0.0181,
+          "requestId": "f7d1663b-bbbd-4679-be02-6f434e58b4d4"
+        }
+      ],
+      "metrics": null
+    }
+  ]
+}

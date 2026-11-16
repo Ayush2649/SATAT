@@ -1,3 +1,7 @@
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { StepConsent } from "@/components/onboarding/StepConsent";
+import { StepPhysical } from "@/components/onboarding/StepPhysical";
 import { describe, it, expect, vi } from "vitest";
 import { CONSENT_VERSION } from "@/lib/onboarding/constants";
 import { OnboardingCompletePayloadSchema, HealthCondition } from "@/lib/onboarding/validation";
@@ -552,3 +556,23 @@ describe("Consent & Completion Contract (§5 Fix)", () => {
 });
 
 
+
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+describe("Physical setup shows measured-input estimates only", () => {
+  const physical = (values: Partial<OnboardingFormValues>) => renderToStaticMarkup(React.createElement(StepPhysical, {
+    formValues: { heightCm: null, weightKg: null, age: null, biologicalSex: null, ...values } as OnboardingFormValues,
+    updateFormField: vi.fn(), onNext: vi.fn(), onBack: vi.fn(), onSkip: vi.fn(), isSaving: false,
+  }));
+  it("does not invent a resting-energy baseline without measurements", () => {
+    const html = physical({}); expect(html).not.toMatch(/1,?780/); expect(html).toContain("Add your details");
+  });
+  it("waits for age and a supported biological-sex input before estimating energy", () => {
+    expect(physical({ heightCm: 175, weightKg: 75 })).toContain("Add your details");
+    expect(physical({ heightCm: 175, weightKg: 75, age: 28, biologicalSex: "male" })).toContain("1,709 kcal");
+  });
+});
+
+it("does not claim active consent before the user has agreed", () => {
+  const html = renderToStaticMarkup(React.createElement(StepConsent, { formValues: { confirmedAge18Plus: false, consentGivenAt: null, consentVersion: null } as OnboardingFormValues, updateFormField: vi.fn(), onNext: vi.fn(), isSaving: false }));
+  expect(html).toContain("Consent required"); expect(html).not.toContain("Active Consent");
+});

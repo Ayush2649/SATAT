@@ -7,6 +7,17 @@
 
 ---
 
+## 16 November 2026 — Remaining audit closure (complete within isolated-test scope)
+
+- User requested remaining fixes and selected isolated tests rather than real second-login/hardware tests. Work stays on the current feature branch; production records are not test fixtures.
+- Removed remaining Cognitive Load wording; fixed stale authentication requests and stale Orbit context after identity changes with queued-session and scoped-state regressions. Firestore tests use a demo project namespace and required-emulator mode so skipped tests cannot be mistaken for passing integration coverage.
+- Isolated coverage includes 33 Firestore rules/CRUD cases (26 existing plus seven collection round trips), five auth-race cases and two context-owner cases. Browser fixture confirms A/B ritual/timer separation and timer remount persistence, plus disposable meal/template/workspace round trips. No production records used.
+- Fixed unsupported strawberry/cube piece-mass conversion, descriptive-label false missing-food questions, conflicting gram/piece review, stale ritual/timer display, microphone grant/unmount cleanup, fabricated empty-setup resting energy, saved-meal quantity/save/keyboard-label issues, and stray ritual keys inflating counts. Hardware API/device tests use isolated stubs; 79 targeted media/onboarding/push/health cases passed before the final UI refinements.
+- Completed browser checks: A/B meal/template/workspace separation, task/workspace create/edit/remount/delete, manual and half-portion saved meals, invalid/pending saves, ritual/timer isolation, synthetic consent/age/equipment setup and scan editing/logging. Disposable records removed; light/dark Fuel inspected at 320/393/1440 px. Horizontal donut/macros and hidden missing vitamins verified.
+- Full verification: **73 files; 829 tests passed, zero failures/skips**, including **33 emulator rules/CRUD cases**. Production build **passed, exit 0**, all 34 routes; existing non-fatal lint warnings remain. Two additional live DeepSeek recognition/guardrail cases passed; unsupported piece masses and conflicting annotations require review. Their filtered thirteen cases are separate from the ordinary full suite.
+- New files: auth session/recording lifecycle helpers; auth/context/media regressions; `scripts/audit-browser.mjs`; two browser fixture/adapters; live evaluation JSON; closure report. Modified: auth provider; Home/Plan/Fuel/Train/Orbit; physical/consent setup; scanner editor; recording/ritual/timer hooks; nutrition calculator/router/review; existing scan/setup/rules tests; `.gitignore`; status and original fixes report. Reproduction and file mapping: `docs/REMAINING_AUDIT_CLOSURE_2026-11-16.md`.
+- All fourteen original findings have implementation fixes. Remaining verification needs real Google switching, physical mobile capture/keyboard, push/watch delivery and weighed meal references. Ritual progress remains local to the device. This iteration is below the 10% file cap; no main-branch changes or deployment.
+
 ## 15 November 2026 — Complete branch delivery checkpoint
 
 - User authorized pushing all project changes to the current `feat/complete-ui-change-e2e` branch. Fetched the remote branch: eight existing local commits ahead, no divergent remote commits. Delivery targets this branch only; no main-branch merge or push.

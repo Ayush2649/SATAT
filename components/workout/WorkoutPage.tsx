@@ -207,7 +207,7 @@ export default function WorkoutPage() {
             })),
             summary: s.summary,
           })),
-        });
+        }, userId);
       })
       .catch((err) => {
         console.error("Error loading workout sessions:", err);
@@ -240,7 +240,7 @@ export default function WorkoutPage() {
           setWorkoutContext({
             bodyWeightKg: entries[0].weightKg,
             recentSessions: [],
-          });
+          }, userId);
         }
       })
       .catch((err) => {

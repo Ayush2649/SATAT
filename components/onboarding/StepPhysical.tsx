@@ -1,7 +1,7 @@
 // components/onboarding/StepPhysical.tsx
 "use client";
 
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Ruler, Scale, Calendar, Activity, ArrowRight, Leaf, Minus, Plus } from "lucide-react";
 import type { BiologicalSex } from "@/lib/onboarding/validation";
@@ -59,14 +59,14 @@ export function StepPhysical({
     const h = formValues.heightCm;
     const w = formValues.weightKg;
     const a = formValues.age;
-    if (!h || !w || h < 120 || w < 35) return { bmi: null, bmr: 1780 };
+    if (!h || !w || h < 120 || w < 35) return { bmi: null, bmr: null };
     const bmi = Math.round((w / Math.pow(h / 100, 2)) * 10) / 10;
-    let bmr: number = 1780;
+    let bmr: number | null = null;
     if (a && a >= 18 && a <= 100) {
       const base = 10 * w + 6.25 * h - 5 * a;
       if (sexSelected === "male") bmr = Math.round(base + 5);
       else if (sexSelected === "female") bmr = Math.round(base - 161);
-      else bmr = Math.round(base - 78);
+
     }
     return { bmi, bmr };
   }, [formValues.heightCm, formValues.weightKg, formValues.age, sexSelected]);
@@ -202,7 +202,7 @@ export function StepPhysical({
           Where is your body <span className="italic text-[#E05A47]">starting from</span> today?
         </h1>
         <p className="text-xs sm:text-sm text-[#57534E] mt-2 leading-relaxed">
-          Pure physiology without moral judgment. Satat uses this to calibrate non-punitive energy curves.
+          Add the measurements you know. You can update them later.
         </p>
 
         {/* Unit Switcher Pill (Centered) */}
@@ -340,7 +340,7 @@ export function StepPhysical({
 
             <div className="bg-[#B7F0D0] text-[#1B4332] text-[10px] font-semibold px-3 py-1 rounded-full w-fit flex items-center gap-1.5 shadow-xs">
               <span className="w-1.5 h-1.5 rounded-full bg-[#1B4332]" />
-              <span>Recorded today</span>
+              <span>Optional</span>
             </div>
           </div>
 
@@ -452,10 +452,10 @@ export function StepPhysical({
           </div>
           <div>
             <h4 className="font-sans font-bold text-xs text-[#1B4332]">
-              Resting baseline: ~{liveBiometrics.bmr || 1780} kcal / day
+              {liveBiometrics.bmr !== null ? `Estimated resting energy: ~${liveBiometrics.bmr.toLocaleString()} kcal / day` : "Add measurements, age and biological sex to estimate resting energy."}
             </h4>
             <p className="text-[11px] text-[#2D6A4F] mt-0.5 leading-relaxed">
-              Calibrated via Mifflin-St Jeor equation. We never cut below this recovery threshold.
+              Estimated from your measurements using Mifflin-St Jeor.
             </p>
           </div>
         </div>
@@ -467,10 +467,10 @@ export function StepPhysical({
           <span className="w-2 h-2 rounded-full bg-[#E05A47] shrink-0" />
           <div>
             <span className="text-[9px] font-mono font-bold tracking-wider uppercase text-[#8C857B] block">
-              TARGET ENERGY FLOOR
+              ESTIMATED RESTING ENERGY
             </span>
             <span className="text-xs font-bold text-[#1C1917]">
-              {(liveBiometrics.bmr || 1780).toLocaleString()} kcal
+              {liveBiometrics.bmr !== null ? `${liveBiometrics.bmr.toLocaleString()} kcal` : "Add your details"}
             </span>
           </div>
         </div>

@@ -79,8 +79,8 @@ export default function ScanComponentEditor({ rows, onChange, onEditingChange, s
         </button>
       </div>
       {suggestions.length > 0 && <div className="space-y-2 text-xs" aria-label="Possible missing dishes">
-        <p className={dark ? "text-white/75" : "text-[var(--satat-text-secondary)]"}>Anything missing? These aren’t counted yet.</p>
-        {suggestions.map(item => <div key={item.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-[var(--satat-border)] px-3 py-2">
+        <p className={dark ? "text-white/75" : "text-[var(--satat-text-secondary)]"}>Anything missing? {suggestions.length} possible {suggestions.length === 1 ? "dish" : "dishes"} to check.</p>
+        {suggestions.slice(0, 1).map(item => <div key={item.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-[var(--satat-border)] px-3 py-2">
           <span className="min-w-0 flex-1 break-words">{item.label}</span>
           <button type="button" disabled={isEditing} aria-label={`Already included: ${item.name}`} onClick={() => onSuggestionsChange?.(suggestions.filter(other => other.id !== item.id))} className="min-h-11 underline">Already included</button>
           <button type="button" disabled={isEditing} aria-label={`Add missing ${item.name}`} onClick={event => open(event.currentTarget, replaceComponent({ id: crypto.randomUUID(), name: item.name, amount: String(item.quantity), unit: item.unit, per100g: null, micros: { ...UNKNOWN_MICROS }, source: "", confirmed: false, portionSource: "user" }, item.name), null, item.id)} className={cn("min-h-11 font-semibold", dark ? "text-white" : "text-[var(--satat-sage)]")}>Add dish</button>
