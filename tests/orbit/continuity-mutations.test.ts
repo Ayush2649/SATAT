@@ -127,6 +127,10 @@ import {
   estimateMacrosForDish,
   parseMutationIntent,
   generateContextualSuggestions,
+  cleanFallbackMealInput,
+  cleanFallbackWorkoutInput,
+  cleanFallbackTaskInput,
+  parseStructuredLlmResponse,
 } from "@/lib/orbit/mutationEngine";
 
 describe("Orbit Context Continuity, State Mutation & Suggestion Engine", () => {
@@ -1693,6 +1697,190 @@ describe("Orbit Context Continuity, State Mutation & Suggestion Engine", () => {
       } finally {
         mockTasksCol.add = originalAdd;
       }
+    });
+  });
+
+  // ── 9. Single-Pass Structured Entity Extraction & Canonical Clean Payloads ──
+  describe("Single-Pass Structured Entity Extraction & Canonical Clean Payloads", () => {
+    it("Fuel: extracts clean canonical meal name via single-pass LLM structured output without conversational filler", async () => {
+      // Prompt with heavy conversational filler
+      const prompt = "today in dinner, i'd around one plate of khichdi with two fried papads. Add this, and tell me macros";
+
+      // Mock LLM returning structured action with clean entity
+      mockCallTextWithFallback.mockResolvedValueOnce({
+        data: JSON.stringify({
+          reply: "Logged one plate of khichdi with two fried papads for dinner! Estimated at 480 kcal, 14g protein.",
+          actions: [
+            {
+              type: "log_meal",
+              payload: {
+                mealName: "One plate of khichdi, two fried papads",
+                items: [{ name: "One plate of khichdi" }, { name: "Two fried papads" }],
+                mealType: "dinner",
+                macros: { calories: 480, protein: 14, carbs: 72, fat: 16 },
+              },
+            },
+          ],
+        }),
+      });
+
+      const req = new NextRequest("http://localhost/api/aria", {
+        method: "POST",
+        body: JSON.stringify({
+          messages: [{ role: "user", content: prompt }],
+          mode: "diet",
+        }),
+      });
+
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+      const body = await res.json();
+
+      expect(body.action_executed).toMatchObject({
+        type: "UPSERT_MEAL",
+        status: "success",
+        domain: "meals",
+      });
+
+      // Verify Firestore has clean title with zero conversational leakage
+      expect(mockMealStore.size).toBe(1);
+      const savedMeal = Array.from(mockMealStore.values())[0];
+      expect(savedMeal.name).toBe("Dinner: One plate of khichdi, two fried papads");
+      expect(savedMeal.name.toLowerCase()).not.toContain("today");
+      expect(savedMeal.name.toLowerCase()).not.toContain("tell me");
+      expect(savedMeal.name.toLowerCase()).not.toContain("macros");
+      expect(savedMeal.name.toLowerCase()).not.toContain("add this");
+      expect(savedMeal.mealType).toBe("dinner");
+      expect(savedMeal.macros.calories).toBe(480);
+      expect(savedMeal.macros.proteinG).toBe(14);
+
+      // Verify fallback cleaner also handles this cleanly without LLM
+      const fallbackClean = cleanFallbackMealInput(prompt);
+      expect(fallbackClean).not.toBeNull();
+      expect(fallbackClean?.mealType).toBe("dinner");
+      expect(fallbackClean?.mealName.toLowerCase()).not.toContain("today");
+      expect(fallbackClean?.mealName.toLowerCase()).not.toContain("macros");
+      expect(fallbackClean?.items.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it("Train: extracts clean canonical movements via single-pass LLM structured output without conversational filler", async () => {
+      const prompt = "earlier in the gym I did 4 sets of bench press and squats. log this and rate my volume";
+
+      mockCallTextWithFallback.mockResolvedValueOnce({
+        data: JSON.stringify({
+          reply: "Logged 4 sets of Bench Press and Squats! Solid compound volume for chest and quads.",
+          actions: [
+            {
+              type: "log_workout",
+              payload: {
+                routineTitle: "Workout",
+                movements: [
+                  { name: "Bench Press", sets: 4, reps: 10, weight: 60 },
+                  { name: "Squats", sets: 4, reps: 10, weight: 80 },
+                ],
+              },
+            },
+          ],
+        }),
+      });
+
+      const req = new NextRequest("http://localhost/api/aria", {
+        method: "POST",
+        body: JSON.stringify({
+          messages: [{ role: "user", content: prompt }],
+          mode: "workout",
+        }),
+      });
+
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+      const body = await res.json();
+
+      const actions = Array.isArray(body.action_executed)
+        ? body.action_executed
+        : body.actions_executed || [body.action_executed];
+      expect(actions.length).toBe(2);
+      expect(actions.every((a: any) => a.type === "ADD_EXERCISE" && a.status === "success")).toBe(true);
+
+      // Verify Firestore has clean movements without filler
+      expect(mockWorkoutStore.size).toBe(1);
+      const session = Array.from(mockWorkoutStore.values())[0];
+      const movementNames = session.exercises.map((e: any) => e.name);
+      expect(movementNames).toContain("Bench Press");
+      expect(movementNames).toContain("Squats");
+      for (const name of movementNames) {
+        expect(name.toLowerCase()).not.toContain("earlier");
+        expect(name.toLowerCase()).not.toContain("gym");
+        expect(name.toLowerCase()).not.toContain("rate");
+        expect(name.toLowerCase()).not.toContain("volume");
+      }
+
+      // Verify fallback cleaner also extracts movements cleanly
+      const fallbackClean = cleanFallbackWorkoutInput(prompt);
+      expect(fallbackClean).not.toBeNull();
+      expect(fallbackClean?.movements.length).toBe(2);
+      expect(fallbackClean?.movements[0].name).toBe("Bench Press");
+      expect(fallbackClean?.movements[1].name).toBe("Squats");
+      expect(fallbackClean?.movements[0].sets.length).toBe(4);
+    });
+
+    it("Plan: extracts clean actionable imperative task title via single-pass LLM structured output without conversational filler", async () => {
+      const prompt = "tomorrow morning I need to finish the API integration. add this to my tasks and prioritize";
+
+      mockCallTextWithFallback.mockResolvedValueOnce({
+        data: JSON.stringify({
+          reply: "Scheduled 'Finish the API integration' for tomorrow morning with High priority!",
+          actions: [
+            {
+              type: "create_task",
+              payload: {
+                tasks: [
+                  {
+                    title: "Finish the API integration",
+                    dueDate: "2026-11-19",
+                    priority: "high",
+                  },
+                ],
+              },
+            },
+          ],
+        }),
+      });
+
+      const req = new NextRequest("http://localhost/api/aria", {
+        method: "POST",
+        body: JSON.stringify({
+          messages: [{ role: "user", content: prompt }],
+          mode: "tasks",
+        }),
+      });
+
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+      const body = await res.json();
+
+      expect(body.action_executed).toMatchObject({
+        type: "CREATE_TASK",
+        status: "success",
+        domain: "tasks",
+      });
+
+      // Verify Firestore has clean task title without conversational words
+      expect(mockTaskStore.size).toBe(1);
+      const savedTask = Array.from(mockTaskStore.values())[0];
+      expect(savedTask.title).toBe("Finish the API integration");
+      expect(savedTask.title.toLowerCase()).not.toContain("tomorrow");
+      expect(savedTask.title.toLowerCase()).not.toContain("i need to");
+      expect(savedTask.title.toLowerCase()).not.toContain("add this");
+      expect(savedTask.title.toLowerCase()).not.toContain("prioritize");
+      expect(savedTask.priority).toBe("high");
+
+      // Verify fallback cleaner also handles this imperative task title
+      const fallbackClean = cleanFallbackTaskInput(prompt, "2026-11-18");
+      expect(fallbackClean).not.toBeNull();
+      expect(fallbackClean?.title).toBe("Finish the API integration");
+      expect(fallbackClean?.priority).toBe("high");
+      expect(fallbackClean?.dueDate).toBe("2026-11-19");
     });
   });
 });
