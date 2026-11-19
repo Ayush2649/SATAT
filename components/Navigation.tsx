@@ -44,6 +44,7 @@ export default function Navigation() {
   const [dpError, setDpError] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [projects, setProjects] = useState<Project[]>([]);
+  const [isKeyboardActive, setIsKeyboardActive] = useState(false);
   const desktopProfileRef = useRef<HTMLDivElement>(null);
   const mobileProfileRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -101,6 +102,38 @@ export default function Navigation() {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Soft keyboard listener to hide mobile bottom nav when virtual keyboard is active
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleCustomKeyboard = (e: CustomEvent<{ isOpen?: boolean }>) => {
+      if (typeof e.detail?.isOpen === "boolean") {
+        setIsKeyboardActive(e.detail.isOpen);
+      }
+    };
+
+    const handleVisualViewport = () => {
+      if (!window.visualViewport) return;
+      const isMobile = window.innerWidth < 768;
+      const heightDelta = window.innerHeight - window.visualViewport.height;
+      if (isMobile && heightDelta > 100) {
+        setIsKeyboardActive(true);
+      } else if (isMobile && heightDelta <= 40) {
+        setIsKeyboardActive(false);
+      }
+    };
+
+    window.addEventListener("satat:keyboard-state" as any, handleCustomKeyboard);
+    window.visualViewport?.addEventListener("resize", handleVisualViewport);
+    window.visualViewport?.addEventListener("scroll", handleVisualViewport);
+
+    return () => {
+      window.removeEventListener("satat:keyboard-state" as any, handleCustomKeyboard);
+      window.visualViewport?.removeEventListener("resize", handleVisualViewport);
+      window.visualViewport?.removeEventListener("scroll", handleVisualViewport);
+    };
   }, []);
 
   // Close profile menu on outside click
@@ -697,7 +730,10 @@ export default function Navigation() {
 
       {/* ── 4. MOBILE BOTTOM FLOATING CAPSULE DOCK (STRICTLY md:hidden) ── */}
       <nav
-        className="fixed left-1/2 -translate-x-1/2 bottom-[max(12px,env(safe-area-inset-bottom))] z-50 w-[calc(100vw-28px)] max-w-[390px] sm:max-w-[460px] h-[62px] rounded-full bg-[#191D1A]/95 backdrop-blur-xl border border-white/[0.08] shadow-[0_14px_34px_rgba(0,0,0,0.32)] px-2.5 flex items-center md:hidden"
+        className={cn(
+          "fixed left-1/2 -translate-x-1/2 bottom-[max(12px,env(safe-area-inset-bottom))] z-50 w-[calc(100vw-28px)] max-w-[390px] sm:max-w-[460px] h-[62px] rounded-full bg-[#191D1A]/95 backdrop-blur-xl border border-white/[0.08] shadow-[0_14px_34px_rgba(0,0,0,0.32)] px-2.5 flex items-center md:hidden transition-all duration-300 ease-out",
+          isKeyboardActive ? "translate-y-28 opacity-0 pointer-events-none" : "translate-y-0 opacity-100"
+        )}
         aria-label="Primary navigation"
       >
         <div className="grid grid-cols-5 items-center justify-items-center w-full h-full">

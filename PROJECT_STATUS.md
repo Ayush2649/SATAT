@@ -7,8 +7,42 @@
 
 ---
 
-<<<<<<< Updated upstream
-=======
+## 19 November 2026 — Comprehensive Mobile Keyboard Docking, Past-Date Logging, Expandable Meal Cards & Edit Modals (Complete)
+
+- **Mobile Keyboard & Chatbox Dynamic Viewport Docking (Orbit Intelligence Stream)**:
+  - Implemented dynamic viewport tracking with `window.visualViewport` and `h-[100dvh]` root layout container, dynamically syncing the height so the chatbox shrinks cleanly to the visible area above the soft keyboard without viewport bouncing or clipped messages.
+  - Added custom `satat:keyboard-state` event dispatch and visual viewport delta thresholding (>60px): when the mobile virtual keyboard opens, the floating bottom navigation capsule (`Today | Plan | + | Train | Fuel`) smoothly slides down (`translate-y-28 opacity-0 pointer-events-none`) and unblocks the composer dock.
+  - Removed bottom navigation padding offset dynamically on keyboard activation, docking the textarea directly above the keyboard with `env(safe-area-inset-bottom)`.
+  - Added automatic scroll-to-bottom anchor triggering whenever the keyboard opens or new messages stream in.
+- **Past-Date Logging & Relative Date Resolution (Fuel, Train, Plan)**:
+  - Added `resolveRelativeDate` in `lib/orbit/mutationEngine.ts` to resolve natural language and relative date keywords (`yesterday`, `last night`, `2 days ago`, `tomorrow`, `day after tomorrow`, or ISO `YYYY-MM-DD`) relative to the user's local date context.
+  - Extended Orbit LLM structured actions (`log_meal`, `log_workout`, `create_task`) and mutations with `targetDate`, enabling effortless past-date and future-date logging.
+  - Added structured edit mutations (`edit_meal`, `edit_workout`, `edit_task` / `MODIFY_TASK`) in `types/orbit.ts` and `mutationEngine.ts`, allowing direct conversational edits to existing logs.
+  - Added quick `< Yesterday | Today >` jump buttons alongside native date pickers across **Fuel** (`DietPage.tsx`), **Train** (`WorkoutPage.tsx`), and **Plan** (`TaskBoard.tsx`).
+- **Expandable Meal Log Cards & Quick Edit Modal (Fuel / Nourishment Log)**:
+  - Transformed logged meal cards in `DietPage.tsx` into responsive interactive accordions on both mobile and desktop viewports, with rotating chevron (`rotate-180`), collapsed macro badge pills (`kcal`, `P`, `C`, `F`), and expanded breakdowns revealing full untruncated meal titles, itemized lists, and complete macro profiles.
+  - Added **Edit Details** action button (pencil icon) and **Delete Meal** action button with touch targets `>= 44px`.
+  - Implemented `EditMealModal` component in `DietPage.tsx` adhering to Natural Athletic Editorial design tokens (`--satat-surface: #FCFBF9`, `--satat-anchor-dark: #191D1A`, `--satat-terracotta: #E05A47`, `--satat-matcha: #2D6A4F`), allowing users to edit meal title, slot, calories, protein, carbs, and fat with instant optimistic UI update, toast notifications, and Firestore persistence (`updateMeal`).
+- **Exported Firestore Meal Update Primitive**:
+  - Implemented and exported `updateMeal(mealId: string, updates: Partial<MealEntry>): Promise<void>` in `lib/firestore.ts` with macro sanitization and validation.
+- **Test Metrics & Build Status**:
+  - `npx tsc --noEmit`: **0 errors (Exit code 0)**.
+  - `tests/orbit/continuity-mutations.test.ts`: **50 passed, 0 failed (100%)**.
+  - Full Vitest suite: **71 test files passed; 831 tests passed, 26 skipped, 0 failures**.
+  - Production build: `npm run build` **passed (exit code 0)**, successfully compiling all 34 static and dynamic routes.
+- **Modified Files**:
+  - `components/Navigation.tsx`: Mobile keyboard auto-hide listener and transition animation.
+  - `components/orbit/OrbitView.tsx`: Dynamic `visualViewport` height tracking, keyboard detection, docked composer padding, and scroll-to-bottom ref.
+  - `lib/firestore.ts`: Exported `updateMeal` mutation function.
+  - `types/orbit.ts`: Added `MODIFY_TASK` to `OrbitActionType`.
+  - `lib/orbit/mutationEngine.ts`: Added `resolveRelativeDate`, relative date resolution in fallback cleaners, structured edit actions handling, and `MODIFY_TASK` execution.
+  - `app/api/aria/route.ts`: Updated prompt directives with `targetDate`, edit actions schema, and date synchronization.
+  - `components/diet/DietPage.tsx`: Expandable meal accordions, `< Yesterday | Today >` date navigator, `EditMealModal`, and `handleUpdateMeal`.
+  - `components/workout/WorkoutPage.tsx`: Date navigator with `< Yesterday | Today >` buttons.
+  - `components/tasks/TaskBoard.tsx`: Date navigator with `< Yesterday | Today >` buttons.
+  - `tests/orbit/continuity-mutations.test.ts`: Added past-date logging, relative date resolution, and structured edit mutations test suite.
+  - `PROJECT_STATUS.md`: Updated roadmap and verification metrics.
+
 ## 18 November 2026 — Single-Pass Structured Entity Extraction & Canonical Clean Payloads (Complete)
 
 - **Architecture & Implementation**: Refactored Orbit's entity extraction pipeline so that clean, canonical entity names for **Fuel (Meals)**, **Train (Workouts)**, and **Plan (Tasks)** are extracted directly by the primary LLM call via single-pass structured JSON schema (`reply` + `actions: [{ type: "log_meal" | "log_workout" | "create_task", payload }]`)—eliminating conversational filler leaks without adding a second LLM round-trip.

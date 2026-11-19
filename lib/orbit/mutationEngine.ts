@@ -714,7 +714,7 @@ export async function update_workout_session(params: UpdateWorkoutParams): Promi
 
   let session = params.sessionId && params.sessionId !== "latest" && params.sessionId !== "today"
     ? sessions.find((s) => s.id === params.sessionId)
-    : sessions.find((s) => s.date === todayStr) || sessions[0];
+    : sessions.find((s) => s.date === todayStr) || (params.date ? undefined : sessions[0]);
 
   const normalizedExName = exerciseName.trim();
   const lowerExName = normalizedExName.toLowerCase();
@@ -1494,27 +1494,54 @@ export async function delete_task_entry(params: DeleteTaskParams): Promise<{
   return { taskId: resolvedId, title: targetTitle, status: "success" };
 }
 
-export async function modify_plan_schedule(params: ModifyPlanParams): Promise<{
+export async function modify_plan_schedule(params: ModifyPlanParams & { taskId?: string; taskTitle?: string }): Promise<{
   taskId: string;
   status: "success";
 }> {
   const { userId, planId, updates = {} } = params;
   if (!userId) throw new Error("Missing required userId for modify_plan_schedule");
 
-  if (planId && planId !== "new") {
-    await adminDb.collection("tasks").doc(planId).set(updates, { merge: true });
-    return { taskId: planId, status: "success" };
+  let resolvedId = planId || params.taskId;
+  if (!resolvedId || resolvedId === "new") {
+    const lookupTitle = params.title || params.taskTitle || updates.title;
+    if (lookupTitle) {
+      const snap = await adminDb
+        .collection("tasks")
+        .where("userId", "==", userId)
+        .get();
+      const match = snap.docs.find((d) =>
+        ((d.data() as any).title || "").toLowerCase().includes(lookupTitle.toLowerCase())
+      );
+      if (match) resolvedId = match.id;
+    }
+  }
+
+  if (resolvedId && resolvedId !== "new") {
+    const patchData: Record<string, any> = {
+      ...updates,
+      updatedAt: Date.now(),
+    };
+    if (params.title || params.taskTitle) patchData.title = params.title || params.taskTitle;
+    if (params.status) patchData.status = params.status;
+    if (params.dueDate) patchData.dueDate = params.dueDate;
+    if (params.priority) patchData.priority = params.priority;
+
+    await adminDb.collection("tasks").doc(resolvedId).set(patchData, { merge: true });
+    return { taskId: resolvedId, status: "success" };
   } else {
-    const todayStr = new Date().toLocaleDateString("en-CA");
+    const todayStr = params.dueDate || updates.dueDate || new Date().toLocaleDateString("en-CA");
     const docData = {
       userId,
-      title: params.title || updates.title || "Scheduled Focus Block",
+      title: params.title || params.taskTitle || updates.title || "Scheduled Focus Block",
       status: params.status || updates.status || "pending",
-      dueDate: params.dueDate || updates.dueDate || todayStr,
+      dueDate: todayStr,
       priority: params.priority || updates.priority || "medium",
       createdAt: Date.now(),
+      updatedAt: Date.now(),
       projectId: updates.projectId || "default",
       frequency: "daily",
+      ...(updates.scheduledTime ? { scheduledTime: updates.scheduledTime } : {}),
+      ...(updates.durationMinutes ? { durationMinutes: updates.durationMinutes } : {}),
     };
     const ref = await adminDb.collection("tasks").add(docData);
     if (!ref?.id) {
@@ -1934,7 +1961,8 @@ export async function executeMutation(
         };
       }
 
-      case "MODIFY_PLAN": {
+      case "MODIFY_PLAN":
+      case "MODIFY_TASK": {
         const res = await modify_plan_schedule({
           userId,
           dueDate: mutationIntent.params.dueDate || effectiveDate,
@@ -1942,13 +1970,13 @@ export async function executeMutation(
         });
         return {
           actionExecuted: {
-            type: "MODIFY_PLAN",
+            type: mutationIntent.type,
             status: "success",
             domain: "tasks",
             details: res,
           },
           updatedContext: nextContext,
-          executedNote: `Scheduled focus task: ${mutationIntent.params.title || "Focus block"}.`,
+          executedNote: `Updated task: ${mutationIntent.params.title || mutationIntent.params.taskTitle || "Task"}.`,
         };
       }
 
@@ -2051,20 +2079,64 @@ export function extractJsonSnippet(raw: string): string | null {
 }
 
 /**
+ * Resolves relative and natural language date phrases ("yesterday", "last night",
+ * "2 days ago", "tomorrow", explicit YYYY-MM-DD, etc.) relative to a reference date.
+ */
+export function resolveRelativeDate(text: string, referenceDate?: string): string {
+  const baseStr =
+    referenceDate && /^\d{4}-\d{2}-\d{2}$/.test(referenceDate)
+      ? referenceDate
+      : new Date().toLocaleDateString("en-CA");
+  const baseMs = new Date(`${baseStr}T12:00:00Z`).getTime();
+  const lower = text.toLowerCase();
+
+  // Explicit ISO date YYYY-MM-DD
+  const isoMatch = text.match(/\b(\d{4}-\d{2}-\d{2})\b/);
+  if (isoMatch) return isoMatch[1];
+
+  // N days ago (e.g. "2 days ago", "3 days ago")
+  const daysAgoMatch = lower.match(/\b(\d+)\s+days?\s+ago\b/);
+  if (daysAgoMatch) {
+    const days = parseInt(daysAgoMatch[1], 10);
+    return new Date(baseMs - days * 86400000).toISOString().slice(0, 10);
+  }
+
+  // Yesterday / last night / yesterday night / yesterday evening
+  if (/\b(?:yesterday|last\s+night)\b/i.test(lower)) {
+    return new Date(baseMs - 86400000).toISOString().slice(0, 10);
+  }
+
+  // Day after tomorrow
+  if (/\bday\s+after\s+tomorrow\b/i.test(lower)) {
+    return new Date(baseMs + 2 * 86400000).toISOString().slice(0, 10);
+  }
+
+  // Tomorrow
+  if (/\btomorrow\b/i.test(lower)) {
+    return new Date(baseMs + 86400000).toISOString().slice(0, 10);
+  }
+
+  return baseStr;
+}
+
+/**
  * Strips conversational filler and extracts clean, canonical meal inputs
  * for the offline fallback guard.
  */
 export function cleanFallbackMealInput(
   rawText: string,
   activeContext?: OrbitEntityContext,
-  allUserText?: string
+  allUserText?: string,
+  referenceDate?: string
 ): {
+  date: string;
   mealType: string;
   mealName: string;
   items: DietItemInput[];
 } | null {
   const text = rawText.trim();
   const lower = text.toLowerCase();
+  const date = resolveRelativeDate(text + " " + (allUserText || ""), referenceDate);
 
   // 1. Determine slot
   let mealType = "lunch";
@@ -2116,6 +2188,7 @@ export function cleanFallbackMealInput(
   const mealName = formattedItems.map((i) => i.name).join(", ");
 
   return {
+    date,
     mealType,
     mealName,
     items: formattedItems,
@@ -2128,8 +2201,10 @@ export function cleanFallbackMealInput(
  */
 export function cleanFallbackWorkoutInput(
   rawText: string,
-  activeContext?: OrbitEntityContext
+  activeContext?: OrbitEntityContext,
+  referenceDate?: string
 ): {
+  date: string;
   routineTitle?: string;
   movements: Array<{
     name: string;
@@ -2142,6 +2217,7 @@ export function cleanFallbackWorkoutInput(
 } | null {
   const text = rawText.trim();
   const lower = text.toLowerCase();
+  const date = resolveRelativeDate(text, referenceDate);
 
   // 1. Strip conversational suffixes & follow-ups
   let cleaned = text
@@ -2248,6 +2324,7 @@ export function cleanFallbackWorkoutInput(
   }));
 
   return {
+    date,
     routineTitle: "Workout",
     movements,
   };
@@ -2290,11 +2367,7 @@ export function cleanFallbackTaskInput(
   }
 
   // 2. Detect due date
-  let dueDate = referenceDate || new Date().toLocaleDateString("en-CA");
-  if (/\btomorrow\b/i.test(lower)) {
-    const baseMs = referenceDate ? new Date(`${referenceDate}T12:00:00`).getTime() : Date.now();
-    dueDate = new Date(baseMs + 86400000).toLocaleDateString("en-CA");
-  }
+  const dueDate = resolveRelativeDate(text, referenceDate);
 
   // 3. Detect scheduled time
   let scheduledTime = "10:00";
@@ -2430,84 +2503,130 @@ export function parseStructuredLlmResponse(
     const actType = (act.type || act.name || "").toLowerCase();
     const payload = act.payload || act.args || act.parameters || act;
 
-    // ── 1. Fuel (Meals)
+    // ── 1. Fuel (Meals): log_meal, edit_meal, modify_meal
     if (actType.includes("meal") || actType.includes("diet") || actType === "fuel") {
-      const mealType = (payload.mealType || payload.slot || activeContext?.activeMealSlot || "lunch").toLowerCase();
-      const rawMealName = payload.mealName || payload.name || "";
-      const cleanMealName = rawMealName
-        .replace(/^(?:today\s+)?(?:in|for)\s+(?:dinner|lunch|breakfast|snack)\s*[:,-]?\s*/i, "")
-        .replace(/\s+(?:and\s+)?tell\s+me\s+macros.*$/i, "")
-        .replace(/\badd\s+this\b/i, "")
-        .trim();
+      const isEdit = actType.includes("edit") || actType.includes("modify");
+      const targetDate = resolveRelativeDate(
+        String(payload.targetDate || payload.date || payload.mealName || actType),
+        effectiveDate
+      );
 
-      let items: DietItemInput[] = [];
-      if (Array.isArray(payload.items) && payload.items.length > 0) {
-        items = payload.items.map((it: any) => {
-          if (typeof it === "string") return { name: it.trim() };
-          return {
-            name: it.name || it.item || "Food Item",
-            portion: it.portion,
-            calories: it.calories,
-            protein: it.protein,
-            carbs: it.carbs,
-            fats: it.fat ?? it.fats,
+      if (isEdit) {
+        const rawMealName = payload.mealName || payload.name || "";
+        const cleanMealName = rawMealName
+          .replace(/^(?:today\s+)?(?:in|for)\s+(?:dinner|lunch|breakfast|snack)\s*[:,-]?\s*/i, "")
+          .replace(/\s+(?:and\s+)?tell\s+me\s+macros.*$/i, "")
+          .replace(/\badd\s+this\b/i, "")
+          .trim();
+
+        let macros: Partial<MealMacros> | undefined = undefined;
+        const macSource = payload.updates?.macros || payload.macros;
+        if (macSource && typeof macSource === "object") {
+          macros = {
+            calories: safeMacro(macSource.calories),
+            proteinG: safeMacro(macSource.proteinG ?? macSource.protein),
+            carbsG: safeMacro(macSource.carbsG ?? macSource.carbs),
+            fatG: safeMacro(macSource.fatG ?? macSource.fat ?? macSource.fats),
+            fiberG: macSource.fiberG !== undefined || macSource.fiber !== undefined
+              ? safeMacro(macSource.fiberG ?? macSource.fiber)
+              : undefined,
           };
-        });
-      } else if (cleanMealName) {
-        items = cleanMealName
-          .split(/,|\band\b|\bwith\b/i)
-          .map((s: string) => ({ name: s.trim() }))
-          .filter((i: any) => i.name.length > 1);
-      }
+        }
 
-      let macros: Partial<MealMacros> | undefined = undefined;
-      if (payload.macros && typeof payload.macros === "object") {
-        macros = {
-          calories: safeMacro(payload.macros.calories),
-          proteinG: safeMacro(payload.macros.proteinG ?? payload.macros.protein),
-          carbsG: safeMacro(payload.macros.carbsG ?? payload.macros.carbs),
-          fatG: safeMacro(payload.macros.fatG ?? payload.macros.fat ?? payload.macros.fats),
-          fiberG: payload.macros.fiberG !== undefined || payload.macros.fiber !== undefined
-            ? safeMacro(payload.macros.fiberG ?? payload.macros.fiber)
-            : undefined,
+        const updatesObj: any = {
+          ...(payload.updates || {}),
         };
-      }
+        if (cleanMealName) updatesObj.name = cleanMealName;
+        if (macros) updatesObj.macros = macros;
+        if (payload.mealType || payload.slot) updatesObj.mealType = payload.mealType || payload.slot;
 
-      mutations.push({
-        type: "UPSERT_MEAL",
-        domain: "meals",
-        params: {
-          date: payload.date || effectiveDate,
-          mealType,
-          mealName: cleanMealName || undefined,
-          items: items.length > 0 ? items : [{ name: cleanMealName || "Meal" }],
-          macros: macros || payload.macros,
-        },
-      });
+        mutations.push({
+          type: "MODIFY_MEAL",
+          domain: "meals",
+          params: {
+            entryId: payload.entryId || payload.mealId || payload.mealType || payload.slot || "latest",
+            date: targetDate,
+            updates: updatesObj,
+          },
+        });
+      } else {
+        const mealType = (payload.mealType || payload.slot || activeContext?.activeMealSlot || "lunch").toLowerCase();
+        const rawMealName = payload.mealName || payload.name || "";
+        const cleanMealName = rawMealName
+          .replace(/^(?:today\s+)?(?:in|for)\s+(?:dinner|lunch|breakfast|snack)\s*[:,-]?\s*/i, "")
+          .replace(/\s+(?:and\s+)?tell\s+me\s+macros.*$/i, "")
+          .replace(/\badd\s+this\b/i, "")
+          .trim();
+
+        let items: DietItemInput[] = [];
+        if (Array.isArray(payload.items) && payload.items.length > 0) {
+          items = payload.items.map((it: any) => {
+            if (typeof it === "string") return { name: it.trim() };
+            return {
+              name: it.name || it.item || "Food Item",
+              portion: it.portion,
+              calories: it.calories,
+              protein: it.protein,
+              carbs: it.carbs,
+              fats: it.fat ?? it.fats,
+            };
+          });
+        } else if (cleanMealName) {
+          items = cleanMealName
+            .split(/,|\band\b|\bwith\b/i)
+            .map((s: string) => ({ name: s.trim() }))
+            .filter((i: any) => i.name.length > 1);
+        }
+
+        let macros: Partial<MealMacros> | undefined = undefined;
+        if (payload.macros && typeof payload.macros === "object") {
+          macros = {
+            calories: safeMacro(payload.macros.calories),
+            proteinG: safeMacro(payload.macros.proteinG ?? payload.macros.protein),
+            carbsG: safeMacro(payload.macros.carbsG ?? payload.macros.carbs),
+            fatG: safeMacro(payload.macros.fatG ?? payload.macros.fat ?? payload.macros.fats),
+            fiberG: payload.macros.fiberG !== undefined || payload.macros.fiber !== undefined
+              ? safeMacro(payload.macros.fiberG ?? payload.macros.fiber)
+              : undefined,
+          };
+        }
+
+        mutations.push({
+          type: "UPSERT_MEAL",
+          domain: "meals",
+          params: {
+            date: targetDate,
+            mealType,
+            mealName: cleanMealName || undefined,
+            items: items.length > 0 ? items : [{ name: cleanMealName || "Meal" }],
+            macros: macros || payload.macros,
+          },
+        });
+      }
     }
 
-    // ── 2. Train (Workouts)
+    // ── 2. Train (Workouts): log_workout, edit_workout, update_workout
     else if (actType.includes("workout") || actType.includes("exercise") || actType === "train") {
-      const movements: any[] = Array.isArray(payload.movements)
-        ? payload.movements
-        : Array.isArray(payload.exercises)
-        ? payload.exercises
-        : [payload];
+      const isEdit = actType.includes("edit") || actType.includes("modify") || actType.includes("update");
+      const targetDate = resolveRelativeDate(
+        String(payload.targetDate || payload.date || actType),
+        effectiveDate
+      );
 
-      for (const mv of movements) {
-        const rawName = mv.name || mv.exerciseName || mv.exercise || "";
+      if (isEdit) {
+        const rawName = payload.exerciseName || payload.name || payload.exercise || "Workout Exercise";
         const cleanName = rawName
           .replace(/^(?:earlier\s+)?(?:in|at)\s+(?:the\s+)?gym\s+(?:i\s+did)?\s*/i, "")
           .replace(/\s+(?:and\s+)?rate\s+my\s+volume.*$/i, "")
           .replace(/\blog\s+this\b/i, "")
           .trim();
 
-        const setsCount = Number(mv.sets) || (Array.isArray(mv.sets) ? mv.sets.length : 3);
-        const reps = Number(mv.reps) || (Array.isArray(mv.sets) ? mv.sets[0]?.reps : 10);
-        const weight = Number(mv.weight) || (Array.isArray(mv.sets) ? mv.sets[0]?.weight : 0);
+        const setsCount = Number(payload.sets) || (Array.isArray(payload.sets) ? payload.sets.length : 3);
+        const reps = Number(payload.reps) || (Array.isArray(payload.sets) ? payload.sets[0]?.reps : 10);
+        const weight = Number(payload.weight) || (Array.isArray(payload.sets) ? payload.sets[0]?.weight : 0);
 
-        const formattedSets: WorkoutSetInput[] = Array.isArray(mv.sets)
-          ? mv.sets
+        const formattedSets: WorkoutSetInput[] = Array.isArray(payload.sets)
+          ? payload.sets
           : Array.from({ length: setsCount }, (_, idx) => ({
               setNumber: idx + 1,
               reps,
@@ -2517,49 +2636,122 @@ export function parseStructuredLlmResponse(
             }));
 
         mutations.push({
-          type: "ADD_EXERCISE",
+          type: "UPDATE_WORKOUT_SET",
           domain: "workouts",
           params: {
-            date: payload.date || effectiveDate,
+            date: targetDate,
+            sessionId: payload.sessionId || payload.id,
             exerciseName: cleanName.replace(/\b\w/g, (c: string) => c.toUpperCase()) || "Workout Exercise",
-            movementType: mv.movementType || "strength",
-            distance: mv.distance,
-            distanceUnit: mv.distanceUnit,
-            durationSeconds: mv.durationSeconds,
+            exerciseIndex: payload.exerciseIndex,
+            setIndex: payload.setIndex,
+            repDelta: payload.repDelta,
+            isAppendSet: payload.isAppendSet,
             sets: formattedSets,
           },
         });
+      } else {
+        const movements: any[] = Array.isArray(payload.movements)
+          ? payload.movements
+          : Array.isArray(payload.exercises)
+          ? payload.exercises
+          : [payload];
+
+        for (const mv of movements) {
+          const rawName = mv.name || mv.exerciseName || mv.exercise || "";
+          const cleanName = rawName
+            .replace(/^(?:earlier\s+)?(?:in|at)\s+(?:the\s+)?gym\s+(?:i\s+did)?\s*/i, "")
+            .replace(/\s+(?:and\s+)?rate\s+my\s+volume.*$/i, "")
+            .replace(/\blog\s+this\b/i, "")
+            .trim();
+
+          const setsCount = Number(mv.sets) || (Array.isArray(mv.sets) ? mv.sets.length : 3);
+          const reps = Number(mv.reps) || (Array.isArray(mv.sets) ? mv.sets[0]?.reps : 10);
+          const weight = Number(mv.weight) || (Array.isArray(mv.sets) ? mv.sets[0]?.weight : 0);
+
+          const formattedSets: WorkoutSetInput[] = Array.isArray(mv.sets)
+            ? mv.sets
+            : Array.from({ length: setsCount }, (_, idx) => ({
+                setNumber: idx + 1,
+                reps,
+                weight,
+                unit: "kg",
+                completed: true,
+              }));
+
+          mutations.push({
+            type: "ADD_EXERCISE",
+            domain: "workouts",
+            params: {
+              date: targetDate,
+              exerciseName: cleanName.replace(/\b\w/g, (c: string) => c.toUpperCase()) || "Workout Exercise",
+              movementType: mv.movementType || "strength",
+              distance: mv.distance,
+              distanceUnit: mv.distanceUnit,
+              durationSeconds: mv.durationSeconds,
+              sets: formattedSets,
+            },
+          });
+        }
       }
     }
 
-    // ── 3. Plan (Tasks)
+    // ── 3. Plan (Tasks): create_task, edit_task, modify_task, reschedule_task
     else if (actType.includes("task") || actType.includes("plan")) {
-      const tasks: any[] = Array.isArray(payload.tasks)
-        ? payload.tasks
-        : [payload];
+      const isEdit = actType.includes("edit") || actType.includes("modify") || actType.includes("reschedule");
+      const targetDate = resolveRelativeDate(
+        String(payload.targetDate || payload.dueDate || payload.date || actType),
+        effectiveDate
+      );
 
-      for (const t of tasks) {
-        let rawTitle = t.title || t.name || "";
-        let cleanTitle = rawTitle
-          .replace(/^(?:tomorrow\s+morning\s+)?(?:i\s+need\s+to|i\s+have\s+to|i\s+want\s+to|schedule\s+a\s+task\s+to|add\s+a\s+task\s+to)\s+/i, "")
-          .replace(/\s+(?:and\s+)?(?:add\s+this\s+to\s+my\s+tasks|add\s+to\s+tasks|prioritize).*$/i, "")
-          .trim();
-
-        if (cleanTitle) {
-          cleanTitle = cleanTitle.charAt(0).toUpperCase() + cleanTitle.slice(1);
-        }
-
+      if (isEdit) {
+        const scheduledTime = payload.scheduledTime ? parseTimeString(payload.scheduledTime) : undefined;
         mutations.push({
-          type: "CREATE_TASK",
+          type: "MODIFY_TASK",
           domain: "tasks",
           params: {
-            title: cleanTitle || "Scheduled Task",
-            dueDate: t.dueDate || effectiveDate,
-            scheduledTime: t.scheduledTime ? parseTimeString(t.scheduledTime) : "10:00",
-            priority: t.priority || "medium",
-            durationMinutes: t.durationMinutes || 25,
+            taskId: payload.taskId || payload.id,
+            taskTitle: payload.taskTitle || payload.title,
+            dueDate: payload.dueDate || payload.targetDate ? targetDate : undefined,
+            scheduledTime,
+            priority: payload.priority,
+            status: payload.status,
+            durationMinutes: payload.durationMinutes,
+            updates: payload.updates || payload,
           },
         });
+      } else {
+        const tasks: any[] = Array.isArray(payload.tasks)
+          ? payload.tasks
+          : [payload];
+
+        for (const t of tasks) {
+          let rawTitle = t.title || t.name || "";
+          let cleanTitle = rawTitle
+            .replace(/^(?:tomorrow\s+morning\s+)?(?:i\s+need\s+to|i\s+have\s+to|i\s+want\s+to|schedule\s+a\s+task\s+to|add\s+a\s+task\s+to)\s+/i, "")
+            .replace(/\s+(?:and\s+)?(?:add\s+this\s+to\s+my\s+tasks|add\s+to\s+tasks|prioritize).*$/i, "")
+            .trim();
+
+          if (cleanTitle) {
+            cleanTitle = cleanTitle.charAt(0).toUpperCase() + cleanTitle.slice(1);
+          }
+
+          const taskDueDate = resolveRelativeDate(
+            String(t.targetDate || t.dueDate || payload.targetDate || payload.dueDate || targetDate),
+            effectiveDate
+          );
+
+          mutations.push({
+            type: "CREATE_TASK",
+            domain: "tasks",
+            params: {
+              title: cleanTitle || "Scheduled Task",
+              dueDate: taskDueDate,
+              scheduledTime: t.scheduledTime ? parseTimeString(t.scheduledTime) : "10:00",
+              priority: t.priority || "medium",
+              durationMinutes: t.durationMinutes || 25,
+            },
+          });
+        }
       }
     }
   }
@@ -3209,6 +3401,7 @@ export function parseSingleMutationIntent(
       type: "ADD_EXERCISE",
       domain: "workouts",
       params: {
+        date: resolveRelativeDate(text, referenceDate),
         exerciseName: exName,
         movementType: "cardio",
         distance,
@@ -3278,6 +3471,7 @@ export function parseSingleMutationIntent(
       type: "ADD_EXERCISE",
       domain: "workouts",
       params: {
+        date: resolveRelativeDate(text, referenceDate),
         exerciseName: exName,
         movementType: "calisthenics",
         sets,
@@ -3344,7 +3538,7 @@ export function parseSingleMutationIntent(
 
   if (isWorkoutMutation) {
     if (/\b(earlier|gym|bench|squats?|press|sets?)\b/i.test(lower)) {
-      const cleanedWorkout = cleanFallbackWorkoutInput(text, activeContext);
+      const cleanedWorkout = cleanFallbackWorkoutInput(text, activeContext, referenceDate);
       if (cleanedWorkout && cleanedWorkout.movements.length > 0) {
         const firstMv = cleanedWorkout.movements[0];
         const isSetChange = /\b(?:reps?\s+to|set\s+to|to\s+\d+\s*reps?)\b/i.test(lower);
@@ -3353,6 +3547,7 @@ export function parseSingleMutationIntent(
             type: "ADD_EXERCISE",
             domain: "workouts",
             params: {
+              date: cleanedWorkout.date,
               exerciseName: firstMv.name,
               sets: firstMv.sets,
             },
@@ -3496,7 +3691,7 @@ export function parseSingleMutationIntent(
     /\b(also\s+add|actually,\s*also\s+add|add\s+another|include)\b/i.test(lower);
 
   if (isMealMutation || isFollowUpAdd) {
-    const cleanedMeal = cleanFallbackMealInput(text, activeContext, allUserText);
+    const cleanedMeal = cleanFallbackMealInput(text, activeContext, allUserText, referenceDate);
 
     if (!cleanedMeal || cleanedMeal.items.length === 0) {
       let mealType = "lunch";
@@ -3532,6 +3727,7 @@ export function parseSingleMutationIntent(
       type: "UPSERT_MEAL",
       domain: "meals",
       params: {
+        date: cleanedMeal.date,
         mealType: cleanedMeal.mealType,
         mealName: cleanedMeal.mealName,
         items: cleanedMeal.items,
@@ -3600,9 +3796,10 @@ export function parseMutationIntents(
 export function parseMutationIntent(
   message: string,
   activeContext?: OrbitEntityContext,
-  allUserText?: string
+  allUserText?: string,
+  referenceDate?: string
 ): (ParsedMutation | ClarificationResult) | null {
-  const intents = parseMutationIntents(message, activeContext, allUserText);
+  const intents = parseMutationIntents(message, activeContext, allUserText, referenceDate);
   return intents.length > 0 ? intents[0] : null;
 }
 

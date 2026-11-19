@@ -30,6 +30,8 @@ import {
   Search,
   Mic,
   Check,
+  Pencil,
+  Calendar,
 } from "lucide-react";
 import VoiceMealModal from "@/components/diet/VoiceMealModal";
 import MealScannerModal from "@/components/diet/MealScannerModal";
@@ -40,6 +42,7 @@ import { cn, todayString, formatDate, localDateString } from "@/lib/utils";
 import {
   getMeals,
   addMeal,
+  updateMeal,
   deleteMeal,
   getMacroGoals,
   saveMacroGoals,
@@ -94,6 +97,7 @@ export default function DietPage() {
 
   // Expanded meal card accordion
   const [expandedMealId, setExpandedMealId] = useState<string | null>(null);
+  const [editingMeal, setEditingMeal] = useState<MealEntry | null>(null);
 
   // Load the selected day's meals, goals, and saved meal templates.
   useEffect(() => {
@@ -272,6 +276,21 @@ export default function DietPage() {
     }
   };
 
+  const handleUpdateMeal = async (mealId: string, updates: Partial<MealEntry>) => {
+    const prevMeals = meals;
+    setMeals((prev) =>
+      prev.map((m) => (m.id === mealId ? { ...m, ...updates } : m))
+    );
+    try {
+      await updateMeal(mealId, updates);
+      toast("Meal updated! 🥗", "success");
+    } catch (error) {
+      console.error("Failed to update meal:", error);
+      setMeals(prevMeals);
+      toast("Could not update meal. Try again.", "error");
+    }
+  };
+
   const handleSaveGoals = async (nextGoals: MacroGoals) => {
     try {
       await (saveMacroGoals as any)(userId, nextGoals);
@@ -422,37 +441,66 @@ export default function DietPage() {
       </div>
 
       {/* ── 2. DATE NAVIGATOR CAPSULE ── */}
-      <div className="bg-[#FCFBF9] rounded-full px-4 py-2 border border-[#1C1917]/[0.06] shadow-2xs flex items-center justify-between mb-4">
-        <button
-          onClick={() => changeDate(-1)}
-          type="button"
-          className="w-7 h-7 rounded-full bg-[#EFECE4] hover:bg-[#E2DDD2] flex items-center justify-center text-[#1C1917] transition-all cursor-pointer"
-          aria-label="Previous day"
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </button>
-
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-[#1C1917] flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#2D6A4F]" />
-            {formatDate(date)}
-          </span>
-          {isToday && (
-            <span className="bg-[#D1FAE5] text-[#1B4332] text-[10px] font-bold px-2 py-0.5 rounded-full">
-              Today
-            </span>
-          )}
+      <div className="bg-[#FCFBF9] rounded-full px-3 py-1.5 border border-[#1C1917]/[0.06] shadow-2xs flex items-center justify-between mb-4">
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => changeDate(-1)}
+            type="button"
+            className="w-8 h-8 rounded-full bg-[#EFECE4] hover:bg-[#E2DDD2] flex items-center justify-center text-[#1C1917] transition-all cursor-pointer"
+            aria-label="Previous day"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const y = new Date();
+              y.setDate(y.getDate() - 1);
+              setDate(localDateString(y));
+            }}
+            className={cn(
+              "px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer",
+              date === localDateString(new Date(Date.now() - 86400000))
+                ? "bg-[#191D1A] text-white"
+                : "bg-[#EFECE4] text-[#57534E] hover:text-[#191D1A]"
+            )}
+          >
+            Yesterday
+          </button>
+          <button
+            type="button"
+            onClick={() => setDate(todayString())}
+            className={cn(
+              "px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer",
+              isToday
+                ? "bg-[#2D6A4F] text-white"
+                : "bg-[#EFECE4] text-[#57534E] hover:text-[#191D1A]"
+            )}
+          >
+            Today
+          </button>
+          <button
+            onClick={() => changeDate(1)}
+            type="button"
+            className="w-8 h-8 rounded-full bg-[#EFECE4] hover:bg-[#E2DDD2] flex items-center justify-center text-[#1C1917] transition-all cursor-pointer"
+            aria-label="Next day"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
 
-        <button
-          onClick={() => changeDate(1)}
-          disabled={isToday}
-          type="button"
-          className="w-7 h-7 rounded-full bg-[#EFECE4] hover:bg-[#E2DDD2] flex items-center justify-center text-[#1C1917] transition-all cursor-pointer disabled:opacity-30 disabled:pointer-events-none"
-          aria-label="Next day"
-        >
-          <ChevronRight className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-2">
+          <label className="flex items-center gap-1.5 bg-[#F6F3EC] hover:bg-[#EFECE4] text-[#1C1917] rounded-full px-3 py-1 text-xs font-bold cursor-pointer transition-all">
+            <Calendar className="w-3.5 h-3.5 text-[#2D6A4F]" />
+            <span>{formatDate(date)}</span>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => e.target.value && setDate(e.target.value)}
+              className="sr-only"
+            />
+          </label>
+        </div>
       </div>
 
       {/* ── MOBILE VIEW (< 1024px) ── */}
@@ -599,6 +647,10 @@ export default function DietPage() {
               const isExpanded = expandedMealId === meal.id;
               const photoUrl = resolveDishThumbnail(meal.name, meal.photoUrl);
               const { timeLabel, categoryLabel } = formatMealTimeAndCategory(meal.createdAt, (meal as any).mealType, meal.name);
+              const cleanTitle = meal.name.replace(/^(breakfast|lunch|dinner|snack):\s*/i, "");
+              const itemsList: string[] = (meal as any).items?.length
+                ? (meal as any).items.map((it: any) => typeof it === "string" ? it : it.name)
+                : cleanTitle.split(/,|\band\b|\bwith\b/i).map((s: string) => s.trim()).filter((s: string) => s.length > 1);
 
               return (
                 <div
@@ -608,7 +660,7 @@ export default function DietPage() {
                   {/* Top Row: Clickable to toggle expanded drawer */}
                   <div
                     onClick={() => setExpandedMealId(isExpanded ? null : meal.id)}
-                    className="flex items-start gap-3.5 cursor-pointer"
+                    className="flex items-start gap-3.5 cursor-pointer select-none"
                   >
                     {/* Dish Photo */}
                     <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 shadow-2xs bg-[#EFECE4] mt-0.5">
@@ -617,6 +669,9 @@ export default function DietPage() {
                         alt={meal.name}
                         className="w-full h-full object-cover"
                         loading="lazy"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=300&q=75";
+                        }}
                       />
                     </div>
 
@@ -627,12 +682,12 @@ export default function DietPage() {
                           <span className="text-[10px] font-mono uppercase text-[#8C857B] block">
                             {timeLabel} · {categoryLabel}
                           </span>
-                          <h3 className="line-clamp-1 text-[15px] font-bold text-[#1C1917] leading-snug">
-                            {meal.name.replace(/^(breakfast|lunch|dinner|snack):\s*/i, "")}
+                          <h3 className={cn("text-[15px] font-bold text-[#1C1917] leading-snug", !isExpanded && "line-clamp-1")}>
+                            {cleanTitle}
                           </h3>
                         </div>
 
-                        {/* Compact Top-Right Bookmark, Delete, & Chevron */}
+                        {/* Top-Right Action Icons */}
                         <div className="flex items-center gap-1 shrink-0 -mt-0.5">
                           <button
                             onClick={(e) => {
@@ -642,9 +697,22 @@ export default function DietPage() {
                             title="Save as a reusable meal"
                             type="button"
                             aria-label={`Save ${meal.name} as a reusable meal`}
-                            className="w-7 h-7 rounded-full hover:bg-[#EFECE4] text-[#8C857B] hover:text-[#1C1917] flex items-center justify-center transition-colors cursor-pointer"
+                            className="w-8 h-8 rounded-full hover:bg-[#EFECE4] text-[#8C857B] hover:text-[#1C1917] flex items-center justify-center transition-colors cursor-pointer"
                           >
-                            <BookmarkPlus className="w-3.5 h-3.5" />
+                            <BookmarkPlus className="w-4 h-4" />
+                          </button>
+
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingMeal(meal);
+                            }}
+                            title="Edit meal details"
+                            type="button"
+                            aria-label={`Edit ${meal.name}`}
+                            className="w-8 h-8 rounded-full hover:bg-[#EFECE4] text-[#8C857B] hover:text-[#2D6A4F] flex items-center justify-center transition-colors cursor-pointer"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
                           </button>
 
                           <button
@@ -654,17 +722,13 @@ export default function DietPage() {
                             }}
                             type="button"
                             aria-label={`Delete ${meal.name}`}
-                            className="w-7 h-7 rounded-full hover:bg-[#FADCD5] text-[#8C857B] hover:text-[#E05A47] flex items-center justify-center transition-colors cursor-pointer"
+                            className="w-8 h-8 rounded-full hover:bg-[#FADCD5] text-[#8C857B] hover:text-[#E05A47] flex items-center justify-center transition-colors cursor-pointer"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
 
-                          <div className="w-5 h-7 flex items-center justify-center text-[#8C857B]">
-                            {isExpanded ? (
-                              <ChevronUp className="w-3.5 h-3.5" />
-                            ) : (
-                              <ChevronDown className="w-3.5 h-3.5" />
-                            )}
+                          <div className="w-6 h-8 flex items-center justify-center text-[#8C857B]">
+                            <ChevronDown className={cn("w-4 h-4 transition-transform duration-200", isExpanded && "rotate-180")} />
                           </div>
                         </div>
                       </div>
@@ -689,19 +753,64 @@ export default function DietPage() {
 
                   {/* Expanded Macro Donut Drawer */}
                   {isExpanded && (
-                    <div className="bg-[#F6F3EC] rounded-[20px] p-3.5 mt-3.5 border border-[#1C1917]/[0.04] animate-slide-down">
-                      <div className="flex items-center justify-between text-[10px] font-bold text-[#8C857B] tracking-wider uppercase mb-2">
-                        <span>MACRO DONUT BREAKDOWN</span>
-                        <span>1 Serving</span>
+                    <div className="bg-[#F6F3EC] rounded-[20px] p-3.5 mt-3.5 border border-[#1C1917]/[0.04] space-y-3 animate-slide-down">
+                      {/* Full Untruncated Meal Name & Items Breakdown */}
+                      <div>
+                        <span className="text-[10px] font-bold text-[#8C857B] tracking-wider uppercase block mb-1">
+                          NOURISHMENT BREAKDOWN
+                        </span>
+                        <p className="text-xs font-semibold text-[#1C1917] leading-relaxed">
+                          {cleanTitle}
+                        </p>
+                        {itemsList.length > 1 && (
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            {itemsList.map((it, idx) => (
+                              <span
+                                key={idx}
+                                className="bg-[#FCFBF9] text-[#191D1A] border border-[#1C1917]/[0.06] rounded-full px-2.5 py-1 text-[11px] font-medium"
+                              >
+                                {it}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                      <MacroDonutBreakdown
-                        variant="light"
-                        calories={meal.macros.calories}
-                        carbs={meal.macros.carbsG}
-                        fat={meal.macros.fatG}
-                        protein={meal.macros.proteinG}
-                      />
-                      <AvailableMicronutrients meal={meal} />
+
+                      {/* Macro Donut & Micronutrients */}
+                      <div className="pt-2 border-t border-[#1C1917]/[0.06]">
+                        <div className="flex items-center justify-between text-[10px] font-bold text-[#8C857B] tracking-wider uppercase mb-2">
+                          <span>MACRO DONUT BREAKDOWN</span>
+                          <span>1 Serving</span>
+                        </div>
+                        <MacroDonutBreakdown
+                          variant="light"
+                          calories={meal.macros.calories}
+                          carbs={meal.macros.carbsG}
+                          fat={meal.macros.fatG}
+                          protein={meal.macros.proteinG}
+                        />
+                        <AvailableMicronutrients meal={meal} />
+                      </div>
+
+                      {/* Quick Action Buttons (Touch targets >= 44px) */}
+                      <div className="pt-2 flex items-center justify-end gap-2 border-t border-[#1C1917]/[0.06]">
+                        <button
+                          type="button"
+                          onClick={() => setEditingMeal(meal)}
+                          className="h-11 px-4 rounded-full bg-[#FCFBF9] hover:bg-[#EFECE4] text-[#191D1A] border border-[#1C1917]/[0.08] text-xs font-bold inline-flex items-center gap-2 cursor-pointer transition-all active:scale-95"
+                        >
+                          <Pencil className="w-3.5 h-3.5 text-[#2D6A4F]" />
+                          <span>Edit Details</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleDeleteMeal(meal.id)}
+                          className="h-11 px-4 rounded-full bg-[#FADCD5]/60 hover:bg-[#FADCD5] text-[#C94A38] text-xs font-bold inline-flex items-center gap-2 cursor-pointer transition-all active:scale-95"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Delete Meal</span>
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -924,69 +1033,159 @@ export default function DietPage() {
             ) : (
               <div className="space-y-3">
                 {meals.map((meal) => {
+                  const isExpanded = expandedMealId === meal.id;
                   const photoUrl = resolveDishThumbnail(meal.name, meal.photoUrl);
                   const { timeLabel, categoryLabel } = formatMealTimeAndCategory(meal.createdAt, (meal as any).mealType, meal.name);
+                  const cleanTitle = meal.name.replace(/^(breakfast|lunch|dinner|snack):\s*/i, "");
+                  const itemsList: string[] = (meal as any).items?.length
+                    ? (meal as any).items.map((it: any) => typeof it === "string" ? it : it.name)
+                    : cleanTitle.split(/,|\band\b|\bwith\b/i).map((s: string) => s.trim()).filter((s: string) => s.length > 1);
 
                   return (
                     <div
                       key={meal.id}
-                      className="bg-[#FCFBF9] rounded-[24px] p-4 border border-[#1C1917]/[0.06] shadow-xs flex items-center justify-between gap-4"
+                      className="bg-[#FCFBF9] rounded-[24px] p-4 border border-[#1C1917]/[0.06] shadow-xs transition-all"
                     >
-                      <div className="flex items-center gap-4 min-w-0 flex-1">
-                        <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0 bg-[#EFECE4] border border-[#1C1917]/[0.06]">
-                          <img
-                            src={photoUrl}
-                            alt={meal.name}
-                            className="w-full h-full object-cover"
-                            loading="lazy"
-                            onError={(e) => {
-                              (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=300&q=75";
-                            }}
-                          />
+                      <div
+                        onClick={() => setExpandedMealId(isExpanded ? null : meal.id)}
+                        className="flex items-center justify-between gap-4 cursor-pointer select-none"
+                      >
+                        <div className="flex items-center gap-4 min-w-0 flex-1">
+                          <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0 bg-[#EFECE4] border border-[#1C1917]/[0.06]">
+                            <img
+                              src={photoUrl}
+                              alt={meal.name}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=300&q=75";
+                              }}
+                            />
+                          </div>
+
+                          <div className="min-w-0 flex-1">
+                            <span className="text-[10px] font-mono uppercase text-[#8C857B] block">
+                              {timeLabel} · {categoryLabel}
+                            </span>
+                            <h4 className={cn("font-bold text-base text-[#1C1917] mt-0.5", !isExpanded && "truncate")}>
+                              {cleanTitle}
+                            </h4>
+                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                              <span className="bg-[#E0F2E9] text-[#2D6A4F] text-[10px] font-bold px-2 py-0.5 rounded-md">
+                                {meal.macros?.calories || 0} kcal
+                              </span>
+                              <span className="text-[10px] text-[#57534E] font-medium">
+                                P: {meal.macros?.proteinG || 0}g
+                              </span>
+                              <span className="text-[10px] text-[#8C857B]">
+                                C: {meal.macros?.carbsG || 0}g
+                              </span>
+                              <span className="text-[10px] text-[#8C857B]">
+                                F: {meal.macros?.fatG || 0}g
+                              </span>
+                            </div>
+                          </div>
                         </div>
 
-                        <div className="min-w-0 flex-1">
-                          <span className="text-[10px] font-mono uppercase text-[#8C857B] block">
-                            {timeLabel} · {categoryLabel}
-                          </span>
-                          <h4 className="font-bold text-base text-[#1C1917] truncate mt-0.5">
-                            {meal.name.replace(/^(breakfast|lunch|dinner|snack):\s*/i, "")}
-                          </h4>
-                          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                            <span className="bg-[#E0F2E9] text-[#2D6A4F] text-[10px] font-bold px-2 py-0.5 rounded-md">
-                              {meal.macros?.calories || 0} kcal
-                            </span>
-                            <span className="text-[10px] text-[#57534E] font-medium">
-                              P: {meal.macros?.proteinG || 0}g
-                            </span>
-                            <span className="text-[10px] text-[#8C857B]">
-                              C: {meal.macros?.carbsG || 0}g
-                            </span>
-                            <span className="text-[10px] text-[#8C857B]">
-                              F: {meal.macros?.fatG || 0}g
-                            </span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSavingTemplate({ name: meal.name, macros: meal.macros });
+                            }}
+                            type="button"
+                            title="Save as reusable template"
+                            className="w-8 h-8 rounded-full hover:bg-[#EFECE4] text-[#8C857B] hover:text-[#1C1917] flex items-center justify-center transition-colors cursor-pointer"
+                          >
+                            <BookmarkPlus className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingMeal(meal);
+                            }}
+                            type="button"
+                            title="Edit meal details"
+                            className="w-8 h-8 rounded-full hover:bg-[#EFECE4] text-[#8C857B] hover:text-[#2D6A4F] flex items-center justify-center transition-colors cursor-pointer"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void handleDeleteMeal(meal.id);
+                            }}
+                            type="button"
+                            title="Delete meal"
+                            className="w-8 h-8 rounded-full hover:bg-rose-50 text-[#8C857B] hover:text-[#E05A47] flex items-center justify-center transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                          <div className="w-7 h-8 flex items-center justify-center text-[#8C857B]">
+                            <ChevronDown className={cn("w-4 h-4 transition-transform duration-200", isExpanded && "rotate-180")} />
                           </div>
-                                </div>
+                        </div>
                       </div>
 
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          onClick={() => setSavingTemplate({ name: meal.name, macros: meal.macros })}
-                          type="button"
-                          title="Save as reusable template"
-                          className="w-8 h-8 rounded-full hover:bg-[#EFECE4] text-[#8C857B] hover:text-[#1C1917] flex items-center justify-center transition-colors cursor-pointer"
-                        >
-                          <BookmarkPlus className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => void handleDeleteMeal(meal.id)}
-                          type="button"
-                          title="Delete meal"
-                          className="w-8 h-8 rounded-full hover:bg-rose-50 text-[#8C857B] hover:text-[#E05A47] flex items-center justify-center transition-colors cursor-pointer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+                      {/* Desktop Expanded Drawer */}
+                      {isExpanded && (
+                        <div className="bg-[#F6F3EC] rounded-[20px] p-4 mt-3.5 border border-[#1C1917]/[0.04] space-y-3 animate-slide-down">
+                          <div>
+                            <span className="text-[10px] font-bold text-[#8C857B] tracking-wider uppercase block mb-1">
+                              FULL NOURISHMENT DETAILS
+                            </span>
+                            <p className="text-sm font-semibold text-[#1C1917] leading-relaxed">
+                              {cleanTitle}
+                            </p>
+                            {itemsList.length > 1 && (
+                              <div className="flex flex-wrap gap-1.5 mt-2">
+                                {itemsList.map((it, idx) => (
+                                  <span
+                                    key={idx}
+                                    className="bg-[#FCFBF9] text-[#191D1A] border border-[#1C1917]/[0.06] rounded-full px-2.5 py-1 text-xs font-medium"
+                                  >
+                                    {it}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="pt-2 border-t border-[#1C1917]/[0.06]">
+                            <div className="flex items-center justify-between text-[10px] font-bold text-[#8C857B] tracking-wider uppercase mb-2">
+                              <span>MACRO DONUT BREAKDOWN</span>
+                              <span>1 Serving</span>
+                            </div>
+                            <MacroDonutBreakdown
+                              variant="light"
+                              calories={meal.macros.calories}
+                              carbs={meal.macros.carbsG}
+                              fat={meal.macros.fatG}
+                              protein={meal.macros.proteinG}
+                            />
+                            <AvailableMicronutrients meal={meal} />
+                          </div>
+
+                          <div className="pt-2 flex items-center justify-end gap-2.5 border-t border-[#1C1917]/[0.06]">
+                            <button
+                              type="button"
+                              onClick={() => setEditingMeal(meal)}
+                              className="h-11 px-5 rounded-full bg-[#FCFBF9] hover:bg-[#EFECE4] text-[#191D1A] border border-[#1C1917]/[0.08] text-xs font-bold inline-flex items-center gap-2 cursor-pointer transition-all active:scale-95"
+                            >
+                              <Pencil className="w-3.5 h-3.5 text-[#2D6A4F]" />
+                              <span>Edit Details</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void handleDeleteMeal(meal.id)}
+                              className="h-11 px-5 rounded-full bg-[#FADCD5]/60 hover:bg-[#FADCD5] text-[#C94A38] text-xs font-bold inline-flex items-center gap-2 cursor-pointer transition-all active:scale-95"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Delete Meal</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -1116,6 +1315,15 @@ export default function DietPage() {
       {/* ── VOICE NOURISHMENT MODAL ── */}
       {showVoiceMeal && (
         <VoiceMealModal onAdd={handleLogVoiceMeals} onClose={() => setShowVoiceMeal(false)} />
+      )}
+
+      {/* ── EDIT MEAL MODAL ── */}
+      {editingMeal && (
+        <EditMealModal
+          meal={editingMeal}
+          onSave={handleUpdateMeal}
+          onClose={() => setEditingMeal(null)}
+        />
       )}
     </div>
   );
@@ -2009,6 +2217,201 @@ export function MealPhotoPreview({
           </span>
         </div>
       )}
+    </div>
+  );
+}
+
+// ── EDIT MEAL MODAL ──────────────────────────────────────────────────────────
+
+interface EditMealModalProps {
+  meal: MealEntry;
+  onSave: (mealId: string, updates: Partial<MealEntry>) => Promise<void>;
+  onClose: () => void;
+}
+
+function EditMealModal({ meal, onSave, onClose }: EditMealModalProps) {
+  const [name, setName] = useState(meal.name.replace(/^(breakfast|lunch|dinner|snack):\s*/i, ""));
+  const [mealType, setMealType] = useState<string>((meal as any).mealType || "lunch");
+  const [calories, setCalories] = useState<number>(Math.round(meal.macros?.calories || 0));
+  const [protein, setProtein] = useState<number>(Math.round(meal.macros?.proteinG || 0));
+  const [carbs, setCarbs] = useState<number>(Math.round(meal.macros?.carbsG || 0));
+  const [fat, setFat] = useState<number>(Math.round(meal.macros?.fatG || 0));
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    setSaving(true);
+    try {
+      await onSave(meal.id, {
+        name: `${mealType}: ${name.trim()}`,
+        mealType: mealType as any,
+        macros: {
+          calories: Math.max(1, Number(calories) || 0),
+          proteinG: Math.max(0, Number(protein) || 0),
+          carbsG: Math.max(0, Number(carbs) || 0),
+          fatG: Math.max(0, Number(fat) || 0),
+        },
+      });
+      onClose();
+    } catch {
+      setSaving(false);
+    }
+  };
+
+  const slots = [
+    { id: "breakfast", label: "Breakfast" },
+    { id: "lunch", label: "Lunch" },
+    { id: "dinner", label: "Dinner" },
+    { id: "snack", label: "Snack" },
+  ];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fade-in">
+      <div className="bg-[#FCFBF9] rounded-[28px] max-w-md w-full p-6 border border-[#1C1917]/[0.08] shadow-2xl space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between pb-3 border-b border-[#1C1917]/[0.06]">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#E05A47]" />
+            <h2 className="text-base font-bold text-[#191D1A]">Edit Meal Details</h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-8 h-8 rounded-full hover:bg-[#EFECE4] text-[#8C857B] hover:text-[#191D1A] flex items-center justify-center transition-colors cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Meal Slot Selector */}
+          <div>
+            <label className="text-[10px] font-bold text-[#8C857B] tracking-wider uppercase block mb-1.5">
+              Meal Slot
+            </label>
+            <div className="grid grid-cols-4 gap-1.5">
+              {slots.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => setMealType(s.id)}
+                  className={cn(
+                    "py-2 rounded-xl text-xs font-bold transition-all text-center cursor-pointer",
+                    mealType.toLowerCase() === s.id
+                      ? "bg-[#191D1A] text-white shadow-2xs"
+                      : "bg-[#EFECE4] text-[#57534E] hover:text-[#191D1A]"
+                  )}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Meal Name Input */}
+          <div>
+            <label className="text-[10px] font-bold text-[#8C857B] tracking-wider uppercase block mb-1">
+              Meal Name &amp; Description
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. 2 Chapatis, Dal, and Curd"
+              required
+              className="w-full bg-[#F6F3EC] rounded-2xl px-3.5 py-2.5 text-sm font-semibold text-[#191D1A] outline-none border border-[#1C1917]/[0.06] focus:border-[#2D6A4F]"
+            />
+          </div>
+
+          {/* Macros Grid */}
+          <div>
+            <label className="text-[10px] font-bold text-[#8C857B] tracking-wider uppercase block mb-1.5">
+              Nutrition Values
+            </label>
+            <div className="grid grid-cols-2 gap-2.5">
+              <div className="bg-[#F6F3EC] rounded-2xl p-2.5 border border-[#1C1917]/[0.06]">
+                <span className="text-[10px] font-bold text-[#C94A38] uppercase block">Calories</span>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <input
+                    type="number"
+                    min="1"
+                    max="5000"
+                    value={calories}
+                    onChange={(e) => setCalories(Number(e.target.value))}
+                    className="bg-transparent text-sm font-bold text-[#191D1A] outline-none w-full"
+                  />
+                  <span className="text-[10px] text-[#8C857B] font-mono">kcal</span>
+                </div>
+              </div>
+
+              <div className="bg-[#F6F3EC] rounded-2xl p-2.5 border border-[#1C1917]/[0.06]">
+                <span className="text-[10px] font-bold text-[#2D6A4F] uppercase block">Protein</span>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <input
+                    type="number"
+                    min="0"
+                    max="500"
+                    value={protein}
+                    onChange={(e) => setProtein(Number(e.target.value))}
+                    className="bg-transparent text-sm font-bold text-[#191D1A] outline-none w-full"
+                  />
+                  <span className="text-[10px] text-[#8C857B] font-mono">g</span>
+                </div>
+              </div>
+
+              <div className="bg-[#F6F3EC] rounded-2xl p-2.5 border border-[#1C1917]/[0.06]">
+                <span className="text-[10px] font-bold text-[#57534E] uppercase block">Carbs</span>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <input
+                    type="number"
+                    min="0"
+                    max="800"
+                    value={carbs}
+                    onChange={(e) => setCarbs(Number(e.target.value))}
+                    className="bg-transparent text-sm font-bold text-[#191D1A] outline-none w-full"
+                  />
+                  <span className="text-[10px] text-[#8C857B] font-mono">g</span>
+                </div>
+              </div>
+
+              <div className="bg-[#F6F3EC] rounded-2xl p-2.5 border border-[#1C1917]/[0.06]">
+                <span className="text-[10px] font-bold text-[#57534E] uppercase block">Fat</span>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <input
+                    type="number"
+                    min="0"
+                    max="500"
+                    value={fat}
+                    onChange={(e) => setFat(Number(e.target.value))}
+                    className="bg-transparent text-sm font-bold text-[#191D1A] outline-none w-full"
+                  />
+                  <span className="text-[10px] text-[#8C857B] font-mono">g</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="pt-2 flex items-center justify-end gap-2.5">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={saving}
+              className="h-11 px-5 rounded-full bg-[#EFECE4] hover:bg-[#E5E1D8] text-[#191D1A] text-xs font-bold cursor-pointer transition-all active:scale-95"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving || !name.trim()}
+              className="h-11 px-6 rounded-full bg-[#2D6A4F] hover:bg-[#245740] text-white text-xs font-bold cursor-pointer transition-all shadow-sm active:scale-95 disabled:opacity-50"
+            >
+              {saving ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

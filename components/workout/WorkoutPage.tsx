@@ -35,7 +35,7 @@ import {
   ArrowRight,
   RotateCcw,
 } from "lucide-react";
-import { cn, generateId, todayString, formatDate } from "@/lib/utils";
+import { cn, generateId, todayString, formatDate, localDateString } from "@/lib/utils";
 import {
   saveWorkoutSession,
   getWorkoutSessions,
@@ -1264,8 +1264,48 @@ export default function WorkoutPage() {
               <div className="grid grid-cols-2 gap-3 mb-5">
                 {/* Left Card: Date */}
                 <div className="bg-[#FCFBF9] rounded-[24px] p-3.5 border border-[#1C1917]/[0.06] shadow-2xs">
-                  <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#8C857B]">
-                    SESSION DATE
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#8C857B]">
+                      SESSION DATE
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const y = new Date(`${date}T12:00:00`);
+                          y.setDate(y.getDate() - 1);
+                          setDate(localDateString(y));
+                        }}
+                        className="text-[10px] text-[#57534E] hover:text-[#191D1A] font-bold px-1"
+                        title="Previous day"
+                      >
+                        &larr;
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDate(todayString())}
+                        className={cn(
+                          "text-[9px] font-bold px-1.5 py-0.5 rounded-full transition-all",
+                          date === todayString()
+                            ? "bg-[#2D6A4F] text-white"
+                            : "bg-[#EFECE4] text-[#57534E]"
+                        )}
+                      >
+                        Today
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const y = new Date(`${date}T12:00:00`);
+                          y.setDate(y.getDate() + 1);
+                          setDate(localDateString(y));
+                        }}
+                        className="text-[10px] text-[#57534E] hover:text-[#191D1A] font-bold px-1"
+                        title="Next day"
+                      >
+                        &rarr;
+                      </button>
+                    </div>
                   </div>
                   <div className="flex items-center gap-2 mt-1.5">
                     <Calendar className="w-4 h-4 text-[#2D6A4F] shrink-0" />
@@ -1693,8 +1733,48 @@ export default function WorkoutPage() {
             {/* 2. Session Date & Duration 2-Column Row */}
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-[#FCFBF9] rounded-[24px] p-3.5 border border-[#1C1917]/[0.06] shadow-2xs">
-                <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#8C857B]">
-                  SESSION DATE
+                <div className="flex items-center justify-between">
+                  <span className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#8C857B]">
+                    SESSION DATE
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const y = new Date(`${date}T12:00:00`);
+                        y.setDate(y.getDate() - 1);
+                        setDate(localDateString(y));
+                      }}
+                      className="text-[10px] text-[#57534E] hover:text-[#191D1A] font-bold px-1 cursor-pointer"
+                      title="Previous day"
+                    >
+                      &larr;
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDate(todayString())}
+                      className={cn(
+                        "text-[9px] font-bold px-2 py-0.5 rounded-full transition-all cursor-pointer",
+                        date === todayString()
+                          ? "bg-[#2D6A4F] text-white"
+                          : "bg-[#EFECE4] text-[#57534E] hover:text-[#191D1A]"
+                      )}
+                    >
+                      Today
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const y = new Date(`${date}T12:00:00`);
+                        y.setDate(y.getDate() + 1);
+                        setDate(localDateString(y));
+                      }}
+                      className="text-[10px] text-[#57534E] hover:text-[#191D1A] font-bold px-1 cursor-pointer"
+                      title="Next day"
+                    >
+                      &rarr;
+                    </button>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2 mt-1.5">
                   <Calendar className="w-4 h-4 text-[#2D6A4F] shrink-0" />
