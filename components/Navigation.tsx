@@ -45,6 +45,8 @@ export default function Navigation() {
   const [searchQuery, setSearchQuery] = useState("");
   const [projects, setProjects] = useState<Project[]>([]);
   const [isKeyboardActive, setIsKeyboardActive] = useState(false);
+  const initialHeightRef = useRef<number>(typeof window !== "undefined" ? window.innerHeight : 0);
+  const lastWidthRef = useRef<number>(typeof window !== "undefined" ? window.innerWidth : 0);
   const desktopProfileRef = useRef<HTMLDivElement>(null);
   const mobileProfileRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -108,31 +110,62 @@ export default function Navigation() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const handleCustomKeyboard = (e: CustomEvent<{ isOpen?: boolean }>) => {
-      if (typeof e.detail?.isOpen === "boolean") {
-        setIsKeyboardActive(e.detail.isOpen);
-      }
-    };
+    initialHeightRef.current = window.innerHeight;
+    lastWidthRef.current = window.innerWidth;
 
-    const handleVisualViewport = () => {
-      if (!window.visualViewport) return;
+    const checkKeyboardState = () => {
       const isMobile = window.innerWidth < 768;
-      const heightDelta = window.innerHeight - window.visualViewport.height;
-      if (isMobile && heightDelta > 100) {
+      if (!isMobile) {
+        setIsKeyboardActive(false);
+        return;
+      }
+
+      // Orientation change detection
+      if (window.innerWidth !== lastWidthRef.current) {
+        lastWidthRef.current = window.innerWidth;
+        initialHeightRef.current = window.innerHeight;
+      }
+
+      const currentViewportHeight = window.visualViewport
+        ? window.visualViewport.height
+        : window.innerHeight;
+      const heightDelta = initialHeightRef.current - currentViewportHeight;
+
+      const isInputFocused =
+        document.documentElement.getAttribute("data-keyboard-open") === "true" ||
+        document.body.getAttribute("data-keyboard-open") === "true";
+
+      if (isInputFocused || heightDelta > 120) {
         setIsKeyboardActive(true);
-      } else if (isMobile && heightDelta <= 40) {
+      } else if (heightDelta <= 60 && !isInputFocused) {
         setIsKeyboardActive(false);
       }
     };
 
+    const handleCustomKeyboard = (
+      e: CustomEvent<{ open?: boolean; isOpen?: boolean }>
+    ) => {
+      const isMobile = window.innerWidth < 768;
+      if (!isMobile) return;
+      const isOpen =
+        typeof e.detail?.open === "boolean"
+          ? e.detail.open
+          : typeof e.detail?.isOpen === "boolean"
+          ? e.detail.isOpen
+          : false;
+      setIsKeyboardActive(isOpen);
+    };
+
     window.addEventListener("satat:keyboard-state" as any, handleCustomKeyboard);
-    window.visualViewport?.addEventListener("resize", handleVisualViewport);
-    window.visualViewport?.addEventListener("scroll", handleVisualViewport);
+    window.visualViewport?.addEventListener("resize", checkKeyboardState);
+    window.visualViewport?.addEventListener("scroll", checkKeyboardState);
+    window.addEventListener("resize", checkKeyboardState);
 
     return () => {
       window.removeEventListener("satat:keyboard-state" as any, handleCustomKeyboard);
-      window.visualViewport?.removeEventListener("resize", handleVisualViewport);
-      window.visualViewport?.removeEventListener("scroll", handleVisualViewport);
+      window.visualViewport?.removeEventListener("resize", checkKeyboardState);
+      window.visualViewport?.removeEventListener("scroll", checkKeyboardState);
+      window.removeEventListener("resize", checkKeyboardState);
     };
   }, []);
 
@@ -732,7 +765,7 @@ export default function Navigation() {
       <nav
         className={cn(
           "fixed left-1/2 -translate-x-1/2 bottom-[max(12px,env(safe-area-inset-bottom))] z-50 w-[calc(100vw-28px)] max-w-[390px] sm:max-w-[460px] h-[62px] rounded-full bg-[#191D1A]/95 backdrop-blur-xl border border-white/[0.08] shadow-[0_14px_34px_rgba(0,0,0,0.32)] px-2.5 flex items-center md:hidden transition-all duration-300 ease-out",
-          isKeyboardActive ? "translate-y-28 opacity-0 pointer-events-none" : "translate-y-0 opacity-100"
+          isKeyboardActive ? "translate-y-full opacity-0 pointer-events-none" : "translate-y-0 opacity-100"
         )}
         aria-label="Primary navigation"
       >

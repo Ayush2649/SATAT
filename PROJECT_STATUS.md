@@ -9,10 +9,14 @@
 
 ## 19 November 2026 — Comprehensive Mobile Keyboard Docking, Past-Date Logging, Expandable Meal Cards & Edit Modals (Complete)
 
+- **Reliable Mobile Bottom Navigation Auto-Hide & Focus/Blur Coupling (Orbit Intelligence Stream & Navigation)**:
+  - Fixed Android Chrome `window.innerHeight - visualViewport.height === 0` keyboard detection failure by establishing an un-shrunk `initialHeightRef` baseline on mount (recalculated only on orientation/width changes) in both `Navigation.tsx` and `OrbitView.tsx`.
+  - Implemented direct focus/blur coupling on the chat input textarea (`<textarea>`): on `focus` (mobile `< 768px`), immediately dispatched `satat:keyboard-state` (`{ open: true }`) and set `data-keyboard-open="true"` on `document.documentElement` and `document.body`.
+  - Implemented debounced blur handling (`120ms` delay with clearance on re-focus) to eliminate Send button tap layout flicker while guaranteeing proper teardown when switching out of input.
+  - Updated `components/Navigation.tsx` to hide the bottom floating capsule dock whenever `isInputFocused` (`satat:keyboard-state` / `data-keyboard-open="true"`) OR `initialHeight - currentViewportHeight > 120` is true on mobile (`< 768px`), applying `translate-y-full opacity-0 pointer-events-none`.
+  - Updated `components/orbit/OrbitView.tsx` to remove the extra bottom navigation clearance margin (`mb-0 pb-3`) when `isKeyboardActive` is true, seating the chat composer flush right above the soft keyboard for maximum vertical message reading space.
 - **Mobile Keyboard & Chatbox Dynamic Viewport Docking (Orbit Intelligence Stream)**:
   - Implemented dynamic viewport tracking with `window.visualViewport` and `h-[100dvh]` root layout container, dynamically syncing the height so the chatbox shrinks cleanly to the visible area above the soft keyboard without viewport bouncing or clipped messages.
-  - Added custom `satat:keyboard-state` event dispatch and visual viewport delta thresholding (>60px): when the mobile virtual keyboard opens, the floating bottom navigation capsule (`Today | Plan | + | Train | Fuel`) smoothly slides down (`translate-y-28 opacity-0 pointer-events-none`) and unblocks the composer dock.
-  - Removed bottom navigation padding offset dynamically on keyboard activation, docking the textarea directly above the keyboard with `env(safe-area-inset-bottom)`.
   - Added automatic scroll-to-bottom anchor triggering whenever the keyboard opens or new messages stream in.
 - **Past-Date Logging & Relative Date Resolution (Fuel, Train, Plan)**:
   - Added `resolveRelativeDate` in `lib/orbit/mutationEngine.ts` to resolve natural language and relative date keywords (`yesterday`, `last night`, `2 days ago`, `tomorrow`, `day after tomorrow`, or ISO `YYYY-MM-DD`) relative to the user's local date context.
@@ -28,11 +32,22 @@
 - **Test Metrics & Build Status**:
   - `npx tsc --noEmit`: **0 errors (Exit code 0)**.
   - `tests/orbit/continuity-mutations.test.ts`: **50 passed, 0 failed (100%)**.
+  - `tests/orbit/orbit-retry.test.ts`: **7 passed, 0 failed (100%)**.
+  - `tests/responsive/orbit-mobile.test.ts`: **7 passed, 0 failed (100%)**.
   - Full Vitest suite: **71 test files passed; 831 tests passed, 26 skipped, 0 failures**.
   - Production build: `npm run build` **passed (exit code 0)**, successfully compiling all 34 static and dynamic routes.
 - **Modified Files**:
-  - `components/Navigation.tsx`: Mobile keyboard auto-hide listener and transition animation.
-  - `components/orbit/OrbitView.tsx`: Dynamic `visualViewport` height tracking, keyboard detection, docked composer padding, and scroll-to-bottom ref.
+  - `components/Navigation.tsx`: Baseline un-shrunk height tracking, `data-keyboard-open` check, `satat:keyboard-state` handling, and `translate-y-full opacity-0 pointer-events-none` transition.
+  - `components/orbit/OrbitView.tsx`: Direct `onFocus` & debounced `120ms` `onBlur` coupling, `data-keyboard-open` toggling, baseline viewport height tracking, flush `mb-0 pb-3` composer docking, and scroll-to-bottom.
+  - `lib/firestore.ts`: Exported `updateMeal` mutation function.
+  - `types/orbit.ts`: Added `MODIFY_TASK` to `OrbitActionType`.
+  - `lib/orbit/mutationEngine.ts`: Added `resolveRelativeDate`, relative date resolution in fallback cleaners, structured edit actions handling, and `MODIFY_TASK` execution.
+  - `app/api/aria/route.ts`: Updated prompt directives with `targetDate`, edit actions schema, and date synchronization.
+  - `components/diet/DietPage.tsx`: Expandable meal accordions, `< Yesterday | Today >` date navigator, `EditMealModal`, and `handleUpdateMeal`.
+  - `components/workout/WorkoutPage.tsx`: Date navigator with `< Yesterday | Today >` buttons.
+  - `components/tasks/TaskBoard.tsx`: Date navigator with `< Yesterday | Today >` buttons.
+  - `tests/orbit/continuity-mutations.test.ts`: Added past-date logging, relative date resolution, and structured edit mutations test suite.
+  - `PROJECT_STATUS.md`: Updated roadmap and verification metrics.
   - `lib/firestore.ts`: Exported `updateMeal` mutation function.
   - `types/orbit.ts`: Added `MODIFY_TASK` to `OrbitActionType`.
   - `lib/orbit/mutationEngine.ts`: Added `resolveRelativeDate`, relative date resolution in fallback cleaners, structured edit actions handling, and `MODIFY_TASK` execution.
