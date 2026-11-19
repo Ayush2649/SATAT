@@ -107,6 +107,7 @@ export function OrbitView({ isOverlay = false, isOpen = true, onClose, className
   const [keyboardOffset, setKeyboardOffset] = useState(0);
   const [isKeyboardActive, setIsKeyboardActive] = useState(false);
   const [viewportHeight, setViewportHeight] = useState<number | null>(null);
+  const [iosViewport, setIosViewport] = useState<{ top: number; height: number } | null>(null);
   const [orbitState, setOrbitState] = useState<OrbitState>("idle");
   const [pendingIntent, setPendingIntent] = useState<OrbitIntent>("GENERAL_COACHING");
   const [viewMode, setViewMode] = useState<"overview" | "chat">("overview");
@@ -120,6 +121,7 @@ export function OrbitView({ isOverlay = false, isOpen = true, onClose, className
   const lastUserMessageRef = useRef<HTMLDivElement>(null);
   const loadingCardRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const blurTimerRef = useRef<NodeJS.Timeout | null>(null);
   const initialHeightRef = useRef<number>(typeof window !== "undefined" ? window.innerHeight : 0);
   const lastWidthRef = useRef<number>(typeof window !== "undefined" ? window.innerWidth : 0);
@@ -158,9 +160,6 @@ export function OrbitView({ isOverlay = false, isOpen = true, onClose, className
           }
         }
         container.scrollTop = container.scrollHeight;
-        if (anchor && typeof anchor.scrollIntoView === "function") {
-          anchor.scrollIntoView({ behavior, block: "end" });
-        }
         return;
       }
       if (anchor && typeof anchor.scrollIntoView === "function") {
@@ -199,12 +198,16 @@ export function OrbitView({ isOverlay = false, isOpen = true, onClose, className
     blurTimerRef.current = setTimeout(() => {
       if (typeof window !== "undefined") {
         if (!inputRef.current || document.activeElement !== inputRef.current) {
-          setIsKeyboardActive(false);
-          document.documentElement.removeAttribute("data-keyboard-open");
-          document.body.removeAttribute("data-keyboard-open");
+          const stillResized = window.innerWidth < 768 && !!window.visualViewport &&
+            initialHeightRef.current - window.visualViewport.height > 120;
+          setIsKeyboardActive(stillResized);
+          if (!stillResized) {
+            document.documentElement.removeAttribute("data-keyboard-open");
+            document.body.removeAttribute("data-keyboard-open");
+          }
           window.dispatchEvent(
             new CustomEvent("satat:keyboard-state", {
-              detail: { open: false, isOpen: false },
+              detail: { open: stillResized, isOpen: stillResized },
             })
           );
         }
@@ -220,11 +223,16 @@ export function OrbitView({ isOverlay = false, isOpen = true, onClose, className
     initialHeightRef.current = window.innerHeight;
     lastWidthRef.current = window.innerWidth;
 
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    let wasKeyboardOpen = false;
+
     const handleViewportChange = () => {
       const isMobile = window.innerWidth < 768;
 
       if (!isMobile) {
         setViewportHeight(null);
+        setIosViewport(null);
         setKeyboardOffset(0);
         setIsKeyboardActive(false);
         return;
@@ -237,15 +245,28 @@ export function OrbitView({ isOverlay = false, isOpen = true, onClose, className
       }
 
       const heightDelta = initialHeightRef.current - vv.height;
-      const isInputFocused =
-        document.activeElement === inputRef.current ||
-        document.documentElement.getAttribute("data-keyboard-open") === "true" ||
-        document.body.getAttribute("data-keyboard-open") === "true";
+      const isInputFocused = document.activeElement === inputRef.current;
 
       const keyboardOpen = isInputFocused || heightDelta > 120;
       setKeyboardOffset(keyboardOpen ? Math.max(0, heightDelta) : 0);
       setIsKeyboardActive(keyboardOpen);
       setViewportHeight(vv.height);
+      if (isIOS && !isOverlay && isOpen) {
+        // WebKit can scroll both the page and overflow-hidden ancestors while
+        // revealing a focused input. Keep only the message list scrollable.
+        if (keyboardOpen || wasKeyboardOpen) {
+          let ancestor = rootRef.current?.parentElement;
+          while (ancestor && ancestor !== document.body) {
+            if (ancestor.scrollTop) ancestor.scrollTop = 0;
+            ancestor = ancestor.parentElement;
+          }
+          if (window.scrollX || window.scrollY) window.scrollTo(0, 0);
+        }
+        setIosViewport({ top: vv.offsetTop, height: vv.height });
+      } else {
+        setIosViewport(null);
+      }
+      wasKeyboardOpen = keyboardOpen;
 
       if (keyboardOpen) {
         document.documentElement.setAttribute("data-keyboard-open", "true");
@@ -271,13 +292,16 @@ export function OrbitView({ isOverlay = false, isOpen = true, onClose, className
     vv.addEventListener("resize", handleViewportChange);
     vv.addEventListener("scroll", handleViewportChange);
     window.addEventListener("resize", handleViewportChange);
+    window.addEventListener("scroll", handleViewportChange);
+    handleViewportChange();
 
     return () => {
       vv.removeEventListener("resize", handleViewportChange);
       vv.removeEventListener("scroll", handleViewportChange);
       window.removeEventListener("resize", handleViewportChange);
+      window.removeEventListener("scroll", handleViewportChange);
     };
-  }, [scrollToBottom]);
+  }, [isOpen, isOverlay, scrollToBottom]);
 
   // Load in-session history & jump to latest message on initial open
   useEffect(() => {
@@ -692,11 +716,14 @@ export function OrbitView({ isOverlay = false, isOpen = true, onClose, className
 
   return (
     <div
+      ref={rootRef}
       className={cn(
         "orbit-view-root flex flex-col h-[100dvh] w-full select-none bg-[#F6F3EC] overflow-hidden min-w-0 relative",
         className
       )}
-      style={viewportHeight ? { height: `${viewportHeight}px`, maxHeight: `${viewportHeight}px` } : undefined}
+      style={iosViewport
+        ? { position: "fixed", top: iosViewport.top, left: 0, height: iosViewport.height, maxHeight: iosViewport.height }
+        : viewportHeight ? { height: `${viewportHeight}px`, maxHeight: `${viewportHeight}px` } : undefined}
     >
       {/* ── MOBILE & COMPACT OVERLAY VIEW ── */}
       <div
@@ -706,7 +733,7 @@ export function OrbitView({ isOverlay = false, isOpen = true, onClose, className
         )}
       >
         {/* ── 1. ORBIT EDITORIAL HEADER ── */}
-        <header className="shrink-0 bg-[#F6F3EC] z-20 transition-all">
+        <header className="shrink-0 bg-[#F6F3EC] z-20">
           {/* App Bar Top Row (1:1 with SATAT / Today - image_23a8f9.png) */}
           <div className="h-14 px-4 flex items-center justify-between border-b border-[#1C1917]/[0.06] bg-[#FCFBF9] shrink-0">
             {/* Left: Circular emblem container with geometric S mark + SATAT / Orbit */}
@@ -763,7 +790,7 @@ export function OrbitView({ isOverlay = false, isOpen = true, onClose, className
           {/* Orbit Title Row & Context Filter Pills */}
           <div className="px-4 pt-3 pb-2.5 border-b border-[#1C1917]/[0.06] flex flex-col gap-2.5 bg-[#F6F3EC]">
             {/* Title Row with New Chat / Reset Action */}
-            <div className="flex items-start justify-between gap-2">
+            <div className="flex shrink-0 items-start justify-between gap-2">
               <div>
                 <h1 className="font-serif font-normal text-[22px] sm:text-[26px] leading-[1.08] text-[#191D1A] tracking-[-0.02em]">
                   Orbit Intelligence
@@ -786,7 +813,7 @@ export function OrbitView({ isOverlay = false, isOpen = true, onClose, className
             </div>
 
             {/* Active Context Filter Bar (Horizontal Pill Row — No scrollbar & tightened padding) */}
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] py-0.5">
+            <div className="flex shrink-0 items-center gap-1.5 overflow-x-auto no-scrollbar [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] py-0.5">
               {FOCUS_MODES.map((m) => {
                 const isSelected = focusMode === m.id;
                 const Icon = m.icon;
@@ -1335,7 +1362,7 @@ export function OrbitView({ isOverlay = false, isOpen = true, onClose, className
         {/* ── 3. COMPOSER DOCK (Docked Above Bottom Navigation) ── */}
         <div
           className={cn(
-            "px-4 sm:px-6 pt-1 shrink-0 z-30 transition-all duration-150 bg-gradient-to-t from-[#F6F3EC] via-[#F6F3EC]/95 to-transparent",
+            "px-4 sm:px-6 pt-1 shrink-0 z-30 bg-gradient-to-t from-[#F6F3EC] via-[#F6F3EC]/95 to-transparent",
             !isOverlay
               ? (isKeyboardActive || keyboardOffset > 0)
                 ? "mb-0 pb-3 lg:pb-6"
@@ -1382,7 +1409,7 @@ export function OrbitView({ isOverlay = false, isOpen = true, onClose, className
               onFocus={handleInputFocus}
               onBlur={handleInputBlur}
               placeholder="Ask Orbit about training, diet, or focus..."
-              className="w-full flex-1 bg-transparent border-0 outline-none focus:outline-none focus:ring-0 ring-0 shadow-none text-xs sm:text-sm resize-none leading-relaxed scrollbar-none min-h-[22px] max-h-[120px] text-[#1C1917] placeholder-[#8C857B] font-medium py-0.5"
+              className="w-full flex-1 bg-transparent border-0 outline-none focus:outline-none focus:ring-0 ring-0 shadow-none text-base md:text-sm resize-none leading-relaxed scrollbar-none min-h-[22px] max-h-[120px] text-[#1C1917] placeholder-[#8C857B] font-medium py-0.5"
               aria-label="Ask Orbit"
             />
 

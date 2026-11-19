@@ -7,6 +7,13 @@
 
 ---
 
+## 19 November 2026 — Orbit iOS keyboard alignment
+
+- Investigated the Orbit viewport inside the dashboard shell: visual viewport height was applied without its top offset, while WebKit could scroll the window or shell to reveal the focused composer. Keyboard state also fed its own detection, and layout transitions could animate the header and composer independently.
+- Updated `components/orbit/OrbitView.tsx` to position the mobile iOS Orbit page against `visualViewport.offsetTop` and height, clear unintended outer scroll during focus and keyboard dismissal, retain keyboard state until the viewport recovers, and keep header rows from shrinking or transitioning into each other. The mobile input uses a 16px font to avoid iOS focus zoom; Android retains its existing viewport sizing approach.
+- Verification with the bundled Node runtime and locally installed tools: TypeScript passed; full Vitest suite passed (71 files, 831 tests, 26 Firestore emulator tests skipped); production build passed with all 34 pages generated and existing lint warnings. A sandboxed repeat encountered an output-directory permission error; the final-code build passed outside the sandbox. The iPhone keyboard and Android device layouts still require physical-device acceptance; automated tests do not reproduce native keyboard transitions.
+- Modified files: `components/orbit/OrbitView.tsx`, `PROJECT_STATUS.md`. Upcoming sprint priorities are unchanged; device acceptance remains outstanding.
+
 ## 19 November 2026 — Comprehensive Mobile Keyboard Docking, Past-Date Logging, Expandable Meal Cards & Edit Modals (Complete)
 
 - **Reliable Mobile Bottom Navigation Auto-Hide & Focus/Blur Coupling (Orbit Intelligence Stream & Navigation)**:

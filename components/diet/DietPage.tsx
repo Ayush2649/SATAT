@@ -803,13 +803,13 @@ export default function DietPage() {
                           <span>Edit Details</span>
                         </button>
                         <button
-                          type="button"
-                          onClick={() => void handleDeleteMeal(meal.id)}
-                          className="h-11 px-4 rounded-full bg-[#FADCD5]/60 hover:bg-[#FADCD5] text-[#C94A38] text-xs font-bold inline-flex items-center gap-2 cursor-pointer transition-all active:scale-95"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          <span>Delete Meal</span>
-                        </button>
+  type="button"
+  onClick={() => void handleDeleteMeal(meal.id)}
+  className="h-11 px-4 rounded-full bg-[#FADCD5] hover:bg-[#F4C4B8] text-[#B53928] border border-[#E05A47]/25 text-xs font-bold inline-flex items-center gap-2 cursor-pointer transition-all active:scale-95"
+>
+  <Trash2 className="w-3.5 h-3.5" />
+  <span>Delete Meal</span>
+</button>
                       </div>
                     </div>
                   )}
