@@ -131,6 +131,7 @@ import {
   cleanFallbackWorkoutInput,
   cleanFallbackTaskInput,
   parseStructuredLlmResponse,
+  resolveRelativeDate,
 } from "@/lib/orbit/mutationEngine";
 
 describe("Orbit Context Continuity, State Mutation & Suggestion Engine", () => {
@@ -1881,6 +1882,209 @@ describe("Orbit Context Continuity, State Mutation & Suggestion Engine", () => {
       expect(fallbackClean?.title).toBe("Finish the API integration");
       expect(fallbackClean?.priority).toBe("high");
       expect(fallbackClean?.dueDate).toBe("2026-11-19");
+    });
+  });
+
+  describe("Past-Date Logging, Relative Dates & Structured Edit Mutations", () => {
+    it("resolves relative date phrases accurately against a reference date", () => {
+      const refDate = "2026-11-19";
+
+      expect(resolveRelativeDate("in yesterday's dinner", refDate)).toBe("2026-11-18");
+      expect(resolveRelativeDate("last night workout", refDate)).toBe("2026-11-18");
+      expect(resolveRelativeDate("2 days ago I ate chicken biryani", refDate)).toBe("2026-11-17");
+      expect(resolveRelativeDate("tomorrow morning task", refDate)).toBe("2026-11-20");
+      expect(resolveRelativeDate("day after tomorrow", refDate)).toBe("2026-11-21");
+      expect(resolveRelativeDate("log on 2026-11-15", refDate)).toBe("2026-11-15");
+      expect(resolveRelativeDate("just a plain prompt", refDate)).toBe("2026-11-19");
+    });
+
+    it("parses past-date structured actions for meals, workouts, and tasks", () => {
+      const refDate = "2026-11-19";
+
+      const pastMealJson = JSON.stringify({
+        reply: "Logged your yesterday dinner.",
+        actions: [
+          {
+            type: "log_meal",
+            payload: {
+              targetDate: "yesterday",
+              mealType: "dinner",
+              mealName: "Khichdi with Papad",
+              items: [{ name: "Khichdi" }, { name: "Papad" }],
+              macros: { calories: 450, protein: 12, carbs: 65, fat: 10 },
+            },
+          },
+        ],
+      });
+
+      const mutations = parseStructuredLlmResponse(pastMealJson, {}, refDate);
+      expect(mutations).not.toBeNull();
+      expect(mutations).toHaveLength(1);
+      expect(mutations![0]).toMatchObject({
+        type: "UPSERT_MEAL",
+        domain: "meals",
+        params: {
+          date: "2026-11-18",
+          mealType: "dinner",
+          mealName: "Khichdi with Papad",
+        },
+      });
+    });
+
+    it("parses structured edit actions for meals, workouts, and tasks", () => {
+      const refDate = "2026-11-19";
+
+      const editJson = JSON.stringify({
+        reply: "Updated your records.",
+        actions: [
+          {
+            type: "edit_meal",
+            payload: {
+              mealType: "dinner",
+              mealName: "Khichdi with 2 Fried Papads",
+              macros: { calories: 530, protein: 15, carbs: 70, fat: 18 },
+            },
+          },
+          {
+            type: "edit_workout",
+            payload: {
+              exerciseName: "Bench Press",
+              sets: [{ reps: 12, weight: 65, completed: true }],
+            },
+          },
+          {
+            type: "edit_task",
+            payload: {
+              taskTitle: "Finish API integration",
+              scheduledTime: "14:00",
+              priority: "high",
+            },
+          },
+        ],
+      });
+
+      const mutations = parseStructuredLlmResponse(editJson, {}, refDate);
+      expect(mutations).not.toBeNull();
+      expect(mutations).toHaveLength(3);
+
+      expect(mutations![0]).toMatchObject({
+        type: "MODIFY_MEAL",
+        domain: "meals",
+        params: {
+          updates: expect.objectContaining({
+            name: "Khichdi with 2 Fried Papads",
+            macros: expect.objectContaining({ calories: 530 }),
+          }),
+        },
+      });
+
+      expect(mutations![1]).toMatchObject({
+        type: "UPDATE_WORKOUT_SET",
+        domain: "workouts",
+        params: {
+          exerciseName: "Bench Press",
+        },
+      });
+
+      expect(mutations![2]).toMatchObject({
+        type: "MODIFY_TASK",
+        domain: "tasks",
+        params: {
+          taskTitle: "Finish API integration",
+          scheduledTime: "14:00",
+          priority: "high",
+        },
+      });
+    });
+
+    it("executes past-date meal logging and edits via the POST /api/aria pipeline", async () => {
+      (getServerSession as any).mockResolvedValue({
+        user: { name: "Athlete User", email: "athlete@dailyos.test" },
+      });
+
+      // 1. Log yesterday's meal
+      mockCallTextWithFallback.mockResolvedValueOnce({
+        data: JSON.stringify({
+          reply: "Logged your yesterday dinner of Dal and Rice.",
+          actions: [
+            {
+              type: "log_meal",
+              payload: {
+                targetDate: "2026-11-18",
+                mealType: "dinner",
+                mealName: "Dal and Rice",
+                items: [{ name: "Dal" }, { name: "Rice" }],
+                macros: { calories: 420, protein: 14, carbs: 68, fat: 8 },
+              },
+            },
+          ],
+        }),
+      });
+
+      const req1 = new NextRequest("http://localhost/api/aria", {
+        method: "POST",
+        body: JSON.stringify({
+          message: "yesterday in dinner I had dal and rice, log this",
+          mode: "diet",
+          clientDate: "2026-11-19",
+        }),
+      });
+
+      const res1 = await POST(req1);
+      expect(res1.status).toBe(200);
+      const body1 = await res1.json();
+      expect(body1.action_executed).toMatchObject({
+        type: "UPSERT_MEAL",
+        status: "success",
+      });
+
+      // Verify meal persisted with yesterday's date
+      expect(mockMealStore.size).toBe(1);
+      const savedMeal = Array.from(mockMealStore.values())[0];
+      expect(savedMeal.date).toBe("2026-11-18");
+      expect(savedMeal.mealType).toBe("dinner");
+      expect(savedMeal.macros.calories).toBe(420);
+
+      // 2. Edit that meal
+      mockCallTextWithFallback.mockResolvedValueOnce({
+        data: JSON.stringify({
+          reply: "Updated your yesterday dinner macros.",
+          actions: [
+            {
+              type: "edit_meal",
+              payload: {
+                entryId: savedMeal.id,
+                targetDate: "2026-11-18",
+                mealName: "Dal Tadka and Jeera Rice",
+                macros: { calories: 480, protein: 16, carbs: 75, fat: 12 },
+              },
+            },
+          ],
+        }),
+      });
+
+      const req2 = new NextRequest("http://localhost/api/aria", {
+        method: "POST",
+        body: JSON.stringify({
+          message: "change yesterday's dinner to Dal Tadka and Jeera Rice with 480 kcal",
+          mode: "diet",
+          clientDate: "2026-11-19",
+        }),
+      });
+
+      const res2 = await POST(req2);
+      expect(res2.status).toBe(200);
+      const body2 = await res2.json();
+      expect(body2.action_executed).toMatchObject({
+        type: "MODIFY_MEAL",
+        status: "success",
+      });
+
+      // Verify Firestore meal document updated
+      const updatedMeal = mockMealStore.get(savedMeal.id);
+      expect(updatedMeal.name).toBe("Dal Tadka and Jeera Rice");
+      expect(updatedMeal.macros.calories).toBe(480);
+      expect(updatedMeal.macros.proteinG).toBe(16);
     });
   });
 });

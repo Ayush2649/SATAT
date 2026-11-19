@@ -895,7 +895,7 @@ export default function TaskBoard() {
               </div>
 
               {/* Date Navigator Pill */}
-              <div className="inline-flex items-center gap-1 bg-[#FCFBF9] border border-[#1C1917]/[0.06] rounded-full px-2 py-1 text-xs font-semibold shadow-2xs">
+              <div className="inline-flex items-center gap-1.5 bg-[#FCFBF9] border border-[#1C1917]/[0.06] rounded-full px-2 py-1 text-xs font-semibold shadow-2xs">
                 <button
                   onClick={() => navigateWeek(-1)}
                   type="button"
@@ -904,9 +904,43 @@ export default function TaskBoard() {
                 >
                   <ChevronLeft className="w-3.5 h-3.5" />
                 </button>
-                <span className="text-[11px] text-[#1C1917] font-bold px-1 tabular-nums">
-                  {formatShortDate(selectedDate)}
-                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const y = new Date();
+                    y.setDate(y.getDate() - 1);
+                    setSelectedDate(localDateString(y));
+                  }}
+                  className={cn(
+                    "text-[10px] font-bold px-2 py-0.5 rounded-full transition-all cursor-pointer",
+                    selectedDate === localDateString(new Date(Date.now() - 86400000))
+                      ? "bg-[#191D1A] text-white"
+                      : "bg-[#EFECE4] text-[#57534E]"
+                  )}
+                >
+                  Yesterday
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedDate(today)}
+                  className={cn(
+                    "text-[10px] font-bold px-2 py-0.5 rounded-full transition-all cursor-pointer",
+                    selectedDate === today
+                      ? "bg-[#2D6A4F] text-white"
+                      : "bg-[#EFECE4] text-[#57534E]"
+                  )}
+                >
+                  Today
+                </button>
+                <label className="text-[11px] text-[#1C1917] font-bold px-1 tabular-nums cursor-pointer flex items-center gap-1">
+                  <span>{formatShortDate(selectedDate)}</span>
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
+                    className="sr-only"
+                  />
+                </label>
                 <button
                   onClick={() => navigateWeek(1)}
                   type="button"
@@ -1432,6 +1466,74 @@ export default function TaskBoard() {
               <div className="space-y-5">
                 {/* 7-Day Week Strip & Project Filter Pills Row */}
                 <div className="bg-[#FCFBF9] rounded-[24px] p-4 border border-[#1C1917]/[0.06] shadow-xs space-y-3">
+                  {/* Week Navigation & Date Quick Jumps */}
+                  <div className="flex items-center justify-between pb-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-[#191D1A]">
+                        {weekLabel(weekDates)}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => navigateWeek(-1)}
+                          type="button"
+                          aria-label="Previous week"
+                          className="w-6 h-6 rounded-full hover:bg-[#EFECE4] flex items-center justify-center text-[#57534E] cursor-pointer"
+                        >
+                          <ChevronLeft className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => navigateWeek(1)}
+                          type="button"
+                          aria-label="Next week"
+                          className="w-6 h-6 rounded-full hover:bg-[#EFECE4] flex items-center justify-center text-[#57534E] cursor-pointer"
+                        >
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const y = new Date();
+                          y.setDate(y.getDate() - 1);
+                          setSelectedDate(localDateString(y));
+                        }}
+                        className={cn(
+                          "text-[10px] font-bold px-2.5 py-1 rounded-full transition-all cursor-pointer",
+                          selectedDate === localDateString(new Date(Date.now() - 86400000))
+                            ? "bg-[#191D1A] text-white"
+                            : "bg-[#EFECE4] text-[#57534E] hover:text-[#191D1A]"
+                        )}
+                      >
+                        Yesterday
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedDate(today)}
+                        className={cn(
+                          "text-[10px] font-bold px-2.5 py-1 rounded-full transition-all cursor-pointer",
+                          selectedDate === today
+                            ? "bg-[#2D6A4F] text-white"
+                            : "bg-[#EFECE4] text-[#57534E] hover:text-[#191D1A]"
+                        )}
+                      >
+                        Today
+                      </button>
+                      <label className="text-xs font-bold text-[#1C1917] bg-[#F6F3EC] hover:bg-[#EFECE4] px-2.5 py-1 rounded-full cursor-pointer flex items-center gap-1">
+                        <Calendar className="w-3 h-3 text-[#2D6A4F]" />
+                        <span>{formatShortDate(selectedDate)}</span>
+                        <input
+                          type="date"
+                          value={selectedDate}
+                          onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
+                          className="sr-only"
+                        />
+                      </label>
+                    </div>
+                  </div>
+
                   {/* Week Days Strip */}
                   <div className="grid grid-cols-7 gap-2">
                     {weekDates.map((date: string, i: number) => {

@@ -105,6 +105,8 @@ export function OrbitView({ isOverlay = false, isOpen = true, onClose, className
   const [focusMode, setFocusMode] = useState<OrbitFocusMode>("all");
   const [error, setError] = useState<string | null>(null);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
+  const [isKeyboardActive, setIsKeyboardActive] = useState(false);
+  const [viewportHeight, setViewportHeight] = useState<number | null>(null);
   const [orbitState, setOrbitState] = useState<OrbitState>("idle");
   const [pendingIntent, setPendingIntent] = useState<OrbitIntent>("GENERAL_COACHING");
   const [viewMode, setViewMode] = useState<"overview" | "chat">("overview");
@@ -127,22 +129,6 @@ export function OrbitView({ isOverlay = false, isOpen = true, onClose, className
   useEffect(() => {
     return () => {
       if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
-    };
-  }, []);
-
-  // Handle mobile virtual keyboard dynamic resizing
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.visualViewport) return;
-    const vv = window.visualViewport;
-    const handleViewportChange = () => {
-      const offset = window.innerHeight - vv.height;
-      setKeyboardOffset(offset > 60 ? offset : 0);
-    };
-    vv.addEventListener("resize", handleViewportChange);
-    vv.addEventListener("scroll", handleViewportChange);
-    return () => {
-      vv.removeEventListener("resize", handleViewportChange);
-      vv.removeEventListener("scroll", handleViewportChange);
     };
   }, []);
 
@@ -177,6 +163,38 @@ export function OrbitView({ isOverlay = false, isOpen = true, onClose, className
     scrollContainer(mobileScrollContainerRef.current, mobileMessagesEndRef.current);
     scrollContainer(desktopScrollContainerRef.current, desktopMessagesEndRef.current);
   }, []);
+
+  // Handle mobile virtual keyboard dynamic resizing & bottom capsule dock coordination
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.visualViewport) return;
+    const vv = window.visualViewport;
+    const handleViewportChange = () => {
+      const isMobile = window.innerWidth < 1024;
+      const offset = window.innerHeight - vv.height;
+      const keyboardOpen = isMobile && offset > 60;
+      setKeyboardOffset(offset > 60 ? offset : 0);
+      setIsKeyboardActive(keyboardOpen);
+      if (isMobile) {
+        setViewportHeight(vv.height);
+        window.dispatchEvent(
+          new CustomEvent("satat:keyboard-state", { detail: { isOpen: keyboardOpen } })
+        );
+        if (keyboardOpen) {
+          setTimeout(() => {
+            scrollToBottom("auto");
+          }, 60);
+        }
+      } else {
+        setViewportHeight(null);
+      }
+    };
+    vv.addEventListener("resize", handleViewportChange);
+    vv.addEventListener("scroll", handleViewportChange);
+    return () => {
+      vv.removeEventListener("resize", handleViewportChange);
+      vv.removeEventListener("scroll", handleViewportChange);
+    };
+  }, [scrollToBottom]);
 
   // Load in-session history & jump to latest message on initial open
   useEffect(() => {
@@ -589,12 +607,38 @@ export function OrbitView({ isOverlay = false, isOpen = true, onClose, className
     e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
   };
 
+  const handleInputFocus = () => {
+    if (typeof window !== "undefined" && window.innerWidth < 1024) {
+      setIsKeyboardActive(true);
+      window.dispatchEvent(
+        new CustomEvent("satat:keyboard-state", { detail: { isOpen: true } })
+      );
+      setTimeout(() => {
+        scrollToBottom("smooth");
+      }, 150);
+    }
+  };
+
+  const handleInputBlur = () => {
+    if (typeof window !== "undefined" && window.innerWidth < 1024) {
+      setTimeout(() => {
+        if (!inputRef.current || document.activeElement !== inputRef.current) {
+          setIsKeyboardActive(false);
+          window.dispatchEvent(
+            new CustomEvent("satat:keyboard-state", { detail: { isOpen: false } })
+          );
+        }
+      }, 150);
+    }
+  };
+
   return (
     <div
       className={cn(
-        "orbit-view-root flex flex-col h-full w-full select-none bg-[#F6F3EC] overflow-hidden min-w-0 relative",
+        "orbit-view-root flex flex-col h-[100dvh] w-full select-none bg-[#F6F3EC] overflow-hidden min-w-0 relative",
         className
       )}
+      style={viewportHeight ? { height: `${viewportHeight}px`, maxHeight: `${viewportHeight}px` } : undefined}
     >
       {/* ── MOBILE & COMPACT OVERLAY VIEW ── */}
       <div
@@ -1235,12 +1279,16 @@ export function OrbitView({ isOverlay = false, isOpen = true, onClose, className
           className={cn(
             "px-4 sm:px-6 pt-1 shrink-0 z-30 transition-all duration-150 bg-gradient-to-t from-[#F6F3EC] via-[#F6F3EC]/95 to-transparent",
             !isOverlay
-              ? "pb-[calc(56px+max(16px,env(safe-area-inset-bottom,0px))+16px)] lg:pb-6"
+              ? (isKeyboardActive || keyboardOffset > 0)
+                ? "pb-[max(12px,env(safe-area-inset-bottom,0px))] lg:pb-6"
+                : "pb-[calc(56px+max(16px,env(safe-area-inset-bottom,0px))+16px)] lg:pb-6"
               : "pb-4"
           )}
-          style={{
-            transform: keyboardOffset > 0 ? `translateY(-${keyboardOffset}px)` : undefined,
-          }}
+          style={
+            !viewportHeight && keyboardOffset > 0
+              ? { transform: `translateY(-${keyboardOffset}px)` }
+              : undefined
+          }
         >
           {/* Suggested Quick-Prompt Chips (Only displayed when messages exist to keep empty state clean) */}
           {messages.length > 0 && (
@@ -1273,6 +1321,8 @@ export function OrbitView({ isOverlay = false, isOpen = true, onClose, className
               value={input}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
+              onFocus={handleInputFocus}
+              onBlur={handleInputBlur}
               placeholder="Ask Orbit about training, diet, or focus..."
               className="w-full flex-1 bg-transparent border-0 outline-none focus:outline-none focus:ring-0 ring-0 shadow-none text-xs sm:text-sm resize-none leading-relaxed scrollbar-none min-h-[22px] max-h-[120px] text-[#1C1917] placeholder-[#8C857B] font-medium py-0.5"
               aria-label="Ask Orbit"

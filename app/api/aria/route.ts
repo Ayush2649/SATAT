@@ -736,24 +736,26 @@ The user has opened Orbit without selecting a specific mode. Give helpful, groun
 
   // ── Single-Pass Structured Entity Extraction Directives ────────────────────
   system += `\n\n=== STRUCTURED ENTITY EXTRACTION & ACTIONS (CRITICAL) ===
-Whenever the user's message contains an intent to log, record, add, or schedule an item in Fuel (Meals), Train (Workouts), or Plan (Tasks), you MUST respond in JSON format matching this schema:
+Whenever the user's message contains an intent to log, record, add, modify, edit, or schedule an item in Fuel (Meals), Train (Workouts), or Plan (Tasks), you MUST respond in JSON format matching this schema:
 {
   "reply": "Your concise, direct, personalized coaching response (under 200 words).",
   "actions": [
-    // If Fuel (Meal log):
+    // 1. Fuel (Meal log or edit):
     {
-      "type": "log_meal",
+      "type": "log_meal", // or "edit_meal"
       "payload": {
+        "targetDate": "YYYY-MM-DD", // Resolved date (e.g. yesterday, today, 2026-11-18)
         "mealName": "Clean, concise food description only (e.g. 'One plate of khichdi, two fried papads')",
         "items": [{ "name": "One plate of khichdi" }, { "name": "Two fried papads" }],
         "mealType": "breakfast" | "lunch" | "dinner" | "snack",
         "macros": { "calories": 480, "protein": 14, "carbs": 72, "fat": 16 }
       }
     },
-    // If Train (Workout log):
+    // 2. Train (Workout log or edit):
     {
-      "type": "log_workout",
+      "type": "log_workout", // or "edit_workout"
       "payload": {
+        "targetDate": "YYYY-MM-DD", // Resolved date (e.g. yesterday, today)
         "routineTitle": "Workout",
         "movements": [
           { "name": "Bench Press", "sets": 4, "reps": 10, "weight": 60 },
@@ -761,14 +763,15 @@ Whenever the user's message contains an intent to log, record, add, or schedule 
         ]
       }
     },
-    // If Plan (Task log):
+    // 3. Plan (Task log or edit):
     {
-      "type": "create_task",
+      "type": "create_task", // or "edit_task"
       "payload": {
         "tasks": [
           {
             "title": "Clean, actionable imperative phrase (e.g. 'Finish the API integration')",
-            "dueDate": "YYYY-MM-DD",
+            "dueDate": "YYYY-MM-DD", // Resolved date
+            "scheduledTime": "10:00",
             "priority": "low" | "medium" | "high"
           }
         ]
@@ -780,8 +783,10 @@ Whenever the user's message contains an intent to log, record, add, or schedule 
   ]
 }
 
-STRICT ENTITY EXTRACTION RULES:
+STRICT ENTITY EXTRACTION & DATE RULES:
 - Extract only the core food items, exercise names, or actionable task titles.
+- When the user refers to past dates ("yesterday", "last night", "2 days ago") or future dates ("tomorrow"), resolve and populate "targetDate" or "dueDate" accordingly relative to today (${effectiveDate || dateStr}).
+- Support editing existing records ("edit_meal", "edit_workout", "edit_task").
 - Never include conversational prefixes ('I had', 'today', 'I need to', 'earlier in the gym I did'), pronouns ('this', 'that'), or follow-up questions ('tell me macros', 'rate my volume', 'and prioritize') in entity names!
 - If the user is only asking a question or not requesting to log an item, return:
 {

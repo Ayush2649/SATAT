@@ -83,6 +83,7 @@ export type OrbitActionType =
   | "COMPLETE_WORKOUT"
   | "CREATE_TASK"
   | "UPDATE_TASK"
+  | "MODIFY_TASK"
   | "DELETE_TASK"
   | "COMPLETE_TASK"
   | "RESCHEDULE_TASK"
