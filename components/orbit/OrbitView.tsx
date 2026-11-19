@@ -120,6 +120,9 @@ export function OrbitView({ isOverlay = false, isOpen = true, onClose, className
   const lastUserMessageRef = useRef<HTMLDivElement>(null);
   const loadingCardRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const blurTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const initialHeightRef = useRef<number>(typeof window !== "undefined" ? window.innerHeight : 0);
+  const lastWidthRef = useRef<number>(typeof window !== "undefined" ? window.innerWidth : 0);
   const lastFailedMessageRef = useRef<string | null>(null);
   const prevLoadingRef = useRef(false);
   const prevMessagesLengthRef = useRef(0);
@@ -129,6 +132,11 @@ export function OrbitView({ isOverlay = false, isOpen = true, onClose, className
   useEffect(() => {
     return () => {
       if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
+      if (blurTimerRef.current) clearTimeout(blurTimerRef.current);
+      if (typeof document !== "undefined") {
+        document.documentElement.removeAttribute("data-keyboard-open");
+        document.body.removeAttribute("data-keyboard-open");
+      }
     };
   }, []);
 
@@ -164,35 +172,110 @@ export function OrbitView({ isOverlay = false, isOpen = true, onClose, className
     scrollContainer(desktopScrollContainerRef.current, desktopMessagesEndRef.current);
   }, []);
 
+  const handleInputFocus = useCallback(() => {
+    if (blurTimerRef.current) {
+      clearTimeout(blurTimerRef.current);
+      blurTimerRef.current = null;
+    }
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
+      setIsKeyboardActive(true);
+      document.documentElement.setAttribute("data-keyboard-open", "true");
+      document.body.setAttribute("data-keyboard-open", "true");
+      window.dispatchEvent(
+        new CustomEvent("satat:keyboard-state", {
+          detail: { open: true, isOpen: true },
+        })
+      );
+      setTimeout(() => {
+        scrollToBottom("smooth");
+      }, 150);
+    }
+  }, [scrollToBottom]);
+
+  const handleInputBlur = useCallback(() => {
+    if (blurTimerRef.current) {
+      clearTimeout(blurTimerRef.current);
+    }
+    blurTimerRef.current = setTimeout(() => {
+      if (typeof window !== "undefined") {
+        if (!inputRef.current || document.activeElement !== inputRef.current) {
+          setIsKeyboardActive(false);
+          document.documentElement.removeAttribute("data-keyboard-open");
+          document.body.removeAttribute("data-keyboard-open");
+          window.dispatchEvent(
+            new CustomEvent("satat:keyboard-state", {
+              detail: { open: false, isOpen: false },
+            })
+          );
+        }
+      }
+    }, 120);
+  }, []);
+
   // Handle mobile virtual keyboard dynamic resizing & bottom capsule dock coordination
   useEffect(() => {
     if (typeof window === "undefined" || !window.visualViewport) return;
     const vv = window.visualViewport;
+
+    initialHeightRef.current = window.innerHeight;
+    lastWidthRef.current = window.innerWidth;
+
     const handleViewportChange = () => {
-      const isMobile = window.innerWidth < 1024;
-      const offset = window.innerHeight - vv.height;
-      const keyboardOpen = isMobile && offset > 60;
-      setKeyboardOffset(offset > 60 ? offset : 0);
-      setIsKeyboardActive(keyboardOpen);
-      if (isMobile) {
-        setViewportHeight(vv.height);
-        window.dispatchEvent(
-          new CustomEvent("satat:keyboard-state", { detail: { isOpen: keyboardOpen } })
-        );
-        if (keyboardOpen) {
-          setTimeout(() => {
-            scrollToBottom("auto");
-          }, 60);
-        }
-      } else {
+      const isMobile = window.innerWidth < 768;
+
+      if (!isMobile) {
         setViewportHeight(null);
+        setKeyboardOffset(0);
+        setIsKeyboardActive(false);
+        return;
+      }
+
+      // Update baseline on orientation change (width change)
+      if (window.innerWidth !== lastWidthRef.current) {
+        lastWidthRef.current = window.innerWidth;
+        initialHeightRef.current = window.innerHeight;
+      }
+
+      const heightDelta = initialHeightRef.current - vv.height;
+      const isInputFocused =
+        document.activeElement === inputRef.current ||
+        document.documentElement.getAttribute("data-keyboard-open") === "true" ||
+        document.body.getAttribute("data-keyboard-open") === "true";
+
+      const keyboardOpen = isInputFocused || heightDelta > 120;
+      setKeyboardOffset(keyboardOpen ? Math.max(0, heightDelta) : 0);
+      setIsKeyboardActive(keyboardOpen);
+      setViewportHeight(vv.height);
+
+      if (keyboardOpen) {
+        document.documentElement.setAttribute("data-keyboard-open", "true");
+        document.body.setAttribute("data-keyboard-open", "true");
+      } else if (!isInputFocused) {
+        document.documentElement.removeAttribute("data-keyboard-open");
+        document.body.removeAttribute("data-keyboard-open");
+      }
+
+      window.dispatchEvent(
+        new CustomEvent("satat:keyboard-state", {
+          detail: { open: keyboardOpen, isOpen: keyboardOpen },
+        })
+      );
+
+      if (keyboardOpen) {
+        setTimeout(() => {
+          scrollToBottom("auto");
+        }, 60);
       }
     };
+
     vv.addEventListener("resize", handleViewportChange);
     vv.addEventListener("scroll", handleViewportChange);
+    window.addEventListener("resize", handleViewportChange);
+
     return () => {
       vv.removeEventListener("resize", handleViewportChange);
       vv.removeEventListener("scroll", handleViewportChange);
+      window.removeEventListener("resize", handleViewportChange);
     };
   }, [scrollToBottom]);
 
@@ -605,31 +688,6 @@ export function OrbitView({ isOverlay = false, isOpen = true, onClose, className
     setInput(e.target.value);
     e.target.style.height = "auto";
     e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
-  };
-
-  const handleInputFocus = () => {
-    if (typeof window !== "undefined" && window.innerWidth < 1024) {
-      setIsKeyboardActive(true);
-      window.dispatchEvent(
-        new CustomEvent("satat:keyboard-state", { detail: { isOpen: true } })
-      );
-      setTimeout(() => {
-        scrollToBottom("smooth");
-      }, 150);
-    }
-  };
-
-  const handleInputBlur = () => {
-    if (typeof window !== "undefined" && window.innerWidth < 1024) {
-      setTimeout(() => {
-        if (!inputRef.current || document.activeElement !== inputRef.current) {
-          setIsKeyboardActive(false);
-          window.dispatchEvent(
-            new CustomEvent("satat:keyboard-state", { detail: { isOpen: false } })
-          );
-        }
-      }, 150);
-    }
   };
 
   return (
@@ -1280,7 +1338,7 @@ export function OrbitView({ isOverlay = false, isOpen = true, onClose, className
             "px-4 sm:px-6 pt-1 shrink-0 z-30 transition-all duration-150 bg-gradient-to-t from-[#F6F3EC] via-[#F6F3EC]/95 to-transparent",
             !isOverlay
               ? (isKeyboardActive || keyboardOffset > 0)
-                ? "pb-[max(12px,env(safe-area-inset-bottom,0px))] lg:pb-6"
+                ? "mb-0 pb-3 lg:pb-6"
                 : "pb-[calc(56px+max(16px,env(safe-area-inset-bottom,0px))+16px)] lg:pb-6"
               : "pb-4"
           )}
@@ -1975,6 +2033,8 @@ export function OrbitView({ isOverlay = false, isOpen = true, onClose, className
                   value={input}
                   onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
+                  onFocus={handleInputFocus}
+                  onBlur={handleInputBlur}
                   placeholder="Ask Orbit about training, diet, or focus..."
                   className="w-full flex-1 bg-transparent border-0 outline-none focus:outline-none focus:ring-0 ring-0 shadow-none text-xs sm:text-sm resize-none leading-relaxed scrollbar-none min-h-[22px] max-h-[120px] text-[#1C1917] placeholder-[#8C857B] font-medium py-0.5"
                   aria-label="Ask Orbit desktop"
