@@ -35,6 +35,8 @@ export interface UpsertDietParams {
   date?: string; // YYYY-MM-DD
   mealType: string; // "breakfast" | "lunch" | "dinner" | "snack"
   items: DietItemInput[];
+  mealName?: string;
+  macros?: Partial<MealMacros>;
 }
 
 export interface ModifyDietParams {
@@ -447,15 +449,21 @@ export async function upsert_diet_entry(params: UpsertDietParams): Promise<{
   );
 
   const slotTitle = normalizedSlot.charAt(0).toUpperCase() + normalizedSlot.slice(1);
+  const cleanMealName = params.mealName?.trim();
 
   if (existingMeal) {
-    const updatedName = `${existingMeal.name}, ${itemNames.join(", ")}`;
+    let sanitizedAddition = cleanMealName;
+    if (sanitizedAddition) {
+      sanitizedAddition = sanitizedAddition.replace(new RegExp(`^(?:${slotTitle}|${normalizedSlot})\\s*:\\s*`, "i"), "").trim();
+    }
+    const addition = sanitizedAddition || itemNames.join(", ");
+    const updatedName = `${existingMeal.name}, ${addition}`;
     const updatedMacros: MealMacros = {
-      calories: safeMacro((existingMeal.macros?.calories || 0) + addedCalories),
-      proteinG: safeMacro((existingMeal.macros?.proteinG || 0) + addedProtein),
-      carbsG: safeMacro((existingMeal.macros?.carbsG || 0) + addedCarbs),
-      fatG: safeMacro((existingMeal.macros?.fatG || 0) + addedFat),
-      fiberG: safeMacro((existingMeal.macros?.fiberG || 0) + addedFiber),
+      calories: safeMacro((existingMeal.macros?.calories || 0) + (params.macros?.calories ?? addedCalories)),
+      proteinG: safeMacro((existingMeal.macros?.proteinG || 0) + (params.macros?.proteinG ?? addedProtein)),
+      carbsG: safeMacro((existingMeal.macros?.carbsG || 0) + (params.macros?.carbsG ?? addedCarbs)),
+      fatG: safeMacro((existingMeal.macros?.fatG || 0) + (params.macros?.fatG ?? addedFat)),
+      fiberG: safeMacro((existingMeal.macros?.fiberG || 0) + (params.macros?.fiberG ?? addedFiber)),
     };
 
     await adminDb.collection("meals").doc(existingMeal.id).update({
@@ -480,13 +488,19 @@ export async function upsert_diet_entry(params: UpsertDietParams): Promise<{
       },
     };
   } else {
-    const newName = `${slotTitle}: ${itemNames.join(", ")}`;
+    let sanitizedMealName = cleanMealName;
+    if (sanitizedMealName) {
+      sanitizedMealName = sanitizedMealName.replace(new RegExp(`^(?:${slotTitle}|${normalizedSlot})\\s*:\\s*`, "i"), "").trim();
+    }
+    const newName = sanitizedMealName
+      ? `${slotTitle}: ${sanitizedMealName}`
+      : `${slotTitle}: ${itemNames.join(", ")}`;
     const newMacros: MealMacros = {
-      calories: safeMacro(addedCalories),
-      proteinG: safeMacro(addedProtein),
-      carbsG: safeMacro(addedCarbs),
-      fatG: safeMacro(addedFat),
-      fiberG: safeMacro(addedFiber),
+      calories: safeMacro(params.macros?.calories ?? addedCalories),
+      proteinG: safeMacro((params.macros?.proteinG ?? (params.macros as any)?.protein) ?? addedProtein),
+      carbsG: safeMacro((params.macros?.carbsG ?? (params.macros as any)?.carbs) ?? addedCarbs),
+      fatG: safeMacro((params.macros?.fatG ?? (params.macros as any)?.fat ?? (params.macros as any)?.fats) ?? addedFat),
+      fiberG: safeMacro((params.macros?.fiberG ?? (params.macros as any)?.fiber) ?? addedFiber),
     };
 
     const docData: any = {
@@ -1642,6 +1656,8 @@ export async function executeMutation(
           date: mutationIntent.params.date || effectiveDate,
           mealType: mutationIntent.params.mealType,
           items: mutationIntent.params.items,
+          mealName: mutationIntent.params.mealName,
+          macros: mutationIntent.params.macros,
         });
         nextContext = { ...nextContext, ...res.activeContext };
         const itemNames = (mutationIntent.params.items || []).map((i: any) => i.name).join(", ");
@@ -2018,7 +2034,538 @@ export async function executeMutation(
 // ── Multi-Turn Intent & Entity Parser ──────────────────────────────────────────
 
 const FOOD_KEYWORD_REGEX =
-  /\b(rice|chapatis?|rotis?|phulkas?|salad|cucumber|paneer|dal|lentils?|chicken|eggs?|bananas?|fruit|curry|meal|lunch|dinner|breakfast|snack|yoghurt|yogurt|curd|dahi|raita|tea|chai|coffee|latte|potato|aloo|sabzi|sabji|bhindi|gobi|vegetables|dosa|idli|uttapam|vada|sambar|poha|upma|parathas?|puri|naan|biryani|khichdi|pulao|chole|rajma|oats?|oatmeal|porridge|muesli|shake|whey|milk|lassi|buttermilk|bread|toast|sandwich|omelette|bhurji|tofu|soya|fish|mutton|apple|mango|berries|sprouts|soup|maggi|pasta|noodles)\b/i;
+  /\b(rice|chapatis?|rotis?|phulkas?|papads?|papadums?|salad|cucumber|paneer|dal|lentils?|chicken|eggs?|bananas?|fruit|curry|meal|lunch|dinner|breakfast|snack|yoghurt|yogurt|curd|dahi|raita|tea|chai|coffee|latte|potato|aloo|sabzi|sabji|bhindi|gobi|vegetables|dosa|idli|uttapam|vada|sambar|poha|upma|parathas?|puri|naan|biryani|khichdi|pulao|chole|rajma|oats?|oatmeal|porridge|muesli|shake|whey|milk|lassi|buttermilk|bread|toast|sandwich|omelette|bhurji|tofu|soya|fish|mutton|apple|mango|berries|sprouts|soup|maggi|pasta|noodles)\b/i;
+
+/**
+ * Extracts JSON snippet from markdown code blocks or raw string.
+ */
+export function extractJsonSnippet(raw: string): string | null {
+  if (!raw || typeof raw !== "string") return null;
+  const stripped = raw.replace(/```(?:json)?\n?/gi, "").replace(/\n?```/g, "").trim();
+  const objIdx = stripped.indexOf("{");
+  const lastObjIdx = stripped.lastIndexOf("}");
+  if (objIdx !== -1 && lastObjIdx > objIdx) {
+    return stripped.slice(objIdx, lastObjIdx + 1);
+  }
+  return null;
+}
+
+/**
+ * Strips conversational filler and extracts clean, canonical meal inputs
+ * for the offline fallback guard.
+ */
+export function cleanFallbackMealInput(
+  rawText: string,
+  activeContext?: OrbitEntityContext,
+  allUserText?: string
+): {
+  mealType: string;
+  mealName: string;
+  items: DietItemInput[];
+} | null {
+  const text = rawText.trim();
+  const lower = text.toLowerCase();
+
+  // 1. Determine slot
+  let mealType = "lunch";
+  if (/\bbreakfast\b/i.test(lower)) mealType = "breakfast";
+  else if (/\blunch\b/i.test(lower)) mealType = "lunch";
+  else if (/\bdinner\b/i.test(lower)) mealType = "dinner";
+  else if (/\bsnack\b/i.test(lower)) mealType = "snack";
+  else if (activeContext?.activeMealSlot) mealType = activeContext.activeMealSlot;
+  else if (allUserText) {
+    const lowerAll = allUserText.toLowerCase();
+    if (/\bdinner\b/i.test(lowerAll)) mealType = "dinner";
+    else if (/\blunch\b/i.test(lowerAll)) mealType = "lunch";
+    else if (/\bbreakfast\b/i.test(lowerAll)) mealType = "breakfast";
+  }
+
+  // 2. Strip conversational suffixes & follow-up clauses first
+  let cleaned = text
+    .replace(/\s*(?:[.;,]\s*)?(?:and\s+)?(?:tell\s+me\s+(?:the\s+)?macros|calculate\s+macros|rate\s+my\s+macros|what\s+are\s+the\s+macros|check\s+macros)\??$/i, "")
+    .replace(/\s*(?:[.;,]\s*)?(?:and\s+)?(?:add\s+this|log\s+this|save\s+this|track\s+this|record\s+this)\b(?:[.,;\s]+)?/i, "")
+    .replace(/\s+(?:for|to|in)\s+(?:my\s+)?(?:lunch|dinner|breakfast|snack)(?:\s+log)?$/i, "")
+    .replace(/\s+(?:at|around)\s+\d{1,2}(?::\d{2})?\s*(?:am|pm)$/i, "")
+    .trim();
+
+  // 3. Strip conversational preambles & leading slot syntax
+  cleaned = cleaned
+    .replace(/^(?:today\s+)?(?:(?:in|for|to)\s+)?(?:my\s+)?(?:dinner|lunch|breakfast|snack)\s*[:,-]?\s*/i, "")
+    .replace(/^(?:i'd\s+around|i\s+had\s+around|i've\s+had\s+around|i\s+ate\s+around|i'd|i\s+had|i've\s+had|i\s+ate|i\s+drank|i\s+consumed)\s+/i, "")
+    .replace(/^(?:actually,?\s*)?(?:also\s+)?(?:add|log|track|append|record|save)\s+/i, "")
+    .replace(/^(?:today's\s+meals?|my\s+meals?|meals?|food|diet)\s*(?:[:,]\s*)?/i, "")
+    .replace(/^(?:around|about|approx|roughly)\s+/i, "")
+    .trim();
+
+  // 4. Extract individual items
+  const rawParts = cleaned
+    .split(/,|\band\b|\bwith\b/i)
+    .map((s) =>
+      s
+        .replace(/(?:\btoday's\s+meals?\b|\b(?:in|for|to)\s+(?:breakfast|lunch|dinner|snack)\b|\b(?:breakfast|lunch|dinner|snack)\s*[:,-]\s*|\b(?:add|also|log|this)\b)/gi, "")
+        .replace(/^(?:around|about|approx|roughly)\s+/i, "")
+        .replace(/^[\s:,-]+|[\s:,-]+$/g, "")
+        .trim()
+    )
+    .filter((s) => s.length > 1 && !/^(my|a|an|the|also|to|in|for|meal|meals|food|this|that|breakfast|lunch|dinner|snack|my\s+(?:breakfast|lunch|dinner|snack|meal|food))$/i.test(s));
+
+  if (rawParts.length === 0) return null;
+
+  // Preserve input casing for items
+  const formattedItems: DietItemInput[] = rawParts.map((name) => ({ name: name.trim() }));
+  const mealName = formattedItems.map((i) => i.name).join(", ");
+
+  return {
+    mealType,
+    mealName,
+    items: formattedItems,
+  };
+}
+
+/**
+ * Strips conversational filler and extracts clean, canonical exercise names & sets
+ * for the offline fallback guard.
+ */
+export function cleanFallbackWorkoutInput(
+  rawText: string,
+  activeContext?: OrbitEntityContext
+): {
+  routineTitle?: string;
+  movements: Array<{
+    name: string;
+    sets: WorkoutSetInput[];
+    movementType?: "strength" | "isometric" | "cardio" | "calisthenics";
+    distance?: number;
+    distanceUnit?: string;
+    durationSeconds?: number;
+  }>;
+} | null {
+  const text = rawText.trim();
+  const lower = text.toLowerCase();
+
+  // 1. Strip conversational suffixes & follow-ups
+  let cleaned = text
+    .replace(/\s*(?:[.;,]\s*)?(?:and\s+)?(?:rate\s+my\s+volume|rate\s+my\s+workout|rate\s+my\s+training|rate\s+my\s+structure|rate\s+this|rate\s+my\s+split)\??$/i, "")
+    .replace(/\s*(?:[.;,]\s*)?(?:and\s+)?(?:log\s+this|add\s+this|track\s+this|save\s+this|record\s+this)\b(?:[.,;\s]+)?/i, "")
+    .trim();
+
+  // 2. Strip conversational preambles
+  cleaned = cleaned
+    .replace(/^(?:earlier\s+)?(?:in|at)\s+(?:the\s+)?gym\s+(?:i\s+did|i\s+completed|i\s+performed|i\s+finished)?\s*/i, "")
+    .replace(/^(?:today\s+)?(?:in|at)\s+(?:training|workout)\s+(?:i\s+did|i\s+completed)?\s*/i, "")
+    .replace(/^(?:i\s+did|i\s+performed|i\s+completed)\s+/i, "")
+    .replace(/^(?:also\s+)?(?:add\s+|log\s+)?(?:in\s+training\s+for|in\s+workout\s+for|to\s+workout|to\s+training)\s+/i, "")
+    .replace(/^(?:also\s+)?(?:add|log)\s+/i, "")
+    .trim();
+
+  // 3. Check for sets & reps
+  let setsCount: number | null = null;
+  let reps: number | null = null;
+  let weight = 0;
+
+  const setsMatch = cleaned.match(/(\d+)\s*sets?/i);
+  if (setsMatch) setsCount = parseInt(setsMatch[1], 10);
+
+  const repsMatch = cleaned.match(/(\d+)\s*reps?/i);
+  if (repsMatch) reps = parseInt(repsMatch[1], 10);
+
+  const weightMatch =
+    cleaned.match(/(?:at|with|@)\s*(\d+(?:\.\d+)?)\s*(?:kg|lbs)?/i) ||
+    cleaned.match(/(\d+(?:\.\d+)?)\s*kg/i);
+  if (weightMatch) weight = parseFloat(weightMatch[1]);
+
+  // Strip sets/reps indicators from exercise portion
+  const exercisePortion = cleaned
+    .replace(/\b\d+\s*sets?\s*(?:of\s+)?/i, "")
+    .replace(/\b\d+\s*reps?\b/i, "")
+    .replace(/(?:at|with|@)\s*\d+(?:\.\d+)?\s*(?:kg|lbs)?/i, "")
+    .replace(/\b\d+(?:\.\d+)?\s*kg\b/i, "")
+    .trim();
+
+  // Check if cardio or isometric
+  const isCardio = /\b(running|run|jogging|cycling|bike|skipping)\b/i.test(exercisePortion);
+  const isIsometric = /\b(plank|wall\s+sit|dead\s+hang|l-sit|hold)\b/i.test(exercisePortion);
+
+  // If strength exercise and no sets, reps, or weight were provided, do not fabricate default sets/reps
+  if (!isCardio && !isIsometric && setsMatch === null && repsMatch === null && weightMatch === null) {
+    return null;
+  }
+
+  const finalSetsCount = setsCount ?? 3;
+  const finalReps = reps ?? 10;
+
+  // Known exercises mapping
+  const knownExercises = [
+    { regex: /\b(?:flat\s+)?bench\s+press\b/i, canonical: "Bench Press" },
+    { regex: /\bincline\s+(?:dumbbell\s+)?press\b/i, canonical: "Incline Dumbbell Press" },
+    { regex: /\bdumbbell\s+press\b/i, canonical: "Dumbbell Press" },
+    { regex: /\b(?:barbell\s+)?squats?\b/i, canonical: "Squats" },
+    { regex: /\bdeadlifts?\b/i, canonical: "Deadlift" },
+    { regex: /\b(?:lat\s+)?pulldowns?\b/i, canonical: "Lat Pulldown" },
+    { regex: /\b(?:bicep\s+)?curls?\b/i, canonical: "Bicep Curls" },
+    { regex: /\bleg\s+press\b/i, canonical: "Leg Press" },
+    { regex: /\bplanks?\b/i, canonical: "Plank" },
+    { regex: /\brunning\b/i, canonical: "Running" },
+    { regex: /\bskipping\b/i, canonical: "Skipping" },
+    { regex: /\bpull\s*ups?\b/i, canonical: "Pull Ups" },
+    { regex: /\bpush\s*ups?\b/i, canonical: "Push Ups" },
+  ];
+
+  const matchedNames: string[] = [];
+  for (const ke of knownExercises) {
+    if (ke.regex.test(exercisePortion)) {
+      matchedNames.push(ke.canonical);
+    }
+  }
+
+  // If no known matched, split by 'and' or ','
+  if (matchedNames.length === 0) {
+    const rawNames = exercisePortion
+      .split(/,|\band\b/i)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 2 && !/^(in|at|the|gym|workout|training|sets?|reps?)$/i.test(s));
+    for (const rn of rawNames) {
+      matchedNames.push(rn.replace(/\b\w/g, (c) => c.toUpperCase()));
+    }
+  }
+
+  if (matchedNames.length === 0) {
+    if (activeContext?.activeExerciseName) {
+      matchedNames.push(activeContext.activeExerciseName);
+    } else {
+      return null;
+    }
+  }
+
+  const movements = matchedNames.map((name) => ({
+    name,
+    sets: Array.from({ length: finalSetsCount }, () => ({
+      reps: finalReps,
+      weight,
+      unit: "kg" as const,
+      completed: true,
+    })),
+  }));
+
+  return {
+    routineTitle: "Workout",
+    movements,
+  };
+}
+
+/**
+ * Strips conversational filler and extracts clean, actionable imperative task titles
+ * for the offline fallback guard.
+ */
+export function cleanFallbackTaskInput(
+  rawText: string,
+  referenceDate?: string
+): {
+  title: string;
+  dueDate: string;
+  scheduledTime: string;
+  priority: "low" | "medium" | "high";
+  durationMinutes: number;
+} | null {
+  const text = rawText.trim();
+  const lower = text.toLowerCase();
+
+  const isTodayPlan = /\b(today's\s+plan|to\s+today's\s+plan|in\s+today's\s+plan|today's\s+schedule)\b/i.test(lower);
+  const timeMatch =
+    text.match(/(?:at|for|by)\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)/i) ||
+    text.match(/\b(\d{1,2}(?::\d{2})?\s*(?:am|pm))\b/i);
+  const hasRelativeTime = /\b(morning|afternoon|evening|night)\b/i.test(lower);
+
+  // If missing explicit time/relative time and not explicitly targeting today's plan, require clarification
+  if (!timeMatch && !isTodayPlan && !hasRelativeTime) {
+    return null;
+  }
+
+  // 1. Detect priority
+  let priority: "low" | "medium" | "high" = "medium";
+  if (/\b(prioritize|high\s*priority|priority\s*:?\s*high|urgent)\b/i.test(lower)) {
+    priority = "high";
+  } else if (/\b(low\s*priority|priority\s*:?\s*low)\b/i.test(lower)) {
+    priority = "low";
+  }
+
+  // 2. Detect due date
+  let dueDate = referenceDate || new Date().toLocaleDateString("en-CA");
+  if (/\btomorrow\b/i.test(lower)) {
+    const baseMs = referenceDate ? new Date(`${referenceDate}T12:00:00`).getTime() : Date.now();
+    dueDate = new Date(baseMs + 86400000).toLocaleDateString("en-CA");
+  }
+
+  // 3. Detect scheduled time
+  let scheduledTime = "10:00";
+  if (timeMatch) {
+    scheduledTime = parseTimeString(timeMatch[1]);
+  } else if (/\bmorning\b/i.test(lower)) {
+    scheduledTime = "09:00";
+  } else if (/\bafternoon\b/i.test(lower)) {
+    scheduledTime = "14:00";
+  } else if (/\bevening\b/i.test(lower)) {
+    scheduledTime = "18:00";
+  }
+
+  // 4. Detect duration
+  let durationMinutes = 25;
+  const durMatch = text.match(/(\d+)\s*(?:min|minute)/i);
+  if (durMatch) durationMinutes = parseInt(durMatch[1], 10);
+
+  // 5. Strip conversational suffixes & follow-ups
+  let cleaned = text
+    .replace(/\s*(?:[.;,]\s*)?(?:and\s+)?(?:add\s+this\s+to\s+my\s+tasks|add\s+to\s+my\s+tasks|add\s+this\s+to\s+tasks|add\s+to\s+tasks|add\s+this)\s*(?:and\s+prioritize)?(?:\s+and\s+prioritize)?$/i, "")
+    .replace(/\s*(?:[.;,]\s*)?(?:and\s+)?(?:prioritize\s+this|prioritize|high\s+priority)$/i, "")
+    .replace(/\s+(?:to\s+(?:today's|my)\s+schedule|to\s+today)$/i, "")
+    .replace(/\s+(?:at|for|by)\s+\d{1,2}(?::\d{2})?\s*(?:am|pm)?$/i, "")
+    .trim();
+
+  // 6. Strip conversational preambles
+  cleaned = cleaned
+    .replace(/^(?:for\s+)?tomorrow\s+(?:morning\s+)?(?:i\s+need\s+to|i\s+have\s+to|i\s+want\s+to|i\s+must|i\s+should)\s+/i, "")
+    .replace(/^(?:in\s+the\s+morning\s+)?(?:i\s+need\s+to|i\s+have\s+to|i\s+want\s+to|i\s+must|i\s+should)\s+/i, "")
+    .replace(/^(?:i\s+need\s+to|i\s+have\s+to|i\s+want\s+to|i\s+must|i\s+should)\s+/i, "")
+    .replace(/^(?:tomorrow\s+morning|tomorrow\s+afternoon|tomorrow\s+evening|tomorrow)\s*[:,-]?\s*/i, "")
+    .replace(/^(?:and\s+)?(?:also\s+)?(?:add\s+|schedule\s+|create\s+|plan\s+a\s+|plan\s+)?(?:a\s+)?(?:to\s+|in\s+)?(?:today's\s+plan|today's\s+schedule|plan|task)\s*(?:for\s+)?/i, "")
+    .replace(/(?:for\s+|with\s+)?(?:high|medium|low)\s+priority\s*(?:for\s+)?/i, "")
+    .replace(/\b\d+\s*min(?:ute)?s?\s*/i, "")
+    .replace(/^(?:for\s+|to\s+)/i, "")
+    .trim();
+
+  if (/^sending\b/i.test(cleaned)) {
+    cleaned = cleaned.replace(/^sending\b/i, "Send");
+  }
+
+  if (cleaned) {
+    cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+  }
+
+  if (
+    !cleaned ||
+    /^(?:a\s+)?task$/i.test(cleaned.trim()) ||
+    /^(?:at|for|by\s+)?\d{1,2}(?::\d{2})?\s*(?:am|pm)?$/i.test(cleaned.trim()) ||
+    /^\d{1,2}:\d{2}$/.test(cleaned.trim())
+  ) {
+    return null;
+  }
+
+  return {
+    title: cleaned,
+    dueDate,
+    scheduledTime,
+    priority,
+    durationMinutes,
+  };
+}
+
+/**
+ * Single-pass parser that transforms structured LLM responses into executable Orbit mutations.
+ */
+export function parseStructuredLlmResponse(
+  rawOutput: string | any,
+  activeContext?: OrbitEntityContext,
+  referenceDate?: string
+): ParsedMutation[] | null {
+  if (!rawOutput) return null;
+
+  let parsed: any = null;
+  if (typeof rawOutput === "object" && rawOutput !== null) {
+    parsed = rawOutput;
+  } else if (typeof rawOutput === "string") {
+    try {
+      parsed = JSON.parse(rawOutput);
+    } catch {
+      const extracted = extractJsonSnippet(rawOutput);
+      if (extracted) {
+        try {
+          parsed = JSON.parse(extracted);
+        } catch {
+          return null;
+        }
+      } else {
+        return null;
+      }
+    }
+  }
+
+  if (!parsed || typeof parsed !== "object") return null;
+
+  const mutations: ParsedMutation[] = [];
+  const effectiveDate = referenceDate || new Date().toLocaleDateString("en-CA");
+
+  const rawActions: any[] = [];
+  if (Array.isArray(parsed.actions)) {
+    rawActions.push(...parsed.actions);
+  } else if (parsed.action && typeof parsed.action === "object") {
+    rawActions.push(parsed.action);
+  } else if (Array.isArray(parsed.tool_calls)) {
+    rawActions.push(...parsed.tool_calls);
+  }
+
+  if (parsed.extracted_entities && typeof parsed.extracted_entities === "object") {
+    const ee = parsed.extracted_entities;
+    if (ee.fuel || ee.meal || ee.meals) {
+      rawActions.push({ type: "log_meal", payload: ee.fuel || ee.meal || ee.meals });
+    }
+    if (ee.train || ee.workout || ee.workouts) {
+      rawActions.push({ type: "log_workout", payload: ee.train || ee.workout || ee.workouts });
+    }
+    if (ee.plan || ee.task || ee.tasks) {
+      rawActions.push({ type: "create_task", payload: ee.plan || ee.task || ee.tasks });
+    }
+  }
+
+  if (parsed.log_meal) {
+    rawActions.push({ type: "log_meal", payload: parsed.log_meal });
+  }
+  if (parsed.log_workout) {
+    rawActions.push({ type: "log_workout", payload: parsed.log_workout });
+  }
+  if (parsed.create_task) {
+    rawActions.push({ type: "create_task", payload: parsed.create_task });
+  }
+
+  for (const act of rawActions) {
+    const actType = (act.type || act.name || "").toLowerCase();
+    const payload = act.payload || act.args || act.parameters || act;
+
+    // ── 1. Fuel (Meals)
+    if (actType.includes("meal") || actType.includes("diet") || actType === "fuel") {
+      const mealType = (payload.mealType || payload.slot || activeContext?.activeMealSlot || "lunch").toLowerCase();
+      const rawMealName = payload.mealName || payload.name || "";
+      const cleanMealName = rawMealName
+        .replace(/^(?:today\s+)?(?:in|for)\s+(?:dinner|lunch|breakfast|snack)\s*[:,-]?\s*/i, "")
+        .replace(/\s+(?:and\s+)?tell\s+me\s+macros.*$/i, "")
+        .replace(/\badd\s+this\b/i, "")
+        .trim();
+
+      let items: DietItemInput[] = [];
+      if (Array.isArray(payload.items) && payload.items.length > 0) {
+        items = payload.items.map((it: any) => {
+          if (typeof it === "string") return { name: it.trim() };
+          return {
+            name: it.name || it.item || "Food Item",
+            portion: it.portion,
+            calories: it.calories,
+            protein: it.protein,
+            carbs: it.carbs,
+            fats: it.fat ?? it.fats,
+          };
+        });
+      } else if (cleanMealName) {
+        items = cleanMealName
+          .split(/,|\band\b|\bwith\b/i)
+          .map((s: string) => ({ name: s.trim() }))
+          .filter((i: any) => i.name.length > 1);
+      }
+
+      let macros: Partial<MealMacros> | undefined = undefined;
+      if (payload.macros && typeof payload.macros === "object") {
+        macros = {
+          calories: safeMacro(payload.macros.calories),
+          proteinG: safeMacro(payload.macros.proteinG ?? payload.macros.protein),
+          carbsG: safeMacro(payload.macros.carbsG ?? payload.macros.carbs),
+          fatG: safeMacro(payload.macros.fatG ?? payload.macros.fat ?? payload.macros.fats),
+          fiberG: payload.macros.fiberG !== undefined || payload.macros.fiber !== undefined
+            ? safeMacro(payload.macros.fiberG ?? payload.macros.fiber)
+            : undefined,
+        };
+      }
+
+      mutations.push({
+        type: "UPSERT_MEAL",
+        domain: "meals",
+        params: {
+          date: payload.date || effectiveDate,
+          mealType,
+          mealName: cleanMealName || undefined,
+          items: items.length > 0 ? items : [{ name: cleanMealName || "Meal" }],
+          macros: macros || payload.macros,
+        },
+      });
+    }
+
+    // ── 2. Train (Workouts)
+    else if (actType.includes("workout") || actType.includes("exercise") || actType === "train") {
+      const movements: any[] = Array.isArray(payload.movements)
+        ? payload.movements
+        : Array.isArray(payload.exercises)
+        ? payload.exercises
+        : [payload];
+
+      for (const mv of movements) {
+        const rawName = mv.name || mv.exerciseName || mv.exercise || "";
+        const cleanName = rawName
+          .replace(/^(?:earlier\s+)?(?:in|at)\s+(?:the\s+)?gym\s+(?:i\s+did)?\s*/i, "")
+          .replace(/\s+(?:and\s+)?rate\s+my\s+volume.*$/i, "")
+          .replace(/\blog\s+this\b/i, "")
+          .trim();
+
+        const setsCount = Number(mv.sets) || (Array.isArray(mv.sets) ? mv.sets.length : 3);
+        const reps = Number(mv.reps) || (Array.isArray(mv.sets) ? mv.sets[0]?.reps : 10);
+        const weight = Number(mv.weight) || (Array.isArray(mv.sets) ? mv.sets[0]?.weight : 0);
+
+        const formattedSets: WorkoutSetInput[] = Array.isArray(mv.sets)
+          ? mv.sets
+          : Array.from({ length: setsCount }, (_, idx) => ({
+              setNumber: idx + 1,
+              reps,
+              weight,
+              unit: "kg",
+              completed: true,
+            }));
+
+        mutations.push({
+          type: "ADD_EXERCISE",
+          domain: "workouts",
+          params: {
+            date: payload.date || effectiveDate,
+            exerciseName: cleanName.replace(/\b\w/g, (c: string) => c.toUpperCase()) || "Workout Exercise",
+            movementType: mv.movementType || "strength",
+            distance: mv.distance,
+            distanceUnit: mv.distanceUnit,
+            durationSeconds: mv.durationSeconds,
+            sets: formattedSets,
+          },
+        });
+      }
+    }
+
+    // ── 3. Plan (Tasks)
+    else if (actType.includes("task") || actType.includes("plan")) {
+      const tasks: any[] = Array.isArray(payload.tasks)
+        ? payload.tasks
+        : [payload];
+
+      for (const t of tasks) {
+        let rawTitle = t.title || t.name || "";
+        let cleanTitle = rawTitle
+          .replace(/^(?:tomorrow\s+morning\s+)?(?:i\s+need\s+to|i\s+have\s+to|i\s+want\s+to|schedule\s+a\s+task\s+to|add\s+a\s+task\s+to)\s+/i, "")
+          .replace(/\s+(?:and\s+)?(?:add\s+this\s+to\s+my\s+tasks|add\s+to\s+tasks|prioritize).*$/i, "")
+          .trim();
+
+        if (cleanTitle) {
+          cleanTitle = cleanTitle.charAt(0).toUpperCase() + cleanTitle.slice(1);
+        }
+
+        mutations.push({
+          type: "CREATE_TASK",
+          domain: "tasks",
+          params: {
+            title: cleanTitle || "Scheduled Task",
+            dueDate: t.dueDate || effectiveDate,
+            scheduledTime: t.scheduledTime ? parseTimeString(t.scheduledTime) : "10:00",
+            priority: t.priority || "medium",
+            durationMinutes: t.durationMinutes || 25,
+          },
+        });
+      }
+    }
+  }
+
+  return mutations.length > 0 ? mutations : null;
+}
 
 /**
  * Splits compound user prompts into distinct command segments
@@ -2427,38 +2974,38 @@ export function parseSingleMutationIntent(
 
   // Create Task / Today's Plan
   const hasExplicitTaskDomainWord =
-    /\b(today's\s+plan|today's\s+schedule|coding\s+sprint|placement\s+sprint|sprint|focus\s+block|deep\s+work|task)\b/i.test(lower);
+    /\b(today's\s+plan|today's\s+schedule|coding\s+sprint|placement\s+sprint|sprint|focus\s+block|deep\s+work|task|tasks)\b/i.test(lower);
 
   const isCreateTask =
     (/\b(add|schedule|create|plan\s+a|plan)\b/i.test(lower) &&
      /\b(today's\s+plan|in\s+today's\s+plan|to\s+today's\s+plan|min\s+coding\s+sprint|coding\s+sprint|placement\s+sprint|sprint|focus\s+block|deep\s+work|task|session\s+at|at\s+\d{1,2}(?::\d{2})?\s*(?:am|pm)?|plan\s+for|high\s+priority\s+for)\b/i.test(lower) &&
      !/\b(workout|push\s+day|exercise|chapatis?|rice|meal|lunch|dinner|breakfast|food)\b/i.test(lower) &&
      !(FOOD_KEYWORD_REGEX.test(lower) && !hasExplicitTaskDomainWord)) ||
-    /\b(today's\s+plan|add\s+(?:to\s+)?today's\s+plan|in\s+today's\s+plan)\b/i.test(lower);
+    /\b(today's\s+plan|add\s+(?:to\s+)?today's\s+plan|in\s+today's\s+plan)\b/i.test(lower) ||
+    /\b(add\s+(?:this\s+)?to\s+(?:my\s+)?tasks?|to\s+my\s+tasks?|to\s+tasks?|in\s+my\s+tasks?)\b/i.test(lower);
 
   if (isCreateTask) {
-    let priority: "low" | "medium" | "high" = "medium";
-    if (/\bhigh\s*priority\b|\bpriority\s*:?\s*high\b|\burgent\b/i.test(lower)) {
-      priority = "high";
-    } else if (/\blow\s*priority\b|\bpriority\s*:?\s*low\b/i.test(lower)) {
-      priority = "low";
+    const cleanedTask = cleanFallbackTaskInput(text, referenceDate);
+    if (cleanedTask) {
+      return {
+        type: "CREATE_TASK",
+        domain: "tasks",
+        params: {
+          title: cleanedTask.title,
+          durationMinutes: cleanedTask.durationMinutes,
+          scheduledTime: cleanedTask.scheduledTime,
+          dueDate: cleanedTask.dueDate,
+          priority: cleanedTask.priority,
+        },
+      };
     }
-
-    let dueDate = referenceDate || new Date().toLocaleDateString("en-CA");
-    if (/\btomorrow\b/i.test(lower)) {
-      const baseMs = referenceDate ? new Date(`${referenceDate}T12:00:00`).getTime() : Date.now();
-      dueDate = new Date(baseMs + 86400000).toLocaleDateString("en-CA");
-    }
-
-    let duration = 25;
-    const durMatch = text.match(/(\d+)\s*(?:min|minute)/i);
-    if (durMatch) duration = parseInt(durMatch[1], 10);
 
     const timeMatch =
       text.match(/(?:at|for|by)\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)/i) ||
       text.match(/\b(\d{1,2}(?::\d{2})?\s*(?:am|pm))\b/i);
 
     const isTodayPlan = /\b(today's\s+plan|to\s+today's\s+plan|in\s+today's\s+plan|today's\s+schedule)\b/i.test(lower);
+    const hasRelativeTime = /\b(morning|afternoon|evening|night)\b/i.test(lower);
 
     let title = text
       .replace(/^(?:and\s+)?(?:also\s+)?(?:add\s+|schedule\s+|create\s+|plan\s+a\s+|plan\s+)?(?:a\s+)?(?:to\s+|in\s+)?(?:today's\s+plan|today's\s+schedule|plan|task)\s*(?:for\s+)?/i, "")
@@ -2468,12 +3015,6 @@ export function parseSingleMutationIntent(
       .replace(/\s+(?:at|for|by)\s+\d{1,2}(?::\d{2})?\s*(?:am|pm)?$/i, "")
       .replace(/^(?:for\s+|to\s+)/i, "")
       .trim();
-
-    if (/^sending\b/i.test(title)) {
-      title = title.replace(/^sending\b/i, "Send");
-    } else if (title) {
-      title = title.charAt(0).toUpperCase() + title.slice(1);
-    }
 
     if (
       !title ||
@@ -2504,7 +3045,7 @@ export function parseSingleMutationIntent(
       };
     }
 
-    if (!timeMatch && !isTodayPlan) {
+    if (!timeMatch && !isTodayPlan && !hasRelativeTime) {
       const cleanTitle = (title || "placement sprint").replace(/\b\w/g, (c) => c.toUpperCase());
       return {
         type: "CLARIFICATION_NEEDED",
@@ -2523,20 +3064,6 @@ export function parseSingleMutationIntent(
         },
       };
     }
-
-    const scheduledTime = timeMatch ? parseTimeString(timeMatch[1]) : "10:00";
-
-    return {
-      type: "CREATE_TASK",
-      domain: "tasks",
-      params: {
-        title: title || "Scheduled Focus Block",
-        durationMinutes: duration,
-        scheduledTime,
-        dueDate,
-        priority,
-      },
-    };
   }
 
   // ── 4. WORKOUT & TRAINING STUDIO ────────────────────────────────────────────
@@ -2812,10 +3339,28 @@ export function parseSingleMutationIntent(
   const isWorkoutMutation =
     /\b(change|set|update|log|make|add)\b/i.test(lower) &&
     !FOOD_KEYWORD_REGEX.test(lower) &&
-    (/\b(reps?|sets?|weight|kg|lbs|dumbbell|press|squat|bench|deadlift|curl|pulldown|extension|exercise)\b/i.test(lower) ||
+    (/\b(reps?|sets?|weight|kg|lbs|dumbbell|press|squat|bench|deadlift|curl|pulldown|extension|exercise|gym)\b/i.test(lower) ||
       exerciseIndex !== undefined);
 
   if (isWorkoutMutation) {
+    if (/\b(earlier|gym|bench|squats?|press|sets?)\b/i.test(lower)) {
+      const cleanedWorkout = cleanFallbackWorkoutInput(text, activeContext);
+      if (cleanedWorkout && cleanedWorkout.movements.length > 0) {
+        const firstMv = cleanedWorkout.movements[0];
+        const isSetChange = /\b(?:reps?\s+to|set\s+to|to\s+\d+\s*reps?)\b/i.test(lower);
+        if (!isSetChange) {
+          return {
+            type: "ADD_EXERCISE",
+            domain: "workouts",
+            params: {
+              exerciseName: firstMv.name,
+              sets: firstMv.sets,
+            },
+          };
+        }
+      }
+    }
+
     let exerciseName = activeContext?.activeExerciseName || "Workout Exercise";
 
     const exPatterns = [
@@ -2930,10 +3475,11 @@ export function parseSingleMutationIntent(
   }
 
   const isQuestionQuery =
-    /^(?:what|how|when|where|which|who|why|did|do|does|is|are|was|were|have|has|can|could|should|would|show|list|tell|check|review|calculate|analyze|analyse)\b/i.test(
+    !/\b(add\s+this|log\s+this|track\s+this|save\s+this|i'd\s+around|i\s+had\s+around|i\s+ate\s+around|i\s+ate|i\s+had|i've\s+had)\b/i.test(lower) &&
+    (/^(?:what|how|when|where|which|who|why|did|do|does|is|are|was|were|have|has|can|could|should|would|show|list|tell|check|review|calculate|analyze|analyse)\b/i.test(
       lower
     ) ||
-    (/\?$/.test(text) && !/^(?:add|log|track|save|record)\b/i.test(lower));
+    (/\?$/.test(text) && !/^(?:add|log|track|save|record)\b/i.test(lower)));
 
   const hasExplicitMealSlotRef =
     /^(?:(?:in|for|to)\s+)?(?:my\s+)?(?:breakfast|lunch|dinner|snack)\s*[:\-]\s*\S/i.test(lower) ||
@@ -2941,7 +3487,7 @@ export function parseSingleMutationIntent(
 
   const isMealMutation =
     !isQuestionQuery &&
-    (/\b(log|add|track|append|record|save|ate|eat|had|have)\b/i.test(lower) ||
+    (/\b(log|add|track|append|record|save|ate|eat|had|have|i'd)\b/i.test(lower) ||
       hasExplicitMealSlotRef) &&
     FOOD_KEYWORD_REGEX.test(lower);
 
@@ -2950,40 +3496,16 @@ export function parseSingleMutationIntent(
     /\b(also\s+add|actually,\s*also\s+add|add\s+another|include)\b/i.test(lower);
 
   if (isMealMutation || isFollowUpAdd) {
-    let mealType = "lunch";
-    if (/\bbreakfast\b/i.test(lower)) mealType = "breakfast";
-    else if (/\blunch\b/i.test(lower)) mealType = "lunch";
-    else if (/\bdinner\b/i.test(lower)) mealType = "dinner";
-    else if (/\bsnack\b/i.test(lower)) mealType = "snack";
-    else if (activeContext?.activeMealSlot) {
-      mealType = activeContext.activeMealSlot;
-    } else if (allUserText) {
-      const lowerAll = allUserText.toLowerCase();
-      if (/\bdinner\b/i.test(lowerAll)) mealType = "dinner";
-      else if (/\blunch\b/i.test(lowerAll)) mealType = "lunch";
-      else if (/\bbreakfast\b/i.test(lowerAll)) mealType = "breakfast";
-    }
+    const cleanedMeal = cleanFallbackMealInput(text, activeContext, allUserText);
 
-    let cleaned = text
-      .replace(/^(?:actually,?\s*)?(?:also\s+)?(?:i\s+)?(?:add|log|track|append|record|save|ate|eat|had|have)\s+/i, "")
-      .replace(/^(?:today's\s+meals?|my\s+meals?|meals?|food|diet)\s*(?:[:,]\s*)?/i, "")
-      .replace(/^(?:(?:in|for|to)\s+)?(?:my\s+)?(?:breakfast|lunch|dinner|snack)\b\s*(?:[:,-]\s*)?/i, "")
-      .replace(/^(?:today's\s+meals?|my\s+meals?)\s*(?:[:,-]\s*)?/i, "")
-      .replace(/\s+(?:for|to|in)\s+(?:my\s+)?(?:lunch|dinner|breakfast|snack)(?:\s+log)?$/i, "")
-      .replace(/\s+(?:at|around)\s+\d{1,2}(?::\d{2})?\s*(?:am|pm)$/i, "")
-      .trim();
+    if (!cleanedMeal || cleanedMeal.items.length === 0) {
+      let mealType = "lunch";
+      if (/\bbreakfast\b/i.test(lower)) mealType = "breakfast";
+      else if (/\blunch\b/i.test(lower)) mealType = "lunch";
+      else if (/\bdinner\b/i.test(lower)) mealType = "dinner";
+      else if (/\bsnack\b/i.test(lower)) mealType = "snack";
+      else if (activeContext?.activeMealSlot) mealType = activeContext.activeMealSlot;
 
-    const rawItems = cleaned
-      .split(/,|\band\b|\bwith\b/i)
-      .map((s) =>
-        s
-          .replace(/(?:\btoday's\s+meals?\b|\b(?:in|for|to)\s+(?:breakfast|lunch|dinner|snack)\b|\b(?:add|also)\b)/gi, "")
-          .replace(/^[\s:,-]+|[\s:,-]+$/g, "")
-          .trim()
-      )
-      .filter((s) => s.length > 1 && !/^(my|a|an|the|also|to|in|for|meal|meals|food|breakfast|lunch|dinner|snack|my\s+(?:breakfast|lunch|dinner|snack|meal|food))$/i.test(s));
-
-    if (rawItems.length === 0) {
       if (hasExplicitMealSlotRef || /\b(breakfast|lunch|dinner|snack|meal)\b/i.test(lower)) {
         const slotCapitalized = mealType.charAt(0).toUpperCase() + mealType.slice(1);
         return {
@@ -3006,14 +3528,13 @@ export function parseSingleMutationIntent(
       return null;
     }
 
-    const items: DietItemInput[] = rawItems.map((name) => ({ name }));
-
     return {
       type: "UPSERT_MEAL",
       domain: "meals",
       params: {
-        mealType,
-        items,
+        mealType: cleanedMeal.mealType,
+        mealName: cleanedMeal.mealName,
+        items: cleanedMeal.items,
       },
     };
   }
@@ -3047,6 +3568,24 @@ export function parseMutationIntents(
         currentContext.activeExerciseName = (parsed.params as any)?.exerciseName || currentContext.activeExerciseName;
       } else if (parsed.type === "CREATE_TASK" || parsed.type === "RESCHEDULE_TASK") {
         currentContext.activeTaskTitle = (parsed.params as any)?.title || (parsed.params as any)?.taskTitle || currentContext.activeTaskTitle;
+      }
+
+      // If workout had multiple movements in this segment (e.g. "bench press and squats")
+      if (parsed.type === "ADD_EXERCISE") {
+        const cleanedWorkout = cleanFallbackWorkoutInput(segment, currentContext);
+        if (cleanedWorkout && cleanedWorkout.movements.length > 1) {
+          for (let i = 1; i < cleanedWorkout.movements.length; i++) {
+            const mv = cleanedWorkout.movements[i];
+            results.push({
+              type: "ADD_EXERCISE",
+              domain: "workouts",
+              params: {
+                exerciseName: mv.name,
+                sets: mv.sets,
+              },
+            });
+          }
+        }
       }
     }
   }

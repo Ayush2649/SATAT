@@ -18,6 +18,9 @@ import {
   executeMutation,
   generateContextualSuggestions,
   ClarificationResult,
+  ParsedMutation,
+  parseStructuredLlmResponse,
+  extractJsonSnippet,
 } from "@/lib/orbit/mutationEngine";
 import type { OrbitEntityContext, OrbitActionExecuted, OrbitSuggestedAction } from "@/types/orbit";
 
@@ -239,7 +242,7 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // ── Deterministic Mutation Execution Engine ──────────────────────────────────
+  // ── Deterministic Intent Parsing & Clarification Pre-Check ─────────────────
   const parsedMutations = parseMutationIntents(
     latestUserMessage,
     currentActiveContext,
@@ -252,37 +255,14 @@ export async function POST(req: NextRequest) {
   const failedNotes: string[] = [];
   const pendingClarifications: ClarificationResult[] = [];
 
-  if (parsedMutations.length > 0 && userId) {
-    for (const mutation of parsedMutations) {
-      if (mutation.type === "CLARIFICATION_NEEDED") {
-        pendingClarifications.push(mutation as ClarificationResult);
-        continue;
-      }
-
-      const mutResult = await executeMutation(
-        userId,
-        mutation as any,
-        currentActiveContext,
-        effectiveDate
-      );
-      if (mutResult.actionExecuted) {
-        executedActions.push(mutResult.actionExecuted);
-      }
-      currentActiveContext = mutResult.updatedContext;
-
-      if (mutResult.actionExecuted?.status === "success") {
-        executedNotes.push(mutResult.executedNote);
-      } else if (mutResult.actionExecuted?.status === "failed") {
-        failedNotes.push(
-          mutResult.executedNote ||
-          `Unable to save your ${mutResult.actionExecuted.domain}: ${mutResult.actionExecuted.details?.error || "Database error"}.`
-        );
-      }
+  for (const m of parsedMutations) {
+    if (m.type === "CLARIFICATION_NEEDED") {
+      pendingClarifications.push(m as ClarificationResult);
     }
   }
 
-  // If clarification needed and no actions executed, return clarification immediately
-  if (pendingClarifications.length > 0 && executedActions.length === 0) {
+  // If clarification needed, return clarification immediately before calling LLM
+  if (pendingClarifications.length > 0) {
     const clar = pendingClarifications[0];
     return makeOrbitResponse({
       message: clar.clarificationMessage,
@@ -293,34 +273,7 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const successfulActions = executedActions.filter((a) => a.status === "success");
-  const failedActions = executedActions.filter((a) => a.status === "failed");
-
-  // If all executed actions failed, return failure response immediately
-  if (executedActions.length > 0 && successfulActions.length === 0) {
-    const failMsg = failedNotes.join(" ") || "Unable to save your updates. Please try again.";
-    const firstFailed = failedActions[0];
-    return makeOrbitResponse({
-      message: failMsg,
-      reply: failMsg,
-      action_executed: executedActions.length === 1 ? executedActions[0] : (executedActions as any),
-      actions_executed: executedActions.length > 1 ? executedActions : undefined,
-      suggested_actions: [
-        { label: "Retry", prompt: `Retry saving the ${firstFailed?.domain || "update"}` },
-      ],
-      activeContext: currentActiveContext,
-    });
-  }
-
-  const actionExecuted: OrbitActionExecuted | null = executedActions[0] || null;
-  const executedNote = executedNotes.join(" | ");
-
-  const primaryActionExecuted: OrbitActionExecuted | OrbitActionExecuted[] | null =
-    executedActions.length > 0
-      ? executedActions.length === 1
-        ? executedActions[0]
-        : executedActions
-      : null;
+  const primaryActionExecuted: OrbitActionExecuted | OrbitActionExecuted[] | null = null;
 
   // 2. Infer requirements primarily from the latest user message
   const latestReq = inferContextRequirements(latestUserMessage);
@@ -328,15 +281,15 @@ export async function POST(req: NextRequest) {
 
   // Merge inferred domains, add mode‑specific defaults, and resolve temporal scope
   const mergedDomains = new Set([...latestReq.domains, ...allUserReq.domains]);
-  for (const act of executedActions) {
-    if (act.domain === "workouts") mergedDomains.add("workouts");
-    if (act.domain === "meals") {
+  for (const m of parsedMutations) {
+    if (m.domain === "workouts") mergedDomains.add("workouts");
+    if (m.domain === "meals") {
       mergedDomains.add("meals");
       mergedDomains.add("nutrition");
     }
-    if (act.domain === "tasks") mergedDomains.add("tasks");
-    if (act.domain === "rituals") mergedDomains.add("habits");
-    if (act.domain === "sprints") {
+    if (m.domain === "tasks") mergedDomains.add("tasks");
+    if (m.domain === "rituals") mergedDomains.add("habits");
+    if (m.domain === "sprints") {
       mergedDomains.add("tasks");
       mergedDomains.add("habits");
     }
@@ -512,18 +465,28 @@ Active Meal Slot: ${currentActiveContext.activeMealSlot || "None"}
 Active Exercise: ${currentActiveContext.activeExerciseName || "None"}
 Maintain continuity across turns. If the user refers to "dinner", "lunch", "it", "also add", or modifies sets, resolve the target entity from this state.`;
 
-  if (successfulActions.length > 0) {
-    system += `\n\n=== ACTIONS SUCCESSFULLY COMPLETED IN DATABASE ===
-${successfulActions.map((act, i) => `Action ${i + 1}: ${act.type} (${act.domain}) -> ${JSON.stringify(act.details)}`).join("\n")}
-Notes: ${executedNote}
-CRITICAL INSTRUCTION: You MUST strictly echo and acknowledge ONLY the actions and movements listed above (${executedNote}). NEVER mention, claim, or hallucinate an unrequested exercise (such as Bench Press) that was not executed in this turn!`;
+  const mutationSummaries: string[] = [];
+  for (const m of parsedMutations) {
+    if (m.type === "CLARIFICATION_NEEDED") continue;
+    if (m.type === "UPSERT_MEAL") {
+      const names = (m.params as any)?.mealName || (m.params as any)?.items?.map((i: any) => i.name).join(", ");
+      mutationSummaries.push(`Meal (${(m.params as any)?.mealType}): ${names}`);
+    } else if (m.type === "ADD_EXERCISE" || m.type === "UPDATE_WORKOUT" || m.type === "UPDATE_WORKOUT_SET") {
+      mutationSummaries.push(`Exercise: ${(m.params as any)?.exerciseName}`);
+    } else if (m.type === "CREATE_TASK") {
+      mutationSummaries.push(`Task: "${(m.params as any)?.title}"`);
+    } else if (m.type === "LOG_RITUAL") {
+      mutationSummaries.push(`Ritual: ${(m.params as any)?.ritualType}`);
+    } else if (m.type === "UPDATE_SPRINT_PROGRESS") {
+      mutationSummaries.push(`Sprint: ${(m.params as any)?.platform || "LeetCode"}`);
+    }
   }
+  const pendingMutationSummary = mutationSummaries.join(" | ");
 
-  if (failedActions.length > 0) {
-    system += `\n\n=== ACTIONS THAT FAILED TO SAVE (DATABASE ERROR) ===
-${failedActions.map((act, i) => `Failed ${i + 1}: ${act.type} (${act.domain}) -> ${act.details?.error || "Execution failed"}`).join("\n")}
-Failure Notes: ${failedNotes.join(" | ")}
-CRITICAL INSTRUCTION: You MUST inform the user that saving failed for the above actions with the exact failure reason. NEVER claim or imply they were successfully saved!`;
+  if (pendingMutationSummary) {
+    system += `\n\n[DETECTED USER INTENT THIS TURN]
+Detected items: ${pendingMutationSummary}
+CRITICAL INSTRUCTION: Extract clean canonical entities in your structured JSON 'actions' array and echo strictly what the user requested! NEVER mention, claim, or hallucinate an unrequested exercise (such as Bench Press) that was not in the user's message!`;
   }
 
   if (classifiedIntent.intent === "HISTORICAL_ANALYSIS") {
@@ -771,6 +734,60 @@ Daily Rituals Invariant:
 The user has opened Orbit without selecting a specific mode. Give helpful, grounded advice across fitness, nutrition, and productivity. Suggest they type /workout, /diet, or /tasks for more focused coaching.`;
   }
 
+  // ── Single-Pass Structured Entity Extraction Directives ────────────────────
+  system += `\n\n=== STRUCTURED ENTITY EXTRACTION & ACTIONS (CRITICAL) ===
+Whenever the user's message contains an intent to log, record, add, or schedule an item in Fuel (Meals), Train (Workouts), or Plan (Tasks), you MUST respond in JSON format matching this schema:
+{
+  "reply": "Your concise, direct, personalized coaching response (under 200 words).",
+  "actions": [
+    // If Fuel (Meal log):
+    {
+      "type": "log_meal",
+      "payload": {
+        "mealName": "Clean, concise food description only (e.g. 'One plate of khichdi, two fried papads')",
+        "items": [{ "name": "One plate of khichdi" }, { "name": "Two fried papads" }],
+        "mealType": "breakfast" | "lunch" | "dinner" | "snack",
+        "macros": { "calories": 480, "protein": 14, "carbs": 72, "fat": 16 }
+      }
+    },
+    // If Train (Workout log):
+    {
+      "type": "log_workout",
+      "payload": {
+        "routineTitle": "Workout",
+        "movements": [
+          { "name": "Bench Press", "sets": 4, "reps": 10, "weight": 60 },
+          { "name": "Squats", "sets": 4, "reps": 10, "weight": 80 }
+        ]
+      }
+    },
+    // If Plan (Task log):
+    {
+      "type": "create_task",
+      "payload": {
+        "tasks": [
+          {
+            "title": "Clean, actionable imperative phrase (e.g. 'Finish the API integration')",
+            "dueDate": "YYYY-MM-DD",
+            "priority": "low" | "medium" | "high"
+          }
+        ]
+      }
+    }
+  ],
+  "suggested_actions": [
+    { "label": "...", "prompt": "..." }
+  ]
+}
+
+STRICT ENTITY EXTRACTION RULES:
+- Extract only the core food items, exercise names, or actionable task titles.
+- Never include conversational prefixes ('I had', 'today', 'I need to', 'earlier in the gym I did'), pronouns ('this', 'that'), or follow-up questions ('tell me macros', 'rate my volume', 'and prioritize') in entity names!
+- If the user is only asking a question or not requesting to log an item, return:
+{
+  "reply": "Your coaching reply here."
+}`;
+
   // 5. Chat Conversation History Truncation (last 4 messages, assistant replies capped at 500 chars)
   const rawMessages = Array.isArray(messages) ? messages : [];
   const recentMessages = rawMessages.slice(-4);
@@ -842,14 +859,79 @@ The user has opened Orbit without selecting a specific mode. Give helpful, groun
     );
 
     let responseMessage = result.data;
-    let responseActionExecuted = primaryActionExecuted;
     let responseSuggestedActions: OrbitSuggestedAction[] | undefined = undefined;
+
+    // 1. Single-pass structured entity extraction from primary LLM response
+    const structuredMutations = parseStructuredLlmResponse(
+      result.data,
+      currentActiveContext,
+      effectiveDate
+    );
+
+    // If LLM returned structured mutations, use them as primary source of truth!
+    // Otherwise, execute the deterministic fallback mutations (parsedMutations)
+    const mutationsToExecute =
+      structuredMutations && structuredMutations.length > 0
+        ? structuredMutations
+        : (parsedMutations as ParsedMutation[]);
+
+    if (mutationsToExecute.length > 0 && userId) {
+      for (const mutation of mutationsToExecute) {
+        if (mutation.type === "CLARIFICATION_NEEDED") continue;
+        const mutResult = await executeMutation(
+          userId,
+          mutation as any,
+          currentActiveContext,
+          effectiveDate
+        );
+        if (mutResult.actionExecuted) {
+          executedActions.push(mutResult.actionExecuted);
+        }
+        currentActiveContext = mutResult.updatedContext;
+
+        if (mutResult.actionExecuted?.status === "success") {
+          executedNotes.push(mutResult.executedNote);
+        } else if (mutResult.actionExecuted?.status === "failed") {
+          failedNotes.push(
+            mutResult.executedNote ||
+            `Unable to save your ${mutResult.actionExecuted.domain}: ${mutResult.actionExecuted.details?.error || "Database error"}.`
+          );
+        }
+      }
+    }
+
+    const successfulActions = executedActions.filter((a) => a.status === "success");
+    const failedActions = executedActions.filter((a) => a.status === "failed");
+
+    // If all executed actions failed, return failure response immediately
+    if (executedActions.length > 0 && successfulActions.length === 0) {
+      const failMsg = failedNotes.join(" ") || "Unable to save your updates. Please try again.";
+      const firstFailed = failedActions[0];
+      return makeOrbitResponse({
+        message: failMsg,
+        reply: failMsg,
+        action_executed: executedActions.length === 1 ? executedActions[0] : (executedActions as any),
+        actions_executed: executedActions.length > 1 ? executedActions : undefined,
+        suggested_actions: [
+          { label: "Retry", prompt: `Retry saving the ${firstFailed?.domain || "update"}` },
+        ],
+        activeContext: currentActiveContext,
+      });
+    }
+
+    let responseActionExecuted: OrbitActionExecuted | OrbitActionExecuted[] | null =
+      executedActions.length === 1
+        ? executedActions[0]
+        : executedActions.length > 1
+        ? executedActions
+        : null;
 
     // Check if model emitted JSON format
     try {
       const parsed = JSON.parse(result.data);
       if (parsed && typeof parsed === "object") {
-        if (parsed.message) responseMessage = parsed.message;
+        if (parsed.reply) responseMessage = parsed.reply;
+        else if (parsed.message) responseMessage = parsed.message;
         if (parsed.action_executed && !responseActionExecuted) {
           responseActionExecuted = parsed.action_executed;
         }
@@ -858,7 +940,20 @@ The user has opened Orbit without selecting a specific mode. Give helpful, groun
         }
       }
     } catch {
-      // Plain text response from model
+      const snippet = extractJsonSnippet(result.data);
+      if (snippet) {
+        try {
+          const parsed = JSON.parse(snippet);
+          if (parsed.reply) responseMessage = parsed.reply;
+          else if (parsed.message) responseMessage = parsed.message;
+          if (parsed.action_executed && !responseActionExecuted) {
+            responseActionExecuted = parsed.action_executed;
+          }
+          if (Array.isArray(parsed.suggested_actions) && parsed.suggested_actions.length > 0) {
+            responseSuggestedActions = parsed.suggested_actions;
+          }
+        } catch {}
+      }
     }
 
     // Contextual suggestion generation
@@ -880,6 +975,32 @@ The user has opened Orbit without selecting a specific mode. Give helpful, groun
       activeContext: currentActiveContext,
     });
   } catch (err: any) {
+    console.error("[aria] AI invocation error:", err);
+
+    // OFFLINE / FALLBACK GUARD: If AI call failed, execute deterministic mutations
+    if (executedActions.length === 0 && parsedMutations.length > 0 && userId) {
+      for (const mutation of parsedMutations) {
+        if (mutation.type === "CLARIFICATION_NEEDED") continue;
+        const mutResult = await executeMutation(
+          userId,
+          mutation as any,
+          currentActiveContext,
+          effectiveDate
+        );
+        if (mutResult.actionExecuted) {
+          executedActions.push(mutResult.actionExecuted);
+        }
+        currentActiveContext = mutResult.updatedContext;
+      }
+    }
+
+    const fallbackActionExecuted: OrbitActionExecuted | OrbitActionExecuted[] | null =
+      executedActions.length === 1
+        ? executedActions[0]
+        : executedActions.length > 1
+        ? executedActions
+        : null;
+
     const isRateOrTokenError = (
       err?.code === "RATE_LIMITED" ||
       err?.status === 413 ||
@@ -913,9 +1034,9 @@ The user has opened Orbit without selecting a specific mode. Give helpful, groun
           feature: "aria_fallback",
         });
 
-        const firstAction = Array.isArray(primaryActionExecuted)
-          ? primaryActionExecuted[0]
-          : primaryActionExecuted;
+        const firstAction = Array.isArray(fallbackActionExecuted)
+          ? fallbackActionExecuted[0]
+          : fallbackActionExecuted;
         const fallbackSuggestions = generateContextualSuggestions({
           orbitContext,
           activeContext: currentActiveContext,
@@ -926,7 +1047,7 @@ The user has opened Orbit without selecting a specific mode. Give helpful, groun
         return makeOrbitResponse({
           message: fallbackResult.data,
           reply: fallbackResult.data,
-          action_executed: primaryActionExecuted ?? null,
+          action_executed: fallbackActionExecuted ?? null,
           actions_executed: executedActions.length > 1 ? executedActions : undefined,
           suggested_actions: fallbackSuggestions,
           activeContext: currentActiveContext,
@@ -937,9 +1058,9 @@ The user has opened Orbit without selecting a specific mode. Give helpful, groun
           `System: ${system.slice(0, 3000)}\n\nUser: ${latestUserMessage}`
         );
         if (geminiReply) {
-          const firstAction = Array.isArray(primaryActionExecuted)
-            ? primaryActionExecuted[0]
-            : primaryActionExecuted;
+          const firstAction = Array.isArray(fallbackActionExecuted)
+            ? fallbackActionExecuted[0]
+            : fallbackActionExecuted;
           const geminiSuggestions = generateContextualSuggestions({
             orbitContext,
             activeContext: currentActiveContext,
@@ -950,7 +1071,7 @@ The user has opened Orbit without selecting a specific mode. Give helpful, groun
           return makeOrbitResponse({
             message: geminiReply,
             reply: geminiReply,
-            action_executed: primaryActionExecuted ?? null,
+            action_executed: fallbackActionExecuted ?? null,
             actions_executed: executedActions.length > 1 ? executedActions : undefined,
             suggested_actions: geminiSuggestions,
             activeContext: currentActiveContext,
