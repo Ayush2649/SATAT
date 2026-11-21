@@ -2,46 +2,40 @@ import { describe, it, expect } from "vitest";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Orbit3DCore } from "@/components/orbit/Orbit3DCore";
+import { OrbitLivingOrb } from "@/components/orbit/OrbitLivingOrb";
+import { OrbitMark } from "@/components/orbit/OrbitMark";
 
-describe("Orbit3DCore Dead-Center Celestial Physics & Stage Alignment", () => {
-  it("renders 184px square centered stage with radar circles", () => {
+describe("Shared Orbit Halo stage", () => {
+  it("retains the stage label and test ID while fitting a narrower parent", () => {
     const html = renderToStaticMarkup(React.createElement(Orbit3DCore));
-    expect(html).toContain('width:184px;height:184px');
-    // Concentric dashed radar circles
-    expect(html).toContain('r="86"');
-    expect(html).toContain('r="64"');
-    expect(html).toContain('r="42"');
-    expect(html).toContain('stroke-dasharray="3 3"');
-    expect(html).toContain('stroke="rgba(255,255,255,0.08)"');
+    expect(html).toContain('data-testid="orbit-3d-core"');
+    expect(html).toContain('width:184px;max-width:100%;aspect-ratio:1');
+    expect(html).toContain('aria-label="Orbit 3D Celestial Core (idle)"');
+    expect(html).toContain('aria-hidden="true"');
+    expect(html).not.toContain('stroke-dasharray="3 3"');
   });
-
-  it("locks orbital planes into static 3D tilts to eliminate erratic gimbal wobbling", () => {
-    const html = renderToStaticMarkup(React.createElement(Orbit3DCore));
-    // Inner Ring Tilt
-    expect(html).toContain("rotateX(66deg) rotateY(-18deg)");
-    // Middle Ring Tilt
-    expect(html).toContain("rotateX(62deg) rotateY(28deg)");
-    // Outer Ring Tilt
-    expect(html).toContain("rotateX(72deg) rotateY(-6deg)");
+  it("routes all public renderers to the same artwork rather than size-specific logos", () => {
+    for (const component of [OrbitMark, Orbit3DCore, OrbitLivingOrb]) {
+      const html = renderToStaticMarkup(React.createElement(component as React.ComponentType<any>, { size: 96 }));
+      expect(html).toContain('data-orbit-artwork="halo"');
+      expect(html).toContain('fill-rule="evenodd"');
+      expect(html).not.toMatch(/lotus|radar|orbitSpinZ/);
+    }
   });
-
-  it("renders dead-centered 44px (w-11 h-11) shaded Matcha-Emerald sphere with breathing animation", () => {
-    const html = renderToStaticMarkup(React.createElement(Orbit3DCore));
-    expect(html).toContain("radial-gradient(circle at 35% 30%, #6EE7B7 0%, #2D6A4F 55%, #0F1713 95%)");
-    expect(html).toContain("orbitCoreBreathe6s 6s ease-in-out infinite");
+  it("keeps four stars at large sizes and removes texture and stars from compact launchers", () => {
+    const large = renderToStaticMarkup(React.createElement(Orbit3DCore, { size: 132 }));
+    const small = renderToStaticMarkup(React.createElement(Orbit3DCore, { size: "sm" }));
+    expect((large.match(/<polygon /g) || []).length).toBe(4);
+    expect(large).toContain("feTurbulence");
+    expect(small).not.toContain("<polygon");
+    expect(small).not.toContain("feTurbulence");
+    expect(small).toContain('width:38px;max-width:100%');
   });
-
-  it("accelerates orbital speeds from calm idle to responsive thinking state", () => {
-    const idleHtml = renderToStaticMarkup(React.createElement(Orbit3DCore, { state: "idle" }));
-    expect(idleHtml).toContain("orbitSpinZ1 20s linear infinite");
-    expect(idleHtml).toContain("orbitSpinZ2 28s linear infinite");
-    expect(idleHtml).toContain("orbitSpinZ3 36s linear infinite");
-
-    const thinkingHtml = renderToStaticMarkup(React.createElement(Orbit3DCore, { state: "thinking" }));
-    expect(thinkingHtml).toContain("orbitSpinZ1 6s linear infinite");
-    expect(thinkingHtml).toContain("orbitSpinZ2 8s linear infinite");
-    expect(thinkingHtml).toContain("orbitSpinZ3 10s linear infinite");
-    // Emerald aura ring during thinking
-    expect(thinkingHtml).toContain("orbitAuraPulse 2s cubic-bezier(0.2, 0.8, 0.4, 1) infinite");
+  it("preserves existing size aliases and forwards each actual assistant state", () => {
+    for (const [size, pixels] of [["sm", 38], ["md", 92], ["lg", 184], ["xl", 224]] as const) {
+      const html = renderToStaticMarkup(React.createElement(Orbit3DCore, { size, state: "thinking", showRadar: false }));
+      expect(html).toContain(`width:${pixels}px`);
+      expect(html).toContain("orbit-halo--thinking");
+    }
   });
 });

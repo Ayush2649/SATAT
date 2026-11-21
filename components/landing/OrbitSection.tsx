@@ -161,8 +161,8 @@ export default function OrbitSection() {
 
       {/* ── CENTER FOCAL STACK (z-20, max-w-[680px] mx-auto) ── */}
       <div className="relative z-20 text-center max-w-[680px] mx-auto flex flex-col items-center">
-        {/* Top: 3D Orbit Core Stage Container (Spacious Unclipped Circular Radial Aura) */}
-        <div className="w-44 h-44 sm:w-52 sm:h-52 mx-auto flex items-center justify-center relative overflow-visible before:absolute before:inset-2 before:rounded-full before:bg-[radial-gradient(circle,rgba(25,29,26,0.92)_0%,rgba(25,29,26,0.45)_55%,transparent_75%)] dark:before:bg-[radial-gradient(circle,rgba(45,106,79,0.28)_0%,transparent_70%)] before:-z-10">
+        {/* Spacious stage for the shared Halo artwork */}
+        <div className="w-44 h-44 sm:w-52 sm:h-52 mx-auto flex items-center justify-center relative overflow-visible">
           <Orbit3DCore size="lg" state="active" />
         </div>
 

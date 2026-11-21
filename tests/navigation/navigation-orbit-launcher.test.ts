@@ -37,7 +37,8 @@ describe("Global Orbit 3D Launcher Badge in Navigation (Sprint 6.2)", () => {
     // Rounded square styling
     expect(html).toContain("rounded-2xl");
     expect(html).toContain("bg-[#191D1A]");
-    expect(html).toContain("border-[#6EE7B7]/30");
+    expect(html).toContain("orbit-halo-badge");
+    expect(html).toContain('data-orbit-artwork="halo"');
     expect(html).toContain("hover:scale-105");
 
     // Must NOT contain text like "Orbit AI" in the visible badge body

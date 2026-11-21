@@ -1,0 +1,97 @@
+/* One responsive identity for Orbit, from inline icons to the landing stage. */
+.orbit-halo {
+  --halo-sage: var(--satat-sage, #2D6A4F);
+  --halo-clay: var(--satat-brand, #E05A47);
+  --halo-cream: #FCFBF9;
+  --halo-anchor: #191D1A;
+  --halo-core-lit: color-mix(in srgb, var(--halo-cream) 42%, var(--halo-sage));
+  --halo-core-deep: color-mix(in srgb, var(--halo-anchor) 84%, var(--halo-sage));
+  --halo-clay-light: color-mix(in srgb, var(--halo-cream) 52%, var(--halo-clay));
+  --halo-clay-deep: color-mix(in srgb, var(--halo-anchor) 50%, var(--halo-clay));
+  --halo-ring-alpha: .92;
+  --halo-angle: -25deg;
+  --halo-pitch: 1;
+  --halo-inset: 1;
+  --halo-ring-drop: 0px;
+  --halo-cycle: 14s;
+  display: block;
+  inline-size: var(--halo-size, 48px);
+  max-inline-size: 100%;
+  block-size: auto;
+  aspect-ratio: 1;
+  flex-shrink: 0;
+  overflow: visible;
+  vertical-align: middle;
+}
+
+.dark .orbit-halo,
+[data-theme="dark"] .orbit-halo,
+.orbit-halo-badge .orbit-halo {
+  --halo-core-lit: color-mix(in srgb, var(--halo-cream) 26%, var(--halo-sage));
+  --halo-core-deep: var(--halo-anchor);
+  --halo-clay-light: color-mix(in srgb, var(--halo-cream) 38%, var(--halo-clay));
+}
+.orbit-halo-badge .orbit-halo { --halo-sage: #40916C; }
+.orbit-halo-stage { display: grid; place-items: center; flex-shrink: 0; }
+.orbit-halo-stage > .orbit-halo { inline-size: 100%; }
+
+.orbit-halo .halo-envelope {
+  transform: translateY(var(--halo-ring-drop)) rotate(var(--halo-angle)) scale(var(--halo-inset), var(--halo-pitch));
+  transform-origin: 0 0;
+  transition: transform 900ms cubic-bezier(.22,.7,.25,1);
+}
+.orbit-halo .halo-drift {
+  transform-origin: 0 0;
+  animation: halo-ring-drift var(--halo-cycle) ease-in-out -3s infinite;
+}
+.orbit-halo .halo-float {
+  transform-origin: 0 0;
+  animation: halo-float 9s ease-in-out infinite;
+}
+.orbit-halo .halo-reaction, .orbit-halo .halo-core { transform-origin: 0 0; }
+.orbit-halo .halo-core { transition: transform 800ms cubic-bezier(.22,.7,.25,1); }
+.orbit-halo .halo-glint { animation: halo-light var(--halo-cycle) linear -3s infinite; opacity: .58; }
+.orbit-halo--compact .halo-edge { stroke-width: 2.2; }
+
+.orbit-halo--thinking {
+  --halo-angle: -12deg;
+  --halo-pitch: .84;
+  --halo-inset: .96;
+  --halo-ring-drop: -1px;
+  --halo-cycle: 7s;
+}
+.orbit-halo--thinking .halo-core { transform: scale(.985, 1.025); }
+.orbit-halo--thinking .halo-glint { opacity: .95; }
+.orbit-halo--responding { --halo-angle: -29deg; --halo-pitch: 1.08; --halo-cycle: 11s; }
+.orbit-halo--responding .halo-core { animation: halo-response 4s ease-in-out infinite; }
+.orbit-halo--success .halo-reaction { animation: halo-nod 800ms cubic-bezier(.33,0,.2,1) 1; }
+.orbit-halo--error { --halo-angle: -5deg; --halo-pitch: .8; --halo-ring-alpha: .7; }
+.orbit-halo--error :is(.halo-float, .halo-drift, .halo-glint, .halo-reaction, .halo-core) { animation-play-state: paused; }
+
+/* A brief, quiet response when an existing link/button receives attention. */
+@media (hover: hover) and (pointer: fine) {
+  :is(a, button):hover .orbit-halo--idle .halo-reaction,
+  :is(a, button):hover .orbit-halo--active .halo-reaction { animation: halo-attend 1.4s cubic-bezier(.22,.7,.25,1) 1; }
+}
+:is(a, button):focus-visible .orbit-halo--idle .halo-reaction,
+:is(a, button):focus-visible .orbit-halo--active .halo-reaction { animation: halo-attend 1.4s cubic-bezier(.22,.7,.25,1) 1; }
+
+@keyframes halo-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes halo-ring-drift { 0%,100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
+@keyframes halo-light { to { stroke-dashoffset: -100; } }
+@keyframes halo-response { 0%,100% { transform: scale(1); } 50% { transform: scale(1.018,.988); } }
+@keyframes halo-nod { 0%,100% { transform: translateY(0) rotate(0); } 30% { transform: translateY(3px) rotate(6deg); } 66% { transform: translateY(-1px) rotate(-2deg); } }
+@keyframes halo-attend { 0%,100% { transform: translateY(0) rotate(0); } 36% { transform: translateY(-3px) rotate(-7deg); } 74% { transform: translateY(-1px) rotate(1.5deg); } }
+
+.orbit-halo[data-animated="false"] :is(.halo-float, .halo-drift, .halo-glint, .halo-reaction, .halo-core) {
+  animation: none !important;
+  transition: none !important;
+}
+.orbit-halo[data-animated="false"] .halo-envelope { transition: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .orbit-halo :is(.halo-float, .halo-drift, .halo-glint, .halo-reaction, .halo-core) {
+    animation: none !important;
+    transition: none !important;
+  }
+  .orbit-halo .halo-envelope { transition: none !important; }
+}

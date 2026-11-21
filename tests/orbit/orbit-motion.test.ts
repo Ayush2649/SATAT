@@ -3,75 +3,56 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import fs from "fs";
 import path from "path";
-import { OrbitMark, OrbitIcon, type OrbitState } from "@/components/orbit/OrbitMark";
+import { OrbitMark, type OrbitState } from "@/components/orbit/OrbitMark";
 
-describe("Orbit AI Celestial Animation System", () => {
-  it("renders with default state 'idle' and proper aria attributes", () => {
+describe("Orbit Halo motion and accessibility", () => {
+  it("retains the default name and public state hooks", () => {
     const html = renderToStaticMarkup(React.createElement(OrbitMark));
-    expect(html).toContain("orbit-mark");
     expect(html).toContain("orbit-mark--idle");
     expect(html).toContain('aria-label="Orbit AI (idle)"');
+    expect(html).toContain('data-animated="true"');
   });
-
-  it("applies appropriate state classes across all lifecycle states", () => {
-    const states: OrbitState[] = ["idle", "thinking", "responding", "success", "error"];
-    for (const state of states) {
+  it("forwards every supported lifecycle state", () => {
+    for (const state of ["idle", "thinking", "responding", "success", "error", "active"] as OrbitState[]) {
       const html = renderToStaticMarkup(React.createElement(OrbitMark, { state }));
       expect(html).toContain(`orbit-mark--${state}`);
+      expect(html).toContain(`orbit-halo--${state}`);
     }
   });
-
-  it("supports backward-compatible animated prop mapping to thinking state", () => {
-    const html = renderToStaticMarkup(React.createElement(OrbitMark, { animated: true }));
-    expect(html).toContain("orbit-mark--thinking");
+  it("preserves the legacy animated-to-thinking shorthand and permits an explicitly still mark", () => {
+    expect(renderToStaticMarkup(React.createElement(OrbitMark, { animated: true }))).toContain("orbit-mark--thinking");
+    expect(renderToStaticMarkup(React.createElement(OrbitMark, { animated: false }))).toContain('data-animated="false"');
   });
-
-  it("renders discrete element groups for planet, stationary ring, and satellite", () => {
-    const html = renderToStaticMarkup(React.createElement(OrbitMark));
-    // Stationary elliptical ring
-    expect(html).toContain("orbit-ring");
-    expect(html).toContain("<ellipse");
-    expect(html).toContain('rx="9.4"');
-    expect(html).toContain('ry="4.6"');
-
-    // Centered planet core and aura
-    expect(html).toContain("orbit-core-group");
-    expect(html).toContain("orbit-core");
-    expect(html).toContain("orbit-aura");
-    expect(html).toContain('r="3.5"');
-
-    // Satellite group traveling along the ring
-    expect(html).toContain("orbit-satellite-group");
-    expect(html).toContain("orbit-satellite");
-    expect(html).toContain("orbit-satellite-aura");
+  it("renders a shaded planet and a clipped front/back ring with all referenced definitions present", () => {
+    const html = renderToStaticMarkup(React.createElement(OrbitMark, { size: 132 }));
+    const definitions = new Set([...html.matchAll(/id="([^"]+)"/g)].map(match => match[1]));
+    for (const match of html.matchAll(/url\(#([^\)]+)\)/g)) expect(definitions.has(match[1])).toBe(true);
+    expect(html).toContain('fill-rule="evenodd"');
+    expect(html).toContain('clip-path="url(#');
+    expect(html).toContain("halo-core");
   });
-
-  it("verifies globals.css defines celestial orbit animation keyframes and classes", () => {
-    const css = fs.readFileSync(path.resolve(__dirname, "../../app/globals.css"), "utf8");
-
-    // Elliptical satellite travel keyframes
-    expect(css).toContain("@keyframes orbit-satellite-travel");
-
-    // Idle planet and aura breathing
-    expect(css).toContain("@keyframes orbit-planet-pulse-idle");
-    expect(css).toContain("@keyframes orbit-aura-pulse-idle");
-
-    // Thinking state acceleration
-    expect(css).toContain("@keyframes orbit-planet-pulse-thinking");
-    expect(css).toContain("@keyframes orbit-aura-pulse-thinking");
-
-    // Response completion single bloom pulse
-    expect(css).toContain("@keyframes orbit-aura-pulse-success");
-
-    // State class selectors
-    expect(css).toContain(".orbit-mark--idle");
-    expect(css).toContain(".orbit-mark--thinking");
-    expect(css).toContain(".orbit-mark--success");
-    expect(css).toContain(".orbit-mark--error");
-
-    // Reduced motion support
+  it("loads motion styles in the real app with reduced-motion and explicit animation-off overrides", () => {
+    const globals = fs.readFileSync(path.resolve(__dirname, "../../app/globals.css"), "utf8");
+    const css = fs.readFileSync(path.resolve(__dirname, "../../styles/orbit-halo.css"), "utf8");
+    expect(globals).toContain('@import "../styles/orbit-halo.css"');
     expect(css).toContain("@media (prefers-reduced-motion: reduce)");
-    expect(css).toContain(".orbit-mark .orbit-core-group");
-    expect(css).toContain(".orbit-mark .orbit-satellite-group");
+    expect(css).toContain('.orbit-halo[data-animated="false"]');
+    expect(css).toContain("animation: none !important");
+    expect(css).toContain(".orbit-halo--error");
+    expect(globals).not.toContain("@keyframes orbit-error-shake");
+  });
+  it("isolates gradient and clipping IDs when multiple logos render together", () => {
+    const html = renderToStaticMarkup(React.createElement("div", null,
+      React.createElement(OrbitMark, { size: 32 }), React.createElement(OrbitMark, { size: 148 })));
+    const ids = [...html.matchAll(/id="([^"]+)"/g)].map(match => match[1]);
+    expect(ids.length).toBeGreaterThan(10);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+  it("preserves caller-provided SVG accessibility, sizing and styling attributes", () => {
+    const html = renderToStaticMarkup(React.createElement(OrbitMark, { size: 20, "aria-label": "Ask Orbit", className: "custom-orbit", style: { opacity: .8 } }));
+    expect(html).toContain('aria-label="Ask Orbit"');
+    expect(html).toContain('width="20"');
+    expect(html).toContain("custom-orbit");
+    expect(html).toContain("opacity:0.8");
   });
 });
