@@ -1,6 +1,7 @@
 @import "../styles/app-shell.css";
 @import "../styles/satat.tokens.css";
 @import "../styles/orbit-halo.css";
+@import "../styles/orbit-chat.css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

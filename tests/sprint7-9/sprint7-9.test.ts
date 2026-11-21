@@ -85,7 +85,7 @@ describe("Sprint 7.9: SATAT Geometric Logo Mark, HealthifySnap Sticky Scroll & O
 
   it("5. Orbit section (#orbit) renders 3D Depth-of-Field stage with focal stack and 8 non-wrapping floating prompt cards", () => {
     expect(orbitSectionSource).toContain('id="orbit"');
-    expect(orbitSectionSource).toContain('size="lg" state="active"');
+    expect(orbitSectionSource).toContain('size={256} state="active"');
     expect(orbitSectionSource).toContain("Try Orbit — Your Personal AI Biological Copilot");
     expect(orbitSectionSource).toContain(
       "Cross-synthesizing training strain, nutrition gaps, and focus blocks in real time."

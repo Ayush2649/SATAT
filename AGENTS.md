@@ -56,3 +56,8 @@ This file defines the strict, non-negotiable operating rules for **Antigravity**
 - Run the actual CI gates on the synchronized result: `npx tsc --noEmit`, `npm run lint`, `npm test`, and `npm run build`. Also run a clean type check with `npx tsc --noEmit --incremental false` when compiler configuration or test TypeScript changes. A passing build or Vitest run does not substitute for the standalone type check.
 - After pushing, inspect the GitHub Actions run for the exact new commit and address failures before reporting CI success. Report skipped tests, outstanding checks, or external blockers accurately. Recheck branch compatibility if `main` advances during verification.
 
+## 7. Responsive UI Verification
+- Treat every UI change as a change for phones, tablets and desktop. Verify narrow phone widths, common phone widths, tablet/desktop breakpoints and short landscape heights in both light and dark themes before completion.
+- For chat or form changes, verify keyboard opening/closing, visible headers, composer placement, focus, draft/history preservation across resizing, and horizontal overflow. Prefer one shared responsive interaction surface over duplicated mobile/desktop forms.
+- Use isolated sessions and clearly label simulated keyboard/device checks when physical hardware is unavailable. Do not claim a physical iPhone or other device was tested unless it actually was.
+

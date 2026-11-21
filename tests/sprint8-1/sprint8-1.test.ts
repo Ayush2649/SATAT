@@ -61,7 +61,7 @@ describe("Sprint 8.1: Landing Page UX, Typography, Timeline Spine, Non-Repeating
   it("3. Orbit Section renders <Orbit3DCore /> on the clean Halo stage with the widened headline", () => {
     expect(orbitSource).not.toContain("rgba(25,29,26,0.92)");
     expect(orbitSource).toContain("max-w-[680px]");
-    expect(orbitSource).toContain('<Orbit3DCore size="lg" state="active"');
+    expect(orbitSource).toContain('<Orbit3DCore size={256} state="active"');
   });
 
   it("4. Hero headline breaks cleanly across desktop (md:whitespace-nowrap) and mobile 3-line balanced stack", () => {
