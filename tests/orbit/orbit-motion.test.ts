@@ -25,8 +25,8 @@ describe("Orbit Halo motion and accessibility", () => {
   });
   it("renders a shaded planet and a clipped front/back ring with all referenced definitions present", () => {
     const html = renderToStaticMarkup(React.createElement(OrbitMark, { size: 132 }));
-    const definitions = new Set([...html.matchAll(/id="([^"]+)"/g)].map(match => match[1]));
-    for (const match of html.matchAll(/url\(#([^\)]+)\)/g)) expect(definitions.has(match[1])).toBe(true);
+    const definitions = new Set(Array.from(html.matchAll(/id="([^"]+)"/g), match => match[1]));
+    for (const match of Array.from(html.matchAll(/url\(#([^\)]+)\)/g))) expect(definitions.has(match[1])).toBe(true);
     expect(html).toContain('fill-rule="evenodd"');
     expect(html).toContain('clip-path="url(#');
     expect(html).toContain("halo-core");
@@ -44,7 +44,7 @@ describe("Orbit Halo motion and accessibility", () => {
   it("isolates gradient and clipping IDs when multiple logos render together", () => {
     const html = renderToStaticMarkup(React.createElement("div", null,
       React.createElement(OrbitMark, { size: 32 }), React.createElement(OrbitMark, { size: 148 })));
-    const ids = [...html.matchAll(/id="([^"]+)"/g)].map(match => match[1]);
+    const ids = Array.from(html.matchAll(/id="([^"]+)"/g), match => match[1]);
     expect(ids.length).toBeGreaterThan(10);
     expect(new Set(ids).size).toBe(ids.length);
   });

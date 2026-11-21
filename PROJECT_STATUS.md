@@ -7,6 +7,14 @@
 
 ---
 
+## 21 November 2026 — CI TypeScript failure repair
+
+- Pulled the user's `d589e08` GitHub conflict-resolution commit into `feat/complete-ui-change-e2e`; fetched `origin/main` (`aebeb1d`) and confirmed it is already included before development. Preserved the merged Orbit keyboard, task and workout changes. No application merge into `main`.
+- Reproduced the exact three TS2802 errors from failed Actions run `44870038463` with a clean standalone type check. `tests/orbit/orbit-motion.test.ts` spread/iterated `RegExpStringIterator` values while the project has no ES2015-or-newer target. Replaced those three iterator uses with `Array.from`, preserving the SVG reference and unique-ID assertions without changing the compiler target or weakening tests.
+- Updated `AGENTS.md` to require fetching/integrating main before development, checking again before push, standalone type checking plus all existing CI gates, conflict-marker checks, and verification of the actual pushed GitHub Actions run. Prior local build/Vitest evidence did not cover this standalone compiler failure.
+- Clean type check (`npx tsc --noEmit --incremental false`), exact CI type check (`npx tsc --noEmit`), lint and production build **passed, exit 0**; lint retains pre-existing warnings and the build generated all 34 routes. Full suite: **74 files passed; 850 tests passed, 33 emulator-dependent tests skipped, zero failures** (883 total; one worker locally).
+- Fetched again after validation: `origin/main` is an ancestor of this feature branch, and the local/remote feature commits match before the fix commit. No leftover conflict markers found. Hosted Actions verification will follow the push; its result must be checked before reporting remote CI success. Local logs: `artifacts/ci-orbit-{typecheck-before,typecheck-clean,typecheck,lint,tests,build}.log`. Only three files changed: this status file, `AGENTS.md`, and the Orbit motion regression file. No UI, routes, auth, schema, workflow or dependency changes in this repair.
+
 ## 21 November 2026 — Approved Halo integrated across Orbit
 
 - Replaced the old ring/core, lotus and line-icon artwork with one shared `components/orbit/OrbitHalo.tsx` SVG: matte sage planet, one extruded terracotta ring, four quiet stars on larger marks and gentle floating motion. Compact icons omit stars, texture and blur for legibility. `styles/orbit-halo.css` supplies token-based lighting, calm state reactions, explicit animation-off and reduced-motion rules; `app/globals.css` imports it and removes obsolete Orbit animation rules.
