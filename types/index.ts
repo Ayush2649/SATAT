@@ -26,7 +26,7 @@ export interface Project {
 }
 
 // ── Workout ────────────────────────────────────────────────────────────────────
-export type WeightUnit = "kg" | "lbs" | "bodyweight";
+export type WeightUnit = "kg" | "lbs" | "bodyweight" | "km" | "miles";
 
 export interface SetLog {
   id: string;
@@ -34,6 +34,9 @@ export interface SetLog {
   weight?: number;
   unit: WeightUnit;
   completed: boolean;
+  durationSeconds?: number;
+  distance?: number;
+  distanceUnit?: string;
 }
 
 export interface ExerciseLog {
@@ -41,6 +44,11 @@ export interface ExerciseLog {
   name: string;
   sets: SetLog[];
   notes?: string;
+  type?: "strength" | "isometric" | "cardio" | "calisthenics" | string;
+  duration?: number;
+  durationUnit?: string;
+  distance?: number;
+  distanceUnit?: string;
 }
 
 // ── Cardio ─────────────────────────────────────────────────────────────────────
@@ -62,12 +70,19 @@ export interface WorkoutSession {
   userId: string;
   date: string; // ISO date string YYYY-MM-DD
   exercises: ExerciseLog[];
+  movements?: any[];
   cardioLogs?: CardioLog[];
   durationMinutes: number;
+  duration?: number;
   bodyWeightKg?: number;
   notes?: string;
   summary?: string; // AI generated
+  status?: "in-progress" | "completed" | string;
+  title?: string;
+  name?: string;
+  routineTitle?: string;
   createdAt: number;
+  updatedAt?: string | number;
 }
 
 export interface BodyWeightEntry {
@@ -99,6 +114,7 @@ export interface MealEntry {
   userId: string;
   date: string;
   name: string;
+  mealType?: string;
   macros: MealMacros;
   imageUrl?: string;
   photoUrl?: string;

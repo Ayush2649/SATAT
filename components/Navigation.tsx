@@ -44,6 +44,9 @@ export default function Navigation() {
   const [dpError, setDpError] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [projects, setProjects] = useState<Project[]>([]);
+  const [isKeyboardActive, setIsKeyboardActive] = useState(false);
+  const initialHeightRef = useRef<number>(typeof window !== "undefined" ? window.innerHeight : 0);
+  const lastWidthRef = useRef<number>(typeof window !== "undefined" ? window.innerWidth : 0);
   const desktopProfileRef = useRef<HTMLDivElement>(null);
   const mobileProfileRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -101,6 +104,69 @@ export default function Navigation() {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Soft keyboard listener to hide mobile bottom nav when virtual keyboard is active
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    initialHeightRef.current = window.innerHeight;
+    lastWidthRef.current = window.innerWidth;
+
+    const checkKeyboardState = () => {
+      const isMobile = window.innerWidth < 768;
+      if (!isMobile) {
+        setIsKeyboardActive(false);
+        return;
+      }
+
+      // Orientation change detection
+      if (window.innerWidth !== lastWidthRef.current) {
+        lastWidthRef.current = window.innerWidth;
+        initialHeightRef.current = window.innerHeight;
+      }
+
+      const currentViewportHeight = window.visualViewport
+        ? window.visualViewport.height
+        : window.innerHeight;
+      const heightDelta = initialHeightRef.current - currentViewportHeight;
+
+      const isInputFocused =
+        document.documentElement.getAttribute("data-keyboard-open") === "true" ||
+        document.body.getAttribute("data-keyboard-open") === "true";
+
+      if (isInputFocused || heightDelta > 120) {
+        setIsKeyboardActive(true);
+      } else if (heightDelta <= 60 && !isInputFocused) {
+        setIsKeyboardActive(false);
+      }
+    };
+
+    const handleCustomKeyboard = (
+      e: CustomEvent<{ open?: boolean; isOpen?: boolean }>
+    ) => {
+      const isMobile = window.innerWidth < 768;
+      if (!isMobile) return;
+      const isOpen =
+        typeof e.detail?.open === "boolean"
+          ? e.detail.open
+          : typeof e.detail?.isOpen === "boolean"
+          ? e.detail.isOpen
+          : false;
+      setIsKeyboardActive(isOpen);
+    };
+
+    window.addEventListener("satat:keyboard-state" as any, handleCustomKeyboard);
+    window.visualViewport?.addEventListener("resize", checkKeyboardState);
+    window.visualViewport?.addEventListener("scroll", checkKeyboardState);
+    window.addEventListener("resize", checkKeyboardState);
+
+    return () => {
+      window.removeEventListener("satat:keyboard-state" as any, handleCustomKeyboard);
+      window.visualViewport?.removeEventListener("resize", checkKeyboardState);
+      window.visualViewport?.removeEventListener("scroll", checkKeyboardState);
+      window.removeEventListener("resize", checkKeyboardState);
+    };
   }, []);
 
   // Close profile menu on outside click
@@ -697,7 +763,10 @@ export default function Navigation() {
 
       {/* ── 4. MOBILE BOTTOM FLOATING CAPSULE DOCK (STRICTLY md:hidden) ── */}
       <nav
-        className="fixed left-1/2 -translate-x-1/2 bottom-[max(12px,env(safe-area-inset-bottom))] z-50 w-[calc(100vw-28px)] max-w-[390px] sm:max-w-[460px] h-[62px] rounded-full bg-[#191D1A]/95 backdrop-blur-xl border border-white/[0.08] shadow-[0_14px_34px_rgba(0,0,0,0.32)] px-2.5 flex items-center md:hidden"
+        className={cn(
+          "fixed left-1/2 -translate-x-1/2 bottom-[max(12px,env(safe-area-inset-bottom))] z-50 w-[calc(100vw-28px)] max-w-[390px] sm:max-w-[460px] h-[62px] rounded-full bg-[#191D1A]/95 backdrop-blur-xl border border-white/[0.08] shadow-[0_14px_34px_rgba(0,0,0,0.32)] px-2.5 flex items-center md:hidden transition-all duration-300 ease-out",
+          isKeyboardActive ? "translate-y-full opacity-0 pointer-events-none" : "translate-y-0 opacity-100"
+        )}
         aria-label="Primary navigation"
       >
         <div className="grid grid-cols-5 items-center justify-items-center w-full h-full">

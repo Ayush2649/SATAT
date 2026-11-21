@@ -144,6 +144,13 @@ export async function addMeal(meal: Omit<MealEntry, "id">): Promise<MealEntry> {
   return { id: ref.id, ...meal };
 }
 
+export async function updateMeal(mealId: string, updates: Partial<MealEntry>) {
+  if (updates.macros && !validMealMacros(updates.macros)) {
+    throw new Error("Meal nutrition must be finite and nonnegative, with positive calories.");
+  }
+  await updateDoc(doc(db, "meals", mealId), updates);
+}
+
 export async function deleteMeal(mealId: string) {
   await deleteDoc(doc(db, "meals", mealId));
 }

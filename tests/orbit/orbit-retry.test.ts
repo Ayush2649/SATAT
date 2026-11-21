@@ -39,5 +39,24 @@ describe("OrbitView Retry Mechanism & Resilience", () => {
     expect(orbitViewSource).toContain("setMessages([]);");
     expect(orbitViewSource).toContain('setViewMode("overview");');
   });
+
+  it("6. Auto-scrolls both mobile and desktop streams without ref collisions and handles overlay reopen", () => {
+    expect(orbitViewSource).toContain("mobileScrollContainerRef");
+    expect(orbitViewSource).toContain("desktopScrollContainerRef");
+    expect(orbitViewSource).toContain("mobileMessagesEndRef");
+    expect(orbitViewSource).toContain("desktopMessagesEndRef");
+    expect(orbitViewSource).toContain("const scrollToBottom = useCallback((behavior: ScrollBehavior = \"smooth\")");
+    expect(orbitViewSource).toContain("isOpen = true");
+    expect(orbitViewSource).toContain("justOpened && messages.length > 0");
+    expect(orbitViewSource).toContain('scrollToBottom("auto")');
+  });
+
+  it("7. Dispatches satat:data-refresh for single and multi-intent mutations and sends clientDate", () => {
+    expect(orbitViewSource).toContain("dispatchMutationRefreshEvents");
+    expect(orbitViewSource).toContain("Array.isArray(data.actions_executed)");
+    expect(orbitViewSource).toContain("Array.isArray(data.action_executed)");
+    expect(orbitViewSource).toContain('new CustomEvent("satat:data-refresh"');
+    expect(orbitViewSource).toContain("clientDate: todayString()");
+  });
 });
 
