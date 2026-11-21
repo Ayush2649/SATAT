@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { OrbitIcon, OrbitMark } from "@/components/orbit/OrbitMark";
 
 describe("Orbit Visual Identity — Continuous Intelligent Motion", () => {
@@ -17,18 +18,13 @@ describe("Orbit Visual Identity — Continuous Intelligent Motion", () => {
     });
   });
 
-  it("OrbitMark vector source renders celestial orbit architecture with elliptical ring, central core, and satellite", () => {
-    const fs = require("fs");
-    const path = require("path");
-    const markSource = fs.readFileSync(path.resolve(__dirname, "../../components/orbit/OrbitMark.tsx"), "utf8");
-
-    // Must contain celestial orbit elements
-    expect(markSource).toContain("<ellipse");
-    expect(markSource).toContain('rx="9.4"');
-    expect(markSource).toContain('ry="4.6"');
-    expect(markSource).toContain("orbit-core");
-    expect(markSource).toContain("orbit-satellite");
-    expect(markSource).toContain("orbit-ring");
+  it("uses the same Halo artwork at compact and large sizes without overflowing its box", () => {
+    for (const size of [14, 16, 20, 24, 32, 48, 96, 224]) {
+      const html = renderToStaticMarkup(React.createElement(OrbitMark, { size }));
+      expect(html).toContain('data-orbit-artwork="halo"');
+      expect(html).toContain(`width="${size}"`);
+      expect(html).toContain(`height="${size}"`);
+    }
   });
 });
 

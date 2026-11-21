@@ -1,5 +1,7 @@
 # SATAT audit fixes and meal scanning review
 
+**16 November follow-up:** remaining race, quantity, state and copy defects plus isolated persistence/setup/media checks are documented in [Remaining audit closure](REMAINING_AUDIT_CLOSURE_2026-11-16.md). Latest full verification: 829 tests passed, zero failures/skips; production build passed. Results below describe the earlier checkpoint, not the latest state.
+
 Date: 15 November 2026 (Asia/Kolkata). Branch: `feat/complete-ui-change-e2e`. Local app: http://localhost:3000. No deployment, push or merge.
 
 ## Scope and approach

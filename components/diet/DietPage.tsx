@@ -213,7 +213,7 @@ export default function DietPage() {
           }
         : null,
       date,
-    } as any);
+    } as any, userId);
   }, [userId, date, meals, goals, totals.calories, totals.proteinG, totals.carbsG, totals.fatG]);
 
   const changeDate = (days: number) => {
@@ -1751,7 +1751,7 @@ function SavedMealsModal({
   templates: MealTemplate[];
   userId: string;
   date: string;
-  onLog: (meal: Omit<MealEntry, "id">, templateId: string) => void;
+  onLog: (meal: Omit<MealEntry, "id">, templateId: string) => unknown | Promise<unknown>;
   onDelete: (id: string) => void;
   onClose: () => void;
 }) {
@@ -1810,12 +1810,14 @@ function SavedMealsModal({
                   key={t.id}
                   className="bg-[#F6F3EC] rounded-[22px] p-3 flex items-center justify-between gap-3 border border-[#1C1917]/[0.05]"
                 >
-                  <div
+                  <button
+                    type="button"
+                    aria-label={`View portions for ${t.name}`}
                     onClick={() => setSelected(t)}
-                    className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer"
+                    className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer text-left"
                   >
                     <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-[#EFECE4]">
-                      <img src={thumb} alt={t.name} className="w-full h-full object-cover" />
+                      <img src={thumb} alt={t.name} loading="lazy" className="w-full h-full object-cover" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <h4 className="font-bold text-xs text-[#1C1917] leading-snug truncate">
@@ -1836,7 +1838,7 @@ function SavedMealsModal({
                         </span>
                       </div>
                     </div>
-                  </div>
+                  </button>
 
                   <div className="flex items-center gap-1.5 shrink-0">
                     <button
@@ -1848,6 +1850,7 @@ function SavedMealsModal({
                     </button>
                     <button
                       type="button"
+                      aria-label={`Delete saved meal ${t.name}`}
                       onClick={() => onDelete(t.id)}
                       className="text-[#8C857B] hover:text-[#E05A47] p-1.5 transition-colors cursor-pointer"
                     >
@@ -1877,7 +1880,7 @@ function LogTemplateView({
   userId: string;
   date: string;
   onBack: () => void;
-  onLog: (meal: Omit<MealEntry, "id">, templateId: string) => void;
+  onLog: (meal: Omit<MealEntry, "id">, templateId: string) => unknown | Promise<unknown>;
   onClose: () => void;
 }) {
   const scaledFor = (q: number) => {
@@ -1905,10 +1908,16 @@ function LogTemplateView({
     setQtyAndScale(String(next));
   };
 
-  const handleLog = () => {
-    const q = Number(qty) || 0;
+  const [saving, setSaving] = useState(false);
+  const savePending = useRef(false);
+  const parsedMacros = { calories: Number(macros.calories), proteinG: Number(macros.protein), carbsG: Number(macros.carbs), fatG: Number(macros.fat) };
+  const canLog = qty.trim() !== "" && Number.isFinite(Number(qty)) && Number(qty) > 0 && validMealMacros(parsedMacros);
+  const handleLog = async () => {
+    if (!canLog || savePending.current) return;
+    savePending.current = true; setSaving(true);
+    const q = Number(qty);
     const label = q === template.baseQuantity ? template.name : `${template.name} (${qty} ${template.unit})`;
-    onLog(
+    try { await onLog(
       {
         userId,
         date,
@@ -1923,7 +1932,7 @@ function LogTemplateView({
         createdAt: Date.now(),
       },
       template.id
-    );
+    ); } finally { savePending.current = false; setSaving(false); }
   };
 
   return (
@@ -1944,6 +1953,7 @@ function LogTemplateView({
           </label>
           <div className="flex items-center gap-3">
             <button
+              aria-label="Decrease saved meal portion"
               onClick={() => step(-stepSize)}
               type="button"
               className="w-8 h-8 rounded-full bg-white text-base font-bold flex items-center justify-center cursor-pointer shadow-2xs"
@@ -1952,12 +1962,16 @@ function LogTemplateView({
             </button>
             <input
               type="number"
+              aria-label="Saved meal portion quantity"
+              min="0.01"
+              step="any"
               className="w-20 text-center text-lg font-bold bg-transparent text-[#1C1917] outline-none"
               value={qty}
               onChange={(e) => setQtyAndScale(e.target.value)}
             />
             <span className="text-xs font-bold text-[#8C857B]">{template.unit}</span>
             <button
+              aria-label="Increase saved meal portion"
               onClick={() => step(stepSize)}
               type="button"
               className="w-8 h-8 rounded-full bg-white text-base font-bold flex items-center justify-center cursor-pointer shadow-2xs"
@@ -1971,13 +1985,14 @@ function LogTemplateView({
         <div className="bg-[#191D1A] text-white rounded-[24px] p-4 shadow-md">
           <MacroDonutBreakdown
             variant="dark"
-            calories={Number(macros.calories) || 0}
-            carbs={Number(macros.carbs) || 0}
-            fat={Number(macros.fat) || 0}
-            protein={Number(macros.protein) || 0}
+            calories={canLog ? Number(macros.calories) : 0}
+            carbs={canLog ? Number(macros.carbs) : 0}
+            fat={canLog ? Number(macros.fat) : 0}
+            protein={canLog ? Number(macros.protein) : 0}
           />
         </div>
 
+        {!canLog && <p className="text-xs text-[var(--satat-brand)]">Enter a positive portion with valid nutrition before logging.</p>}
         <div className="flex gap-2 pt-2">
           <button
             onClick={onBack}
@@ -1988,11 +2003,12 @@ function LogTemplateView({
           </button>
           <button
             onClick={handleLog}
+            disabled={!canLog || saving}
             type="button"
             className="flex-1 bg-[#E05A47] hover:bg-[#C94A38] text-white rounded-full py-3.5 text-xs font-semibold shadow-md transition-all cursor-pointer inline-flex items-center justify-center gap-1.5"
           >
             <Check className="w-3.5 h-3.5" />
-            <span>Log Meal</span>
+            <span>{saving ? "Saving meal…" : "Log Meal"}</span>
           </button>
         </div>
       </div>
@@ -2025,7 +2041,7 @@ function SaveTemplateModal({
   const units = ["serving", "bowl", "plate", "piece", "cup", "g"];
 
   const handleSave = () => {
-    if (!name.trim()) return;
+    if (!name.trim() || !validMealMacros(initial.macros)) return;
     onSave({
       userId,
       name: name.trim(),
@@ -2051,6 +2067,7 @@ function SaveTemplateModal({
           </label>
           <input
             className="w-full bg-[#F6F3EC] rounded-xl px-3.5 py-2.5 text-xs font-bold text-[#1C1917] outline-none"
+            aria-label="Saved meal name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             autoFocus
@@ -2088,7 +2105,7 @@ function SaveTemplateModal({
           </button>
           <button
             onClick={handleSave}
-            disabled={!name.trim()}
+            disabled={!name.trim() || !validMealMacros(initial.macros)}
             type="button"
             className="flex-1 bg-[#191D1A] hover:bg-[#2D6A4F] text-white rounded-full py-3 text-xs font-semibold shadow-md cursor-pointer disabled:opacity-50"
           >

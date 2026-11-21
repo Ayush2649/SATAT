@@ -67,13 +67,13 @@ const DESKTOP_RITUALS = [
   {
     id: "deep_work_90",
     title: "90m Deep Work",
-    category: "COGNITIVE",
+    category: "FOCUS",
     photo: "https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=300&q=75",
   },
   {
     id: "creatine_water",
     title: "3g Creatine & 3L Water",
-    category: "CELLULAR FUEL",
+    category: "DAILY HABITS",
     photo: "https://images.unsplash.com/photo-1548839140-29a749e1cf4d?auto=format&fit=crop&w=300&q=75",
   },
   {
@@ -146,7 +146,7 @@ export default function HomeView() {
           completedToday: t.filter((x: any) => x.status === "completed" && x.completedAt && localDateString(new Date(x.completedAt)) === tDay).map((x: any) => ({ title: x.title, completedAt: x.completedAt })),
           overdue: t.filter((x: any) => x.status === "pending" && x.dueDate && x.dueDate < tDay).map((x: any) => ({ title: x.title, dueDate: x.dueDate })),
           totalPending: t.filter((x: any) => x.status === "pending").length,
-        });
+        }, userId);
 
         const mealTotals = m.reduce(
           (acc: any, item: any) => ({
@@ -170,7 +170,7 @@ export default function HomeView() {
           })),
           totals: mealTotals,
           goals: g ? { calories: g.calories, proteinG: g.proteinG, carbsG: g.carbsG, fatG: g.fatG } : null,
-        });
+        }, userId);
 
         setWorkoutContext({
           bodyWeightKg: w.length > 0 ? w[0].weightKg : undefined,
@@ -181,7 +181,7 @@ export default function HomeView() {
             cardio: sess.cardio || [],
             summary: sess.summary,
           })),
-        });
+        }, userId);
       })
       .catch((err) => {
         console.error("Error loading home data:", err);
@@ -1226,7 +1226,7 @@ export default function HomeView() {
                 DAILY RITUALS · ON THIS DEVICE
               </span>
               <span className="text-xs font-semibold text-[#2D6A4F] dark:text-[#34D399]">
-                {Object.values(rituals).filter(Boolean).length} / 4 Done
+                {DESKTOP_RITUALS.filter(ritual => rituals[ritual.id]).length} / 4 Done
               </span>
             </div>
 

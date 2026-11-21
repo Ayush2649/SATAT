@@ -1,5 +1,5 @@
 import { INDIAN_FOOD_DATABASE, type FoodCompositionItem } from "@/lib/ai/nutrition/database";
-import { normalizeQuantityToGrams } from "@/lib/ai/nutrition/calculator";
+import { normalizeQuantityToGrams, resolveFoodItem, supportsFoodUnit } from "@/lib/ai/nutrition/calculator";
 
 export type NutrientKey = "vitaminAMcg" | "vitaminCMg" | "calciumMg" | "ironMg" | "potassiumMg";
 export type Micros = Record<NutrientKey, number | null>;
@@ -66,7 +66,7 @@ export function componentsFromScan(foods: any[]): ScanComponent[] {
     const known = [food.calories, food.proteinG, food.carbsG, food.fatG].every(value => typeof value === "number" && Number.isFinite(value) && value >= 0) && grams != null;
     const matched = exactScanFood(food.name);
     return { id: food.componentId || `scan-${index}`, name: food.name, amount: String(grams ?? food.quantity ?? ""), unit: grams ? "g" : food.unit || "g",
-      per100g: known ? { calories: food.calories * 100 / grams, proteinG: food.proteinG * 100 / grams, carbsG: food.carbsG * 100 / grams, fatG: food.fatG * 100 / grams, fiberG: (food.fiberG || 0) * 100 / grams } : null,
+      per100g: known ? { calories: food.calories * 100 / grams, proteinG: food.proteinG * 100 / grams, carbsG: food.carbsG * 100 / grams, fatG: food.fatG * 100 / grams, fiberG: (food.fiberG || 0) * 100 / grams } : matched?.per100g || null,
       micros: { ...UNKNOWN_MICROS }, source: food.source === "ai_estimate" ? "AI nutrition estimate · unverified" : "SATAT reference estimate · photo identity is unverified",
       reviewNote: food.reviewNote, confirmed: false, portionSource: "photo", gramsPerUnit: matched?.gramsPerDefaultUnit,
     };
@@ -105,7 +105,7 @@ const stripLabel = (text: string) => clean(text.replace(/(?:~|approx\.?|about)?\
 /** Used only to associate annotations, never to merge two physical servings. */
 const annotationFamily = (name: string) => {
   const key = stripLabel(name);
-  const exact = exactScanFood(key);
+  const exact = exactScanFood(key) || resolveFoodItem(key);
   for (const [family, pattern] of [
     ["roti", /\b(roti|chapati|phulka)\b/], ["dal", /\b(dal|dahl|lentils?)\b/],
     ["okra", /\b(bhindi|okra)\b/], ["rice", /\b(?:steamed|white|cooked|plain) rice\b|^rice$/],
@@ -117,25 +117,40 @@ const annotationFamily = (name: string) => {
 export function buildScanInventory<T extends InventoryFood>(foods: T[], labels: string[], parse: (text: string) => { quantity: number; unit: string } | null) {
   const counted: (T & { componentId: string })[] = foods.map((food, index) => ({ ...food, componentId: `scan-${index}` }));
   const reviewNotes: Record<string, string> = {};
-  for (const food of counted) if (typeof food.confidence === "number" && food.confidence < .65) reviewNotes[food.componentId] = "Check this dish and its amount; the photo was unclear.";
+  for (const food of counted) {
+    if (typeof food.confidence === "number" && food.confidence < .65) reviewNotes[food.componentId] = "Check this dish and its amount; the photo was unclear.";
+    const reference = resolveFoodItem(food.name);
+    if (reference && !supportsFoodUnit(reference, food.unit || reference.defaultUnit)) reviewNotes[food.componentId] = "Enter grams for this dish; its food reference has no weight per piece.";
+  }
   const suggestions: ScanSuggestion[] = [];
   const seen = new Set<string>();
   for (let index = 0; index < labels.length; index++) {
     const label = labels[index];
-    if (/home[- ]cooked|low oil|garnish|tableware/i.test(label)) continue;
+    if (/home[- ]cooked|low oil|garnish|tableware|not counted|not part of (?:the )?(?:meal|plate)/i.test(label)) continue;
     const name = stripLabel(label);
-    if (!name || seen.has(name)) continue;
-    seen.add(name);
-    const matches = counted.filter(food => annotationFamily(food.name) === annotationFamily(name));
     const portion = parse(label);
+    const labelKey = `${name}:${portion?.quantity}:${portion?.unit}`;
+    if (!name || seen.has(labelKey)) continue;
+    seen.add(labelKey);
+    const matches = counted.filter(food => {
+      const other = stripLabel(food.name);
+      return annotationFamily(food.name) === annotationFamily(name) ||
+        (other.length > 3 && (` ${name} `).includes(` ${other} `));
+    });
     if (!matches.length) {
       suggestions.push({ id: `label-${index}`, name, quantity: portion?.quantity || 1, unit: portion?.unit || "serving", label });
       continue;
     }
     // With multiple bowls the label may describe one bowl or their combined mass.
     // Do not assign that quantity to each bowl, or silently choose a portion.
-    const conflict = matches.length > 1 || (portion && matches.some(food =>
-      food.unit === portion.unit && Math.abs((food.quantity ?? 1) - portion.quantity) > .01));
+    const conflict = matches.length > 1 || (portion && matches.some(food => {
+      if (food.unit === portion.unit) return Math.abs((food.quantity ?? 1) - portion.quantity) > .01;
+      const reference = resolveFoodItem(food.name);
+      if (!reference) return false;
+      const foodGrams = normalizeQuantityToGrams(reference, food.quantity ?? 1, food.unit);
+      const labelGrams = normalizeQuantityToGrams(reference, portion.quantity, portion.unit);
+      return foodGrams !== null && labelGrams !== null && Math.abs(foodGrams - labelGrams) > 1;
+    }));
     const labelReference = exactScanFood(name);
     const identityConflict = labelReference && matches.some(food => {
       const reference = exactScanFood(food.name);

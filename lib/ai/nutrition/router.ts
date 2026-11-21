@@ -14,7 +14,7 @@
  * - Safe portion/quantity preservation
  */
 
-import { InputFoodItem, resolveFoodItem } from "./calculator";
+import { InputFoodItem, resolveFoodItem, supportsFoodUnit } from "./calculator";
 
 export const MIN_ESTIMATION_CONFIDENCE = 0.60;
 
@@ -48,6 +48,10 @@ export function routeFoodItems(foods: InputFoodItem[]): RoutedFoodItems {
 
     // 2. Canonical match against the deterministic database
     const matched = resolveFoodItem(rawName);
+    if (matched && !supportsFoodUnit(matched, food.unit || matched.defaultUnit)) {
+      unresolved.push(food);
+      continue;
+    }
     if (matched) {
       canonical.push(food);
       continue;

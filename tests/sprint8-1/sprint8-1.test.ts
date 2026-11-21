@@ -58,8 +58,8 @@ describe("Sprint 8.1: Landing Page UX, Typography, Timeline Spine, Non-Repeating
     expect(mealScanSource).toContain("photo-1546069901-ba9599a7e63c"); // paneer bowl
   });
 
-  it("3. Orbit Section renders <Orbit3DCore /> in Deep Botanical Espresso radial aura with high contrast and widened headline", () => {
-    expect(orbitSource).toContain("rgba(25,29,26,0.92)");
+  it("3. Orbit Section renders <Orbit3DCore /> on the clean Halo stage with the widened headline", () => {
+    expect(orbitSource).not.toContain("rgba(25,29,26,0.92)");
     expect(orbitSource).toContain("max-w-[680px]");
     expect(orbitSource).toContain('<Orbit3DCore size="lg" state="active"');
   });

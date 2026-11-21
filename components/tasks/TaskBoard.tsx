@@ -92,19 +92,19 @@ const RITUAL_DEFS: RitualDef[] = [
   {
     id: "deep_work_90",
     title: "90m Deep Work",
-    category: "COGNITIVE",
+    category: "FOCUS",
     categoryColor: "text-[#2D6A4F]",
     pendingSubtitle: "90m target block",
-    doneSubtitle: "Morning Block · Done",
+    doneSubtitle: "Marked done on this device",
     photoUrl: "https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=200&q=75",
   },
   {
     id: "creatine_water",
     title: "3g Creatine & 3L Water",
-    category: "CELLULAR FUEL",
+    category: "DAILY HABITS",
     categoryColor: "text-[#2D6A4F]",
     pendingSubtitle: "Daily supplementation",
-    doneSubtitle: "Hydration Logged",
+    doneSubtitle: "Marked done on this device",
     photoUrl: "https://images.unsplash.com/photo-1548839140-29a749e1cf4d?auto=format&fit=crop&w=200&q=75",
   },
   {
@@ -113,7 +113,7 @@ const RITUAL_DEFS: RitualDef[] = [
     category: "MOVEMENT",
     categoryColor: "text-[#57534E]",
     pendingSubtitle: "Active movement",
-    doneSubtitle: "8,000 / 8,000 steps",
+    doneSubtitle: "Marked done on this device",
     photoUrl: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=200&q=75",
   },
   {
@@ -259,7 +259,7 @@ export default function TaskBoard() {
 
   const { rituals, toggleRitual } = useRituals(userId, selectedDate);
 
-  const completedRitualsCount = Object.values(rituals).filter(Boolean).length;
+  const completedRitualsCount = RITUAL_DEFS.filter(ritual => rituals[ritual.id]).length;
 
   // ── Feature B: Circadian Deep Work Flow Instrument State ──
   const { targetMinutes, secondsRemaining, isTimerRunning,
@@ -290,7 +290,7 @@ export default function TaskBoard() {
         if (cancelled) return;
         setProjects(ps);
         setAllTasks(loadedTasks);
-        setTaskContext(computeTaskContext(loadedTasks, ps, todayString()));
+        setTaskContext(computeTaskContext(loadedTasks, ps, todayString()), userId);
       })
       .catch((err) => {
         if (!cancelled) console.error("Error loading task board data:", err);
@@ -436,22 +436,16 @@ export default function TaskBoard() {
     };
     if (desc.trim()) newTask.description = desc.trim();
     if (priority !== "none") newTask.priority = priority;
-
-    try {
-      const created = await createTask(newTask);
-      setAllTasks((prev) => [created, ...prev]);
-      setShowAddTask(false);
-      toast("Task added!", "success");
-      getAllTasks(userId)
-        .then((all) => {
-          setAllTasks(all);
-          setTaskContext(computeTaskContext(all, projects, todayString()));
-        })
-        .catch(console.error);
-    } catch (err) {
-      console.error("Failed to add task:", err);
-      toast("Failed to add task", "error");
-    }
+    const created = await createTask(newTask);
+    setAllTasks((prev) => [created, ...prev]);
+    setShowAddTask(false);
+    toast("Task added!", "success");
+    getAllTasks(userId)
+      .then((all) => {
+        setAllTasks(all);
+        setTaskContext(computeTaskContext(all, projects, todayString()), userId);
+      })
+      .catch(console.error);
   };
 
   const handleToggleTask = async (task: Task) => {
@@ -460,39 +454,25 @@ export default function TaskBoard() {
     const updates: Partial<Task> = { status: newStatus };
     if (newStatus === "completed") updates.completedAt = Date.now();
     setAllTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, ...updates } : t)));
-    try {
-      await updateTask(task.id, updates);
-      if (newStatus === "completed") toast("Task completed! 🎉", "success");
-      getAllTasks(userId)
-        .then((all) => {
-          setAllTasks(all);
-          setTaskContext(computeTaskContext(all, projects, todayString()));
-        })
-        .catch(console.error);
-    } catch (err) {
-      console.error("Failed to toggle task:", err);
-      setAllTasks(prevTasks); // ROLLBACK
-      toast("Failed to update task", "error");
-    }
+    if (newStatus === "completed") toast("Task completed! 🎉", "success");
+    getAllTasks(userId)
+      .then((all) => {
+        setAllTasks(all);
+        setTaskContext(computeTaskContext(all, projects, todayString()), userId);
+      })
+      .catch(console.error);
   };
 
   const handleDeleteTask = async (taskId: string) => {
     const prevTasks = allTasks;
     setAllTasks((prev) => prev.filter((t) => t.id !== taskId));
-    try {
-      await deleteTask(taskId);
-      toast("Task deleted", "info");
-      getAllTasks(userId)
-        .then((all) => {
-          setAllTasks(all);
-          setTaskContext(computeTaskContext(all, projects, todayString()));
-        })
-        .catch(console.error);
-    } catch (err) {
-      console.error("Failed to delete task:", err);
-      setAllTasks(prevTasks); // ROLLBACK
-      toast("Failed to delete task", "error");
-    }
+    toast("Task deleted", "info");
+    getAllTasks(userId)
+      .then((all) => {
+        setAllTasks(all);
+        setTaskContext(computeTaskContext(all, projects, todayString()), userId);
+      })
+      .catch(console.error);
   };
 
   const handleUpdateTask = async (taskId: string, updates: Partial<Task>) => {
@@ -502,20 +482,13 @@ export default function TaskBoard() {
     ) as Partial<Task>;
     setAllTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, ...clean } : t)));
     setEditingTask(null);
-    try {
-      await updateTask(taskId, clean);
-      toast("Task updated", "success");
-      getAllTasks(userId)
-        .then((all) => {
-          setAllTasks(all);
-          setTaskContext(computeTaskContext(all, projects, todayString()));
-        })
-        .catch(console.error);
-    } catch (err) {
-      console.error("Failed to update task:", err);
-      setAllTasks(prevTasks); // ROLLBACK
-      toast("Failed to update task", "error");
-    }
+    toast("Task updated", "success");
+    getAllTasks(userId)
+      .then((all) => {
+        setAllTasks(all);
+        setTaskContext(computeTaskContext(all, projects, todayString()), userId);
+      })
+      .catch(console.error);
   };
 
   const handleAddProject = async (name: string, color: string) => {
@@ -787,7 +760,7 @@ export default function TaskBoard() {
                         "Daily Cadence"}
                     </span>
                     <span className="text-[#2D6A4F]">●</span>
-                    <span>High Cognitive Load</span>
+                    <span>Deep focus</span>
                   </p>
                 </div>
 
@@ -1034,7 +1007,7 @@ export default function TaskBoard() {
                       No tasks scheduled for this date
                     </h3>
                     <p className="text-xs text-[#57534E] max-w-xs mx-auto mt-1 mb-5 leading-relaxed">
-                      Add high-cognitive deep work or choose a sprint template to maintain cadence.
+                      Add a task or choose a focus block to start your day.
                     </p>
                     <div className="flex flex-wrap justify-center gap-2">
                       <button
@@ -1269,7 +1242,7 @@ export default function TaskBoard() {
             {projects.length === 0 ? (
               <div className="bg-[#FCFBF9] rounded-[22px] p-6 border border-[#1C1917]/[0.06] text-center shadow-xs">
                 <p className="font-serif italic text-base text-[#1C1917]">No workspaces created yet</p>
-                <p className="text-xs text-[#57534E] mt-1 mb-3">Group your deep work tasks into dedicated project domains.</p>
+                <p className="text-xs text-[#57534E] mt-1 mb-3">Keep related tasks together in a workspace.</p>
                 <button
                   onClick={() => setShowAddProject(true)}
                   type="button"
@@ -1639,7 +1612,7 @@ export default function TaskBoard() {
                       No tasks scheduled for this date
                     </h3>
                     <p className="text-xs text-[#57534E] max-w-xs mx-auto mt-1 mb-5 leading-relaxed">
-                      Add high-cognitive deep work or choose a sprint template to maintain cadence.
+                      Add a task or choose a focus block to start your day.
                     </p>
                     <div className="flex flex-wrap justify-center gap-2">
                       <button
@@ -1700,7 +1673,7 @@ export default function TaskBoard() {
                   {projects.length === 0 ? (
                     <div className="bg-[#FCFBF9] rounded-[22px] p-6 border border-[#1C1917]/[0.06] text-center shadow-xs">
                       <p className="font-serif italic text-base text-[#1C1917]">No workspaces created yet</p>
-                      <p className="text-xs text-[#57534E] mt-1 mb-3">Group your deep work tasks into dedicated project domains.</p>
+                      <p className="text-xs text-[#57534E] mt-1 mb-3">Keep related tasks together in a workspace.</p>
                       <button
                         onClick={() => setShowAddProject(true)}
                         type="button"
@@ -1865,7 +1838,7 @@ export default function TaskBoard() {
                   {activeFocusTask?.title || nextPendingTask?.title || "Select a Task to Enter Flow"}
                 </h3>
                 <p className="text-[11px] text-stone-400 mt-1">
-                  {activeFocusTask?.project || "Daily Cadence"} · High Cognitive Load
+                  {activeFocusTask?.project || "Daily Cadence"} · Deep focus
                 </p>
               </div>
 
@@ -2272,6 +2245,7 @@ function TaskComposerModal({
             </h2>
           </div>
           <button
+            aria-label="Close task editor"
             onClick={onClose}
             type="button"
             className="w-8 h-8 rounded-full bg-[#EFECE4] hover:bg-[#E2DDD2] text-[#1C1917] flex items-center justify-center transition-all cursor-pointer shrink-0"
@@ -2300,7 +2274,7 @@ function TaskComposerModal({
               <div className="text-[11px] text-[#57534E] flex items-center gap-1.5 mt-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#E05A47]" />
                 <span>
-                  Cognitive Load:{" "}
+                  Task effort:{" "}
                   {priority === "high"
                     ? "High Focus"
                     : priority === "medium"
@@ -2545,6 +2519,7 @@ function AddProjectModal({
         <div className="flex items-center justify-between mb-4 pb-2 border-b border-[#1C1917]/[0.06]">
           <h3 className="font-serif italic text-2xl text-[#1C1917]">New Workspace</h3>
           <button
+            aria-label="Close New Workspace"
             onClick={onClose}
             type="button"
             className="w-8 h-8 rounded-full bg-[#EFECE4] hover:bg-[#E2DDD2] flex items-center justify-center text-[#1C1917] cursor-pointer"

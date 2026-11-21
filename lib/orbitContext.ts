@@ -38,9 +38,16 @@ let _diet:    DietContextData    | null = null;
 let _workout: WorkoutContextData | null = null;
 let _tasks:   TaskContextData    | null = null;
 
-export const setDietContext    = (d: DietContextData)    => { _diet    = d; };
-export const setWorkoutContext = (d: WorkoutContextData) => { _workout = d; };
-export const setTaskContext    = (d: TaskContextData)    => { _tasks   = d; };
+let contextOwner: string | null = null;
+export function setOrbitContextOwner(userId: string | null) {
+  if (contextOwner === userId) return;
+  contextOwner = userId;
+  resetOrbitContext();
+}
+const canPublish = (owner?: string) => owner === undefined || owner === contextOwner;
+export const setDietContext = (data: DietContextData, owner?: string) => { if (canPublish(owner)) _diet = data; };
+export const setWorkoutContext = (data: WorkoutContextData, owner?: string) => { if (canPublish(owner)) _workout = data; };
+export const setTaskContext = (data: TaskContextData, owner?: string) => { if (canPublish(owner)) _tasks = data; };
 
 export const getDietContext    = () => _diet;
 export const getWorkoutContext = () => _workout;

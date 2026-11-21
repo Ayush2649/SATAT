@@ -307,6 +307,10 @@ export function OrbitView({ isOverlay = false, isOpen = true, onClose, className
   useEffect(() => {
     try {
       requestRef.current?.abort();
+      requestRef.current = null;
+      if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
+      setLoading(false); setInput(""); setError(null); setOrbitState("idle"); setFocusMode("all");
+      lastFailedMessageRef.current = null;
       setMessages([]);
       sessionStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(STORAGE_KEY);
@@ -473,6 +477,8 @@ export function OrbitView({ isOverlay = false, isOpen = true, onClose, className
         inputRef.current.style.height = "auto";
       }
 
+      const controller = new AbortController();
+      requestRef.current = controller;
       try {
         const dietContext = getDietContext();
         const workoutContext = getWorkoutContext();
@@ -483,8 +489,6 @@ export function OrbitView({ isOverlay = false, isOpen = true, onClose, className
           content: m.content,
         }));
 
-        const controller = new AbortController();
-        requestRef.current = controller;
         const res = await fetch("/api/aria", {
           signal: controller.signal,
           method: "POST",
@@ -535,11 +539,11 @@ export function OrbitView({ isOverlay = false, isOpen = true, onClose, className
           setOrbitState("idle");
         }, 900);
       } catch (err: any) {
-        if (err?.name === "AbortError") return;
+        if (controller.signal.aborted || err?.name === "AbortError") return;
         setError("Orbit couldn't connect right now. Please try again.");
         setOrbitState("error");
       } finally {
-        setLoading(false);
+        if (requestRef.current === controller) setLoading(false);
       }
     },
     [
@@ -599,15 +603,15 @@ export function OrbitView({ isOverlay = false, isOpen = true, onClose, className
     setPendingIntent(classifyOrbitIntent(intentText));
     if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
 
+    const controller = new AbortController();
+    requestRef.current = controller;
     try {
       const dietContext = getDietContext();
       const workoutContext = getWorkoutContext();
       const taskContext = getTaskContext();
 
-      const controller = new AbortController();
-      requestRef.current = controller;
-      const res = await fetch("/api/aria", {
-        signal: controller.signal,
+        const res = await fetch("/api/aria", {
+          signal: controller.signal,
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -655,11 +659,11 @@ export function OrbitView({ isOverlay = false, isOpen = true, onClose, className
         setOrbitState("idle");
       }, 900);
     } catch (err: any) {
-      if (err?.name === "AbortError") return;
+      if (controller.signal.aborted || err?.name === "AbortError") return;
       setError("Orbit couldn't connect right now. Please try again.");
       setOrbitState("error");
     } finally {
-      setLoading(false);
+      if (requestRef.current === controller) setLoading(false);
     }
   }, [loading, messages, focusMode, persistMessages, activeContext, dispatchMutationRefreshEvents]);
 

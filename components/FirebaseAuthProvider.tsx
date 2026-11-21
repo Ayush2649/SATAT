@@ -4,6 +4,8 @@ import React, { createContext, useContext, useEffect, useRef, useState, useCallb
 import { useSession } from "next-auth/react";
 import { onAuthStateChanged, signInWithCustomToken, signOut, type User } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { createFirebaseSessionSync } from "@/lib/auth/firebase-session";
+import { setOrbitContextOwner } from "@/lib/orbitContext";
 import { getUserKey } from "@/lib/auth/userKey";
 import { Loader2 } from "lucide-react";
 
@@ -43,145 +45,54 @@ export function FirebaseAuthProvider({ children }: { children: React.ReactNode }
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const inFlightRef = useRef(false);
-  const lastSyncedUidRef = useRef<string | null>(null);
-
-  // Subscribe to Firebase Auth state
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setFirebaseUser(user);
-    });
-    return unsubscribe;
-  }, []);
-
-  const authenticateWithToken = useCallback(async (expectedUid: string) => {
-    if (inFlightRef.current) return;
-    inFlightRef.current = true;
-
-    try {
-      setStatus("loading");
-      setIsReady(false);
-      setError(null);
-
-      // If already signed in as a different user, sign out first
-      if (auth.currentUser && auth.currentUser.uid !== expectedUid) {
-        await signOut(auth);
-      }
-
-      // If already signed in with expected UID, we are done
-      if (auth.currentUser && auth.currentUser.uid === expectedUid) {
-        lastSyncedUidRef.current = expectedUid;
-        setFirebaseUser(auth.currentUser);
-        setStatus("authenticated");
-        setIsReady(true);
-        setError(null);
-        return;
-      }
-
-      // Request custom token from secure server endpoint
-      const response = await fetch("/api/auth/firebase-token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-
+  const expectedUid = sessionStatus === "authenticated" && session ? getUserKey(session) : null;
+  const syncRef = useRef<ReturnType<typeof createFirebaseSessionSync<User>> | null>(null);
+  if (!syncRef.current) syncRef.current = createFirebaseSessionSync<User>({
+    currentUser: () => auth.currentUser,
+    signOut: () => signOut(auth),
+    signIn: async token => (await signInWithCustomToken(auth, token)).user,
+    fetchToken: async signal => {
+      const response = await fetch("/api/auth/firebase-token", { method: "POST", headers: { "Content-Type": "application/json" }, signal });
+      if (response.status === 401) return null;
       if (!response.ok) {
-        if (response.status === 401) {
-          // NextAuth session invalidated
-          setFirebaseUser(null);
-          setStatus("unauthenticated");
-          setIsReady(true);
-          return;
-        }
         const body = await response.json().catch(() => ({}));
         throw new Error(body.error || `Server responded with status ${response.status}`);
       }
-
       const { token } = await response.json();
-      if (!token || typeof token !== "string") {
-        throw new Error("Server returned an invalid or empty token");
-      }
+      if (!token || typeof token !== "string") throw new Error("Server returned an invalid or empty token");
+      return token;
+    },
+    publish: (nextStatus, user, message) => {
+      setFirebaseUser(user); setStatus(nextStatus); setIsReady(nextStatus !== "loading"); setError(message || null);
+    },
+  });
 
-      // Sign in to Firebase Auth using custom token
-      const cred = await signInWithCustomToken(auth, token);
-
-      // Verify that the Firebase UID strictly matches the NextAuth identity
-      if (cred.user.uid !== expectedUid) {
-        console.error("[FirebaseAuth] UID mismatch between NextAuth and Firebase");
-        await signOut(auth);
-        throw new Error("Security error: Authenticated identity mismatch");
-      }
-
-      setFirebaseUser(cred.user);
-      lastSyncedUidRef.current = expectedUid;
-      setStatus("authenticated");
-      setIsReady(true);
-      setError(null);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Firebase authentication failed";
-      console.error("[FirebaseAuth] Token authentication error:", message);
-      setError(message);
-      setStatus("error");
-      setIsReady(true);
-    } finally {
-      inFlightRef.current = false;
-    }
-  }, []);
-
-  // Synchronize Firebase Auth with NextAuth session changes
+  useEffect(() => onAuthStateChanged(auth, user => setFirebaseUser(user)), []);
   useEffect(() => {
+    setOrbitContextOwner(expectedUid);
     if (sessionStatus === "loading") {
-      setIsReady(false);
-      setStatus("loading");
+      syncRef.current!.cancel(); setIsReady(false); setStatus("loading");
       return;
     }
-
-    if (sessionStatus === "unauthenticated" || !session) {
-      lastSyncedUidRef.current = null;
-      if (auth.currentUser) {
-        signOut(auth).catch((err) => {
-          console.error("[FirebaseAuth] Sign out error:", err);
-        });
-      }
-      setFirebaseUser(null);
-      setStatus("unauthenticated");
-      setIsReady(true);
-      setError(null);
+    if (sessionStatus === "authenticated" && !expectedUid) {
+      syncRef.current!.cancel(); setFirebaseUser(null); setStatus("error"); setError("No user identity found in session"); setIsReady(true);
       return;
     }
-
-    // sessionStatus === "authenticated"
-    const expectedUid = getUserKey(session);
-    if (!expectedUid) {
-      setStatus("error");
-      setError("No user identity found in session");
-      setIsReady(true);
-      return;
-    }
-
-    // Only authenticate if not already authenticated for this exact UID
-    if (auth.currentUser && auth.currentUser.uid === expectedUid && lastSyncedUidRef.current === expectedUid) {
-      setFirebaseUser(auth.currentUser);
-      setStatus("authenticated");
-      setIsReady(true);
-      setError(null);
-      return;
-    }
-
-    authenticateWithToken(expectedUid);
-  }, [session, sessionStatus, authenticateWithToken]);
+    void syncRef.current!.sync(expectedUid);
+    return () => syncRef.current!.cancel();
+  }, [expectedUid, sessionStatus]);
 
   const syncToken = useCallback(async () => {
-    const expectedUid = session ? getUserKey(session) : null;
-    if (expectedUid) {
-      await authenticateWithToken(expectedUid);
-    }
-  }, [session, authenticateWithToken]);
+    if (expectedUid) await syncRef.current!.sync(expectedUid);
+  }, [expectedUid]);
+  // Never expose a previous SDK identity while the NextAuth account changes.
+  const visibleUser = expectedUid && firebaseUser?.uid === expectedUid ? firebaseUser : null;
 
   return (
     <FirebaseAuthContext.Provider
       value={{
-        firebaseUser,
-        userId: firebaseUser?.uid ?? null,
+        firebaseUser: visibleUser,
+        userId: visibleUser?.uid ?? null,
         status,
         isReady,
         error,

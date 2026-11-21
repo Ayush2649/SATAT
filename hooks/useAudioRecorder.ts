@@ -1,4 +1,5 @@
 "use client";
+import { createRecordingSession } from "@/lib/media/recording-session";
 import { useEffect, useRef, useState } from "react";
 
 // Pick a MediaRecorder mime type the current browser actually supports
@@ -19,57 +20,27 @@ export function useAudioRecorder(onComplete: (blob: Blob) => void) {
   const [seconds, setSeconds] = useState(0);
   const [stream, setStream] = useState<MediaStream | null>(null);
 
-  const recorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-  const streamRef = useRef<MediaStream | null>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
-
-  // Stop everything if the component unmounts mid-recording
+  const sessionRef = useRef<ReturnType<typeof createRecordingSession> | null>(null);
+  const createSession = () => createRecordingSession({
+    getStream: async () => {
+      if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+        throw new DOMException("Audio recording unavailable", "NotSupportedError");
+      }
+      return navigator.mediaDevices.getUserMedia({ audio: true });
+    },
+    makeRecorder: stream => { const mime = pickMime(); return new MediaRecorder(stream, mime ? { mimeType: mime } : undefined); },
+    onStream: setStream, onSeconds: setSeconds,
+    onComplete: blob => onCompleteRef.current(blob),
+  });
+  if (!sessionRef.current) sessionRef.current = createSession();
   useEffect(() => {
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      streamRef.current?.getTracks().forEach((t) => t.stop());
-    };
+    if (!sessionRef.current) sessionRef.current = createSession();
+    return () => { sessionRef.current?.dispose(); sessionRef.current = null; };
   }, []);
+  return { seconds, stream, start: () => sessionRef.current!.start(), stop: () => sessionRef.current?.stop() };
 
-  const start = async (): Promise<string | null> => {
-    try {
-      const s = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = s;
-      setStream(s);
-      const mime = pickMime();
-      const mr = new MediaRecorder(s, mime ? { mimeType: mime } : undefined);
-      chunksRef.current = [];
-      mr.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
-      mr.onstop = () => {
-        s.getTracks().forEach((t) => t.stop());
-        setStream(null);
-        if (timerRef.current) clearInterval(timerRef.current);
-        const blob = new Blob(chunksRef.current, {
-          type: mr.mimeType || mime || "audio/webm",
-        });
-        onCompleteRef.current(blob);
-      };
-      recorderRef.current = mr;
-      mr.start();
-      setSeconds(0);
-      timerRef.current = setInterval(() => setSeconds((sec) => sec + 1), 1000);
-      return null;
-    } catch {
-      return "Microphone access was blocked. Allow mic permission and try again.";
-    }
-  };
-
-  const stop = () => {
-    recorderRef.current?.stop();
-    setStream(null);
-  };
-
-  return { seconds, start, stop, stream };
 }
 
 /** Derive a sensible upload filename extension from a recorded blob's mime type. */

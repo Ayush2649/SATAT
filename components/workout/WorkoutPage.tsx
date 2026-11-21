@@ -273,9 +273,25 @@ export default function WorkoutPage() {
         }
         const current = getWorkoutContext();
         setWorkoutContext({
-          bodyWeightKg: current?.bodyWeightKg ?? bodyWeightEntriesRef.current[0]?.weightKg,
-          recentSessions: sessions.slice(0, 5).map(formatSessionForOrbit),
-        });
+          bodyWeightKg: bodyWeightEntries[0]?.weightKg,
+          recentSessions: sessions.slice(0, 5).map((s) => ({
+            date: s.date,
+            durationMinutes: s.durationMinutes,
+            exercises: s.exercises.map((ex) => ({
+              name: ex.name,
+              sets: ex.sets.length,
+              topWeight: ex.sets.reduce((max, set) => Math.max(max, set.weight ?? 0), 0) || undefined,
+              unit: ex.sets[0]?.unit,
+            })),
+            cardio: s.cardioLogs?.map((c) => ({
+              activity: c.activity,
+              durationMinutes: c.durationMinutes,
+              distanceKm: c.distanceKm,
+              caloriesBurned: c.caloriesBurned,
+            })),
+            summary: s.summary,
+          })),
+        }, userId);
       })
       .catch((err) => {
         console.error("Error loading workout sessions:", err);
@@ -312,8 +328,8 @@ export default function WorkoutPage() {
           const current = getWorkoutContext();
           setWorkoutContext({
             bodyWeightKg: entries[0].weightKg,
-            recentSessions: current?.recentSessions ?? [],
-          });
+            recentSessions: [],
+          }, userId);
         }
       })
       .catch((err) => {

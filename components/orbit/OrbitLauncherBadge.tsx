@@ -15,14 +15,14 @@ export interface OrbitLauncherBadgeProps {
 }
 
 /**
- * OrbitLauncherBadge — Clean Rounded-Square 3D Emblem Badge.
+ * OrbitLauncherBadge — Rounded-square launcher for the shared Halo emblem.
  *
  * Visual Specifications:
  * - Rounded Square Geometry: rounded-2xl / rounded-xl with smooth tactile corners.
- * - Surface Styling: Deep Botanical Espresso (#191D1A) with border-white/[0.12],
+ * - Surface Styling: Deep Botanical Espresso with the shared border token,
  *   shadow-md, and smooth scale transition (hover:scale-105 active:scale-95).
  * - Emblem: Zero text ("Orbit", "AI") in badge body. Framed miniature moving 3D
- *   orbital rings and core (<Orbit3DCore size="sm" state="idle" />).
+ *   planet and single clay ring (<Orbit3DCore size="sm" state="idle" />).
  * - Hover Tooltip: Floating dark pill tooltip with "Orbit" label.
  */
 export function OrbitLauncherBadge({
@@ -40,14 +40,14 @@ export function OrbitLauncherBadge({
   }[size];
 
   const badgeClass = cn(
-    "relative bg-[#191D1A] hover:bg-[#232924] text-[#FCFBF9] border border-[#6EE7B7]/30 shadow-[0_6px_18px_rgba(25,29,26,0.25)] flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 group select-none shrink-0 cursor-pointer overflow-visible",
+    "orbit-halo-badge relative bg-[#191D1A] hover:bg-[#232924] text-[#FCFBF9] border border-[var(--satat-border-strong)] shadow-[0_6px_18px_rgba(25,29,26,0.25)] flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 group select-none shrink-0 cursor-pointer overflow-visible",
     sizeClasses,
     className
   );
 
   const innerCoreAndTooltip = (
     <>
-      {/* 3D Animated Celestial Core Emblem (Zero Text) */}
+      {/* Compact Halo emblem */}
       <div className="relative flex items-center justify-center pointer-events-none">
         <Orbit3DCore size="sm" state="idle" />
       </div>
@@ -57,7 +57,7 @@ export function OrbitLauncherBadge({
         <span
           role="tooltip"
           className={cn(
-            "absolute left-1/2 -translate-x-1/2 bg-[#191D1A] text-white text-[10px] font-semibold px-2 py-1 rounded-md shadow-lg pointer-events-none whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-50 border border-white/10",
+            "absolute left-1/2 -translate-x-1/2 bg-[#191D1A] text-white text-[10px] font-semibold px-2 py-1 rounded-md shadow-lg pointer-events-none whitespace-nowrap opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity z-50 border border-white/10",
             tooltipPosition === "bottom" ? "top-full mt-2" : "bottom-full mb-2"
           )}
         >
@@ -81,20 +81,14 @@ export function OrbitLauncherBadge({
   }
 
   return (
-    <div
+    <button
+      type="button"
       className={badgeClass}
       onClick={onClick}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onClick?.();
-        }
-      }}
+      aria-label="Open Orbit AI"
     >
       {innerCoreAndTooltip}
-    </div>
+    </button>
   );
 }
 

@@ -7,80 +7,54 @@
 
 ---
 
-## 19 November 2026 — Orbit iOS keyboard alignment
+## 21 November 2026 — CI TypeScript failure repair
 
-- Investigated the Orbit viewport inside the dashboard shell: visual viewport height was applied without its top offset, while WebKit could scroll the window or shell to reveal the focused composer. Keyboard state also fed its own detection, and layout transitions could animate the header and composer independently.
-- Updated `components/orbit/OrbitView.tsx` to position the mobile iOS Orbit page against `visualViewport.offsetTop` and height, clear unintended outer scroll during focus and keyboard dismissal, retain keyboard state until the viewport recovers, and keep header rows from shrinking or transitioning into each other. The mobile input uses a 16px font to avoid iOS focus zoom; Android retains its existing viewport sizing approach.
-- Verification with the bundled Node runtime and locally installed tools: TypeScript passed; full Vitest suite passed (71 files, 831 tests, 26 Firestore emulator tests skipped); production build passed with all 34 pages generated and existing lint warnings. A sandboxed repeat encountered an output-directory permission error; the final-code build passed outside the sandbox. The iPhone keyboard and Android device layouts still require physical-device acceptance; automated tests do not reproduce native keyboard transitions.
-- Modified files: `components/orbit/OrbitView.tsx`, `PROJECT_STATUS.md`. Upcoming sprint priorities are unchanged; device acceptance remains outstanding.
+- Pulled the user's `d589e08` GitHub conflict-resolution commit into `feat/complete-ui-change-e2e`; fetched `origin/main` (`aebeb1d`) and confirmed it is already included before development. Preserved the merged Orbit keyboard, task and workout changes. No application merge into `main`.
+- Reproduced the exact three TS2802 errors from failed Actions run `44870038463` with a clean standalone type check. `tests/orbit/orbit-motion.test.ts` spread/iterated `RegExpStringIterator` values while the project has no ES2015-or-newer target. Replaced those three iterator uses with `Array.from`, preserving the SVG reference and unique-ID assertions without changing the compiler target or weakening tests.
+- Updated `AGENTS.md` to require fetching/integrating main before development, checking again before push, standalone type checking plus all existing CI gates, conflict-marker checks, and verification of the actual pushed GitHub Actions run. Prior local build/Vitest evidence did not cover this standalone compiler failure.
+- Clean type check (`npx tsc --noEmit --incremental false`), exact CI type check (`npx tsc --noEmit`), lint and production build **passed, exit 0**; lint retains pre-existing warnings and the build generated all 34 routes. Full suite: **74 files passed; 850 tests passed, 33 emulator-dependent tests skipped, zero failures** (883 total; one worker locally).
+- Fetched again after validation: `origin/main` is an ancestor of this feature branch, and the local/remote feature commits match before the fix commit. No leftover conflict markers found. Hosted Actions verification will follow the push; its result must be checked before reporting remote CI success. Local logs: `artifacts/ci-orbit-{typecheck-before,typecheck-clean,typecheck,lint,tests,build}.log`. Only three files changed: this status file, `AGENTS.md`, and the Orbit motion regression file. No UI, routes, auth, schema, workflow or dependency changes in this repair.
 
-## 19 November 2026 — Comprehensive Mobile Keyboard Docking, Past-Date Logging, Expandable Meal Cards & Edit Modals (Complete)
+## 21 November 2026 — Approved Halo integrated across Orbit
 
-- **Reliable Mobile Bottom Navigation Auto-Hide & Focus/Blur Coupling (Orbit Intelligence Stream & Navigation)**:
-  - Fixed Android Chrome `window.innerHeight - visualViewport.height === 0` keyboard detection failure by establishing an un-shrunk `initialHeightRef` baseline on mount (recalculated only on orientation/width changes) in both `Navigation.tsx` and `OrbitView.tsx`.
-  - Implemented direct focus/blur coupling on the chat input textarea (`<textarea>`): on `focus` (mobile `< 768px`), immediately dispatched `satat:keyboard-state` (`{ open: true }`) and set `data-keyboard-open="true"` on `document.documentElement` and `document.body`.
-  - Implemented debounced blur handling (`120ms` delay with clearance on re-focus) to eliminate Send button tap layout flicker while guaranteeing proper teardown when switching out of input.
-  - Updated `components/Navigation.tsx` to hide the bottom floating capsule dock whenever `isInputFocused` (`satat:keyboard-state` / `data-keyboard-open="true"`) OR `initialHeight - currentViewportHeight > 120` is true on mobile (`< 768px`), applying `translate-y-full opacity-0 pointer-events-none`.
-  - Updated `components/orbit/OrbitView.tsx` to remove the extra bottom navigation clearance margin (`mb-0 pb-3`) when `isKeyboardActive` is true, seating the chat composer flush right above the soft keyboard for maximum vertical message reading space.
-- **Mobile Keyboard & Chatbox Dynamic Viewport Docking (Orbit Intelligence Stream)**:
-  - Implemented dynamic viewport tracking with `window.visualViewport` and `h-[100dvh]` root layout container, dynamically syncing the height so the chatbox shrinks cleanly to the visible area above the soft keyboard without viewport bouncing or clipped messages.
-  - Added automatic scroll-to-bottom anchor triggering whenever the keyboard opens or new messages stream in.
-- **Past-Date Logging & Relative Date Resolution (Fuel, Train, Plan)**:
-  - Added `resolveRelativeDate` in `lib/orbit/mutationEngine.ts` to resolve natural language and relative date keywords (`yesterday`, `last night`, `2 days ago`, `tomorrow`, `day after tomorrow`, or ISO `YYYY-MM-DD`) relative to the user's local date context.
-  - Extended Orbit LLM structured actions (`log_meal`, `log_workout`, `create_task`) and mutations with `targetDate`, enabling effortless past-date and future-date logging.
-  - Added structured edit mutations (`edit_meal`, `edit_workout`, `edit_task` / `MODIFY_TASK`) in `types/orbit.ts` and `mutationEngine.ts`, allowing direct conversational edits to existing logs.
-  - Added quick `< Yesterday | Today >` jump buttons alongside native date pickers across **Fuel** (`DietPage.tsx`), **Train** (`WorkoutPage.tsx`), and **Plan** (`TaskBoard.tsx`).
-- **Expandable Meal Log Cards & Quick Edit Modal (Fuel / Nourishment Log)**:
-  - Transformed logged meal cards in `DietPage.tsx` into responsive interactive accordions on both mobile and desktop viewports, with rotating chevron (`rotate-180`), collapsed macro badge pills (`kcal`, `P`, `C`, `F`), and expanded breakdowns revealing full untruncated meal titles, itemized lists, and complete macro profiles.
-  - Added **Edit Details** action button (pencil icon) and **Delete Meal** action button with touch targets `>= 44px`.
-  - Implemented `EditMealModal` component in `DietPage.tsx` adhering to Natural Athletic Editorial design tokens (`--satat-surface: #FCFBF9`, `--satat-anchor-dark: #191D1A`, `--satat-terracotta: #E05A47`, `--satat-matcha: #2D6A4F`), allowing users to edit meal title, slot, calories, protein, carbs, and fat with instant optimistic UI update, toast notifications, and Firestore persistence (`updateMeal`).
-- **Exported Firestore Meal Update Primitive**:
-  - Implemented and exported `updateMeal(mealId: string, updates: Partial<MealEntry>): Promise<void>` in `lib/firestore.ts` with macro sanitization and validation.
-- **Test Metrics & Build Status**:
-  - `npx tsc --noEmit`: **0 errors (Exit code 0)**.
-  - `tests/orbit/continuity-mutations.test.ts`: **50 passed, 0 failed (100%)**.
-  - `tests/orbit/orbit-retry.test.ts`: **7 passed, 0 failed (100%)**.
-  - `tests/responsive/orbit-mobile.test.ts`: **7 passed, 0 failed (100%)**.
-  - Full Vitest suite: **71 test files passed; 831 tests passed, 26 skipped, 0 failures**.
-  - Production build: `npm run build` **passed (exit code 0)**, successfully compiling all 34 static and dynamic routes.
-- **Modified Files**:
-  - `components/Navigation.tsx`: Baseline un-shrunk height tracking, `data-keyboard-open` check, `satat:keyboard-state` handling, and `translate-y-full opacity-0 pointer-events-none` transition.
-  - `components/orbit/OrbitView.tsx`: Direct `onFocus` & debounced `120ms` `onBlur` coupling, `data-keyboard-open` toggling, baseline viewport height tracking, flush `mb-0 pb-3` composer docking, and scroll-to-bottom.
-  - `lib/firestore.ts`: Exported `updateMeal` mutation function.
-  - `types/orbit.ts`: Added `MODIFY_TASK` to `OrbitActionType`.
-  - `lib/orbit/mutationEngine.ts`: Added `resolveRelativeDate`, relative date resolution in fallback cleaners, structured edit actions handling, and `MODIFY_TASK` execution.
-  - `app/api/aria/route.ts`: Updated prompt directives with `targetDate`, edit actions schema, and date synchronization.
-  - `components/diet/DietPage.tsx`: Expandable meal accordions, `< Yesterday | Today >` date navigator, `EditMealModal`, and `handleUpdateMeal`.
-  - `components/workout/WorkoutPage.tsx`: Date navigator with `< Yesterday | Today >` buttons.
-  - `components/tasks/TaskBoard.tsx`: Date navigator with `< Yesterday | Today >` buttons.
-  - `tests/orbit/continuity-mutations.test.ts`: Added past-date logging, relative date resolution, and structured edit mutations test suite.
-  - `PROJECT_STATUS.md`: Updated roadmap and verification metrics.
-  - `lib/firestore.ts`: Exported `updateMeal` mutation function.
-  - `types/orbit.ts`: Added `MODIFY_TASK` to `OrbitActionType`.
-  - `lib/orbit/mutationEngine.ts`: Added `resolveRelativeDate`, relative date resolution in fallback cleaners, structured edit actions handling, and `MODIFY_TASK` execution.
-  - `app/api/aria/route.ts`: Updated prompt directives with `targetDate`, edit actions schema, and date synchronization.
-  - `components/diet/DietPage.tsx`: Expandable meal accordions, `< Yesterday | Today >` date navigator, `EditMealModal`, and `handleUpdateMeal`.
-  - `components/workout/WorkoutPage.tsx`: Date navigator with `< Yesterday | Today >` buttons.
-  - `components/tasks/TaskBoard.tsx`: Date navigator with `< Yesterday | Today >` buttons.
-  - `tests/orbit/continuity-mutations.test.ts`: Added past-date logging, relative date resolution, and structured edit mutations test suite.
-  - `PROJECT_STATUS.md`: Updated roadmap and verification metrics.
+- Replaced the old ring/core, lotus and line-icon artwork with one shared `components/orbit/OrbitHalo.tsx` SVG: matte sage planet, one extruded terracotta ring, four quiet stars on larger marks and gentle floating motion. Compact icons omit stars, texture and blur for legibility. `styles/orbit-halo.css` supplies token-based lighting, calm state reactions, explicit animation-off and reduced-motion rules; `app/globals.css` imports it and removes obsolete Orbit animation rules.
+- Preserved the public interfaces of `OrbitMark`/`OrbitIcon`, `OrbitLivingOrb`, `Orbit3DCore` and `OrbitLauncherBadge`, so existing navigation, headers, quick-track sheet, Orbit hero/chat/loading states, onboarding/tour, landing sections and design-system previews all use the approved identity. Kept accessible labels and routes; converted the badge's optional action variant to a native keyboard-accessible button. Removed the old landing emblem's extra aura wrapper.
+- Six regression files updated to validate the shared artwork, responsive size aliases, independent SVG IDs/references, compact detail reduction, caller accessibility attributes and animation suppression rather than obsolete ring/lotus geometry. Targeted checks: **33 passed**. Full suite: **73 files passed; 798 tests passed, 33 emulator-dependent cases skipped, zero failures** (831 total). Production build **passed, exit 0**, all 34 routes generated; existing non-fatal lint warnings remain.
+- Browser checked actual components in an external isolated review harness (synthetic session, fixed chat response, no production records): **320/393/768/1440 px** viewports, light/dark artwork, 14–224 px marks, an oversized core constrained by an 80 px parent, unique IDs, zero animation on explicitly disabled instances, thinking/response rendering and keyboard activation of the header launcher. No page-wide horizontal overflow at the checked widths. Reduced-motion media rules are regression-checked; physical devices and OS preference toggling were not used. The fixture is outside application code and is not an authentication bypass in the app.
+- Mobile screenshot: `C:/Users/ayush/.codex/visualizations/2026/11/14/01a1d936-5dff-7f90-965e-a8b893bc3c8f/orbit-halo-app-mobile.jpg`. Build/test logs: `artifacts/orbit-halo-build.log`, `artifacts/orbit-halo-full-tests.log`. Desktop evidence uses an isolated shell and is not an acceptance check of unrelated page layout.
+- Scope is **15 files**, below the user's 10% file limit (390 tracked files at start). No new dependencies, backend routes, stored-record changes or SATAT-brand replacement. This integration completes the selected-logo milestone; broader feature work is unchanged. Commit/push target is `feat/complete-ui-change-e2e` only, with no main-branch merge or deployment.
 
-## 18 November 2026 — Single-Pass Structured Entity Extraction & Canonical Clean Payloads (Complete)
+## 21 November 2026 — Halo stars and gentle float
 
-- **Architecture & Implementation**: Refactored Orbit's entity extraction pipeline so that clean, canonical entity names for **Fuel (Meals)**, **Train (Workouts)**, and **Plan (Tasks)** are extracted directly by the primary LLM call via single-pass structured JSON schema (`reply` + `actions: [{ type: "log_meal" | "log_workout" | "create_task", payload }]`)—eliminating conversational filler leaks without adding a second LLM round-trip.
-- **Offline / Fallback Guard**: Added clean fallback cleaners (`cleanFallbackMealInput`, `cleanFallbackWorkoutInput`, `cleanFallbackTaskInput`) in `lib/orbit/mutationEngine.ts` to reliably sanitize input when the LLM is bypassed, offline, or returns unstructured text.
-- **Mutual Exclusivity & Zero-Duplicate Guarantees**: Updated `app/api/aria/route.ts` to treat structured LLM output as the primary execution path and deterministic mutations as the offline fallback guard, eliminating duplicate database writes.
-- **Clarification Loop Preserved**: Ambiguous prompts missing required parameters (e.g. sets/reps for strength movements, scheduled time for tasks) trigger immediate conversational clarification without executing false-positive writes or unnecessary LLM calls.
-- **Test Metrics & Build Status**:
-  - `npx tsc --noEmit`: **0 errors (Exit code 0)**.
-  - `tests/orbit/continuity-mutations.test.ts`: **46 passed, 0 failed (100%)**.
-  - Full Vitest suite: **71 test files passed; 827 tests passed, 26 skipped, 0 failures**.
-  - Production build: `npm run build` **passed (exit code 0)**, successfully generating all 34 static and dynamic routes.
-- **Modified Files**:
-  - `lib/orbit/mutationEngine.ts`: Added `cleanFallbackMealInput`, `cleanFallbackWorkoutInput`, `cleanFallbackTaskInput`, `parseStructuredLlmResponse`, `extractJsonSnippet`, and slot/macro normalization.
-  - `app/api/aria/route.ts`: Structured entity extraction prompt schema, single-pass action execution, mutually exclusive fallback pipeline.
-  - `tests/orbit/continuity-mutations.test.ts`: Added single-pass structured entity extraction test suite covering Fuel, Train, and Plan conversational prompts.
-  - `PROJECT_STATUS.md`: Updated roadmap and verification metrics.
+- Updated only the requested visual details in the existing `C:/Users/ayush/.codex/visualizations/2026/11/14/01a1d936-5dff-7f90-965e-a8b893bc3c8f/orbit-sculpted-halo.html`: four small, static sage/terracotta stars around the main planet and a gentle 6-unit vertical float over the existing 9-second cycle. Material, ring, layout and reactions are preserved; compact marks omit stars to stay readable. No website integration or application-source changes.
+- Browser verified four star shapes, no stars in compact examples, the 9-second float, and reduced-motion suppression. Script syntax check passed; screenshot saved as `orbit-halo-stars.jpg` beside the preview. A loopback-only `orbit-preview-server.mjs` helper was added outside application code because the optional bundled renderer is unavailable in the current plugin installation.
+- Required full suite: **73 files passed; 796 tests passed, 33 emulator-dependent tests skipped, zero failures**. Production build **passed, exit 0**, all 34 routes generated; existing non-fatal lint warnings remain. This status file is the only modified repository file; existing uncommitted status history is preserved.
+
+## 16 November 2026 — Sculpted Halo refinement (ready for review)
+
+- User requested more presence and reactive personality, choosing a faceless matte 3D finish and calm hover/tap, thinking and success reactions. Refined Halo in the separate `C:/Users/ayush/.codex/visualizations/2026/11/14/01a1d936-5dff-7f90-965e-a8b893bc3c8f/orbit-sculpted-halo.html` preview; the original three-concept comparison remains available.
+- Added a softly shaded sage sphere, faint matte texture and reflected clay light, an extruded terracotta annulus with lit edges/sidewalls, planet occlusion, a ring cast shadow and soft ground shadow. Four independently identified SVG instances show the large symbol, wordmark, 32 px example and compact launcher. No faces, WebGL, canvas, dependencies or production components were added.
+- Reactive motion: a short attentive hover/tap/keyboard tilt; thinking changes ring pitch/inset and light speed; responding gently deforms the core; success gives one nod before returning to idle; error settles still. Pause holds animation poses; reduced motion removes animation/transitions. Attention resets on animation completion so pausing does not allow a wall-clock timer to discard its pose.
+- Browser inspected light/dark, desktop and narrow phone views; confirmed thinking's 7 s cycle/pose change, responding's 4 s cycle, one success nod/idle return, reduced-motion suppression, a constant paused transform, unique SVG IDs and readable compact examples. Saved `orbit-sculpted-halo-final.jpg` beside the preview. Final reload's DOM frame traversal became unreliable under host load; the final rendered screenshot was inspected, and earlier working frame controls supplied the interaction evidence.
+- Verification: **73 files, 829 tests passed, zero failures/skips** using the existing loopback demo emulator. The simultaneous build timed out under host load; the standalone `npm run build` retry **passed, exit 0**, all 34 routes. Existing non-fatal lint warnings remain. Only this status file changed in the repository; website integration is still pending the user's design review.
+
+## 16 November 2026 — Orbit animated identity concepts (ready for selection)
+
+- Created an interactive comparison outside application code: `C:/Users/ayush/.codex/visualizations/2026/11/14/01a1d936-5dff-7f90-965e-a8b893bc3c8f/orbit-logo-concepts.html`. Three concepts: Satellite (flat planet/orbiting satellite), Halo (softly shaded planet/travelling ring light), Arc (solid planet/wider illuminated orbit). Each includes symbol/wordmark, 24/32 px marks and a 44 px launcher preview in SATAT token colours.
+- Implemented 14 s idle and 7 s thinking cycles, a 4 s responding pulse, one success pulse returning to idle, still error, pause/resume and reduced-motion handling. Independent SVG IDs and front/back orbital layers prevent gradient collisions and provide planet occlusion; small-size strokes are strengthened and glow omitted.
+- Browser inspected all concepts, light/dark backgrounds and desktop/narrow phone layouts (including a 288 px content area within a 320 px browser). Confirmed controls, constant paused transform, reduced-motion suppression, success return, 14/7 s computed timing, 4 s response pulse, unique IDs and no browser console errors. Saved Satellite/Arc light and Halo dark screenshot evidence beside the comparison. Native inline rendering is the review deliverable; the standalone Python check command could not run its `python3` helper on Windows, so served-browser inspection and a separate JS syntax check were used instead.
+- Required app gates rerun: **73 test files; 829 tests passed, zero failures/skips**, using the isolated demo emulator; production build **passed, exit 0**, all 34 routes. No application components, APIs, assets or dependencies changed. Only this status file changed in the repository. Next step is the user's concept selection; integration and consolidation of existing Orbit marks remain pending selection.
+
+## 16 November 2026 — Remaining audit closure (complete within isolated-test scope)
+
+- User requested remaining fixes and selected isolated tests rather than real second-login/hardware tests. Work stays on the current feature branch; production records are not test fixtures.
+- Removed remaining Cognitive Load wording; fixed stale authentication requests and stale Orbit context after identity changes with queued-session and scoped-state regressions. Firestore tests use a demo project namespace and required-emulator mode so skipped tests cannot be mistaken for passing integration coverage.
+- Isolated coverage includes 33 Firestore rules/CRUD cases (26 existing plus seven collection round trips), five auth-race cases and two context-owner cases. Browser fixture confirms A/B ritual/timer separation and timer remount persistence, plus disposable meal/template/workspace round trips. No production records used.
+- Fixed unsupported strawberry/cube piece-mass conversion, descriptive-label false missing-food questions, conflicting gram/piece review, stale ritual/timer display, microphone grant/unmount cleanup, fabricated empty-setup resting energy, saved-meal quantity/save/keyboard-label issues, and stray ritual keys inflating counts. Hardware API/device tests use isolated stubs; 79 targeted media/onboarding/push/health cases passed before the final UI refinements.
+- Completed browser checks: A/B meal/template/workspace separation, task/workspace create/edit/remount/delete, manual and half-portion saved meals, invalid/pending saves, ritual/timer isolation, synthetic consent/age/equipment setup and scan editing/logging. Disposable records removed; light/dark Fuel inspected at 320/393/1440 px. Horizontal donut/macros and hidden missing vitamins verified.
+- Full verification: **73 files; 829 tests passed, zero failures/skips**, including **33 emulator rules/CRUD cases**. Production build **passed, exit 0**, all 34 routes; existing non-fatal lint warnings remain. Two additional live DeepSeek recognition/guardrail cases passed; unsupported piece masses and conflicting annotations require review. Their filtered thirteen cases are separate from the ordinary full suite.
+- New files: auth session/recording lifecycle helpers; auth/context/media regressions; `scripts/audit-browser.mjs`; two browser fixture/adapters; live evaluation JSON; closure report. Modified: auth provider; Home/Plan/Fuel/Train/Orbit; physical/consent setup; scanner editor; recording/ritual/timer hooks; nutrition calculator/router/review; existing scan/setup/rules tests; `.gitignore`; status and original fixes report. Reproduction and file mapping: `docs/REMAINING_AUDIT_CLOSURE_2026-11-16.md`.
+- All fourteen original findings have implementation fixes. Remaining verification needs real Google switching, physical mobile capture/keyboard, push/watch delivery and weighed meal references. Ritual progress remains local to the device. This iteration is below the 10% file cap; no main-branch changes or deployment.
 
 ## 15 November 2026 — Complete branch delivery checkpoint
 
@@ -164,7 +138,6 @@
 
 Detailed closure matrix and reproducible checks: `docs/SATAT_AUDIT_FIXES_2026-11-15.md`.
 
->>>>>>> Stashed changes
 ## 1. Design System & Token Architecture
 
 The design language moves away from robotic, dark-purple SaaS boxes to an earthy, warm sunlit athletic aesthetic.

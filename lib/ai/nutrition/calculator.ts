@@ -293,6 +293,11 @@ export const PORTION_SANITY_CEILINGS: Record<string, number> = {
 
 // ── Unit Normalization ────────────────────────────────────────────────────────
 
+/** A serving/bowl reference is not a gram weight for one individual berry or cube. */
+export function supportsFoodUnit(item: FoodCompositionItem, unit = "serving") {
+  return !/^(piece|pieces|pc|pcs|item)$/i.test(unit.trim()) || /piece|\bpc\b|\bitem\b/i.test(item.defaultUnit);
+}
+
 export function normalizeQuantityToGrams(
   item: FoodCompositionItem | null,
   quantity = 1,
@@ -314,6 +319,7 @@ export function normalizeQuantityToGrams(
 
   // If matched to a known database item, use its default unit weight
   if (item) {
+    if (!supportsFoodUnit(item, unit)) return null;
     if (u === "piece" || u === "pc" || u === "pieces" || u === "item" || u === "serving") {
       return Math.round(q * item.gramsPerDefaultUnit);
     }
@@ -393,7 +399,8 @@ export function calculateMealNutrition(
       continue;
     }
 
-    const matched = resolveFoodItem(rawName);
+    const reference = resolveFoodItem(rawName);
+    const matched = reference && supportsFoodUnit(reference, f.unit || reference.defaultUnit) ? reference : null;
     const itemConf = typeof f.confidence === "number" ? Math.max(0, Math.min(1, f.confidence)) : 0.7;
     const qty = typeof f.quantity === "number" && f.quantity > 0 ? f.quantity : 1;
     const unit = f.unit || (matched ? matched.defaultUnit : "serving");

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildScanInventory, restoreScanDraft, componentGrams, componentsFromScan, exactScanFood, recipeNutrition, reconcileScanInventory, referenceRecipe, replaceComponent, summarizeComponents, UNKNOWN_MICROS } from "@/lib/nutrition/scan-review";
 import { parsePortionFromText } from "@/lib/ai/providers/common";
-import { calculateMealNutrition, resolveFoodItem } from "@/lib/ai/nutrition/calculator";
+import { calculateMealNutrition, resolveFoodItem, normalizeQuantityToGrams } from "@/lib/ai/nutrition/calculator";
 const scan = () => componentsFromScan([{ name: "Steamed Rice", quantity: 200, unit: "g", grams: 200, calories: 260, proteinG: 5.4, carbsG: 57.4, fatG: .6, source: "canonical" }, { name: "Paneer Bhurji", quantity: 100, unit: "g", grams: 100, calories: 193, proteinG: 13.3, carbsG: 3.3, fatG: 14.7, source: "canonical" }]);
 describe("Component corrections and explicit uncertainty", () => {
   it("corrects rice to 400g without multiplying paneer or asking AI", () => {
@@ -137,5 +137,27 @@ describe("Single counted scan inventory regression", () => {
     expect(restored[0].reviewNote).toBeTruthy();
     expect(restored[2]).toEqual(rows[2]);
     expect(restoreScanDraft(rows, 2)).toEqual(rows);
+  });
+});
+
+describe("Review uncertain reference quantities without inventing piece mass", () => {
+  it("does not convert three strawberries into three bowl-sized servings", () => {
+    const reference = resolveFoodItem("Strawberries")!;
+    expect(normalizeQuantityToGrams(reference, 3, "piece")).toBeNull();
+    const result = calculateMealNutrition([{ name: "Strawberries", quantity: 3, unit: "piece", confidence: .9 }]);
+    expect(result.calories).toBe(0); expect(result.hasIncompleteNutrition).toBe(true);
+    const rows = componentsFromScan(result.items);
+    expect(summarizeComponents(rows).complete).toBe(false);
+    expect(rows[0].per100g).toBeTruthy();
+    expect(summarizeComponents([{ ...rows[0], amount: "60", unit: "g" }]).complete).toBe(true);
+  });
+  it("associates descriptive labels with the existing food without adding a redundant question", () => {
+    const result = buildScanInventory([{ name: "Black Coffee", quantity: 200, unit: "ml" }, { name: "Green Chutney", quantity: 30, unit: "g" }], ["Black coffee ~200ml in white cup", "Green chutney in a small compartment ~30g", "Red wine in background, not counted"], parsePortionFromText);
+    expect(result.foods).toHaveLength(2); expect(result.suggestions).toEqual([]);
+  });
+  it("flags different gram and piece estimates instead of silently selecting the reference", () => {
+    const result = buildScanInventory([{ name: "Plain Dosa", quantity: 1, unit: "piece" }], ["Plain dosa ~150g"], parsePortionFromText);
+    expect(result.reviewNotes["scan-0"]).toContain("150g");
+    expect(result.foods[0]).toMatchObject({ quantity: 1, unit: "piece" });
   });
 });

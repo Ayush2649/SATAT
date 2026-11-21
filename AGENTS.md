@@ -48,3 +48,11 @@ This file defines the strict, non-negotiable operating rules for **Antigravity**
 - Respect Next.js App Router rules (`"use client"` directives where hooks or interactive state are present; server components for pure data-fetching where appropriate).
 - Avoid unnecessary external dependencies; prioritize existing Tailwind utility classes and Lucide icons.
 
+---
+
+## 6. Main Synchronization & CI Gate
+- Before development, inspect the working tree, fetch the current remote feature branch and `origin/main`, and integrate their latest changes into the working feature branch. Preserve uncommitted user work and any existing conflict-resolution commits. Never develop on a stale base or push directly to `main`.
+- Before pushing, fetch again, ensure `origin/main` is an ancestor of the feature branch, and resolve any new conflicts by preserving the intended behavior from both branches. Do not blanket-select one side to hide conflicts. Check for leftover conflict markers.
+- Run the actual CI gates on the synchronized result: `npx tsc --noEmit`, `npm run lint`, `npm test`, and `npm run build`. Also run a clean type check with `npx tsc --noEmit --incremental false` when compiler configuration or test TypeScript changes. A passing build or Vitest run does not substitute for the standalone type check.
+- After pushing, inspect the GitHub Actions run for the exact new commit and address failures before reporting CI success. Report skipped tests, outstanding checks, or external blockers accurately. Recheck branch compatibility if `main` advances during verification.
+

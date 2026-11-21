@@ -61,3 +61,6 @@ scripts/photos/*.jpg
 scripts/photos/*.jpeg
 scripts/photos/*.png
 scripts/photos/results*.json
+# Generated isolated audit browser bundles
+artifacts/audit-browser.js
+artifacts/audit-browser.css
