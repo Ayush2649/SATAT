@@ -75,12 +75,12 @@ describe("Sprint 8.2: Fix Start Free CTA Redirect Loop, Orbit 3D Aura Stage, Sna
   });
 
   it("2. Orbit 3D Core rendered in spacious, unclipped Halo stage and #orbit section prevents #snap phone bleeding", () => {
-    // Unclipped circular radial aura
-    expect(orbitSource).toContain("w-44 h-44 sm:w-52 sm:h-52");
+    // Larger shared Halo stage remains within narrow viewports.
+    expect(orbitSource).toContain("w-56 h-56 sm:w-64 sm:h-64");
     expect(orbitSource).toContain("overflow-visible");
     expect(orbitSource).not.toContain("before:rounded-full");
     expect(orbitSource).not.toContain("rgba(25,29,26,0.92)");
-    expect(orbitSource).toContain('<Orbit3DCore size="lg" state="active"');
+    expect(orbitSource).toContain('<Orbit3DCore size={256} state="active"');
 
     // Opaque and elevated z-index on #orbit prevents bleed-through
     expect(orbitSource).toContain("relative z-20");

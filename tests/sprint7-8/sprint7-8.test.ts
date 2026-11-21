@@ -102,7 +102,7 @@ describe("Sprint 7.8: Landing Page Complete Overhaul Verification", () => {
   it("5. Orbit Section (#orbit) showcases 3D depth-of-field stage with <Orbit3DCore /> and floating prompt cloud", () => {
     expect(orbitSectionSource).toContain('id="orbit"');
     expect(orbitSectionSource).toContain("Try Orbit — Your Personal AI Biological Copilot");
-    expect(orbitSectionSource).toContain('<Orbit3DCore size="lg" state="active"');
+    expect(orbitSectionSource).toContain('<Orbit3DCore size={256} state="active"');
     expect(orbitSectionSource).toContain("How was my protein intake today?");
     expect(orbitSectionSource).toContain("Condense my Upper Body workout to 35m");
     expect(orbitSectionSource).toContain("How to improve my deep sleep score?");

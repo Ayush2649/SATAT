@@ -162,8 +162,8 @@ export default function OrbitSection() {
       {/* ── CENTER FOCAL STACK (z-20, max-w-[680px] mx-auto) ── */}
       <div className="relative z-20 text-center max-w-[680px] mx-auto flex flex-col items-center">
         {/* Spacious stage for the shared Halo artwork */}
-        <div className="w-44 h-44 sm:w-52 sm:h-52 mx-auto flex items-center justify-center relative overflow-visible">
-          <Orbit3DCore size="lg" state="active" />
+        <div className="w-56 h-56 sm:w-64 sm:h-64 mx-auto flex items-center justify-center relative overflow-visible">
+          <Orbit3DCore size={256} state="active" />
         </div>
 
         {/* Headline */}

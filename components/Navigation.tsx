@@ -99,12 +99,16 @@ export default function Navigation() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
-        searchInputRef.current?.focus();
+        if (pathname === "/dashboard/orbit") {
+          document.querySelector<HTMLTextAreaElement>(".orbit-chat-input")?.focus();
+        } else {
+          searchInputRef.current?.focus();
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [pathname]);
 
   // Soft keyboard listener to hide mobile bottom nav when virtual keyboard is active
   useEffect(() => {
@@ -522,6 +526,7 @@ export default function Navigation() {
 
       {/* ── 2. UNIFIED STICKY TOP COMMAND BAR ON TABLET & DESKTOP (md: & lg:) ── */}
       <header
+        data-app-command-bar="true"
         className={cn(
           "hidden md:flex h-16 px-4 md:px-8 items-center justify-between gap-4 border-b border-[#1C1917]/[0.06] bg-[#F6F3EC]/90 backdrop-blur-md fixed top-0 right-0 z-30 transition-all duration-200",
           collapsed ? "left-[76px]" : "left-[76px] lg:left-[240px]"
@@ -545,7 +550,7 @@ export default function Navigation() {
         </div>
 
         {/* Center: YouTube-style Rounded-Full Command & Orbit Search Bar */}
-        <form
+        {pathname !== "/dashboard/orbit" && <form
           onSubmit={handleSearchSubmit}
           className="hidden md:flex flex-1 max-w-[460px] mx-auto items-center"
         >
@@ -564,7 +569,7 @@ export default function Navigation() {
               <span>K</span>
             </div>
           </div>
-        </form>
+        </form>}
 
         {/* Right: Context CTA + OrbitLauncherBadge + NotificationBell + Avatar */}
         <div className="flex items-center gap-2.5 shrink-0">

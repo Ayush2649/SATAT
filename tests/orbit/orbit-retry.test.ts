@@ -37,14 +37,14 @@ describe("OrbitView Retry Mechanism & Resilience", () => {
     expect(orbitViewSource).toContain("handleResetChat");
     expect(orbitViewSource).toContain("New Chat");
     expect(orbitViewSource).toContain("setMessages([]);");
-    expect(orbitViewSource).toContain('setViewMode("overview");');
+    expect(orbitViewSource).toContain('data-empty={!hasConversation}');
   });
 
-  it("6. Auto-scrolls both mobile and desktop streams without ref collisions and handles overlay reopen", () => {
-    expect(orbitViewSource).toContain("mobileScrollContainerRef");
-    expect(orbitViewSource).toContain("desktopScrollContainerRef");
-    expect(orbitViewSource).toContain("mobileMessagesEndRef");
-    expect(orbitViewSource).toContain("desktopMessagesEndRef");
+  it("6. Auto-scrolls the shared stream across breakpoints and handles overlay reopen", () => {
+    expect(orbitViewSource).toContain("ref={scrollContainerRef}");
+    expect(orbitViewSource).toContain("ref={messagesEndRef}");
+    expect(orbitViewSource).not.toContain("desktopScrollContainerRef");
+    expect(orbitViewSource).not.toContain("mobileScrollContainerRef");
     expect(orbitViewSource).toContain("const scrollToBottom = useCallback((behavior: ScrollBehavior = \"smooth\")");
     expect(orbitViewSource).toContain("isOpen = true");
     expect(orbitViewSource).toContain("justOpened && messages.length > 0");
