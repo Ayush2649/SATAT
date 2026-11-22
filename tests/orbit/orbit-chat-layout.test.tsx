@@ -34,13 +34,20 @@ describe("Orbit's shared conversation layout", () => {
     expect(html).toContain('aria-label="Close Orbit"');
     expect((html.match(/<textarea/g) || []).length).toBe(1);
   });
-  it("does not override measured keyboard height and hides only empty-state decoration while typing", () => {
+  it("preserves welcome content while the composer follows measured keyboard height", () => {
     const shell = fs.readFileSync(path.resolve(__dirname, "../../styles/app-shell.css"), "utf8");
     const chat = fs.readFileSync(path.resolve(__dirname, "../../styles/orbit-chat.css"), "utf8");
     const mobileRule = shell.match(/\.orbit-view-root\s*\{([^}]+)\}/)?.[1] || "";
     expect(mobileRule).not.toContain("height: 100% !important");
-    expect(chat).toContain('.orbit-chat[data-keyboard-open="true"] .orbit-chat-welcome');
-    expect(chat).toContain('.orbit-chat[data-keyboard-open="true"] .orbit-chat-suggestions');
+    const rules = Array.from(chat.matchAll(/([^{}]+)\{([^{}]*)\}/g));
+    for (const [, selector, body] of rules) {
+      if (/orbit-chat-(welcome|suggestions)/.test(selector) && !selector.includes("::-webkit-scrollbar")) {
+        expect(body).not.toMatch(/display:\s*none|visibility:\s*hidden|opacity:\s*0(?:;|\s|$)/);
+      }
+    }
+    expect(chat).toContain("var(--orbit-keyboard-overlap, 0px)");
+    expect(chat).not.toMatch(/data-keyboard-open[^{}]+workspace[^{}]*\{[^}]*justify-content:\s*flex-end/);
+    expect(chat).toContain("width: 184px !important; height: 184px");
     expect(chat).not.toMatch(/data-keyboard-open[^{}]+header[^{}]*\{[^}]*display:\s*none/);
     expect(chat).toContain("grid-template-columns: repeat(2, minmax(0, 1fr))");
   });

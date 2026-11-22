@@ -1,5 +1,5 @@
 /* A single conversation layout across phones, tablets and desktop. */
-.orbit-chat { --orbit-shell-inset: 0px; background: var(--satat-bg); color: var(--text-primary); }
+.orbit-chat { --orbit-shell-inset: 0px; --orbit-welcome-space: clamp(128px, calc(var(--orbit-visible-height, 100dvh) - 456px), 184px); background: var(--satat-bg); color: var(--text-primary); }
 .orbit-chat-header {
   display: flex; align-items: center; justify-content: space-between; gap: .75rem;
   flex-shrink: 0; min-height: 56px; padding: .375rem 1rem;
@@ -11,13 +11,17 @@
 }
 .orbit-chat-workspace {
   display: flex; flex-direction: column; flex: 1; min-height: 0; min-width: 0;
-  padding-bottom: calc(var(--bottom-nav-height, 58px) + max(16px, env(safe-area-inset-bottom, 0px)) + 16px);
+  padding-bottom: max(0px, calc(var(--bottom-nav-height, 58px) + max(16px, env(safe-area-inset-bottom, 0px)) + 16px - var(--orbit-keyboard-overlap, 0px)));
 }
 .orbit-chat[data-empty="true"] .orbit-chat-workspace { justify-content: center; }
-.orbit-chat-welcome { display: flex; justify-content: center; flex-shrink: 1; min-height: 0; margin: 0 0 1.25rem; }
-.orbit-chat-welcome .orbit-halo-stage { width: clamp(128px, 21vh, 184px) !important; }
-.orbit-chat-composer { flex-shrink: 0; width: 100%; max-width: 760px; margin-inline: auto; padding: .75rem 1rem 1rem; }
-.orbit-chat-suggestions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; margin-bottom: .875rem; }
+.orbit-chat-start { flex: 0 1 auto; min-height: 0; width: 100%; max-width: 760px; margin-inline: auto; overflow-y: auto; overscroll-behavior-y: contain; }
+.orbit-chat-start-inner { display: flex; flex-direction: column; min-height: 100%; padding-inline: 1rem; padding-bottom: .25rem; }
+.orbit-chat-welcome { display: flex; align-items: center; justify-content: center; flex-shrink: 0; height: var(--orbit-welcome-space); margin-top: auto; margin-bottom: 20px; }
+/* Trim the SVG's empty canvas on compact screens, not the planet itself. */
+.orbit-chat-welcome .orbit-halo-stage { width: 184px !important; height: 184px; }
+.orbit-chat-composer { flex-shrink: 0; width: 100%; max-width: 760px; margin-inline: auto; padding: .5rem 1rem; }
+.orbit-chat-suggestions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); flex-shrink: 0; gap: .5rem; margin-bottom: auto; }
+.orbit-chat-suggestions::-webkit-scrollbar { display: none; }
 .orbit-chat-suggestion {
   display: inline-flex; align-items: center; justify-content: center; gap: .5rem; min-width: 0;
   min-height: 40px; padding: .5rem .75rem; border: 1px solid var(--border); border-radius: 999px;
@@ -55,7 +59,7 @@ html.dark .orbit-chat-input::placeholder { color: var(--text-muted) !important; 
   position: absolute; bottom: calc(100% + .75rem); left: 0; z-index: 40; width: min(240px, calc(100vw - 56px));
   padding: .5rem; border-radius: 16px; border: 1px solid var(--border-strong); background: var(--surface);
   box-shadow: 0 8px 28px color-mix(in srgb, var(--satat-anchor-dark) 12%, transparent);
-  max-height: 40dvh; overflow-y: auto;
+  max-height: min(12rem, calc(var(--orbit-visible-height, 100dvh) / 2.5)); overflow-y: auto;
 }
 .orbit-chat-tools-menu > button { display: flex; gap: .625rem; align-items: center; width: 100%; min-height: 40px; padding: .5rem; border-radius: 8px; text-align: left; font-size: .8125rem; }
 .orbit-chat-tools-menu > button:hover:not(:disabled) { background: var(--surface-subtle); }
@@ -73,14 +77,12 @@ html.dark .orbit-chat-input::placeholder { color: var(--text-muted) !important; 
 .orbit-chat-thinking { display: flex; align-items: center; gap: .5rem; color: var(--text-secondary); font-size: .875rem; padding-bottom: 1rem; }
 .orbit-chat-error { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; color: var(--satat-brand); padding: 1rem 0; font-size: .8125rem; }
 .orbit-chat-error > span { flex: 1; min-width: 140px; }
-.orbit-chat[data-keyboard-open="true"] .orbit-chat-workspace { padding-bottom: 0; }
-.orbit-chat[data-keyboard-open="true"][data-empty="true"] .orbit-chat-workspace { justify-content: flex-end; }
-.orbit-chat[data-keyboard-open="true"] .orbit-chat-welcome,
-.orbit-chat[data-keyboard-open="true"] .orbit-chat-suggestions { display: none; }
-.orbit-chat[data-keyboard-open="true"] .orbit-chat-composer { padding-bottom: max(.5rem, env(safe-area-inset-bottom, 0px)); }
 .orbit-chat[data-overlay="true"] .orbit-chat-workspace { padding-bottom: 0; }
+.orbit-chat[data-short="true"] .orbit-chat-suggestions { display: flex; overflow-x: auto; scrollbar-width: none; }
+.orbit-chat[data-short="true"] .orbit-chat-suggestions > button { flex: 0 0 auto; white-space: nowrap; }
 @media (min-width: 640px) {
   .orbit-chat-suggestions { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .orbit-chat-start-inner { padding-inline: 1.5rem; }
   .orbit-chat-composer { padding-inline: 1.5rem; }
 }
 @media (min-width: 768px) {
@@ -90,17 +92,9 @@ html.dark .orbit-chat-input::placeholder { color: var(--text-muted) !important; 
   .orbit-chat-composer { padding-bottom: 1.5rem; }
   .orbit-chat-messages { padding-top: 2rem; padding-inline: 1.5rem; }
 }
-@media (max-height: 600px) {
-  .orbit-chat-welcome { margin-bottom: .25rem; }
-  .orbit-chat-welcome .orbit-halo-stage { width: 112px !important; }
-  .orbit-chat-composer { padding-top: .25rem; padding-bottom: .5rem; }
-}
-@media (max-height: 480px) {
-  .orbit-chat[data-empty="true"] .orbit-chat-workspace { justify-content: flex-start; overflow-y: auto; }
-  .orbit-chat-welcome { display: none; }
-  .orbit-chat-suggestions { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: .5rem; }
-  .orbit-chat-suggestions .orbit-chat-suggestion { padding: .375rem .5rem; gap: .25rem; font-size: .6875rem; }
-  .orbit-chat-input { min-height: 42px; }
+@media (max-height: 400px) {
+  .orbit-chat-suggestions { display: flex; overflow-x: auto; scrollbar-width: none; }
+  .orbit-chat-suggestions > button { flex: 0 0 auto; white-space: nowrap; }
 }
 @media (prefers-reduced-motion: reduce) {
   .orbit-chat-suggestion { transition: none; }
