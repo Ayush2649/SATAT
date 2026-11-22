@@ -59,5 +59,6 @@ This file defines the strict, non-negotiable operating rules for **Antigravity**
 ## 7. Responsive UI Verification
 - Treat every UI change as a change for phones, tablets and desktop. Verify narrow phone widths, common phone widths, tablet/desktop breakpoints and short landscape heights in both light and dark themes before completion.
 - For chat or form changes, verify keyboard opening/closing, visible headers, composer placement, focus, draft/history preservation across resizing, and horizontal overflow. Prefer one shared responsive interaction surface over duplicated mobile/desktop forms.
+- Orbit's welcome logo and suggestions must reflow with the visible viewport when the keyboard opens; do not hide them merely because the composer receives focus. Keep the composer reachable and use scrolling for genuinely constrained heights.
 - Use isolated sessions and clearly label simulated keyboard/device checks when physical hardware is unavailable. Do not claim a physical iPhone or other device was tested unless it actually was.
 
