@@ -7,6 +7,16 @@
 
 ---
 
+## 27 November 2026 — Research-only Khana dataset preparation
+
+- User confirmed no dataset had been downloaded and explicitly selected a research-only prototype, isolated from production. Fetched the feature branch/main before development; local `feat/indian-meal-specialist` matched its remote and included `origin/main`.
+- Verified the official Khana source page, public Drive file metadata and a capped sample of archive headers: `dataset.tar.gz` is 6,904,199,066 bytes, with named `khana/<dish>/` folders, extensionless image files and AppleDouble metadata. No full archive or real model training was downloaded/run locally. The temporary public-folder HTML inspection file was removed.
+- Added `ml/indian_meals/prepare_khana.py` and `test_prepare_khana.py`: explicit research acknowledgement, optional resumable download, bounded ten-class import, metadata stripping, exact deduplication, conservative perceptual grouping, conflict quarantine, source-split preservation or provisional seeded splits, actual manifest/report generation, and reuse without overwriting existing work. The generated dataset is flagged research-only and not an independent release benchmark; source labels/household provenance still need separate review.
+- Updated `benchmark.py`/`test_benchmark.py` so a research-derived dataset cannot enter production mode even if source metadata is changed. Extended `.github/workflows/ci.yml` with pinned Pillow and generated-image importer tests, without app/ML/GPU downloads. The existing Node gates remain.
+- Updated `train_colab.ipynb` with the optional research preparation step after Drive mounting, separate persistent research paths and research-scope configuration. CPU setup is now allowed for data preparation; the actual trainer still requires a GPU unless explicitly doing a tiny CPU smoke test. Updated `PRD.md` and the training README to record the research decision and limitations. The unchanged 30-class/unknown-group release gate cannot pass on this ten-class pilot; do not weaken it or call the full scanner qualified.
+- Verification passed: **46 offline tests, zero skipped** (26 evaluator/data contracts, 13 importer tests with generated images, 7 CPU training-mechanics checks); standalone TypeScript/lint exit 0; **76 application files / 860 tests passed, 33 emulator-dependent tests skipped**; production build **exit 0, all 34 routes generated**. Existing non-fatal lint warnings remain. Notebook code syntax and the unchanged PRD/policy taxonomy checked. Logs: `artifacts/khana-{typecheck,lint,app-tests,python-tests,build}.log`.
+- Next: publish the source update and verify the exact hosted CI commit, then hand off the updated notebook/ZIP for the user's actual Colab download/import and inspect its real preparation report before training. No paid API calls, production data or production UI changed. Scope is nine files, below the 10% limit.
+
 ## 27 November 2026 — Rename and publish the completed training starter checkpoint
 
 - User explicitly requested publishing the work completed so far. Renamed local `codex/indian-meal-specialist` to `feat/indian-meal-specialist`; the old name had no remote branch, so no remote deletion is needed. Fetched origin and confirmed `origin/main` (`2851d58`) is included before edits.

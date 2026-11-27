@@ -195,6 +195,12 @@ class DataTests(unittest.TestCase):
             self.validate()
         self.assertEqual(self.validate("research")["scope"], "research")
 
+    def test_research_derivation_flag_blocks_production_even_if_source_metadata_changes(self):
+        self.data["research_only"] = True
+        with self.assertRaises(ValueError):
+            self.validate("production")
+        self.assertEqual(self.validate("research")["scope"], "research")
+
     def test_empty_dataset_and_missing_class_rejected(self):
         self.data["samples"] = []
         with self.assertRaises(ValueError):

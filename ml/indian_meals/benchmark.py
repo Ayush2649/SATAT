@@ -59,6 +59,8 @@ def validate_manifest(data, root, scope="production"):
         raise ValueError("Manifest must be an object")
     if scope not in {"research", "production"}:
         raise ValueError("Scope must be research or production")
+    if scope == "production" and data.get("research_only") is True:
+        raise ValueError("Research-only derived dataset cannot be used in production scope")
     text(data.get("dataset_id"), "dataset_id")
     text(data.get("version"), "version")
     classes = data.get("classes", [])

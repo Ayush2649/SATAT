@@ -6,6 +6,8 @@ Branch: `feat/indian-meal-specialist`
 
 Status: **Specification and CPU-verified offline training starter prepared. GPU training, trained-model qualification and application integration remain pending.**
 
+Research decision (27 November 2026): user selected a non-commercial Khana prototype first, kept separate from all production training/weights. The optional 10-class pilot below is development data, not a revision or relaxation of the 30-class release protocol.
+
 This is the feature PRD for Indian meal scanning. The existing [product PRD](docs/PRD.md) remains the product-wide source of truth; this document does not change its launch scope, pricing or other domains.
 
 ## 1. Problem and intended outcome
@@ -170,6 +172,14 @@ The validator rejects this placeholder. It is not a bundled dataset. The small t
 
 ## 8. Training and reproducibility
 
+### Research bootstrap before qualification
+
+`ml/indian_meals/prepare_khana.py` imports ten explicitly mapped Khana categories after research-only/source-term acknowledgement. It can download the publisher's 6.9 GB `dataset.tar.gz` to the user's mounted Drive, prepare a bounded subset, and generate the actual manifest that was missing during the initial Colab setup. The subset, source archive and run outputs live under `SATAT/research`, not production folders.
+
+The tool limits image size/count, rejects unsafe tar paths, ignores non-image/link payloads, strips image metadata, removes exact duplicates, groups perceptual neighbours and quarantines conflicting labels/splits. It preserves supplied split membership when available; otherwise its seeded grouped splits are explicitly provisional. Neither web-image labels nor hash groups establish independently reviewed household truth. Record this limitation in every pilot report. Data preparation needs CPU/Pillow; no GPU inference or DeepSeek API calls are needed.
+
+The unchanged C1 protocol still requires 30 classes and independently reviewed unknown groups. The 10-class research pilot cannot satisfy it. Prototype preparation/head training is an intermediate milestone only; do not change M3 qualification or mark the full feature done. The local tests use generated image archives, and only real archive headers were inspected; full Khana preparation and model training remain a Colab execution step.
+
 ### C1: single-food recognition baseline
 
 Use [DINOv2 ViT-S/14](https://github.com/facebookresearch/dinov2) pretrained visual features and train a small linear classifier first. This is **head training on a frozen backbone**, not full-backbone fine-tuning. Record exact backbone commit, weight hash, preprocessing, software versions, seed, device and manifest hash. Use training only for fitting; validation only for checkpoint/temperature/threshold selection; test only for evaluation.
@@ -281,8 +291,9 @@ Use `ml/indian_meals/train_colab.ipynb` after the starter is present and the app
 
 - No approved dataset package, weighed reference set, allocated Colab GPU or trained weights supplied yet.
 - Existing image fixtures are recognition smoke tests and must not be relabelled as measured nutrition references.
-- Verification on 27 November 2026: **32 offline-tool tests passed, zero skipped**; the CI standard-library evaluator subset separately passed **25 tests**. CPU mechanics tests cover checkpoint resume equivalence, configuration mismatch, validation-only calibration, unreadable images and the no-GPU preflight; no pretrained weights were downloaded and no real model was trained.
+- Latest verification on 27 November 2026: **46 offline-tool tests passed, zero skipped** (26 evaluator/data contracts, 13 generated-image importer tests, 7 CPU training-mechanics tests). The initial starter had 32 tests; the research preparation step adds coverage without changing release targets. No pretrained weights were downloaded and no real model was trained.
 - Standalone TypeScript and lint passed (existing non-fatal warnings remain). Full application suite: **76 files passed, 860 tests passed, 33 emulator-dependent tests skipped, zero failures**. Production build: **exit 0, all 34 routes generated**. Logs: `artifacts/indian-meal-{typecheck,lint,app-tests,python-tests,ci-python,build}.log`.
 - Notebook code cells parse successfully; the 30 PRD class IDs match `acceptance.v1.json`; local document links resolve. The notebook itself has not been executed in Colab. The source-only handoff archive is `artifacts/indian-meal-starter.zip` (ignored by Git).
-- `.github/workflows/ci.yml` includes the 25 standard-library evaluator contract tests with Python 3.11; GPU/ML-package checks remain a separate experiment gate. Hosted CI for the source/starter checkpoint will be checked after its authorised push. No hosted result should be inferred from the local checks.
+- `.github/workflows/ci.yml` includes the evaluator contracts with Python 3.11 and the generated-image importer tests using pinned Pillow; GPU/ML-package checks remain a separate experiment gate. Hosted CI for the research update will be checked after its authorised push. No hosted result should be inferred from the local checks.
+- Research-update logs: `artifacts/khana-{typecheck,lint,app-tests,python-tests,build}.log`. All application CI gates passed locally; the production build again exited 0 with 34 routes. Full real Khana import, its actual prepared counts and training execution remain pending in Colab; archive path inspection and synthetic tests are not a substitute.
 - No production scan behaviour or existing logo/UI is changed by the offline starter.
