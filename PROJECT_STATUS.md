@@ -1,11 +1,29 @@
 # SATAT (सतत्) — Project Status & Architecture Roadmap
 
-> **Current Branch**: `feat/complete-ui-change-e2e`  
+> **Current Branch**: `feat/indian-meal-specialist`
 > **Design Philosophy**: Natural Athletic Editorial  
 > **Brand Lineage**: *सतत्* (Sanskrit: *continuous*, *incessant*, *perpetual* with halant ्)  
 > **Target Experience**: Clean, human, tactile, non-punitive wellness companion. "A companion, not a dashboard."
 
 ---
+
+## 27 November 2026 — Rename and publish the completed training starter checkpoint
+
+- User explicitly requested publishing the work completed so far. Renamed local `codex/indian-meal-specialist` to `feat/indian-meal-specialist`; the old name had no remote branch, so no remote deletion is needed. Fetched origin and confirmed `origin/main` (`2851d58`) is included before edits.
+- Updated `PRD.md` to record the new branch and checkpoint authorisation while preserving pending trained-model/feature qualification. Added the exact Colab upload, GPU, dataset, Drive, training, resume, evaluation and export sequence to `ml/indian_meals/README.md`. Checked that the notebook already includes an explicit Drive mounting cell for durable checkpoints.
+- Verified Google documentation: eligible paid Google AI Pro plans include Colab compute benefits; the listed benefit has account/age eligibility and excludes trials/storage-only plans. Specific GPU availability remains variable. The README links official terms rather than assuming the user's entitlement.
+- Fresh pre-push verification passed: **32 offline tests, zero skipped**; standalone TypeScript and lint exit 0; **76 Vitest files / 860 tests passed, 33 emulator-dependent tests skipped, zero failures**; production build **exit 0, all 34 routes generated**. Existing non-fatal lint warnings remain. Notebook syntax, taxonomy consistency, local links and source-only archive integrity checked. Logs: `artifacts/indian-meal-push-{python,typecheck,tests,build}.log`; lint: `artifacts/indian-meal-lint.log`.
+- The source checkpoint is authorised for commit/push now; the exact hosted Actions run will be checked after pushing. Real dataset acquisition, GPU training and full model qualification remain pending; publishing this checkpoint does not change those statuses. Main remains untouched. Scope: 11 changed files, below the 10% limit.
+
+## 27 November 2026 — Indian meal specialist PRD and offline training starter
+
+- Fetched the previous feature branch and `origin/main`, fast-forwarded the clean checkout to `2851d58` (PR #51 merge), and created `codex/indian-meal-specialist`. No main-branch development or push.
+- Added root `PRD.md` for this feature; retained `docs/PRD.md` as the product-wide PRD. Defined user flows, existing integration boundaries, source permissions, 30 initial classes, grouped split/annotation requirements, independent benchmark sizes, quantitative classifier/detection/portion/nutrition/operations gates, regression cases, Colab handoff and an evidence-based completion ledger. Software tests are explicitly separate from model accuracy; no universal-correctness claim.
+- Added `ml/indian_meals/acceptance.v1.json`, `benchmark.py`, `train.py`, `test_benchmark.py`, `test_training.py`, `README.md` and `train_colab.ipynb`. The starter trains a linear classifier on frozen, revision-pinned DINOv2 features; it is not the complete scanner. Manifest checks reject exact duplicates, cross-split capture families, unsafe paths, checksum failures and unapproved/research-only sources in production mode. C1 evaluation requires all test predictions, sufficient classes/counts, validation-only calibration and matching artifact hashes; it never marks the full scanner production-qualified.
+- CPU verification: **32 offline-tool tests passed, zero skipped**, including checkpoint resume equivalence, calibration refusal on test data, GPU preflight, corrupt image handling and benchmark CLI failure exit codes. The standard-library subset separately passed **25 tests**. Updated `.github/workflows/ci.yml` to run that subset with Python 3.11 without ML downloads/GPU requirements; all existing Node gates remain. `.gitignore` excludes local data, caches, runs and the source-only handoff archive. No application dependencies, routes, auth, Firestore schema or UI changed.
+- Application verification: standalone TypeScript and lint passed; **76 Vitest files passed, 860 tests passed, 33 emulator-dependent tests skipped, zero failures**. Existing non-fatal lint warnings remain. Production build **passed, exit 0, all 34 routes generated**. Notebook cell syntax, PRD/policy taxonomy consistency and local document links checked. Logs: `artifacts/indian-meal-{typecheck,lint,app-tests,python-tests,ci-python,build}.log`.
+- **Not trained / not qualified:** no approved Indian dataset package, independent weighed references, assigned Colab GPU or trained weights have been supplied. M0/M1 specification and software work is separate from M2–M6 trained-model/feature qualification. The notebook and a source-only archive are provided for the next data/GPU step; no paid API calls or real GPU training were started.
+- Original iteration left changes uncommitted/unpushed under the completion-first workflow. The subsequent explicit request authorises publishing the completed source checkpoint on the renamed branch; full trained-feature gates remain pending. Do not mark development complete from synthetic software tests or merge main. Next: approve/provide the data manifest, assign a Colab GPU, train C1, return the independent report, then implement and qualify detection/portions/service integration.
 
 ## 22 November 2026 — Keep Orbit welcome content during keyboard opening
 

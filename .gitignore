@@ -64,3 +64,9 @@ scripts/photos/results*.json
 # Generated isolated audit browser bundles
 artifacts/audit-browser.js
 artifacts/audit-browser.css
+
+# Offline meal-model data and artifacts (never application assets)
+ml/indian_meals/data/
+ml/indian_meals/runs/
+ml/indian_meals/__pycache__/
+artifacts/indian-meal-starter.zip
