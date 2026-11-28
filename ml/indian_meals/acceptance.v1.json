@@ -1,0 +1,21 @@
+{
+  "protocol": "satat-indian-classifier-v1",
+  "classes": [
+    "steamed_rice", "plain_roti", "plain_paratha", "aloo_paratha", "poori",
+    "dal_tadka", "dal_makhani", "rajma", "chole", "paneer_bhurji", "egg_bhurji",
+    "bhindi_sabzi", "aloo_sabzi", "raw_banana_sabzi", "mixed_vegetable_sabzi",
+    "poha", "upma", "idli", "plain_dosa", "masala_dosa", "sambar", "coconut_chutney",
+    "chicken_biryani", "vegetable_biryani", "chicken_curry", "fish_curry",
+    "curd", "raita", "samosa", "pav_bhaji"
+  ],
+  "unknown_kinds": ["unsupported_indian", "international", "non_food", "ambiguous"],
+  "min_test_per_class": 30,
+  "min_test_per_unknown_kind": 50,
+  "min_validation_per_class": 10,
+  "min_validation_per_unknown_kind": 20,
+  "min_macro_f1": 0.85,
+  "min_class_recall": 0.70,
+  "min_accepted_precision": 0.95,
+  "min_known_coverage": 0.70,
+  "max_unknown_acceptance": 0.05
+}
